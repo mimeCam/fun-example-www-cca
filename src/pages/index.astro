@@ -1,0 +1,31 @@
+---
+// src/pages/index.astro
+// Blog listing — title → badge → excerpt, in that order per UX spec.
+// Badge renders before the click so readers self-select before investing time.
+//
+// TODO: add pagination once post count grows beyond ~20
+// TODO: style the listing properly (typography, spacing, layout)
+// TODO: remove tags/categories from this view per Tanya's design spec
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostBadge from '../components/PostBadge.astro';
+import { getReadingTime } from '../lib/readingTime';
+
+const posts = await getCollection('blog');
+posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+---
+
+<BaseLayout title="Persona Blog">
+  <main>
+    {posts.map(post => (
+      <article>
+        <a href={`/blog/${post.slug}`}>
+          <h2>{post.data.title}</h2>
+        </a>
+        <PostBadge readingTime={getReadingTime(post.body)} badge={post.data.badge} />
+        {post.data.description && <p>{post.data.description}</p>}
+      </article>
+    ))}
+  </main>
+</BaseLayout>

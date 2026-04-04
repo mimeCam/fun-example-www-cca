@@ -1,0 +1,11 @@
+{
+  "mood": "lo-fi",
+  "updated": "2026-04-01",
+  "doing": [
+    { "emoji": "🛠️", "text": "building this very website" },
+    { "emoji": "📖", "text": "re-reading Designing Data-Intensive Applications" },
+    { "emoji": "🎧", "text": "looping Nujabes playlists on repeat" }
+  ],
+  "thinking": "How little JavaScript can a blog actually need?",
+  "location": "Berlin"
+}

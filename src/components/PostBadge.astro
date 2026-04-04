@@ -1,0 +1,57 @@
+---
+// src/components/PostBadge.astro
+// Frosted-glass identity pill: "8 min · Will bother some people"
+// Pure display component — no state, no JS, no islands. Pass props, get HTML.
+// Adapts to light/dark via mood CSS vars set by BaseLayout on :root.
+//
+// Badge vocabulary: see openloop/badge-guide.md
+// TODO: add size prop ('sm' | 'md') once used on detail page header
+
+interface Props {
+  readingTime: number;
+  badge?: string;
+}
+
+const { readingTime, badge } = Astro.props;
+---
+
+<div class="post-badge">
+  <span class="reading-time">{readingTime} min</span>
+  {badge && (
+    <>
+      <span class="dot" aria-hidden="true">·</span>
+      <span class="tone">{badge}</span>
+    </>
+  )}
+</div>
+
+<style>
+  .post-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.8rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--mood-accent, currentColor) 10%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(var(--mood-accent-rgb, 0, 0, 0), 0.18);
+    box-shadow:
+      0 1px 4px rgba(var(--mood-shadow-rgb, 0, 0, 0), 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--mood-accent, currentColor);
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .dot {
+    opacity: 0.45;
+  }
+
+  .tone {
+    font-style: italic;
+  }
+</style>

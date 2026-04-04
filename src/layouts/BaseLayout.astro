@@ -1,0 +1,36 @@
+---
+// src/layouts/BaseLayout.astro
+// Root HTML shell — injects mood CSS vars into :root, slots page content.
+// All pages extend this layout. No client-side JS. No framework islands.
+//
+// TODO: add <AmbientLayer /> once src/components/AmbientLayer.astro is built
+// TODO: add <MoodBadge /> once src/components/MoodBadge.astro is built
+// TODO: add OG meta tags and canonical URL once blog detail pages exist
+
+import { resolveMood, moodToCSSVars, moodToCSSString } from '../lib/mood';
+import moodConfig from '../data/mood.config.json';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'A persona blog.' } = Astro.props;
+const cssVars = moodToCSSVars(resolveMood(moodConfig.current_mood));
+const cssString = moodToCSSString(cssVars);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <style set:html={`:root {\n${cssString}\n}`} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
