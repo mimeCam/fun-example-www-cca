@@ -18,26 +18,26 @@
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 20.23kB 0.1s done
-#6 DONE 0.1s
+#6 transferring context: 11.21kB 0.2s done
+#6 DONE 0.2s
 
 #7 [builder 3/7] COPY package.json package-lock.json* ./
 #7 DONE 0.0s
 
 #8 [builder 4/7] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#8 7.316 
-#8 7.316 added 380 packages, and audited 381 packages in 7s
-#8 7.316 
-#8 7.316 161 packages are looking for funding
-#8 7.316   run `npm fund` for details
-#8 7.361 
-#8 7.361 4 vulnerabilities (3 moderate, 1 high)
-#8 7.361 
-#8 7.361 To address all issues (including breaking changes), run:
-#8 7.361   npm audit fix --force
-#8 7.361 
-#8 7.361 Run `npm audit` for details.
-#8 DONE 7.8s
+#8 7.376 
+#8 7.376 added 380 packages, and audited 381 packages in 7s
+#8 7.376 
+#8 7.376 161 packages are looking for funding
+#8 7.376   run `npm fund` for details
+#8 7.418 
+#8 7.418 4 vulnerabilities (3 moderate, 1 high)
+#8 7.418 
+#8 7.418 To address all issues (including breaking changes), run:
+#8 7.418   npm audit fix --force
+#8 7.418 
+#8 7.418 Run `npm audit` for details.
+#8 DONE 7.9s
 
 #9 [builder 5/7] COPY astro.config.mjs tsconfig.json ./
 #9 DONE 0.0s
@@ -46,46 +46,48 @@
 #10 DONE 0.0s
 
 #11 [builder 7/7] RUN npm run build
-#11 0.286 
-#11 0.286 > persona-blog@0.1.0 build
-#11 0.286 > astro build
-#11 0.286 
-#11 0.987 ▶ Astro collects anonymous usage data.
-#11 0.987   This information helps us improve Astro.
-#11 0.987   Run "astro telemetry disable" to opt-out.
-#11 0.987   https://astro.build/telemetry
-#11 0.987 
-#11 2.331 17:08:50 [types] Generated 578ms
-#11 2.331 17:08:50 [build] output: "hybrid"
-#11 2.332 17:08:50 [build] directory: /app/dist/
-#11 2.332 17:08:50 [build] adapter: @astrojs/node
-#11 2.332 17:08:50 [build] Collecting build info...
-#11 2.333 17:08:50 [build] ✓ Completed in 595ms.
-#11 2.335 17:08:50 [build] Building hybrid entrypoints...
-#11 5.041 17:08:53 [vite] ✓ built in 2.66s
-#11 5.041 17:08:53 [build] ✓ Completed in 2.71s.
-#11 5.061 
-#11 5.061  prerendering static routes 
-#11 5.077 17:08:53 ▶ src/pages/blog/[slug].astro
-#11 5.080 17:08:53   └─ /blog/hello-world/index.html (+13ms)
-#11 5.096 17:08:53 ▶ src/pages/now.astro
-#11 5.097 17:08:53   └─ /now/index.html (+3ms)
-#11 5.105 17:08:53 ▶ src/pages/wall.astro
-#11 5.105 17:08:53   └─ /wall/index.html (+4ms)
-#11 5.112 17:08:53 ▶ src/pages/index.astro
-#11 5.112 17:08:53   └─ /index.html (+3ms)
-#11 5.116 17:08:53 ✓ Completed in 71ms.
-#11 5.116 
-#11 5.118 17:08:53 [build] Rearranging server assets...
-#11 5.120 17:08:53 [build] Server built in 3.38s
-#11 5.120 17:08:53 [build] Complete!
-#11 DONE 5.2s
+#11 0.298 
+#11 0.298 > persona-blog@0.1.0 build
+#11 0.298 > astro build
+#11 0.298 
+#11 1.022 ▶ Astro collects anonymous usage data.
+#11 1.022   This information helps us improve Astro.
+#11 1.022   Run "astro telemetry disable" to opt-out.
+#11 1.022   https://astro.build/telemetry
+#11 1.022 
+#11 2.400 17:28:48 [types] Generated 586ms
+#11 2.401 17:28:48 [build] output: "hybrid"
+#11 2.401 17:28:48 [build] directory: /app/dist/
+#11 2.401 17:28:48 [build] adapter: @astrojs/node
+#11 2.401 17:28:48 [build] Collecting build info...
+#11 2.402 17:28:48 [build] ✓ Completed in 615ms.
+#11 2.405 17:28:48 [build] Building hybrid entrypoints...
+#11 5.154 17:28:50 [vite] ✓ built in 2.71s
+#11 5.154 17:28:50 [build] ✓ Completed in 2.75s.
+#11 5.173 
+#11 5.173  prerendering static routes 
+#11 5.191 17:28:50 ▶ src/pages/blog/[slug].astro
+#11 5.197 17:28:50   └─ /blog/hello-world/index.html (+17ms)
+#11 5.217 17:28:51 ▶ src/pages/embers.astro
+#11 5.217 17:28:51   └─ /embers/index.html (+4ms)
+#11 5.225 17:28:51 ▶ src/pages/now.astro
+#11 5.225 17:28:51   └─ /now/index.html (+3ms)
+#11 5.233 17:28:51 ▶ src/pages/wall.astro
+#11 5.233 17:28:51   └─ /wall/index.html (+5ms)
+#11 5.241 17:28:51 ▶ src/pages/index.astro
+#11 5.241 17:28:51   └─ /index.html (+3ms)
+#11 5.245 17:28:51 ✓ Completed in 85ms.
+#11 5.245 
+#11 5.248 17:28:51 [build] Rearranging server assets...
+#11 5.250 17:28:51 [build] Server built in 3.46s
+#11 5.250 17:28:51 [build] Complete!
+#11 DONE 5.4s
 
 #12 [server 3/5] COPY --from=builder /app/dist ./dist
 #12 DONE 0.0s
 
 #13 [server 4/5] COPY --from=builder /app/node_modules ./node_modules
-#13 DONE 2.6s
+#13 DONE 2.4s
 
 #14 [server 5/5] RUN mkdir -p /app/dist/server/data  && echo '[]' > /app/dist/server/data/wall-pending.json
 #14 DONE 0.2s
@@ -93,6 +95,6 @@
 #15 exporting to image
 #15 exporting layers
 #15 exporting layers 1.1s done
-#15 writing image sha256:5c934ba04db1c86d1a318b7e68430fb740bd0ec979b7d5f006c245c8117b819b done
+#15 writing image sha256:2358aeeb8863312a35abacbab833a45225efd8d7ab1ccbc887432c160dc422d1 done
 #15 naming to docker.io/library/persona-blog-a done
 #15 DONE 1.1s

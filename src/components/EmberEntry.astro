@@ -1,0 +1,52 @@
+---
+// src/components/EmberEntry.astro
+// A single ember — compact micro-post that glows and fades.
+// Inherits decay/mood pattern from WallEntry. Deliberately smaller footprint.
+//
+// TODO: add hover timestamp tooltip (v2)
+// TODO: add mood-accent glow pulse on glowing state (v2)
+
+import type { ComputedEmber } from '../lib/ember';
+import { resolveMood } from '../lib/mood';
+
+interface Props { computed: ComputedEmber; }
+
+const { computed } = Astro.props;
+const { ember, decay, state } = computed;
+const mood = resolveMood(ember.mood);
+const style = `--decay: ${decay.toFixed(3)}; --entry-accent-rgb: ${mood.accent_rgb};`;
+---
+
+<article class={`ember ember-${state}`} style={style} data-posted={ember.posted} data-max-days="21">
+  <p class="ember-text">{ember.text}</p>
+  <span class="ember-mood">{mood.label}</span>
+</article>
+
+<style>
+  .ember {
+    --alive: calc(1 - var(--decay));
+    padding: calc(0.5rem + 0.75rem * var(--alive));
+    border-radius: calc(2px + 8px * var(--alive));
+    background: rgba(255, 255, 255, calc(0.03 + 0.05 * var(--alive)));
+    border: 1px solid rgba(var(--entry-accent-rgb, 0,0,0), calc(0.04 + 0.12 * var(--alive)));
+    box-shadow:
+      0 calc(1px + 6px * var(--alive)) calc(8px + 12px * var(--alive))
+        rgba(var(--entry-accent-rgb, 0,0,0), calc(0.03 + 0.10 * var(--alive)));
+  }
+
+  .ember-text {
+    margin: 0;
+    font-size: calc(0.78rem + 0.2rem * var(--alive));
+    line-height: calc(1.3 + 0.2 * var(--alive));
+    opacity: calc(0.45 + 0.55 * var(--alive));
+  }
+
+  .ember-mood {
+    display: block;
+    margin-top: calc(0.25rem + 0.25rem * var(--alive));
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: calc(0.25 + 0.35 * var(--alive));
+  }
+</style>

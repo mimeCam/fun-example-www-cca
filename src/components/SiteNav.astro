@@ -9,9 +9,10 @@
 const path = Astro.url.pathname;
 
 const links = [
-  { label: 'wall', href: '/wall' },
-  { label: 'now',  href: '/now' },
-  { label: 'blog', href: '/' },
+  { label: 'wall',   href: '/wall' },
+  { label: 'embers', href: '/embers' },
+  { label: 'now',    href: '/now' },
+  { label: 'blog',   href: '/' },
 ] as const;
 
 function isActive(href: string): boolean {
