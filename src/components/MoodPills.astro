@@ -1,0 +1,52 @@
+---
+// src/components/MoodPills.astro
+// A row of rounded pill buttons that shift the site's ambient mood.
+// Pure CSS — labels trigger sibling radio inputs placed in BaseLayout.
+// Phase 1: atmospheric mood switching (no content filtering).
+//
+// TODO: Phase 2 (15+ whispers) — pills filter wall entries with show/hide
+// TODO: Phase 3 (50+ whispers) — auto-cycling Mood Drift animation
+
+import { MOODS, activeMoodIds } from '../lib/mood';
+
+const moods = activeMoodIds();
+---
+
+<div class="mood-bar" data-mood-bar>
+  {moods.map(id => (
+    <label for={`mood-${id}`} class="pill" data-mood={id}>
+      {MOODS[id].label}
+    </label>
+  ))}
+</div>
+
+<style>
+  .mood-bar {
+    position: sticky;
+    top: 48px;
+    z-index: 9;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .pill {
+    border-radius: 18px;
+    padding: 0.25rem 0.85rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    opacity: 0.45;
+    transition: all 200ms ease;
+    user-select: none;
+  }
+
+  .pill:hover {
+    opacity: 0.7;
+    background: rgba(255, 255, 255, 0.06);
+  }
+</style>

@@ -7,11 +7,15 @@
 // TODO: add OG meta tags (og:title, og:description, og:image)
 // TODO: add canonical URL via Astro.url
 
-import { resolveMood, moodToCSSVars, moodToCSSString } from '../lib/mood';
+import { resolveMood, moodToCSSVars, moodToCSSString, activeMoodIds, moodSwitchCSS } from '../lib/mood';
 import moodConfig from '../data/mood.config.json';
 import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
+import MoodPills from '../components/MoodPills.astro';
 import '../styles/global.css';
+
+const pillMoods = activeMoodIds();
+const switchCSS = moodSwitchCSS();
 
 interface Props {
   title: string;
@@ -31,10 +35,19 @@ const cssString = moodToCSSString(cssVars);
     <title>{title}</title>
     <meta name="description" content={description} />
     <style set:html={`:root {\n${cssString}\n}`} />
+    <style set:html={`.mood-input { display: none; }\n${switchCSS}`} />
   </head>
   <body>
+    {pillMoods.map(id => (
+      <input
+        type="radio" name="mood" id={`mood-${id}`}
+        class="mood-input"
+        checked={id === moodConfig.current_mood}
+      />
+    ))}
     <AmbientLayer />
     <SiteNav />
+    <MoodPills />
     <slot />
   </body>
 </html>

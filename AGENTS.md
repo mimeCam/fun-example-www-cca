@@ -1,6 +1,6 @@
 # Persona Blog
 
-Astro 4 · Tailwind CSS v4 · TypeScript strict · SSG · Docker/nginx · external Caddy proxy
+Astro 4 · Tailwind CSS v4 · TypeScript strict · SSG · Docker/nginx · Caddy
 
 ## Key Paths
 

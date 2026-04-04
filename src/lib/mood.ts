@@ -98,6 +98,31 @@ export function moodToCSSString(vars: CSSMoodVars): string {
     .join('\n');
 }
 
+/** Returns non-default mood IDs for UI pill rendering. */
+export function activeMoodIds(): MoodId[] {
+  return (Object.keys(MOODS) as MoodId[]).filter(id => id !== 'default');
+}
+
+/** Generates global CSS rules that wire radio :checked state to ambient + pill visuals. */
+export function moodSwitchCSS(): string {
+  return (Object.keys(MOODS) as MoodId[]).map(id => {
+    const m = MOODS[id];
+    const ambient = [
+      `#mood-${id}:checked ~ [data-ambient] {`,
+      `  background: linear-gradient(135deg, ${m.gradient_from}, ${m.gradient_to});`,
+      `  opacity: ${m.opacity}; animation-duration: ${m.animation_duration};`,
+      `}`,
+    ].join('\n');
+    const pill = [
+      `#mood-${id}:checked ~ [data-mood-bar] [data-mood="${id}"] {`,
+      `  opacity: 1; background: rgba(${m.accent_rgb}, 0.14);`,
+      `  border-color: ${m.accent}; box-shadow: 0 0 8px rgba(${m.accent_rgb}, 0.25);`,
+      `}`,
+    ].join('\n');
+    return `${ambient}\n${pill}`;
+  }).join('\n');
+}
+
 // ---------------------------------------------------------------------------
 // Isolated-run sanity check (leave in place — see inplace-testing-howto.md)
 // ---------------------------------------------------------------------------
