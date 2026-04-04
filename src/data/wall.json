@@ -1,0 +1,32 @@
+[
+  {
+    "id": "w1",
+    "text": "Shipped the /now page. Decay engine is alive — the site literally ages.",
+    "posted": "2026-04-01",
+    "mood": "lo-fi"
+  },
+  {
+    "id": "w2",
+    "text": "Four moods, zero JavaScript. CSS custom properties are doing all the heavy lifting.",
+    "posted": "2026-03-28",
+    "mood": "focus"
+  },
+  {
+    "id": "w3",
+    "text": "Started the blog with one rule: every component earns its bytes.",
+    "posted": "2026-03-18",
+    "mood": "hyperpop"
+  },
+  {
+    "id": "w4",
+    "text": "Late night rabbit hole on glassmorphism — frosted panels, soft shadows, the works.",
+    "posted": "2026-03-05",
+    "mood": "jazz"
+  },
+  {
+    "id": "w5",
+    "text": "First commit. An empty Astro project with too many opinions baked in already.",
+    "posted": "2026-02-15",
+    "mood": "lo-fi"
+  }
+]

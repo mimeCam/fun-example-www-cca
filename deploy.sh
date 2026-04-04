@@ -36,4 +36,4 @@ docker run \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \
   "${IMAGE_NAME}"
 
-echo "==> [deploy] Done. persona-blog is live at http://localhost:${HOST_PORT}"
+echo "==> [deploy] Done. $CONTAINER_NAME is live at http://localhost:${HOST_PORT}"
