@@ -15,6 +15,7 @@ import moodConfig from '../data/mood.config.json';
 import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
 import MoodPills from '../components/MoodPills.astro';
+import GhostDrawer from '../components/GhostDrawer.astro';
 import CelestialWitness from '../components/CelestialWitness.astro';
 import Hearth from '../components/Hearth.astro';
 import '../styles/global.css';
@@ -43,7 +44,7 @@ const cssString = moodToCSSString(cssVars);
     <title>{title}</title>
     <meta name="description" content={description} />
     <style set:html={`:root {\n${cssString}\n}`} />
-    <style set:html={`.mood-input { display: none; }\n${switchCSS}`} />
+    <style set:html={`.mood-input, .ghost-input { display: none; }\n${switchCSS}\n#ghost-toggle:checked ~ [data-ghost-drawer] { display: block; }\n#ghost-toggle:checked ~ [data-mood-bar] .ghost-pill { opacity: 1; box-shadow: 0 0 10px rgba(212, 149, 106, 0.3); }`} />
     <script set:html={timeScript} />
     <script set:html={seasonScript} />
     <script set:html={decayScript} />
@@ -56,9 +57,11 @@ const cssString = moodToCSSString(cssVars);
         checked={id === moodConfig.current_mood}
       />
     ))}
+    <input type="checkbox" id="ghost-toggle" class="ghost-input" />
     <AmbientLayer />
     <SiteNav />
     <MoodPills />
+    <GhostDrawer />
     <slot />
     <Hearth />
     <CelestialWitness />

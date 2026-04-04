@@ -1,0 +1,79 @@
+---
+// src/components/GhostDrawer.astro
+// Floating overlay that appears when #ghost-toggle is :checked.
+// Renders alive ghosts with decay-driven opacity. Pure CSS visibility.
+// Zero new layout regions — overlays existing content.
+//
+// TODO: add subtle entrance animation (translateY + opacity)
+// TODO: mood-aware accent tint on ghost text
+
+import { getGhosts } from '../lib/ghost';
+import ghostData from '../data/ghosts.json';
+
+const ghosts = getGhosts(ghostData);
+---
+
+{ghosts.length > 0 && (
+  <div class="ghost-drawer" data-ghost-drawer aria-label="Abandoned ideas">
+    <p class="ghost-heading">ghosts — abandoned ideas that linger</p>
+    <ul class="ghost-list">
+      {ghosts.map(g => (
+        <li class="ghost-entry" style={`opacity: ${g.opacity};`}>
+          <span class="ghost-text">{g.entry.text}</span>
+          <span class="ghost-age">{g.age}d ago</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
+
+<style>
+  .ghost-drawer {
+    display: none;
+    position: absolute;
+    top: calc(48px + 2.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    width: min(90vw, 380px);
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    background: rgba(30, 25, 20, 0.92);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 149, 106, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  .ghost-heading {
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: lowercase;
+    color: rgba(212, 149, 106, 0.5);
+    margin: 0 0 0.75rem;
+  }
+  .ghost-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .ghost-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .ghost-text {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.4;
+  }
+  .ghost-age {
+    font-size: 0.58rem;
+    color: rgba(212, 149, 106, 0.35);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+</style>

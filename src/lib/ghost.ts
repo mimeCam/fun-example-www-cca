@@ -5,8 +5,8 @@
 // Reuses daysSince() from temporal.ts. Zero side-effects.
 //
 // TODO: wire _testGhostLib() into a build sanity step
-// TODO: add GhostZone.astro component to render ghosts on /wall
 // TODO: add scripts/haunt.ts CLI to append ghosts (mirror whisper pattern)
+// DONE: GhostPill.astro + GhostDrawer.astro render ghosts site-wide via mood bar
 
 import { daysSince } from './temporal';
 import type { MoodId } from './mood';
