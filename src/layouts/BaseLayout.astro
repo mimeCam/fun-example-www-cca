@@ -4,14 +4,15 @@
 // All pages extend this layout. No client-side JS. No framework islands.
 //
 // TODO: add <MoodBadge /> once src/components/MoodBadge.astro is built
-// TODO: add OG meta tags (og:title, og:description, og:image)
-// TODO: add canonical URL via Astro.url
+// DONE: OG meta tags + canonical URL via SEOMeta component
 
 import { resolveMood, moodToCSSVars, moodToCSSString, activeMoodIds, moodSwitchCSS } from '../lib/mood';
 import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
 import { liveDecayScript } from '../lib/temporal';
 import moodConfig from '../data/mood.config.json';
+import SEOMeta from '../components/SEOMeta.astro';
+import { canonicalUrl } from '../config/seo.config';
 import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
 import MoodPills from '../components/MoodPills.astro';
@@ -35,9 +36,12 @@ const decayScript = liveDecayScript();
 interface Props {
   title: string;
   description?: string;
+  type?: 'website' | 'article';
+  publishedAt?: string;
 }
 
-const { title, description = 'A persona blog.' } = Astro.props;
+const { title, description, type, publishedAt } = Astro.props;
+const pageUrl = canonicalUrl(Astro.url.pathname);
 const cssVars = moodToCSSVars(resolveMood(moodConfig.current_mood));
 const cssString = moodToCSSString(cssVars);
 
@@ -55,8 +59,7 @@ const driftPick = pickCandidate(driftCandidates);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} />
     <style set:html={`:root {\n${cssString}\n}`} />
     <style set:html={`.mood-input, .ghost-input { display: none; }\n${switchCSS}\n#ghost-toggle:checked ~ [data-ghost-drawer] { display: block; }\n#ghost-toggle:checked ~ [data-mood-bar] .ghost-pill { opacity: 1; box-shadow: 0 0 10px rgba(212, 149, 106, 0.3); }`} />
     <script set:html={timeScript} />

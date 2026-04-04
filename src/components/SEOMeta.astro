@@ -1,0 +1,43 @@
+---
+// src/components/SEOMeta.astro
+// Renders OG + Twitter Card meta tags in <head>.
+// Every page passes props; defaults come from seo.config.ts.
+//
+// Usage: <SEOMeta title="My Post" description="..." url="/blog/my-post" type="article" />
+//
+// TODO: add article:author and article:section tags for blog posts
+// TODO: add JSON-LD script injection once seo.config supports it
+
+import { resolveMeta, canonicalUrl } from '../config/seo.config';
+import type { PageMeta } from '../config/seo.config';
+
+interface Props extends PageMeta {}
+
+const resolved = resolveMeta(Astro.props);
+---
+
+<!-- Primary Meta -->
+<title>{resolved.title}</title>
+<meta name="description" content={resolved.description} />
+<link rel="canonical" href={resolved.url} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={resolved.type} />
+<meta property="og:title" content={resolved.title} />
+<meta property="og:description" content={resolved.description} />
+<meta property="og:image" content={resolved.image} />
+<meta property="og:url" content={resolved.url} />
+<meta property="og:site_name" content={resolved.siteName} />
+<meta property="og:locale" content={resolved.locale} />
+{resolved.publishedAt && (
+  <meta property="article:published_time" content={resolved.publishedAt} />
+)}
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={resolved.title} />
+<meta name="twitter:description" content={resolved.description} />
+<meta name="twitter:image" content={resolved.image} />
+{resolved.twitterHandle && (
+  <meta name="twitter:site" content={resolved.twitterHandle} />
+)}
