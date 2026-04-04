@@ -13,9 +13,9 @@ import WallEntry from '../components/WallEntry.astro';
 import WallFossil from '../components/WallFossil.astro';
 import WallExplainer from '../components/WallExplainer.astro';
 import WallFaultLine from '../components/WallFaultLine.astro';
+import WallForm from '../components/WallForm.astro';
 import { partitionEntries, wallQuip, wallState } from '../lib/wall';
 import type { WallEntry as WallEntryType } from '../lib/wall';
-import { daysSince } from '../lib/now';
 import wallRaw from '../data/wall.json';
 
 const entries = wallRaw as WallEntryType[];
@@ -33,6 +33,8 @@ const pageQuip = freshestActive ? freshestActive.quip : 'Nothing on the wall yet
     </header>
 
     <WallExplainer />
+
+    <WallForm />
 
     {active.length > 0 && (
       <section class="wall-surface" aria-label="Recent thoughts">

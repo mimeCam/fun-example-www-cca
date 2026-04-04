@@ -12,10 +12,52 @@
     "mood": "focus"
   },
   {
+    "id": "w6",
+    "text": "The wall form is live. Moderation queue means I still sleep at night.",
+    "posted": "2026-03-26",
+    "mood": "lo-fi"
+  },
+  {
+    "id": "w7",
+    "text": "Thought about adding a dark mode toggle. Then realized every mode is dark mode.",
+    "posted": "2026-03-24",
+    "mood": "jazz"
+  },
+  {
+    "id": "w8",
+    "text": "Atomic file writes: write temp, rename. The oldest trick and still the best.",
+    "posted": "2026-03-22",
+    "mood": "focus"
+  },
+  {
     "id": "w3",
     "text": "Started the blog with one rule: every component earns its bytes.",
     "posted": "2026-03-18",
     "mood": "hyperpop"
+  },
+  {
+    "id": "w9",
+    "text": "Moods are just CSS variables wearing a trench coat. Nobody suspects a thing.",
+    "posted": "2026-03-16",
+    "mood": "hyperpop"
+  },
+  {
+    "id": "w10",
+    "text": "280 characters is enough for any thought worth having. Fight me.",
+    "posted": "2026-03-14",
+    "mood": "hyperpop"
+  },
+  {
+    "id": "w11",
+    "text": "Pushed the celestial witness — a little circle that knows what time it is where you are.",
+    "posted": "2026-03-12",
+    "mood": "jazz"
+  },
+  {
+    "id": "w12",
+    "text": "Glassmorphism is just frosted glass with better PR. I'm sold.",
+    "posted": "2026-03-10",
+    "mood": "lo-fi"
   },
   {
     "id": "w4",
@@ -24,9 +66,87 @@
     "mood": "jazz"
   },
   {
+    "id": "w13",
+    "text": "Every page fades. Every whisper fossilizes. Entropy as a feature.",
+    "posted": "2026-03-03",
+    "mood": "jazz"
+  },
+  {
+    "id": "w14",
+    "text": "Rewrote the temporal engine for the third time. Third time's the charm, right?",
+    "posted": "2026-03-01",
+    "mood": "focus"
+  },
+  {
+    "id": "w15",
+    "text": "Deployed to Docker. Nginx serves static files faster than I can type.",
+    "posted": "2026-02-27",
+    "mood": "focus"
+  },
+  {
+    "id": "w16",
+    "text": "Added the hearth — a footer that knows how old the blog is. Poetic infrastructure.",
+    "posted": "2026-02-24",
+    "mood": "lo-fi"
+  },
+  {
+    "id": "w17",
+    "text": "Tailwind v4 with Vite plugin. No config file. Just vibes.",
+    "posted": "2026-02-21",
+    "mood": "hyperpop"
+  },
+  {
+    "id": "w18",
+    "text": "The ambient layer drifts between gradients. Nobody will notice. That's the point.",
+    "posted": "2026-02-18",
+    "mood": "lo-fi"
+  },
+  {
     "id": "w5",
     "text": "First commit. An empty Astro project with too many opinions baked in already.",
     "posted": "2026-02-15",
+    "mood": "lo-fi"
+  },
+  {
+    "id": "w19",
+    "text": "Picked Astro because it ships zero JS by default. My kind of framework.",
+    "posted": "2026-02-12",
+    "mood": "focus"
+  },
+  {
+    "id": "w20",
+    "text": "Reading about geological strata. Inspiration for how old posts should compress.",
+    "posted": "2026-02-09",
+    "mood": "jazz"
+  },
+  {
+    "id": "w21",
+    "text": "Sketched the mood system on paper. Four moods, four palettes, zero toggles needed.",
+    "posted": "2026-02-06",
+    "mood": "lo-fi"
+  },
+  {
+    "id": "w22",
+    "text": "Blog should feel alive. Decay gives it a pulse. Fresh posts glow, old ones settle.",
+    "posted": "2026-02-03",
+    "mood": "jazz"
+  },
+  {
+    "id": "w23",
+    "text": "No analytics, no cookies, no tracking. The server forgets you the moment you leave.",
+    "posted": "2026-01-30",
+    "mood": "focus"
+  },
+  {
+    "id": "w24",
+    "text": "Bought the domain. Now I have to actually build something.",
+    "posted": "2026-01-25",
+    "mood": "hyperpop"
+  },
+  {
+    "id": "w25",
+    "text": "The idea: a personal site that decays like memory. Warm up close, faded at the edges.",
+    "posted": "2026-01-20",
     "mood": "lo-fi"
   }
 ]

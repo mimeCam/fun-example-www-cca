@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy.sh — build & run the persona-blog static site in Docker
+# deploy.sh — build & run the persona-blog hybrid SSR site in Docker
 # Exposes the site on port 7100 (Caddy handles SSL & reverse-proxy upstream).
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
@@ -10,6 +10,7 @@ CONTAINER_NAME="persona-blog-a"
 IMAGE_NAME="persona-blog-a"
 HOST_PORT=7100
 CONTAINER_PORT=7100
+DATA_VOLUME="persona-blog-a-data"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/deployment.log"
 
@@ -27,7 +28,11 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   docker rm   "${CONTAINER_NAME}" || true
 fi
 
-# ── 2. Build Docker image ─────────────────────────────────────────────────────
+# ── 2. Ensure the named data volume exists (preserves whisper queue) ─────────
+echo "==> [deploy] Ensuring data volume: ${DATA_VOLUME}"
+docker volume create "${DATA_VOLUME}" || true
+
+# ── 3. Build Docker image ────────────────────────────────────────────────────
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
 docker build \
   --pull \
@@ -35,16 +40,17 @@ docker build \
   --tag "${IMAGE_NAME}" \
   "${SCRIPT_DIR}"
 
-# ── 3. Run the new container ─────────────────────────────────────────────────
+# ── 4. Run the new container ─────────────────────────────────────────────────
 echo "==> [deploy] Starting container: ${CONTAINER_NAME} on port ${HOST_PORT}"
 docker run \
   --detach \
   --restart unless-stopped \
   --name "${CONTAINER_NAME}" \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \
+  --volume "${DATA_VOLUME}:/app/dist/server/data" \
   "${IMAGE_NAME}"
 
-# ── 4. Quick health check ───────────────────────────────────────────────────
+# ── 5. Quick health check ───────────────────────────────────────────────────
 echo "==> [deploy] Waiting for container to become healthy…"
 sleep 2
 if docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -55,7 +61,7 @@ else
   exit 1
 fi
 
-# ── 5. Prune dangling images from previous builds ────────────────────────────
+# ── 6. Prune dangling images from previous builds ────────────────────────────
 echo "==> [deploy] Pruning dangling images…"
 docker image prune -f || true
 

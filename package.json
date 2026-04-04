@@ -9,8 +9,9 @@
     "whisper": "node cli/whisper.mjs"
   },
   "dependencies": {
-    "astro": "^4.16.0",
+    "@astrojs/node": "^8.3.4",
     "@tailwindcss/vite": "^4.0.0",
+    "astro": "^4.16.0",
     "tailwindcss": "^4.0.0"
   },
   "devDependencies": {

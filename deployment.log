@@ -1,107 +1,98 @@
 #0 building with "default" instance using docker driver
 
 #1 [internal] load build definition from Dockerfile
-#1 transferring dockerfile: 1.75kB done
+#1 transferring dockerfile: 1.47kB done
 #1 DONE 0.0s
 
-#2 [internal] load metadata for docker.io/library/nginx:1.27-alpine
-#2 ...
-
-#3 [internal] load metadata for docker.io/library/node:20-alpine
-#3 DONE 0.7s
-
-#2 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#2 [internal] load metadata for docker.io/library/node:20-alpine
 #2 DONE 0.7s
 
-#4 [internal] load .dockerignore
-#4 transferring context: 2B done
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [builder 1/7] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
 #4 DONE 0.0s
 
-#5 [builder 1/7] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
-#5 DONE 0.0s
+#5 [builder 2/7] WORKDIR /app
+#5 CACHED
 
-#6 [server 1/4] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
-#6 CACHED
+#6 [internal] load build context
+#6 transferring context: 10.25kB 0.1s done
+#6 DONE 0.1s
 
-#7 [internal] preparing inline document
-#7 CACHED
+#7 [builder 3/7] COPY package.json package-lock.json* ./
+#7 DONE 0.0s
 
-#8 [builder 2/7] WORKDIR /app
-#8 CACHED
+#8 [builder 4/7] RUN npm ci --prefer-offline 2>/dev/null || npm install
+#8 7.285 
+#8 7.285 added 380 packages, and audited 381 packages in 7s
+#8 7.285 
+#8 7.285 161 packages are looking for funding
+#8 7.286   run `npm fund` for details
+#8 7.326 
+#8 7.326 4 vulnerabilities (3 moderate, 1 high)
+#8 7.326 
+#8 7.326 To address all issues (including breaking changes), run:
+#8 7.326   npm audit fix --force
+#8 7.326 
+#8 7.326 Run `npm audit` for details.
+#8 DONE 7.9s
 
-#9 [internal] load build context
-#9 transferring context: 7.25kB 0.2s done
-#9 DONE 0.2s
+#9 [builder 5/7] COPY astro.config.mjs tsconfig.json ./
+#9 DONE 0.0s
 
-#10 [server 2/4] RUN rm /etc/nginx/conf.d/default.conf
-#10 DONE 0.2s
+#10 [builder 6/7] COPY src/ ./src/
+#10 DONE 0.0s
 
-#11 [builder 3/7] COPY package.json package-lock.json* ./
-#11 DONE 0.0s
+#11 [builder 7/7] RUN npm run build
+#11 0.292 
+#11 0.292 > persona-blog@0.1.0 build
+#11 0.292 > astro build
+#11 0.292 
+#11 0.966 ▶ Astro collects anonymous usage data.
+#11 0.966   This information helps us improve Astro.
+#11 0.966   Run "astro telemetry disable" to opt-out.
+#11 0.966   https://astro.build/telemetry
+#11 0.966 
+#11 2.294 16:24:23 [types] Generated 553ms
+#11 2.295 16:24:23 [build] output: "hybrid"
+#11 2.296 16:24:23 [build] directory: /app/dist/
+#11 2.296 16:24:23 [build] adapter: @astrojs/node
+#11 2.296 16:24:23 [build] Collecting build info...
+#11 2.297 16:24:23 [build] ✓ Completed in 571ms.
+#11 2.299 16:24:23 [build] Building hybrid entrypoints...
+#11 4.914 16:24:26 [vite] ✓ built in 2.58s
+#11 4.915 16:24:26 [build] ✓ Completed in 2.62s.
+#11 4.938 
+#11 4.938  prerendering static routes 
+#11 4.956 16:24:26 ▶ src/pages/blog/[slug].astro
+#11 4.960 16:24:26   └─ /blog/hello-world/index.html (+13ms)
+#11 4.976 16:24:26 ▶ src/pages/now.astro
+#11 4.976 16:24:26   └─ /now/index.html (+3ms)
+#11 4.984 16:24:26 ▶ src/pages/wall.astro
+#11 4.984 16:24:26   └─ /wall/index.html (+4ms)
+#11 4.991 16:24:26 ▶ src/pages/index.astro
+#11 4.992 16:24:26   └─ /index.html (+2ms)
+#11 4.994 16:24:26 ✓ Completed in 70ms.
+#11 4.994 
+#11 4.996 16:24:26 [build] Rearranging server assets...
+#11 4.998 16:24:26 [build] Server built in 3.27s
+#11 4.998 16:24:26 [build] Complete!
+#11 DONE 5.1s
 
-#12 [server 3/4] COPY <<EOF /etc/nginx/conf.d/persona-blog.conf
+#12 [server 3/5] COPY --from=builder /app/dist ./dist
 #12 DONE 0.0s
 
-#13 [builder 4/7] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#13 7.197 
-#13 7.197 added 360 packages, and audited 361 packages in 7s
-#13 7.197 
-#13 7.197 160 packages are looking for funding
-#13 7.197   run `npm fund` for details
-#13 7.242 
-#13 7.242 3 vulnerabilities (2 moderate, 1 high)
-#13 7.242 
-#13 7.242 To address all issues (including breaking changes), run:
-#13 7.242   npm audit fix --force
-#13 7.242 
-#13 7.242 Run `npm audit` for details.
-#13 DONE 7.7s
+#13 [server 4/5] COPY --from=builder /app/node_modules ./node_modules
+#13 DONE 2.6s
 
-#14 [builder 5/7] COPY astro.config.mjs tsconfig.json ./
-#14 DONE 0.0s
+#14 [server 5/5] RUN mkdir -p /app/dist/server/data  && echo '[]' > /app/dist/server/data/wall-pending.json
+#14 DONE 0.2s
 
-#15 [builder 6/7] COPY src/ ./src/
-#15 DONE 0.0s
-
-#16 [builder 7/7] RUN npm run build
-#16 0.293 
-#16 0.293 > persona-blog@0.1.0 build
-#16 0.293 > astro build
-#16 0.293 
-#16 1.041 ▶ Astro collects anonymous usage data.
-#16 1.041   This information helps us improve Astro.
-#16 1.041   Run "astro telemetry disable" to opt-out.
-#16 1.041   https://astro.build/telemetry
-#16 1.041 
-#16 2.444 15:22:38 [types] Generated 637ms
-#16 2.444 15:22:38 [build] output: "static"
-#16 2.444 15:22:38 [build] directory: /app/dist/
-#16 2.444 15:22:38 [build] Collecting build info...
-#16 2.444 15:22:38 [build] ✓ Completed in 647ms.
-#16 2.448 15:22:38 [build] Building static entrypoints...
-#16 4.800 15:22:40 [vite] ✓ built in 2.31s
-#16 4.800 15:22:40 [build] ✓ Completed in 2.35s.
-#16 4.807 
-#16 4.807  generating static routes 
-#16 4.823 15:22:40 ▶ src/pages/blog/[slug].astro
-#16 4.829 15:22:40   └─ /blog/hello-world/index.html (+31ms)
-#16 4.863 15:22:40 ▶ src/pages/now.astro
-#16 4.863 15:22:40   └─ /now/index.html (+3ms)
-#16 4.870 15:22:40 ▶ src/pages/wall.astro
-#16 4.870 15:22:40   └─ /wall/index.html (+3ms)
-#16 4.875 15:22:40 ▶ src/pages/index.astro
-#16 4.875 15:22:40   └─ /index.html (+2ms)
-#16 4.877 15:22:40 ✓ Completed in 72ms.
-#16 4.877 
-#16 4.882 15:22:40 [build] 4 page(s) built in 3.09s
-#16 4.882 15:22:40 [build] Complete!
-#16 DONE 5.0s
-
-#17 [server 4/4] COPY --from=builder /app/dist /usr/share/nginx/html
-#17 DONE 0.0s
-
-#18 exporting to image
-#18 exporting layers 0.0s done
-#18 writing image sha256:83ceefc636d444f5d15f5c89a30dc6e0e3766bac6afa167ef0f1e9e3c2e02688 done
-#18 naming to docker.io/library/persona-blog-a done
-#18 DONE 0.0s
+#15 exporting to image
+#15 exporting layers
+#15 exporting layers 1.1s done
+#15 writing image sha256:a23a680c97df7da69cf1752be34746d6debeb3b8af548225e7d74d236ac329d8 done
+#15 naming to docker.io/library/persona-blog-a done
+#15 DONE 1.1s

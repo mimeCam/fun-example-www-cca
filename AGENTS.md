@@ -1,13 +1,13 @@
 # Persona Blog
 
-Astro 4 · Tailwind CSS v4 · TypeScript strict · SSG · Docker/nginx · Caddy
+Astro 4 hybrid · Tailwind CSS v4 · TypeScript strict · @astrojs/node standalone · Docker
 
 ## Key Paths
 
-- `src/lib/` — shared utilities (temporal, mood, wall, now)
-- `src/data/` — config & content data
+- `src/lib/` — shared utilities
+- `src/data/` — JSON flat-file storage
 - `src/components/` — Astro components
-- `src/layouts/` — page shells
+- `src/pages/api/` — SSR endpoints
 - `src/pages/` — routes
 - `src/content/` — blog collection (Markdown)
-- `cli/` — Whisper Wall CLI
+- `cli/` — author CLI

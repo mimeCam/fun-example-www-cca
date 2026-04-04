@@ -1,0 +1,84 @@
+---
+// src/components/WallForm.astro
+// Pure HTML form for visitor whisper submission.
+// Posts to /api/whisper → redirect back to /wall.
+// Zero client-side JS. Glassmorphism styling, mood-aware accents.
+//
+// TODO: honeypot hidden field for spam prevention (v2)
+// TODO: character counter via CSS :invalid or JS-free trick (v2)
+
+import { activeMoodIds } from '../lib/mood';
+import { MAX_CHARS } from '../lib/wallSubmit';
+
+const moods = activeMoodIds();
+const url = Astro.url;
+const status = url.searchParams.get('ws');
+---
+
+<form class="wall-form" method="POST" action="/api/whisper">
+  {status === 'ok' && (
+    <p class="wall-form-status wall-form-ok">Whisper received. It'll appear once approved.</p>
+  )}
+  {status === 'invalid' && (
+    <p class="wall-form-status wall-form-err">Something was off — try again?</p>
+  )}
+
+  <textarea
+    name="text"
+    class="wall-form-text"
+    placeholder="Leave a thought on the wall…"
+    maxlength={MAX_CHARS}
+    rows={3}
+    required
+  />
+
+  <div class="wall-form-row">
+    <select name="mood" class="wall-form-mood">
+      {moods.map(m => <option value={m}>{m}</option>)}
+    </select>
+    <button type="submit" class="wall-form-btn">Whisper</button>
+  </div>
+</form>
+
+<style>
+  .wall-form {
+    margin: 2rem 0;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(var(--mood-accent-rgb), 0.15);
+    backdrop-filter: blur(6px);
+  }
+  .wall-form-text {
+    width: 100%; resize: vertical;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(var(--mood-accent-rgb), 0.12);
+    border-radius: 0.5rem; padding: 0.6rem;
+    color: inherit; font: inherit; font-size: 0.9rem;
+  }
+  .wall-form-text::placeholder { opacity: 0.35; }
+  .wall-form-row {
+    display: flex; gap: 0.5rem;
+    margin-top: 0.5rem; align-items: center;
+  }
+  .wall-form-mood {
+    flex: 1; background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(var(--mood-accent-rgb), 0.12);
+    border-radius: 0.4rem; padding: 0.35rem 0.5rem;
+    color: inherit; font-size: 0.82rem;
+  }
+  .wall-form-btn {
+    padding: 0.35rem 1rem; border-radius: 0.4rem;
+    background: rgba(var(--mood-accent-rgb), 0.14);
+    border: 1px solid rgba(var(--mood-accent-rgb), 0.3);
+    color: inherit; font-size: 0.82rem; cursor: pointer;
+    transition: background 150ms;
+  }
+  .wall-form-btn:hover { background: rgba(var(--mood-accent-rgb), 0.24); }
+  .wall-form-status {
+    font-size: 0.82rem; margin: 0 0 0.75rem;
+    padding: 0.4rem 0.6rem; border-radius: 0.4rem;
+  }
+  .wall-form-ok { background: rgba(80, 200, 120, 0.12); color: #6ee7a0; }
+  .wall-form-err { background: rgba(240, 80, 80, 0.12); color: #f87171; }
+</style>

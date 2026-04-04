@@ -12,47 +12,32 @@ RUN npm ci --prefer-offline 2>/dev/null || npm install
 COPY astro.config.mjs tsconfig.json ./
 COPY src/ ./src/
 
-# Build static output → dist/
+# Build hybrid output → dist/
 RUN npm run build
 
-# ── Stage 2: serve ────────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS server
+# ── Stage 2: serve (Node.js standalone for SSR + static) ─────────────────────
+FROM node:20-alpine AS server
 
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-# Custom nginx config: serve on port 7100, SPA-friendly 404 handling
-COPY <<'EOF' /etc/nginx/conf.d/persona-blog.conf
-server {
-    listen 7100;
-    server_name _;
+# Copy built output — client (static) + server (SSR entry)
+COPY --from=builder /app/dist ./dist
 
-    absolute_redirect off;
-    port_in_redirect off;
+# Copy production node_modules — @astrojs/node SSR needs @astrojs/internal-helpers at runtime
+COPY --from=builder /app/node_modules ./node_modules
 
-    root /usr/share/nginx/html;
-    index index.html;
+# Ensure the data directory exists for the whisper moderation queue.
+# Seed with an empty array so the API endpoint works on first run.
+RUN mkdir -p /app/dist/server/data \
+ && echo '[]' > /app/dist/server/data/wall-pending.json
 
-    # Serve pre-compressed brotli/gzip assets if present
-    gzip_static on;
+# Mark data dir as a volume mount-point for persistence across deploys
+VOLUME /app/dist/server/data
 
-    # Cache static assets aggressively; HTML stays short-lived
-    location ~* \.(js|css|woff2?|ttf|eot|ico|svg|png|jpg|jpeg|webp|avif|gif)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        try_files $uri =404;
-    }
-
-    # Fallback for Astro-generated pages
-    location / {
-        try_files $uri $uri/ $uri.html /index.html;
-    }
-}
-EOF
-
-# Copy built site from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+# @astrojs/node standalone serves both static and SSR routes
+ENV HOST=0.0.0.0
+ENV PORT=7100
 
 EXPOSE 7100
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "dist/server/entry.mjs"]
