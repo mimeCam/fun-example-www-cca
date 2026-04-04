@@ -20,42 +20,42 @@
 #5 [builder 1/7] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
 #5 DONE 0.0s
 
-#6 [internal] preparing inline document
+#6 [server 1/4] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
 #6 CACHED
 
-#7 [builder 2/7] WORKDIR /app
+#7 [internal] preparing inline document
 #7 CACHED
 
-#8 [server 1/4] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#8 [builder 2/7] WORKDIR /app
 #8 CACHED
 
 #9 [internal] load build context
-#9 transferring context: 10.93kB 0.2s done
+#9 transferring context: 7.25kB 0.2s done
 #9 DONE 0.2s
 
-#10 [builder 3/7] COPY package.json package-lock.json* ./
-#10 DONE 0.0s
+#10 [server 2/4] RUN rm /etc/nginx/conf.d/default.conf
+#10 DONE 0.2s
 
-#11 [server 2/4] RUN rm /etc/nginx/conf.d/default.conf
-#11 DONE 0.3s
+#11 [builder 3/7] COPY package.json package-lock.json* ./
+#11 DONE 0.0s
 
 #12 [server 3/4] COPY <<EOF /etc/nginx/conf.d/persona-blog.conf
-#12 DONE 0.1s
+#12 DONE 0.0s
 
 #13 [builder 4/7] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#13 7.291 
-#13 7.291 added 360 packages, and audited 361 packages in 7s
-#13 7.292 
-#13 7.292 160 packages are looking for funding
-#13 7.292   run `npm fund` for details
-#13 7.328 
-#13 7.328 3 vulnerabilities (2 moderate, 1 high)
-#13 7.328 
-#13 7.328 To address all issues (including breaking changes), run:
-#13 7.328   npm audit fix --force
-#13 7.328 
-#13 7.328 Run `npm audit` for details.
-#13 DONE 7.8s
+#13 7.197 
+#13 7.197 added 360 packages, and audited 361 packages in 7s
+#13 7.197 
+#13 7.197 160 packages are looking for funding
+#13 7.197   run `npm fund` for details
+#13 7.242 
+#13 7.242 3 vulnerabilities (2 moderate, 1 high)
+#13 7.242 
+#13 7.242 To address all issues (including breaking changes), run:
+#13 7.242   npm audit fix --force
+#13 7.242 
+#13 7.242 Run `npm audit` for details.
+#13 DONE 7.7s
 
 #14 [builder 5/7] COPY astro.config.mjs tsconfig.json ./
 #14 DONE 0.0s
@@ -64,44 +64,44 @@
 #15 DONE 0.0s
 
 #16 [builder 7/7] RUN npm run build
-#16 0.332 
-#16 0.332 > persona-blog@0.1.0 build
-#16 0.332 > astro build
-#16 0.332 
-#16 1.042 ▶ Astro collects anonymous usage data.
-#16 1.042   This information helps us improve Astro.
-#16 1.042   Run "astro telemetry disable" to opt-out.
-#16 1.042   https://astro.build/telemetry
-#16 1.042 
-#16 2.365 15:04:46 [types] Generated 558ms
-#16 2.365 15:04:46 [build] output: "static"
-#16 2.365 15:04:46 [build] directory: /app/dist/
-#16 2.365 15:04:46 [build] Collecting build info...
-#16 2.366 15:04:46 [build] ✓ Completed in 575ms.
-#16 2.368 15:04:46 [build] Building static entrypoints...
-#16 4.754 15:04:48 [vite] ✓ built in 2.33s
-#16 4.754 15:04:48 [build] ✓ Completed in 2.39s.
-#16 4.760 
-#16 4.760  generating static routes 
-#16 4.775 15:04:48 ▶ src/pages/blog/[slug].astro
-#16 4.780 15:04:48   └─ /blog/hello-world/index.html (+24ms)
-#16 4.806 15:04:48 ▶ src/pages/now.astro
-#16 4.806 15:04:48   └─ /now/index.html (+3ms)
-#16 4.817 15:04:48 ▶ src/pages/wall.astro
-#16 4.817 15:04:48   └─ /wall/index.html (+3ms)
-#16 4.823 15:04:48 ▶ src/pages/index.astro
-#16 4.824 15:04:48   └─ /index.html (+4ms)
-#16 4.827 15:04:48 ✓ Completed in 69ms.
-#16 4.827 
-#16 4.831 15:04:48 [build] 4 page(s) built in 3.04s
-#16 4.831 15:04:48 [build] Complete!
-#16 DONE 4.9s
+#16 0.293 
+#16 0.293 > persona-blog@0.1.0 build
+#16 0.293 > astro build
+#16 0.293 
+#16 1.041 ▶ Astro collects anonymous usage data.
+#16 1.041   This information helps us improve Astro.
+#16 1.041   Run "astro telemetry disable" to opt-out.
+#16 1.041   https://astro.build/telemetry
+#16 1.041 
+#16 2.444 15:22:38 [types] Generated 637ms
+#16 2.444 15:22:38 [build] output: "static"
+#16 2.444 15:22:38 [build] directory: /app/dist/
+#16 2.444 15:22:38 [build] Collecting build info...
+#16 2.444 15:22:38 [build] ✓ Completed in 647ms.
+#16 2.448 15:22:38 [build] Building static entrypoints...
+#16 4.800 15:22:40 [vite] ✓ built in 2.31s
+#16 4.800 15:22:40 [build] ✓ Completed in 2.35s.
+#16 4.807 
+#16 4.807  generating static routes 
+#16 4.823 15:22:40 ▶ src/pages/blog/[slug].astro
+#16 4.829 15:22:40   └─ /blog/hello-world/index.html (+31ms)
+#16 4.863 15:22:40 ▶ src/pages/now.astro
+#16 4.863 15:22:40   └─ /now/index.html (+3ms)
+#16 4.870 15:22:40 ▶ src/pages/wall.astro
+#16 4.870 15:22:40   └─ /wall/index.html (+3ms)
+#16 4.875 15:22:40 ▶ src/pages/index.astro
+#16 4.875 15:22:40   └─ /index.html (+2ms)
+#16 4.877 15:22:40 ✓ Completed in 72ms.
+#16 4.877 
+#16 4.882 15:22:40 [build] 4 page(s) built in 3.09s
+#16 4.882 15:22:40 [build] Complete!
+#16 DONE 5.0s
 
 #17 [server 4/4] COPY --from=builder /app/dist /usr/share/nginx/html
 #17 DONE 0.0s
 
 #18 exporting to image
 #18 exporting layers 0.0s done
-#18 writing image sha256:89c53c46953972e2d6a9fc8afe9d8e5a68217ef3067d0b711f72e95a5ccaebcb done
+#18 writing image sha256:83ceefc636d444f5d15f5c89a30dc6e0e3766bac6afa167ef0f1e9e3c2e02688 done
 #18 naming to docker.io/library/persona-blog-a done
-#18 DONE 0.1s
+#18 DONE 0.0s

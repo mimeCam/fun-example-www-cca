@@ -13,6 +13,10 @@ const blog = defineCollection({
     pubDate: z.date(),
     description: z.string().optional(),
     badge: z.string().optional(), // editorial tone phrase — see openloop/badge-guide.md
+    echo: z.object({
+      text: z.string(),   // curated sentence from the echoed post
+      from: z.string(),   // slug of the source post (e.g. "hello-world")
+    }).optional(),
   }),
 });
 

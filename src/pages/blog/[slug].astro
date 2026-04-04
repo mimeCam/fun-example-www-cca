@@ -10,6 +10,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
+import Echo from '../../components/Echo.astro';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 
@@ -25,6 +26,17 @@ const { post } = Astro.props;
 const { Content } = await post.render();
 const readingTime = getReadingTime(post.body);
 const pubDate = formatPubDate(post.data.pubDate);
+
+const echo = post.data.echo;
+const echoTitle = await resolveEchoTitle(echo?.from);
+
+async function resolveEchoTitle(slug?: string) {
+  if (!slug) return undefined;
+  const posts = await getCollection('blog');
+  const match = posts.find(p => p.slug === slug);
+  if (!match) console.warn(`[Echo] slug "${slug}" not found`);
+  return match?.data.title;
+}
 ---
 
 <BaseLayout title={post.data.title} description={post.data.description}>
@@ -38,6 +50,8 @@ const pubDate = formatPubDate(post.data.pubDate);
     <article class="post-body">
       <Content />
     </article>
+
+    <Echo text={echo?.text} fromSlug={echo?.from} fromTitle={echoTitle} />
   </main>
 </BaseLayout>
 
