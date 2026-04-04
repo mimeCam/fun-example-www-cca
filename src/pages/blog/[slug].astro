@@ -4,7 +4,7 @@
 // Uses Astro's getStaticPaths for SSG; zero client JS.
 //
 // DONE: reading progress "erosion bar" — see SiteNav.astro + inline script below
-// TODO: add share button (native Web Share API with clipboard fallback)
+// DONE: share button (native Web Share API with clipboard fallback) — see ShareSheet.astro
 // TODO: add prev/next post navigation at bottom
 
 import { getCollection } from 'astro:content';
@@ -14,6 +14,8 @@ import Echo from '../../components/Echo.astro';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import { variantScript } from '../../lib/variants';
+import { shareScript } from '../../lib/share';
+import ShareSheet from '../../components/ShareSheet.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -32,6 +34,7 @@ const echo = post.data.echo;
 const echoTitle = await resolveEchoTitle(echo?.from);
 const hasVariants = post.data.variants === true;
 const vScript = hasVariants ? variantScript() : '';
+const sScript = shareScript();
 
 async function resolveEchoTitle(slug?: string) {
   if (!slug) return undefined;
@@ -61,6 +64,9 @@ async function resolveEchoTitle(slug?: string) {
 
     <Echo text={echo?.text} fromSlug={echo?.from} fromTitle={echoTitle} />
   </main>
+
+  <ShareSheet title={post.data.title} description={post.data.description} />
+  <script set:html={sScript} />
 
   <!-- Erosion Bar: scroll-driven progress as a CSS custom property -->
   <script>
