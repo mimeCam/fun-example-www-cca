@@ -4,7 +4,10 @@
 // No server, no API, no dependencies. Graceful no-JS fallback
 // (all CSS vars default to transparent/0 so nothing breaks).
 //
-// TODO: add seasonal tint adjustments (e.g. warmer in winter)
+// Seasonal tint adjustments are handled by seasonal.ts (--season-hue-shift,
+// --season-sat-mult, --season-opacity-mult) and applied via CSS filter on
+// AmbientLayer. The two systems compose without coupling.
+// TODO: merge seasonal temp bias into time-of-day tints for deeper integration
 // TODO: add smooth transition when hour changes mid-session
 
 export type TimePhase =

@@ -5,6 +5,10 @@
 // Time-tint layer reads --time-tint / --time-tint-opacity set by inline JS.
 // Pure CSS — no islands, no hydration. Graceful no-JS fallback.
 //
+// Seasonal modifiers (--season-hue-shift, --season-sat-mult, --season-opacity-mult)
+// are set by an inline script from seasonal.ts. They apply a subtle temperature
+// and chroma shift that drifts smoothly through the year via cosine interpolation.
+//
 // TODO: add subtle grain/noise texture overlay (v2)
 // TODO: explore radial gradient variant for detail pages
 ---
@@ -23,7 +27,9 @@
       var(--mood-from, transparent),
       var(--mood-to, transparent)
     );
-    opacity: var(--mood-opacity, 0);
+    opacity: calc(var(--mood-opacity, 0) * var(--season-opacity-mult, 1));
+    filter: hue-rotate(var(--season-hue-shift, 0deg))
+            saturate(var(--season-sat-mult, 1));
     animation: ambient-drift var(--mood-speed, 12s) ease-in-out infinite alternate;
   }
 
