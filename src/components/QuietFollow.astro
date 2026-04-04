@@ -1,0 +1,65 @@
+---
+// src/components/QuietFollow.astro
+// "Stay" UI — atmosphere-native RSS subscription nudge.
+// Inherits ambient tint from CSS custom properties (--mood-accent, --mood-accent-rgb).
+// Zero JS. Appears at the bottom of every page via BaseLayout.
+//
+// Design: frosted-glass pill matching SiteNav glassmorphism language.
+// Copy tone: quiet, no urgency, no "subscribe!" — just "stay".
+
+const feedUrl = '/feed.xml';
+---
+
+<aside class="quiet-follow" aria-label="Subscribe via RSS">
+  <a href={feedUrl} class="stay-link" title="RSS feed — works in any reader">
+    <svg class="rss-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="5" cy="19" r="2"/>
+      <path d="M4 11a7 7 0 0 1 7 7"/>
+      <path d="M4 4a14 14 0 0 1 14 14"/>
+    </svg>
+    <span>stay</span>
+  </a>
+</aside>
+
+<style>
+  .quiet-follow {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 8;
+  }
+
+  .stay-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: lowercase;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--mood-accent-rgb, 0,0,0), 0.08);
+    border-radius: 999px;
+    transition: color 200ms ease, border-color 200ms ease, opacity 200ms ease;
+    opacity: 0.6;
+  }
+
+  .stay-link:hover {
+    color: var(--mood-accent, rgba(255,255,255,0.8));
+    border-color: rgba(var(--mood-accent-rgb, 0,0,0), 0.2);
+    opacity: 1;
+  }
+
+  .rss-icon { flex-shrink: 0; }
+
+  @media (max-width: 640px) {
+    .quiet-follow { bottom: 1rem; left: 1rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stay-link { transition: none; }
+  }
+</style>

@@ -23,6 +23,7 @@ import CelestialWitness from '../components/CelestialWitness.astro';
 import Hearth from '../components/Hearth.astro';
 import DriftButton from '../components/DriftButton.astro';
 import DriftCard from '../components/DriftCard.astro';
+import QuietFollow from '../components/QuietFollow.astro';
 import { filterCandidates, pickCandidate } from '../lib/drift';
 import type { DriftCandidate } from '../lib/drift';
 import wallData from '../data/wall.json';
@@ -65,6 +66,7 @@ const driftPick = pickCandidate(driftCandidates);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} />
+    <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />
     <style set:html={`.mood-input, .ghost-input { display: none; }\n${switchCSS}\n#ghost-toggle:checked ~ [data-ghost-drawer] { display: block; }\n#ghost-toggle:checked ~ [data-mood-bar] .ghost-pill { opacity: 1; box-shadow: 0 0 10px rgba(212, 149, 106, 0.3); }`} />
     <script set:html={timeScript} />
@@ -98,5 +100,6 @@ const driftPick = pickCandidate(driftCandidates);
     <CelestialWitness />
     <DriftButton />
     <DriftCard candidate={driftPick} />
+    <QuietFollow />
   </body>
 </html>
