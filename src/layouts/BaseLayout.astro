@@ -15,6 +15,7 @@ import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
 import MoodPills from '../components/MoodPills.astro';
 import CelestialWitness from '../components/CelestialWitness.astro';
+import Hearth from '../components/Hearth.astro';
 import '../styles/global.css';
 
 const pillMoods = activeMoodIds();
@@ -56,6 +57,7 @@ const cssString = moodToCSSString(cssVars);
     <SiteNav />
     <MoodPills />
     <slot />
+    <Hearth />
     <CelestialWitness />
   </body>
 </html>

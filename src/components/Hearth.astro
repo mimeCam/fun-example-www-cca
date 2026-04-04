@@ -1,0 +1,75 @@
+---
+// src/components/Hearth.astro
+// The Hearth — a single poetic sentence at the natural end of every page.
+// No props. All data computed internally from ambient systems.
+// Graceful no-JS fallback: shows the "sun" variant as static text.
+
+import { buildHearthVariants, hearthScript } from '../lib/hearth';
+
+const variants = buildHearthVariants();
+const script = hearthScript(variants);
+---
+
+<div class="hearth" role="contentinfo" aria-label="Hearth — ambient site message">
+  <hr class="hearth-rule" />
+  <p id="hearth-sentence" class="hearth-sentence">{variants.sun}</p>
+  <div class="hearth-embers" aria-hidden="true">
+    <span class="ember" /><span class="ember" /><span class="ember" />
+  </div>
+</div>
+
+<script set:html={script} />
+
+<style>
+  .hearth {
+    max-width: 40rem;
+    margin: 4rem auto 0;
+    padding: 2rem 1rem 3rem;
+    text-align: center;
+    opacity: 0;
+    animation: hearth-arrive 1.5s ease-out 0.3s forwards;
+  }
+
+  .hearth-rule {
+    width: 60%;
+    margin: 0 auto 1.5rem;
+    border: none;
+    border-top: 1px dashed rgba(var(--mood-accent-rgb), 0.15);
+    border-radius: 1px;
+  }
+
+  .hearth-sentence {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: rgba(var(--mood-accent-rgb), 0.6);
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+    margin: 0 0 1.25rem;
+    font-style: italic;
+  }
+
+  .hearth-embers {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .ember {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(var(--mood-accent-rgb), 0.3);
+    box-shadow: 0 0 6px rgba(var(--mood-accent-rgb), 0.2);
+  }
+
+  @keyframes hearth-arrive {
+    to { opacity: 1; }
+  }
+
+  @media (max-width: 768px) {
+    .hearth { padding: 2rem 1rem 4rem; }
+    .hearth-rule { width: 80%; }
+    .hearth-sentence { font-size: 0.8125rem; }
+    .ember { width: 3px; height: 3px; }
+  }
+</style>
