@@ -10,6 +10,7 @@ import { resolveMood, moodToCSSVars, moodToCSSString, activeMoodIds, moodSwitchC
 import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
 import { liveDecayScript } from '../lib/temporal';
+import { moodCycleScript } from '../lib/moodCycle';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -32,6 +33,7 @@ const switchCSS = moodSwitchCSS();
 const timeScript = timeAmbientScript();
 const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();
+const cycleScript = moodCycleScript();
 
 interface Props {
   title: string;
@@ -65,6 +67,14 @@ const driftPick = pickCandidate(driftCandidates);
     <script set:html={timeScript} />
     <script set:html={seasonScript} />
     <script set:html={decayScript} />
+    <script set:html={cycleScript} />
+    <style>
+      :root {
+        transition: --mood-from 60s ease, --mood-to 60s ease,
+                    --mood-opacity 60s ease, --mood-speed 60s ease,
+                    --mood-accent 60s ease;
+      }
+    </style>
   </head>
   <body>
     {pillMoods.map(id => (

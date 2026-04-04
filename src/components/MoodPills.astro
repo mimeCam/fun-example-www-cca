@@ -4,8 +4,9 @@
 // Pure CSS — labels trigger sibling radio inputs placed in BaseLayout.
 // Phase 1: atmospheric mood switching (no content filtering).
 //
+// Living Mood: pills are hidden by default. Time-of-day auto-drives mood.
+// Power users reveal pills via Shift+M or ?mood= URL param.
 // TODO: Phase 2 (15+ whispers) — pills filter wall entries with show/hide
-// TODO: Phase 3 (50+ whispers) — auto-cycling Mood Drift animation
 
 import { MOODS, activeMoodIds } from '../lib/mood';
 import GhostPill from './GhostPill.astro';
@@ -31,6 +32,14 @@ const moods = activeMoodIds();
     justify-content: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 400ms ease;
+  }
+
+  :global(.mood-bar--revealed) {
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   .pill {
