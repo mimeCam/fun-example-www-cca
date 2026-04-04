@@ -4,7 +4,7 @@
 // Usage: node cli/whisper.mjs "your thought" --mood focus
 //   or:  npm run whisper -- "your thought" --mood jazz
 
-import { validateText, validateMood } from './lib/validate.mjs';
+import { validateText, validateMood, inferMood } from './lib/validate.mjs';
 import { createEntry, appendEntry } from './lib/store.mjs';
 
 const args = process.argv.slice(2);
@@ -30,7 +30,8 @@ function ok(msg)  { console.log(`\x1b[32m${msg}\x1b[0m`); }
 
 // --- main ---
 const text = collectText();
-const mood = extractFlag('--mood') ?? 'default';
+const explicit = extractFlag('--mood');
+const mood = explicit ?? inferMood(text);
 
 const textErr = validateText(text);
 if (textErr) die(textErr);

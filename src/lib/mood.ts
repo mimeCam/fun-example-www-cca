@@ -62,10 +62,10 @@ export const MOODS: Record<MoodId, MoodDefinition> = {
     shadow_rgb: '80, 40, 140', accent: '#8B5CF6', accent_rgb: '139, 92, 246',
   },
   'default': {
-    label: '',
-    gradient_from: 'transparent', gradient_to: 'transparent',
-    temperature: 'neutral', opacity: 0, animation_duration: '0s',
-    shadow_rgb: '0, 0, 0', accent: 'var(--color-accent, currentColor)', accent_rgb: '0, 0, 0',
+    label: 'default',
+    gradient_from: '#A0A0A0', gradient_to: '#808080',
+    temperature: 'neutral', opacity: 0.04, animation_duration: '20s',
+    shadow_rgb: '120, 120, 120', accent: '#9CA3AF', accent_rgb: '156, 163, 175',
   },
 };
 

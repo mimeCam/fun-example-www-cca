@@ -20,4 +20,38 @@ export function validateMood(mood) {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Mood keywords — each mood maps to words that suggest it
+// ---------------------------------------------------------------------------
+
+const MOOD_KEYWORDS = {
+  'lo-fi':    ['chill', 'relax', 'cozy', 'warm', 'slow', 'coffee', 'rain', 'calm', 'mellow', 'lazy'],
+  'focus':    ['build', 'ship', 'code', 'debug', 'work', 'deploy', 'refactor', 'think', 'deep', 'grind'],
+  'hyperpop': ['wild', 'chaos', 'energy', 'loud', 'neon', 'glitch', 'fast', 'hype', 'fire', 'wow'],
+  'jazz':     ['night', 'late', 'shadow', 'dream', 'dark', 'smoke', 'glass', 'frost', 'rabbit', 'hole'],
+};
+
+/** Check if lowercased text contains a keyword. */
+function countHits(lower, words) {
+  return words.filter(w => lower.includes(w)).length;
+}
+
+/**
+ * Infer a mood from whisper text using keyword frequency.
+ * Returns a valid MoodId. Falls back to 'default' when no
+ * mood wins or when there's a tie — default is a first-class choice.
+ */
+export function inferMood(text) {
+  const lower = text.toLowerCase();
+  let best = 'default';
+  let max = 0;
+
+  for (const [mood, words] of Object.entries(MOOD_KEYWORDS)) {
+    const hits = countHits(lower, words);
+    if (hits > max) { max = hits; best = mood; }
+    // TODO: tie-breaking by mood priority order
+  }
+  return best;
+}
+
 export { MAX_CHARS, VALID_MOODS };
