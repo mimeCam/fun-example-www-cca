@@ -10,11 +10,12 @@ const path = Astro.url.pathname;
 const isBlogPost = path.startsWith('/blog/') && path !== '/blog/';
 
 const links = [
-  { label: 'wall',      href: '/wall' },
-  { label: 'embers',    href: '/embers' },
-  { label: 'tidepool',  href: '/tidepool' },
-  { label: 'now',       href: '/now' },
-  { label: 'blog',      href: '/' },
+  { label: 'wall',           href: '/wall' },
+  { label: 'embers',         href: '/embers' },
+  { label: 'tidepool',       href: '/tidepool' },
+  { label: 'constellations', href: '/constellations' },
+  { label: 'now',            href: '/now' },
+  { label: 'blog',           href: '/' },
 ] as const;
 
 function isActive(href: string): boolean {

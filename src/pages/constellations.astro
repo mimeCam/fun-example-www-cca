@@ -1,0 +1,130 @@
+---
+// src/pages/constellations.astro
+// Full-viewport star-field of curated reading paths.
+// Each constellation is a sequence of stars connected by lines.
+// Positions are deterministic; colors derive from mood CSS vars.
+//
+// TODO: click-to-navigate on stars with href
+// TODO: hover labels with star descriptions
+// TODO: constellation selector / legend overlay
+// TODO: ambient twinkle animation via CSS keyframes
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { computeAllConstellations } from '../lib/constellation';
+import rawConstellations from '../data/constellations.json';
+
+const constellations = computeAllConstellations(rawConstellations);
+---
+
+<BaseLayout title="Constellations — Reading Paths">
+  <main class="constellation-page">
+    <header class="cs-header">
+      <h1 class="cs-heading">constellations</h1>
+      <p class="cs-tagline">Curated reading paths. Each star is a thought; lines trace the journey.</p>
+    </header>
+
+    <div class="star-field">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" class="star-svg">
+        {constellations.map(c => (
+          <g class="constellation-group" data-name={c.constellation.name}>
+            {c.stars.slice(1).map((s, i) => (
+              <line
+                x1={c.stars[i].x} y1={c.stars[i].y}
+                x2={s.x} y2={s.y}
+                class="star-line"
+                stroke-opacity={s.brightness * 0.3}
+              />
+            ))}
+            {c.stars.map(s => (
+              <g class="star-point" data-id={s.star.id}>
+                <circle cx={s.x} cy={s.y} r="0.6" class="star-glow" opacity={s.brightness * 0.4} />
+                <circle cx={s.x} cy={s.y} r="0.25" class="star-core" opacity={s.brightness} />
+                <text x={s.x} y={s.y + 1.6} class="star-label">{s.star.label}</text>
+              </g>
+            ))}
+          </g>
+        ))}
+      </svg>
+    </div>
+
+    <aside class="cs-legend">
+      {constellations.map(c => (
+        <div class="cs-legend-item">
+          <span class="cs-legend-name">{c.constellation.name}</span>
+          <span class="cs-legend-desc">{c.constellation.description}</span>
+        </div>
+      ))}
+    </aside>
+  </main>
+</BaseLayout>
+
+<style>
+  .constellation-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+  }
+  .cs-header { text-align: center; margin-bottom: 1rem; }
+  .cs-heading {
+    font-size: 1.2rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+    margin: 0 0 0.4rem;
+  }
+  .cs-tagline {
+    font-size: 0.75rem;
+    opacity: 0.45;
+    margin: 0;
+    font-style: italic;
+  }
+  .star-field {
+    flex: 1;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .star-svg { width: 100%; max-width: 50rem; height: auto; }
+  .star-line {
+    stroke: var(--mood-accent, rgba(255,255,255,0.5));
+    stroke-width: 0.08;
+    stroke-dasharray: 0.4 0.2;
+  }
+  .star-glow {
+    fill: var(--mood-accent, rgba(255,255,255,0.3));
+    filter: blur(0.3px);
+  }
+  .star-core { fill: currentColor; }
+  .star-label {
+    font-size: 0.22rem;
+    fill: currentColor;
+    opacity: 0.55;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  .cs-legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+  .cs-legend-item {
+    display: flex;
+    flex-direction: column;
+    max-width: 14rem;
+  }
+  .cs-legend-name {
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    opacity: 0.75;
+  }
+  .cs-legend-desc {
+    font-size: 0.65rem;
+    opacity: 0.4;
+    font-style: italic;
+    margin-top: 0.2rem;
+  }
+</style>
