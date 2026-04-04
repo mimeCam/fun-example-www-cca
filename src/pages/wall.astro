@@ -1,0 +1,105 @@
+---
+// src/pages/wall.astro
+// The /wall page — geological strata of micro-thoughts.
+// Newest entries at top, fossils compressed at bottom.
+// Scroll is excavation: digging through time.
+// Zero client-side JS; decay is baked at build time.
+//
+// TODO: add nav link once header component ships
+// TODO: add OG meta tags (separate ticket)
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import WallEntry from '../components/WallEntry.astro';
+import WallFossil from '../components/WallFossil.astro';
+import { partitionEntries, wallQuip, wallState } from '../lib/wall';
+import type { WallEntry as WallEntryType } from '../lib/wall';
+import { daysSince } from '../lib/now';
+import wallRaw from '../data/wall.json';
+
+const entries = wallRaw as WallEntryType[];
+const { active, fossils } = partitionEntries(entries);
+
+const freshestActive = active[0];
+const pageQuip = freshestActive ? freshestActive.quip : 'Nothing on the wall yet.';
+---
+
+<BaseLayout title="Wall" description="Micro-thoughts that decay over time.">
+  <main class="wall-page">
+    <header class="wall-header">
+      <h1 class="wall-title">Wall</h1>
+      <p class="wall-quip">{pageQuip}</p>
+    </header>
+
+    {active.length > 0 && (
+      <section class="wall-surface" aria-label="Recent thoughts">
+        {active.map(c => <WallEntry computed={c} />)}
+      </section>
+    )}
+
+    {fossils.length > 0 && (
+      <>
+        <hr class="wall-fault" aria-hidden="true" />
+        <section class="wall-bedrock" aria-label="Fossilised thoughts">
+          {fossils.map(c => <WallFossil computed={c} />)}
+        </section>
+      </>
+    )}
+  </main>
+</BaseLayout>
+
+<style>
+  .wall-page {
+    min-height: 100dvh;
+    max-width: 38rem;
+    margin: 0 auto;
+    padding: 3rem 1rem 4rem;
+  }
+
+  .wall-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .wall-title {
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin: 0 0 0.5rem;
+  }
+
+  .wall-quip {
+    font-size: 0.82rem;
+    font-style: italic;
+    opacity: 0.45;
+    margin: 0;
+  }
+
+  .wall-surface {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .wall-fault {
+    border: none;
+    border-top: 1px solid rgba(var(--mood-accent-rgb, 0,0,0), 0.1);
+    margin: 2rem 0 1.5rem;
+  }
+
+  .wall-bedrock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  @keyframes wall-fadein {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .wall-page {
+    animation: wall-fadein 200ms ease-out;
+  }
+</style>

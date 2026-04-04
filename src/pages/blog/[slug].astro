@@ -1,0 +1,81 @@
+---
+// src/pages/blog/[slug].astro
+// Blog detail page — renders a single post with mood atmosphere.
+// Uses Astro's getStaticPaths for SSG; zero client JS.
+//
+// TODO: add reading progress bar (2px, mood-colored, ~20 lines of JS)
+// TODO: add share button (native Web Share API with clipboard fallback)
+// TODO: add prev/next post navigation at bottom
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostBadge from '../../components/PostBadge.astro';
+import { getReadingTime } from '../../lib/readingTime';
+import { formatPubDate } from '../../lib/dates';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+const readingTime = getReadingTime(post.body);
+const pubDate = formatPubDate(post.data.pubDate);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <main class="post-detail">
+    <header class="post-header">
+      <time datetime={post.data.pubDate.toISOString()}>{pubDate}</time>
+      <h1>{post.data.title}</h1>
+      <PostBadge readingTime={readingTime} badge={post.data.badge} />
+    </header>
+
+    <article class="post-body">
+      <Content />
+    </article>
+  </main>
+</BaseLayout>
+
+<style>
+  .post-detail {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+  }
+  .post-header {
+    margin-bottom: 2.5rem;
+  }
+  .post-header time {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.5;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+  .post-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+    color: var(--mood-accent, inherit);
+  }
+  .post-body {
+    font-size: 1.1rem;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  /* TODO: add prose styling for h2/h3, blockquotes, code blocks, images */
+  .post-body :global(p) {
+    margin-bottom: 1.4em;
+  }
+  .post-body :global(a) {
+    color: var(--mood-accent, currentColor);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+</style>

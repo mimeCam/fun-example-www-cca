@@ -1,0 +1,32 @@
+---
+// src/components/AmbientLayer.astro
+// Living background gradient that makes each page feel like a *place*.
+// Mood colors flow via CSS vars set by BaseLayout on :root.
+// Pure CSS — no JS, no islands, no hydration.
+//
+// TODO: add subtle grain/noise texture overlay (v2)
+// TODO: explore radial gradient variant for detail pages
+---
+
+<div class="ambient-layer" aria-hidden="true"></div>
+
+<style>
+  .ambient-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      var(--mood-from, transparent),
+      var(--mood-to, transparent)
+    );
+    opacity: var(--mood-opacity, 0);
+    animation: ambient-drift var(--mood-speed, 12s) ease-in-out infinite alternate;
+  }
+
+  @keyframes ambient-drift {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+</style>
