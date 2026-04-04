@@ -92,6 +92,12 @@ export function computeFreshness(updated: string, now = new Date()): FreshnessIn
   return { level, days, label: freshnessLabel(level), quip: freshnessQuip(level) };
 }
 
+/** Continuous decay value: 0 = just updated, 1 = fully dormant. */
+export function computeDecay(updated: string, now = new Date()): number {
+  const days = daysSince(updated, now);
+  return Math.min(1, days / STALE_MAX);
+}
+
 // ---------------------------------------------------------------------------
 // Isolated-run sanity check (see openloop/inplace-testing-howto.md)
 // ---------------------------------------------------------------------------
@@ -111,5 +117,12 @@ export function _testNowLib(): void {
   console.assert(info.level === 'fresh', 'same-day should be fresh');
   console.assert(info.quip.length > 0,   'quip should not be empty');
 
-  console.log('[now] lib OK — staleness thresholds and quips verified');
+  const decay0 = computeDecay('2026-04-04', new Date('2026-04-04'));
+  console.assert(decay0 === 0, `same-day decay should be 0, got ${decay0}`);
+  const decay1 = computeDecay('2026-01-01', new Date('2026-04-04'));
+  console.assert(decay1 >= 1, `93-day decay should be 1, got ${decay1}`);
+  const decayMid = computeDecay('2026-03-05', new Date('2026-04-04'));
+  console.assert(decayMid > 0 && decayMid < 1, `30-day decay should be mid-range`);
+
+  console.log('[now] lib OK — staleness thresholds, quips, and decay verified');
 }

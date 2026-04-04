@@ -1,0 +1,45 @@
+---
+// src/pages/now.astro
+// The /now page — a single card that decays over time.
+// Data comes from src/data/now.json (hand-edited).
+// Zero client-side JS; decay is baked at build time.
+//
+// TODO: add last-updated relative time ("3 days ago") below the card
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NowCard from '../components/NowCard.astro';
+import { computeFreshness, computeDecay } from '../lib/now';
+import type { NowData } from '../lib/now';
+import nowRaw from '../data/now.json';
+
+const data = nowRaw as NowData;
+const freshness = computeFreshness(data.updated);
+const decay = computeDecay(data.updated);
+---
+
+<BaseLayout title="Now" description="What I'm doing right now.">
+  <main class="now-page">
+    <h1 class="now-title">Now</h1>
+    <NowCard data={data} freshness={freshness} decay={decay} />
+  </main>
+</BaseLayout>
+
+<style>
+  .now-page {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .now-title {
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    opacity: 0.6;
+  }
+</style>
