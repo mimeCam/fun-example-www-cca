@@ -7,6 +7,7 @@
 // TODO: add mood-accent animated underline on active link (v2)
 
 const path = Astro.url.pathname;
+const isBlogPost = path.startsWith('/blog/') && path !== '/blog/';
 
 const links = [
   { label: 'wall',   href: '/wall' },
@@ -21,7 +22,7 @@ function isActive(href: string): boolean {
 }
 ---
 
-<nav class="site-nav" aria-label="Site navigation">
+<nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site navigation">
   {links.map(l => (
     <a href={l.href}
        class:list={['nav-link', { active: isActive(l.href) }]}
@@ -29,6 +30,7 @@ function isActive(href: string): boolean {
       {l.label}
     </a>
   ))}
+  {isBlogPost && <div class="erosion-bar" aria-hidden="true" />}
 </nav>
 
 <style>
@@ -61,5 +63,33 @@ function isActive(href: string): boolean {
   .nav-link.active {
     opacity: 1;
     border-bottom: 1px solid var(--mood-accent, currentColor);
+  }
+
+  /* Erosion bar — replaces border-bottom on blog posts */
+  .site-nav.has-erosion {
+    border-bottom: none;
+    position: relative;
+  }
+
+  .erosion-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-radius: 0 0 1px 1px;
+    background: rgba(var(--mood-accent-rgb, 0,0,0), 0.18);
+    box-shadow: 0 1px 6px rgba(var(--mood-accent-rgb, 0,0,0), 0.10);
+    transform-origin: left;
+    transform: scaleX(var(--erosion-progress, 1));
+    opacity: calc(0.3 + 0.7 * var(--erosion-progress, 1));
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    transition: transform 120ms ease-out, opacity 120ms ease-out;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .erosion-bar { transition: none; }
   }
 </style>

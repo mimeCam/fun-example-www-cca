@@ -3,7 +3,7 @@
 // Blog detail page — renders a single post with mood atmosphere.
 // Uses Astro's getStaticPaths for SSG; zero client JS.
 //
-// TODO: add reading progress bar (2px, mood-colored, ~20 lines of JS)
+// DONE: reading progress "erosion bar" — see SiteNav.astro + inline script below
 // TODO: add share button (native Web Share API with clipboard fallback)
 // TODO: add prev/next post navigation at bottom
 
@@ -61,6 +61,33 @@ async function resolveEchoTitle(slug?: string) {
 
     <Echo text={echo?.text} fromSlug={echo?.from} fromTitle={echoTitle} />
   </main>
+
+  <!-- Erosion Bar: scroll-driven progress as a CSS custom property -->
+  <script>
+    (function erosionScroll() {
+      const bar = document.querySelector('.erosion-bar');
+      if (!bar) return;
+
+      let ticking = false;
+
+      function update() {
+        const scrollTop = window.scrollY;
+        const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = scrollMax > 0 ? 1 - Math.min(scrollTop / scrollMax, 1) : 1;
+        document.documentElement.style.setProperty('--erosion-progress', String(progress));
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', function onScroll() {
+        if (!ticking) {
+          requestAnimationFrame(update);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      update();
+    })();
+  </script>
 </BaseLayout>
 
 <style>
