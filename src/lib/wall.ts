@@ -8,7 +8,7 @@
 // TODO: wire _testWallLib() into a build sanity step
 
 import type { MoodId } from './mood';
-import { daysSince } from './now';
+import { daysSince } from './temporal';
 
 // ---------------------------------------------------------------------------
 // Types

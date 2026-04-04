@@ -10,6 +10,10 @@
 // TODO: wire _testNowLib() into a build sanity step
 
 import type { MoodId } from './mood';
+import { daysSince as _daysSince } from './temporal';
+
+// Re-export for backward compat — canonical home is temporal.ts
+export const daysSince = _daysSince;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,12 +52,6 @@ const STALE_MAX  = 90;
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
-
-/** Number of full days between `updated` and `now`. */
-export function daysSince(updated: string, now = new Date()): number {
-  const ms = now.getTime() - new Date(updated).getTime();
-  return Math.max(0, Math.floor(ms / 86_400_000));
-}
 
 /** Map a day count to a Freshness level. */
 export function freshnessLevel(days: number): Freshness {

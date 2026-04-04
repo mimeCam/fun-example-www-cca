@@ -11,14 +11,22 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostBadge from '../components/PostBadge.astro';
+import HomePulse from '../components/HomePulse.astro';
 import { getReadingTime } from '../lib/readingTime';
+import { partitionEntries } from '../lib/wall';
+import type { WallEntry } from '../lib/wall';
+import wallRaw from '../data/wall.json';
 
 const posts = await getCollection('blog');
 posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const { active } = partitionEntries(wallRaw as WallEntry[]);
+const latestWhisper = active[0] ?? null;
 ---
 
 <BaseLayout title="Persona Blog">
   <main>
+    {latestWhisper && <HomePulse entry={latestWhisper} />}
     {posts.map(post => (
       <article>
         <a href={`/blog/${post.slug}`}>

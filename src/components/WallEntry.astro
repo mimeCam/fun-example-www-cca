@@ -21,7 +21,7 @@ const mood = resolveMood(entry.mood);
 const entryStyle = `--decay: ${decay.toFixed(3)}; --entry-accent-rgb: ${mood.accent_rgb};`;
 ---
 
-<article id={entry.id} class={`wall-entry wall-${state}`} style={entryStyle}>
+<article id={entry.id} class={`wall-entry wall-${state}`} style={entryStyle} data-posted={entry.posted} data-max-days="30">
   <p class="wall-text">{entry.text}</p>
   <footer class="wall-meta">
     <span class="wall-quip">{quip}</span>

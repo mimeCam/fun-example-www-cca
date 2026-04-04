@@ -18,7 +18,7 @@ interface Props {
 const { data, freshness, decay } = Astro.props;
 ---
 
-<section class="now-card" style={`--decay: ${decay.toFixed(3)};`}>
+<section class="now-card" style={`--decay: ${decay.toFixed(3)};`} data-posted={data.updated} data-max-days="90">
   <header class="now-header">
     <span class="now-label">{freshness.label}</span>
     {data.location && <span class="now-location">📍 {data.location}</span>}
