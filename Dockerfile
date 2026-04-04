@@ -27,6 +27,9 @@ server {
     listen 7100;
     server_name _;
 
+    absolute_redirect off;
+    port_in_redirect off;
+
     root /usr/share/nginx/html;
     index index.html;
 

@@ -8,6 +8,7 @@
 // TODO: add canonical URL via Astro.url
 
 import { resolveMood, moodToCSSVars, moodToCSSString, activeMoodIds, moodSwitchCSS } from '../lib/mood';
+import { timeAmbientScript } from '../lib/timeAmbient';
 import moodConfig from '../data/mood.config.json';
 import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
@@ -16,6 +17,7 @@ import '../styles/global.css';
 
 const pillMoods = activeMoodIds();
 const switchCSS = moodSwitchCSS();
+const timeScript = timeAmbientScript();
 
 interface Props {
   title: string;
@@ -36,6 +38,7 @@ const cssString = moodToCSSString(cssVars);
     <meta name="description" content={description} />
     <style set:html={`:root {\n${cssString}\n}`} />
     <style set:html={`.mood-input { display: none; }\n${switchCSS}`} />
+    <script set:html={timeScript} />
   </head>
   <body>
     {pillMoods.map(id => (

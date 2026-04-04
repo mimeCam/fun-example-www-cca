@@ -2,13 +2,15 @@
 // src/components/AmbientLayer.astro
 // Living background gradient that makes each page feel like a *place*.
 // Mood colors flow via CSS vars set by BaseLayout on :root.
-// Pure CSS — no JS, no islands, no hydration.
+// Time-tint layer reads --time-tint / --time-tint-opacity set by inline JS.
+// Pure CSS — no islands, no hydration. Graceful no-JS fallback.
 //
 // TODO: add subtle grain/noise texture overlay (v2)
 // TODO: explore radial gradient variant for detail pages
 ---
 
 <div class="ambient-layer" data-ambient aria-hidden="true"></div>
+<div class="ambient-time-tint" aria-hidden="true"></div>
 
 <style>
   .ambient-layer {
@@ -23,6 +25,16 @@
     );
     opacity: var(--mood-opacity, 0);
     animation: ambient-drift var(--mood-speed, 12s) ease-in-out infinite alternate;
+  }
+
+  .ambient-time-tint {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--time-tint, transparent);
+    opacity: var(--time-tint-opacity, 0);
+    transition: opacity 1s ease-in-out;
   }
 
   @keyframes ambient-drift {

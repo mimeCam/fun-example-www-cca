@@ -44,8 +44,19 @@ docker run \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \
   "${IMAGE_NAME}"
 
-# ── 4. Prune dangling images from previous builds ────────────────────────────
+# ── 4. Quick health check ───────────────────────────────────────────────────
+echo "==> [deploy] Waiting for container to become healthy…"
+sleep 2
+if docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+  echo "==> [deploy] ✓ Container is running"
+else
+  echo "==> [deploy] ✗ Container failed to start — check deployment.log" >&2
+  docker logs "${CONTAINER_NAME}" >&2 || true
+  exit 1
+fi
+
+# ── 5. Prune dangling images from previous builds ────────────────────────────
 echo "==> [deploy] Pruning dangling images…"
 docker image prune -f || true
 
-echo "==> [deploy] Done. ${CONTAINER_NAME} is live at http://localhost:${HOST_PORT}"
+echo "==> [deploy] Done. ${CONTAINER_NAME} is live at http://localhost:${HOST_PORT} — $(date)"
