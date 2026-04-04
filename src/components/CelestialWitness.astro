@@ -1,0 +1,109 @@
+---
+// src/components/CelestialWitness.astro
+// Ambient celestial body — fixed bottom-right circle.
+// Displays sun (day), moon (night), or asleep (late night).
+// Mood glow syncs with --mood-accent-rgb from the mood system.
+// No interactivity. aria-hidden. pointer-events: none.
+// See Tanya's UX spec for full rationale.
+
+import { celestialWitnessScript } from '../lib/celestialWitness';
+const script = celestialWitnessScript();
+---
+
+<div
+  id="celestial-witness"
+  data-state="moon"
+  aria-hidden="true"
+  role="presentation"
+></div>
+<script set:html={script} />
+
+<style>
+  #celestial-witness {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    z-index: 40;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.5s ease-out 2s;
+    backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* --- Sun state (day: 6 AM - 5 PM) --- */
+  #celestial-witness[data-state="sun"] {
+    background:
+      linear-gradient(135deg, #FFB347, #FFCC33),
+      rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 2px 8px rgba(255, 179, 71, 0.3),
+      0 8px 24px rgba(255, 179, 71, 0.15),
+      0 0 40px rgba(var(--mood-accent-rgb, 255, 204, 51), 0.2);
+  }
+
+  /* --- Moon state (evening: 6 PM - 11 PM) --- */
+  #celestial-witness[data-state="moon"] {
+    background:
+      linear-gradient(135deg, #C4C8E8, #8B93C7),
+      rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 2px 8px rgba(139, 147, 199, 0.3),
+      0 8px 24px rgba(139, 147, 199, 0.15),
+      0 0 40px rgba(var(--mood-accent-rgb, 196, 200, 232), 0.2);
+  }
+
+  /* --- Asleep state (late night: 12 AM - 5 AM) --- */
+  #celestial-witness[data-state="asleep"] {
+    background:
+      linear-gradient(135deg, #C4C8E8, #8B93C7),
+      rgba(255, 255, 255, 0.08);
+    opacity: 0.6;
+    box-shadow:
+      0 2px 8px rgba(139, 147, 199, 0.2),
+      0 8px 24px rgba(139, 147, 199, 0.1),
+      0 0 40px rgba(var(--mood-accent-rgb, 196, 200, 232), 0.12);
+  }
+
+  /* Asleep eyes — two small arcs via pseudo-elements */
+  #celestial-witness[data-state="asleep"]::before,
+  #celestial-witness[data-state="asleep"]::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 8px;
+    height: 4px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 0 0 8px 8px;
+  }
+  #celestial-witness[data-state="asleep"]::before { left: 13px; }
+  #celestial-witness[data-state="asleep"]::after  { right: 13px; }
+
+  /* --- Mood glow transition (2s, subliminal) --- */
+  #celestial-witness {
+    transition:
+      opacity 1.5s ease-out 2s,
+      box-shadow 2s ease-out;
+  }
+
+  /* When opacity is set to 1 by script, override asleep back to 0.6 */
+  #celestial-witness[data-state="asleep"][style*="opacity"] {
+    opacity: 0.6 !important;
+  }
+
+  /* --- Mobile adjustments --- */
+  @media (max-width: 767px) {
+    #celestial-witness {
+      width: 40px;
+      height: 40px;
+      bottom: 12px;
+      right: 12px;
+      backdrop-filter: none;
+    }
+    #celestial-witness[data-state="asleep"]::before { left: 9px; }
+    #celestial-witness[data-state="asleep"]::after  { right: 9px; }
+  }
+</style>
