@@ -13,6 +13,7 @@ import type { TimePhase, TimeTint } from './timeAmbient';
 export interface LiminalTint {
   color: string;      // CSS color at the liminal peak
   peakOpacity: number; // opacity during the brief liminal flash
+  shimmerType?: string; // shimmer accent key (see shimmer.ts)
 }
 
 // ---------------------------------------------------------------------------
@@ -20,13 +21,13 @@ export interface LiminalTint {
 // ---------------------------------------------------------------------------
 
 const LIMINALS: Partial<Record<string, LiminalTint>> = {
-  'night→dawn':          { color: '#c8956e', peakOpacity: 0.05 },
+  'night→dawn':          { color: '#c8956e', peakOpacity: 0.05, shimmerType: 'pulse' },
   'dawn→morning':        { color: '#f0d8b0', peakOpacity: 0.03 },
   'morning→noon':        null, // silent
   'noon→afternoon':      null, // silent
   'afternoon→golden-hour': { color: '#c4905a', peakOpacity: 0.04 },
-  'golden-hour→dusk':    { color: '#A07058', peakOpacity: 0.06 }, // the money transition
-  'dusk→evening':        { color: '#4a2d6e', peakOpacity: 0.05 },
+  'golden-hour→dusk':    { color: '#A07058', peakOpacity: 0.06, shimmerType: 'veil' },
+  'dusk→evening':        { color: '#4a2d6e', peakOpacity: 0.05, shimmerType: 'sweep' },
   'evening→night':       { color: '#1e1640', peakOpacity: 0.04 },
 };
 

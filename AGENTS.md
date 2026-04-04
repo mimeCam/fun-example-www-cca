@@ -1,6 +1,6 @@
 # Persona Blog
 
-Astro 4 hybrid · Tailwind CSS v4 · TypeScript strict · @astrojs/node standalone · Docker
+Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
 
 ## Key Paths
 
@@ -8,5 +8,6 @@ Astro 4 hybrid · Tailwind CSS v4 · TypeScript strict · @astrojs/node standalo
 - `src/components/` — Astro components
 - `src/layouts/` — page shells
 - `src/data/` — JSON flat-file storage
+- `src/styles/` — CSS modules
 - `src/pages/api/` — SSR endpoints
 - `cli/` — author CLI tools

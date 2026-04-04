@@ -11,6 +11,7 @@ import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
 import { liveDecayScript } from '../lib/temporal';
 import { moodCycleScript } from '../lib/moodCycle';
+import { shimmerScript } from '../lib/shimmer';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -27,6 +28,7 @@ import type { DriftCandidate } from '../lib/drift';
 import wallData from '../data/wall.json';
 import embersData from '../data/embers.json';
 import '../styles/global.css';
+import '../styles/shimmer.css';
 
 const pillMoods = activeMoodIds();
 const switchCSS = moodSwitchCSS();
@@ -34,6 +36,7 @@ const timeScript = timeAmbientScript();
 const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();
 const cycleScript = moodCycleScript();
+const shimScript = shimmerScript();
 
 interface Props {
   title: string;
@@ -68,6 +71,7 @@ const driftPick = pickCandidate(driftCandidates);
     <script set:html={seasonScript} />
     <script set:html={decayScript} />
     <script set:html={cycleScript} />
+    <script set:html={shimScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

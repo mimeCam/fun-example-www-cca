@@ -117,6 +117,7 @@ export function timeAmbientScript(): string {
     `    setTimeout(function(){`,
     `      s.setProperty('${TIME_CSS_VARS.tint}',li.color);`,
     `      s.setProperty('${TIME_CSS_VARS.opacity}',String(li.peakOpacity));`,
+    `      if(li.shimmerType&&window.__shimmer)window.__shimmer(key);`,
     `    },${fadeOut});`,
     `    setTimeout(function(){apply(T[nxt])},${fadeOut + liminal});`,
     `  },60000);`,
