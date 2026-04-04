@@ -9,5 +9,5 @@ Astro 4 hybrid · Tailwind CSS v4 · TypeScript strict · @astrojs/node standalo
 - `src/components/` — Astro components
 - `src/pages/api/` — SSR endpoints
 - `src/pages/` — routes
-- `src/content/` — blog collection (Markdown)
+- `src/content/` — blog collection
 - `cli/` — author CLI

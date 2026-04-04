@@ -4,11 +4,11 @@
 // Zero client-side JS: plain HTML form action.
 //
 // TODO: add rate limiting via IP tracking (v2)
-// TODO: add honeypot field for basic spam filtering (v2)
+// Honeypot field silently rejects bots — redirect looks normal.
 
 import type { APIRoute } from 'astro';
 import type { PendingWhisper } from '../../lib/wallSubmit';
-import { validateText, validateMood } from '../../lib/wallSubmit';
+import { validateText, validateMood, isHoneypotTripped, HONEYPOT_FIELD } from '../../lib/wallSubmit';
 import { readPending, writePending } from '../../lib/pendingStore';
 
 export const prerender = false;
@@ -23,6 +23,9 @@ function wallRedirect(status: string): Response {
 
 export const POST: APIRoute = async ({ request }) => {
   const form = await request.formData();
+  // Silent rejection — bots see a normal redirect.
+  if (isHoneypotTripped(form.get(HONEYPOT_FIELD))) return wallRedirect('ok');
+
   const text = form.get('text');
   const mood = form.get('mood') || 'default';
 

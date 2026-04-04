@@ -4,11 +4,9 @@
 // Posts to /api/whisper → redirect back to /wall.
 // Zero client-side JS. Glassmorphism styling, mood-aware accents.
 //
-// TODO: honeypot hidden field for spam prevention (v2)
-// TODO: character counter via CSS :invalid or JS-free trick (v2)
-
 import { activeMoodIds } from '../lib/mood';
-import { MAX_CHARS } from '../lib/wallSubmit';
+import { MAX_CHARS, HONEYPOT_FIELD } from '../lib/wallSubmit';
+import { wallCounterScript } from '../lib/wallCounter';
 
 const moods = activeMoodIds();
 const url = Astro.url;
@@ -23,6 +21,16 @@ const status = url.searchParams.get('ws');
     <p class="wall-form-status wall-form-err">Something was off — try again?</p>
   )}
 
+  {/* Honeypot — invisible to humans, irresistible to bots */}
+  <input
+    type="text"
+    name={HONEYPOT_FIELD}
+    class="wall-form-hp"
+    tabindex={-1}
+    autocomplete="off"
+    aria-hidden="true"
+  />
+
   <textarea
     name="text"
     class="wall-form-text"
@@ -32,6 +40,8 @@ const status = url.searchParams.get('ws');
     required
   />
 
+  <div class="wall-counter" data-state="glowing">0/{MAX_CHARS}</div>
+
   <div class="wall-form-row">
     <select name="mood" class="wall-form-mood">
       {moods.map(m => <option value={m}>{m}</option>)}
@@ -39,6 +49,8 @@ const status = url.searchParams.get('ws');
     <button type="submit" class="wall-form-btn">Whisper</button>
   </div>
 </form>
+
+<script set:html={wallCounterScript()} />
 
 <style>
   .wall-form {
@@ -81,4 +93,20 @@ const status = url.searchParams.get('ws');
   }
   .wall-form-ok { background: rgba(80, 200, 120, 0.12); color: #6ee7a0; }
   .wall-form-err { background: rgba(240, 80, 80, 0.12); color: #f87171; }
+
+  /* Honeypot — off-screen, invisible, unreachable */
+  .wall-form-hp {
+    position: absolute; left: -9999px;
+    opacity: 0; height: 0; overflow: hidden;
+  }
+
+  /* Character counter — right-aligned, decay-themed transitions */
+  .wall-counter {
+    text-align: right; font-size: 0.8rem;
+    margin-top: 0.5rem;
+    transition: color 0.6s ease, opacity 0.6s ease;
+  }
+  .wall-counter[data-state="glowing"] { opacity: 0.4; color: inherit; }
+  .wall-counter[data-state="fading"]  { opacity: 0.7; color: #d4a058; }
+  .wall-counter[data-state="fossil"]  { opacity: 1.0; color: #c0705a; }
 </style>

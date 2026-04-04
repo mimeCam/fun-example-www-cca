@@ -6,6 +6,14 @@
 // TODO: add rate-limit token bucket per IP (v2)
 // TODO: add profanity word list filter (v2)
 
+/** Honeypot field name — looks real to bots, invisible to humans. */
+export const HONEYPOT_FIELD = 'website';
+
+/** Returns true if the honeypot was filled (i.e. likely bot). */
+export function isHoneypotTripped(value: unknown): boolean {
+  return typeof value === 'string' && value.length > 0;
+}
+
 import type { MoodId } from './mood';
 import { MOODS } from './mood';
 
@@ -49,5 +57,7 @@ export function _testWallSubmit(): void {
   console.assert(validateText('x'.repeat(281)) !== null, 'overflow rejected');
   console.assert(validateMood('lo-fi') === null, 'valid mood OK');
   console.assert(validateMood('reggae') !== null, 'invalid mood rejected');
+  console.assert(isHoneypotTripped('') === false, 'empty honeypot OK');
+  console.assert(isHoneypotTripped('spam') === true, 'filled honeypot caught');
   console.log('[wallSubmit] validation OK');
 }
