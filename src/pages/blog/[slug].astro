@@ -13,6 +13,7 @@ import PostBadge from '../../components/PostBadge.astro';
 import Echo from '../../components/Echo.astro';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
+import { variantScript } from '../../lib/variants';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -29,6 +30,8 @@ const pubDate = formatPubDate(post.data.pubDate);
 
 const echo = post.data.echo;
 const echoTitle = await resolveEchoTitle(echo?.from);
+const hasVariants = post.data.variants === true;
+const vScript = hasVariants ? variantScript() : '';
 
 async function resolveEchoTitle(slug?: string) {
   if (!slug) return undefined;
@@ -47,9 +50,14 @@ async function resolveEchoTitle(slug?: string) {
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
 
-    <article class="post-body">
+    <article
+      class="post-body"
+      data-pub-date={hasVariants ? post.data.pubDate.toISOString() : undefined}
+    >
       <Content />
     </article>
+
+    {hasVariants && <script set:html={vScript} />}
 
     <Echo text={echo?.text} fromSlug={echo?.from} fromTitle={echoTitle} />
   </main>
@@ -91,5 +99,15 @@ async function resolveEchoTitle(slug?: string) {
     color: var(--mood-accent, currentColor);
     text-decoration: underline;
     text-underline-offset: 2px;
+  }
+  /* Variant blocks: hidden by default, revealed by inline script */
+  .post-body :global(.variant) {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.6s ease-in;
+  }
+  .post-body :global(.variant[data-active="true"]) {
+    display: block;
+    opacity: 1;
   }
 </style>

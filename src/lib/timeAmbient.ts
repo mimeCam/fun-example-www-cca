@@ -27,7 +27,7 @@ export interface TimeTint {
 // Phase resolution — one pure lookup, no branching chains
 // ---------------------------------------------------------------------------
 
-const PHASE_RANGES: [number, number, TimePhase][] = [
+export const PHASE_RANGES: [number, number, TimePhase][] = [
   [ 0,  5, 'night'],
   [ 6,  7, 'dawn'],
   [ 8, 10, 'morning'],

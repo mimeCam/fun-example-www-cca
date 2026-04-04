@@ -9,7 +9,7 @@
 
 export type WitnessState = 'sun' | 'moon' | 'asleep';
 
-const STATE_RANGES: [number, number, WitnessState][] = [
+export const STATE_RANGES: [number, number, WitnessState][] = [
   [ 0,  5, 'asleep'],
   [ 6, 17, 'sun'],
   [18, 23, 'moon'],
