@@ -1,0 +1,101 @@
+---
+// src/components/DriftCard.astro
+// Scene-change card: centered 540px card in a dimmed mood wash.
+// Reverse-decay animation — content reconstructs from blur to vivid.
+// Renders server-side with the selected drift candidate.
+//
+// TODO: v1.1 — hearth sentence changes during drift scene
+// TODO: v1.1 — source icon (wall vs ember) in card footer
+
+import type { DriftCandidate } from '../lib/drift';
+import { driftDuration, driftScript } from '../lib/drift';
+
+interface Props {
+  candidate: DriftCandidate | null;
+}
+
+const { candidate } = Astro.props;
+const dur = driftDuration();
+const script = driftScript();
+---
+
+{candidate && (
+  <div data-drift-scene class="drift-scene">
+    <div class="drift-wash"></div>
+    <article class="drift-card">
+      <p class="drift-text">{candidate.text}</p>
+      <footer class="drift-meta">
+        <span class="drift-source">{candidate.source}</span>
+        <time datetime={candidate.posted}>{candidate.posted}</time>
+      </footer>
+    </article>
+  </div>
+  <script set:html={script} />
+)}
+
+<style define:vars={{ dur: `${driftDuration()}s` }}>
+  .drift-scene {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .drift-scene.drift-active {
+    pointer-events: auto;
+    opacity: 1;
+    animation: drift-lifecycle var(--dur) ease-in-out forwards;
+  }
+  .drift-wash {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+  }
+  .drift-card {
+    position: relative;
+    max-width: 540px;
+    width: 90vw;
+    padding: 2.5rem 2rem;
+    border-radius: 16px;
+    background: rgba(30, 30, 30, 0.92);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 2px 8px rgba(var(--mood-accent-rgb, 156, 163, 175), 0.12);
+    animation: drift-card-enter var(--dur) ease-in-out forwards;
+  }
+  .drift-text {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.92);
+    margin: 0 0 1.5rem;
+  }
+  .drift-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: rgba(var(--mood-accent-rgb, 156, 163, 175), 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Four-phase lifecycle: arrival > reconstruction > hold > release */
+  @keyframes drift-lifecycle {
+    0%   { opacity: 0; }
+    17%  { opacity: 1; }           /* arrival done at ~1.2s/7s */
+    53%  { opacity: 1; }           /* reconstruction + hold */
+    86%  { opacity: 1; }           /* hold end */
+    100% { opacity: 0; }           /* release */
+  }
+  @keyframes drift-card-enter {
+    0%   { filter: blur(12px); opacity: 0.3; transform: scale(0.96); }
+    17%  { filter: blur(6px);  opacity: 0.6; transform: scale(0.98); }
+    36%  { filter: blur(0);    opacity: 1;   transform: scale(1); }
+    86%  { filter: blur(0);    opacity: 1;   transform: scale(1); }
+    100% { filter: blur(8px);  opacity: 0;   transform: scale(0.97); }
+  }
+</style>

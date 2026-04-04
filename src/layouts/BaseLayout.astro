@@ -18,6 +18,12 @@ import MoodPills from '../components/MoodPills.astro';
 import GhostDrawer from '../components/GhostDrawer.astro';
 import CelestialWitness from '../components/CelestialWitness.astro';
 import Hearth from '../components/Hearth.astro';
+import DriftButton from '../components/DriftButton.astro';
+import DriftCard from '../components/DriftCard.astro';
+import { filterCandidates, pickCandidate } from '../lib/drift';
+import type { DriftCandidate } from '../lib/drift';
+import wallData from '../data/wall.json';
+import embersData from '../data/embers.json';
 import '../styles/global.css';
 
 const pillMoods = activeMoodIds();
@@ -34,6 +40,14 @@ interface Props {
 const { title, description = 'A persona blog.' } = Astro.props;
 const cssVars = moodToCSSVars(resolveMood(moodConfig.current_mood));
 const cssString = moodToCSSString(cssVars);
+
+// Drift: collect aged entries from wall + embers, pick one per day
+const driftPool: DriftCandidate[] = [
+  ...wallData.map(e => ({ ...e, source: 'wall' as const })),
+  ...embersData.map(e => ({ ...e, source: 'ember' as const })),
+];
+const driftCandidates = filterCandidates(driftPool, 0.5, 30);
+const driftPick = pickCandidate(driftCandidates);
 ---
 
 <!doctype html>
@@ -65,5 +79,7 @@ const cssString = moodToCSSString(cssVars);
     <slot />
     <Hearth />
     <CelestialWitness />
+    <DriftButton />
+    <DriftCard candidate={driftPick} />
   </body>
 </html>
