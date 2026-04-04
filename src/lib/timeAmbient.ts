@@ -8,7 +8,9 @@
 // --season-sat-mult, --season-opacity-mult) and applied via CSS filter on
 // AmbientLayer. The two systems compose without coupling.
 // TODO: merge seasonal temp bias into time-of-day tints for deeper integration
-// TODO: add smooth transition when hour changes mid-session
+// Dissolve transition at phase boundaries handled by dissolve.ts
+
+import { dissolveConfig, DISSOLVE_TIMING } from './dissolve';
 
 export type TimePhase =
   | 'night'       // 00–05
@@ -82,25 +84,42 @@ export const TIME_CSS_VARS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Inline script generator — called at build time, runs at visit time
+// Inline script generator — called at build time, runs at visit time.
+// Polls every 60s; on phase boundary triggers dissolve choreography.
 // ---------------------------------------------------------------------------
+
+/** Resolves phase name from hour (inline-friendly helper). */
+function phaseFinderSnippet(): string {
+  return `function gp(h,P){var r=P.find(function(x){return h>=x[0]&&h<=x[1]});return r?r[2]:'noon'}`;
+}
 
 /** Returns a self-contained <script> body that sets time CSS vars on :root. */
 export function timeAmbientScript(): string {
   const phases = JSON.stringify(PHASE_RANGES);
   const tints = JSON.stringify(TINTS);
+  const lim = dissolveConfig();
+  const { fadeOut, liminal, settle } = DISSOLVE_TIMING;
   return [
     `(function(){`,
-    `  var h=new Date().getHours();`,
-    `  var P=${phases};`,
-    `  var T=${tints};`,
-    `  var m=P.find(function(r){return h>=r[0]&&h<=r[1]});`,
-    `  if(!m)return;`,
-    `  var t=T[m[2]];`,
-    `  if(!t)return;`,
+    `  var P=${phases},T=${tints},L=${lim};`,
+    `  ${phaseFinderSnippet()}`,
     `  var s=document.documentElement.style;`,
-    `  s.setProperty('${TIME_CSS_VARS.tint}',t.hue);`,
-    `  s.setProperty('${TIME_CSS_VARS.opacity}',String(t.opacity));`,
+    `  var cur=gp(new Date().getHours(),P);`,
+    `  function apply(t){s.setProperty('${TIME_CSS_VARS.tint}',t.hue);s.setProperty('${TIME_CSS_VARS.opacity}',String(t.opacity))}`,
+    `  apply(T[cur]);`,
+    `  setInterval(function(){`,
+    `    var nxt=gp(new Date().getHours(),P);`,
+    `    if(nxt===cur)return;`,
+    `    var key=cur+'→'+nxt,li=L[key];`,
+    `    cur=nxt;`,
+    `    if(!li){apply(T[nxt]);return}`,
+    `    s.setProperty('${TIME_CSS_VARS.opacity}','0');`,
+    `    setTimeout(function(){`,
+    `      s.setProperty('${TIME_CSS_VARS.tint}',li.color);`,
+    `      s.setProperty('${TIME_CSS_VARS.opacity}',String(li.peakOpacity));`,
+    `    },${fadeOut});`,
+    `    setTimeout(function(){apply(T[nxt])},${fadeOut + liminal});`,
+    `  },60000);`,
     `})();`,
   ].join('\n');
 }
@@ -117,5 +136,7 @@ export function _testTimeAmbient(): void {
   }
   const script = timeAmbientScript();
   console.assert(script.includes('setProperty'), 'script missing setProperty call');
-  console.log('[timeAmbient] OK — 24 hours covered, script generated');
+  console.assert(script.includes('setInterval'), 'script missing boundary polling');
+  console.assert(script.includes('→'), 'script missing dissolve boundary keys');
+  console.log('[timeAmbient] OK — 24h covered, dissolve wired, script generated');
 }
