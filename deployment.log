@@ -1,0 +1,110 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.70kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/node:20-alpine
+#3 DONE 0.5s
+
+#2 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#2 DONE 0.6s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [builder 1/7] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
+#5 DONE 0.0s
+
+#6 [builder 2/7] WORKDIR /app
+#6 CACHED
+
+#7 [server 1/4] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#7 CACHED
+
+#8 [internal] preparing inline document
+#8 CACHED
+
+#9 [internal] load build context
+#9 ...
+
+#10 [server 2/4] RUN rm /etc/nginx/conf.d/default.conf
+#10 DONE 0.2s
+
+#9 [internal] load build context
+#9 transferring context: 11.46kB 0.3s done
+#9 DONE 0.3s
+
+#11 [server 3/4] COPY <<EOF /etc/nginx/conf.d/persona-blog.conf
+#11 DONE 0.1s
+
+#12 [builder 3/7] COPY package.json package-lock.json* ./
+#12 DONE 0.0s
+
+#13 [builder 4/7] RUN npm ci --prefer-offline 2>/dev/null || npm install
+#13 7.860 
+#13 7.860 added 360 packages, and audited 361 packages in 8s
+#13 7.860 
+#13 7.860 160 packages are looking for funding
+#13 7.860   run `npm fund` for details
+#13 7.900 
+#13 7.900 3 vulnerabilities (2 moderate, 1 high)
+#13 7.900 
+#13 7.900 To address all issues (including breaking changes), run:
+#13 7.900   npm audit fix --force
+#13 7.900 
+#13 7.900 Run `npm audit` for details.
+#13 DONE 8.3s
+
+#14 [builder 5/7] COPY astro.config.mjs tsconfig.json ./
+#14 DONE 0.0s
+
+#15 [builder 6/7] COPY src/ ./src/
+#15 DONE 0.0s
+
+#16 [builder 7/7] RUN npm run build
+#16 0.312 
+#16 0.312 > persona-blog@0.1.0 build
+#16 0.312 > astro build
+#16 0.312 
+#16 1.006 ▶ Astro collects anonymous usage data.
+#16 1.006   This information helps us improve Astro.
+#16 1.006   Run "astro telemetry disable" to opt-out.
+#16 1.006   https://astro.build/telemetry
+#16 1.006 
+#16 2.357 08:22:16 [types] Generated 577ms
+#16 2.357 08:22:16 [build] output: "static"
+#16 2.357 08:22:16 [build] directory: /app/dist/
+#16 2.357 08:22:16 [build] Collecting build info...
+#16 2.357 08:22:16 [build] ✓ Completed in 587ms.
+#16 2.360 08:22:16 [build] Building static entrypoints...
+#16 4.617 08:22:18 [vite] ✓ built in 2.22s
+#16 4.618 08:22:18 [build] ✓ Completed in 2.26s.
+#16 4.625 
+#16 4.625  generating static routes 
+#16 4.638 08:22:18 ▶ src/pages/blog/[slug].astro
+#16 4.644 08:22:18   └─ /blog/hello-world/index.html (+16ms)
+#16 4.664 08:22:18 ▶ src/pages/now.astro
+#16 4.665 08:22:18   └─ /now/index.html (+2ms)
+#16 4.670 08:22:18 ▶ src/pages/wall.astro
+#16 4.670 08:22:18   └─ /wall/index.html (+3ms)
+#16 4.676 08:22:18 ▶ src/pages/index.astro
+#16 4.676 08:22:18   └─ /index.html (+5ms)
+#16 4.681 08:22:18 ✓ Completed in 58ms.
+#16 4.681 
+#16 4.685 08:22:18 [build] 4 page(s) built in 2.92s
+#16 4.685 08:22:18 [build] Complete!
+#16 DONE 4.8s
+
+#17 [server 4/4] COPY --from=builder /app/dist /usr/share/nginx/html
+#17 DONE 0.0s
+
+#18 exporting to image
+#18 exporting layers 0.0s done
+#18 writing image sha256:c9c0da8c49e25a44797434b22978d95eb7e9d81787f04d0f918d2b5bff6cc109 done
+#18 naming to docker.io/library/persona-blog-a done
+#18 DONE 0.1s

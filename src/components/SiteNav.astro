@@ -1,0 +1,64 @@
+---
+// src/components/SiteNav.astro
+// Minimal sticky nav — three words in frosted glass.
+// Highlights current page via Astro.url pathname matching.
+// Zero JS. Consistent with glassmorphism language.
+//
+// TODO: add mood-accent animated underline on active link (v2)
+
+const path = Astro.url.pathname;
+
+const links = [
+  { label: 'wall', href: '/wall' },
+  { label: 'now',  href: '/now' },
+  { label: 'blog', href: '/' },
+] as const;
+
+function isActive(href: string): boolean {
+  if (href === '/') return path === '/';
+  return path.startsWith(href);
+}
+---
+
+<nav class="site-nav" aria-label="Site navigation">
+  {links.map(l => (
+    <a href={l.href}
+       class:list={['nav-link', { active: isActive(l.href) }]}
+       aria-current={isActive(l.href) ? 'page' : undefined}>
+      {l.label}
+    </a>
+  ))}
+</nav>
+
+<style>
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    height: 48px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(var(--mood-accent-rgb, 0,0,0), 0.08);
+  }
+
+  .nav-link {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: lowercase;
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.55;
+    transition: opacity 120ms ease;
+  }
+
+  .nav-link:hover { opacity: 0.85; }
+
+  .nav-link.active {
+    opacity: 1;
+    border-bottom: 1px solid var(--mood-accent, currentColor);
+  }
+</style>

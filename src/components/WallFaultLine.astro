@@ -1,0 +1,31 @@
+---
+// src/components/WallFaultLine.astro
+// Geological boundary between active entries and fossilized bedrock.
+// Replaces the bare <hr> with a crack + whispered label.
+// Pure CSS, zero JS.
+---
+
+<div class="fault-line" role="separator" aria-label="Fossil boundary">
+  <hr class="fault-crack" aria-hidden="true" />
+  <span class="fault-label">— bedrock —</span>
+</div>
+
+<style>
+  .fault-line {
+    margin: 2.5rem 0 2rem;
+    text-align: center;
+  }
+
+  .fault-crack {
+    border: none;
+    border-top: 1px dashed rgba(var(--mood-accent-rgb, 0,0,0), 0.14);
+    margin: 0 0 0.5rem;
+  }
+
+  .fault-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.22;
+  }
+</style>

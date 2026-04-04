@@ -18,7 +18,7 @@ const mood = resolveMood(computed.entry.mood);
 const fossilStyle = `--entry-accent-rgb: ${mood.accent_rgb};`;
 ---
 
-<article class="wall-fossil" style={fossilStyle}>
+<article id={computed.entry.id} class="wall-fossil" style={fossilStyle}>
   <p class="fossil-text">{computed.entry.text}</p>
   <span class="fossil-mood">{mood.label}</span>
 </article>

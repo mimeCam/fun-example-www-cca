@@ -6,6 +6,7 @@
 //
 // TODO: add geology texture class per mood (v2)
 // TODO: dust overlay at high decay (v2)
+// TODO: hover-reveal # link for anchor sharing (v2)
 
 import type { ComputedWallEntry } from '../lib/wall';
 import { resolveMood } from '../lib/mood';
@@ -20,7 +21,7 @@ const mood = resolveMood(entry.mood);
 const entryStyle = `--decay: ${decay.toFixed(3)}; --entry-accent-rgb: ${mood.accent_rgb};`;
 ---
 
-<article class={`wall-entry wall-${state}`} style={entryStyle}>
+<article id={entry.id} class={`wall-entry wall-${state}`} style={entryStyle}>
   <p class="wall-text">{entry.text}</p>
   <footer class="wall-meta">
     <span class="wall-quip">{quip}</span>

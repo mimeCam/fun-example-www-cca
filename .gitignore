@@ -4,7 +4,6 @@ dist/
 .astro/
 
 openloop/
-deployment.log
 
 .opencode/
 opencode.json

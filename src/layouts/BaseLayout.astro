@@ -10,6 +10,7 @@
 import { resolveMood, moodToCSSVars, moodToCSSString } from '../lib/mood';
 import moodConfig from '../data/mood.config.json';
 import AmbientLayer from '../components/AmbientLayer.astro';
+import SiteNav from '../components/SiteNav.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -33,6 +34,7 @@ const cssString = moodToCSSString(cssVars);
   </head>
   <body>
     <AmbientLayer />
+    <SiteNav />
     <slot />
   </body>
 </html>

@@ -31,6 +31,7 @@ fi
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
 docker build \
   --pull \
+  --no-cache \
   --tag "${IMAGE_NAME}" \
   "${SCRIPT_DIR}"
 
@@ -42,5 +43,9 @@ docker run \
   --name "${CONTAINER_NAME}" \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \
   "${IMAGE_NAME}"
+
+# ── 4. Prune dangling images from previous builds ────────────────────────────
+echo "==> [deploy] Pruning dangling images…"
+docker image prune -f || true
 
 echo "==> [deploy] Done. ${CONTAINER_NAME} is live at http://localhost:${HOST_PORT}"
