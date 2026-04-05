@@ -1,7 +1,8 @@
 // src/lib/share.ts
 // "Share with Context" — inline script factory for the blog share button.
 // Uses native Web Share API on mobile, Clipboard API fallback on desktop.
-// Appends ?mood= to shared URL so recipients land in the same atmosphere.
+// Appends ?snap=<mood>.<phase> so recipients land in the same atmosphere.
+// See snapshot.ts for the encoding format.
 //
 // Architecture: follows moodCycle.ts / shimmer.ts inline IIFE pattern.
 // Zero dependencies, zero tracking, prefers-reduced-motion respected.
@@ -28,13 +29,18 @@ export function shareScript(): string {
   ].join('\n');
 }
 
-/** Builds the URL resolver snippet — appends ?mood= context. */
+/** Builds the URL resolver snippet — appends ?snap=<mood>.<phase> context. */
 function buildShareUrl(): string {
   return [
     `  function shareUrl(){`,
     `    var u=new URL(location.href);`,
     `    var m=document.querySelector('input[id^="mood-"]:checked');`,
-    `    if(m)u.searchParams.set('mood',m.id.replace('mood-',''));`,
+    `    var mood=m?m.id.replace('mood-',''):'';`,
+    `    var phase=document.documentElement.getAttribute('data-time-phase')||'';`,
+    `    if(mood&&phase){`,
+    `      u.searchParams.delete('mood');`,
+    `      u.searchParams.set('snap',mood+'.'+phase);`,
+    `    }else if(mood){u.searchParams.set('mood',mood)}`,
     `    return u.toString();`,
     `  }`,
   ].join('\n');
@@ -101,6 +107,7 @@ export function _testShare(): void {
   console.assert(script.includes('navigator.share'), 'missing Web Share API');
   console.assert(script.includes('clipboard'), 'missing clipboard fallback');
   console.assert(script.includes('erosion-progress'), 'missing scroll reveal');
-  console.assert(script.includes('mood-'), 'missing mood context');
-  console.log('[share] script OK — Web Share + clipboard + mood context');
+  console.assert(script.includes('snap'), 'missing snapshot context');
+  console.assert(script.includes('data-time-phase'), 'missing phase read');
+  console.log('[share] script OK — Web Share + clipboard + snapshot context');
 }

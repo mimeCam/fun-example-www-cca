@@ -27,6 +27,7 @@ import DriftCard from '../components/DriftCard.astro';
 import QuietFollow from '../components/QuietFollow.astro';
 import DroneToggle from '../components/DroneToggle.astro';
 import { droneControllerScript } from '../lib/droneController';
+import { snapshotScript } from '../lib/snapshot';
 import { filterCandidates, pickCandidate } from '../lib/drift';
 import type { DriftCandidate } from '../lib/drift';
 import wallData from '../data/wall.json';
@@ -42,6 +43,7 @@ const decayScript = liveDecayScript();
 const cycleScript = moodCycleScript();
 const shimScript = shimmerScript();
 const droneScript = droneControllerScript();
+const snapScript = snapshotScript();
 
 interface Props {
   title: string;
@@ -77,6 +79,7 @@ const driftPick = pickCandidate(driftCandidates);
     <script set:html={seasonScript} />
     <script set:html={decayScript} />
     <script set:html={cycleScript} />
+    <script set:html={snapScript} />
     <script set:html={shimScript} />
     <script set:html={droneScript} />
     <style>
