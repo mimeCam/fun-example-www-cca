@@ -18,5 +18,7 @@ Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
   shimmer, dissolve, erosion bar, celestial witness) — all CSS custom properties,
   zero client framework, respects `prefers-reduced-motion`.
 - Ambient audio drone — generative Web Audio synthesis shifts with time-of-day
-  and season. Toggle button wired. TODO: cross-fade on phase boundary, mood label
-  tooltip, play/pause icon animation.
+  and season. Toggle button wired. DONE: cross-fade on phase boundary (4s smooth
+  transition), visibility lifecycle (suspend/resume AudioContext), mood label API
+  (`window.__drone.label()`). TODO: DroneToggle tooltip showing mood label,
+  pulse animation when playing, play/pause icon states.

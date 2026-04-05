@@ -7,8 +7,8 @@
 // Exposes window.__drone = { toggle() → boolean, playing() → boolean }
 // for the DroneToggle button component.
 //
-// TODO: cross-fade on phase boundary (currently stops + restarts)
-// TODO: listen for visibilitychange to suspend/resume AudioContext
+// DONE: cross-fade on phase boundary (smooth 4s transition)
+// DONE: visibilitychange suspends/resumes AudioContext
 
 import { PHASE_RANGES } from './timeAmbient';
 import { ANCHORS } from './seasonal';
@@ -55,12 +55,60 @@ function engineSnippet(): string {
     `  g.gain.linearRampToValueAtTime(dbG(p.gainDb),t+p.fadeMs/1e3);`,
     `  o1.connect(f);o2.connect(f);f.connect(g);g.connect(ctx.destination);`,
     `  o1.start();o2.start();`,
-    `  return{stop:function(ms){`,
+    `  return{gain:g,stop:function(ms){`,
     `    var n=ctx.currentTime;`,
     `    g.gain.linearRampToValueAtTime(0,n+(ms||p.fadeMs)/1e3);`,
     `    setTimeout(function(){o1.stop();o2.stop()},ms||p.fadeMs+50)`,
     `  }}`,
     `}`,
+  ].join('');
+}
+
+/** Mood label lookup snippet (compact inline version of droneMoodLabel). */
+function labelSnippet(): string {
+  const labels: Record<string, string> = {
+    'night': 'Deep Night Pulse',
+    'dawn': 'First Light Hum',
+    'morning': 'Morning Drift',
+    'noon': 'Midday Tone',
+    'afternoon': 'Warm Afternoon',
+    'golden-hour': 'Golden Hour Glow',
+    'dusk': 'Twilight Murmur',
+    'evening': 'Evening Lull',
+  };
+  return `var ML=${JSON.stringify(labels)};` +
+    `function moodLabel(ph,sn){return(ML[ph]||'Drone')+' \\u00b7 '+sn}`;
+}
+
+/** Cross-fade snippet: ramps old drone out, new drone in over FADE_MS. */
+function crossfadeSnippet(): string {
+  return [
+    `var FADE_MS=4000;`,
+    `function crossfade(){`,
+    `  var np=getPhase(),ns=season();`,
+    `  if(np===curPh)return;`,
+    `  var old=handle;curPh=np;`,
+    `  var n=ctx.currentTime;`,
+    `  old.gain.gain.linearRampToValueAtTime(0,n+FADE_MS/1e3);`,
+    `  setTimeout(function(){old.stop(0)},FADE_MS+100);`,
+    `  handle=mkDrone(ctx,PM[np+'|'+ns])`,
+    `}`,
+  ].join('');
+}
+
+/** Visibility manager: suspend on hide, resume on show, instant-swap if phase shifted. */
+function visibilitySnippet(): string {
+  return [
+    `document.addEventListener('visibilitychange',function(){`,
+    `  if(!on||!ctx)return;`,
+    `  if(document.hidden){ctx.suspend();return}`,
+    `  ctx.resume();`,
+    `  var np=getPhase();`,
+    `  if(np===curPh)return;`,
+    `  if(handle){handle.stop(0);handle=null}`,
+    `  curPh=np;`,
+    `  handle=mkDrone(ctx,PM[np+'|'+season()])`,
+    `})`,
   ].join('');
 }
 
@@ -73,25 +121,29 @@ export function droneControllerScript(): string {
     `  var R=${ranges},PM=${params};`,
     `  ${phaseSnippet()}`,
     `  ${engineSnippet()}`,
-    `  var ctx=null,handle=null,on=false;`,
+    `  ${labelSnippet()}`,
+    `  var ctx=null,handle=null,on=false,curPh=null;`,
     `  function season(){`,
     `    return document.documentElement.getAttribute('data-season')||'spring'`,
     `  }`,
-    `  function resolve(){`,
-    `    var ph=gp(new Date().getHours(),R);`,
-    `    return PM[ph+'|'+season()]`,
-    `  }`,
+    `  function getPhase(){return gp(new Date().getHours(),R)}`,
+    `  ${crossfadeSnippet()}`,
     `  function start(){`,
     `    if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();`,
     `    if(ctx.state==='suspended')ctx.resume();`,
-    `    handle=mkDrone(ctx,resolve());on=true`,
+    `    curPh=getPhase();`,
+    `    handle=mkDrone(ctx,PM[curPh+'|'+season()]);on=true`,
     `  }`,
     `  function stop(){`,
-    `    if(handle){handle.stop();handle=null}on=false`,
+    `    if(handle){handle.stop();handle=null}on=false;curPh=null`,
     `  }`,
+    `  setInterval(function(){if(on)crossfade()},60000);`,
+    `  ${visibilitySnippet()}`,
     `  window.__drone={`,
     `    toggle:function(){on?stop():start();return on},`,
-    `    playing:function(){return on}`,
+    `    playing:function(){return on},`,
+    `    phase:function(){return curPh},`,
+    `    label:function(){return curPh?moodLabel(curPh,season()):null}`,
     `  };`,
     `})();`,
   ].join('\n');
@@ -108,6 +160,11 @@ export function _testDroneController(): void {
   console.assert(script.includes('toggle'), 'missing toggle method');
   console.assert(script.includes('mkDrone'), 'missing engine function');
   console.assert(script.includes('data-season'), 'missing season read');
-  console.assert(script.length > 200, 'script suspiciously short');
-  console.log('[droneController] OK — script generated, all markers present');
+  console.assert(script.includes('crossfade'), 'missing crossfade');
+  console.assert(script.includes('FADE_MS'), 'missing fade constant');
+  console.assert(script.includes('visibilitychange'), 'missing visibility');
+  console.assert(script.includes('moodLabel'), 'missing mood label');
+  console.assert(script.includes('phase'), 'missing phase accessor');
+  console.assert(script.length > 500, 'script suspiciously short');
+  console.log('[droneController] OK — crossfade, visibility, labels wired');
 }
