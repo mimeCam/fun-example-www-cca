@@ -1,0 +1,61 @@
+---
+// src/components/OpenLoopCard.astro
+// A single open-loop question card with crystallization styling.
+// Fresh thoughts arrive soft and translucent; aged ones harden into
+// denser backgrounds, thicker borders, tighter radii, deeper shadows.
+//
+// TODO: hover shimmer effect on crystallized cards (v2)
+
+import FreshnessIndicator from './FreshnessIndicator.astro';
+import { decayRatio, decayLabel } from '../lib/pulse';
+import type { OpenLoop } from '../lib/pulse';
+
+interface Props { loop: OpenLoop; }
+
+const { loop } = Astro.props;
+const ratio = decayRatio(loop.dateAdded, loop.decayDays);
+const label = decayLabel(ratio);
+const style = `--decay: ${ratio.toFixed(3)};`;
+---
+
+<article class={`loop-card loop-${label}`} style={style}
+         data-posted={loop.dateAdded} data-max-days={String(loop.decayDays)}>
+  <header class="loop-head">
+    <FreshnessIndicator label={label} />
+    <span class="loop-question">{loop.question}</span>
+  </header>
+  {loop.context && <p class="loop-context">{loop.context}</p>}
+</article>
+
+<style>
+  /* Crystallization: --decay INCREASES density (inverse of normal aging) */
+  .loop-card {
+    --d: var(--decay);
+    padding: calc(0.6rem + 0.6rem * (1 - var(--d)));
+    border-radius: calc(8px + 4px * (1 - var(--d)));
+    background: rgba(255, 255, 255, calc(0.03 + 0.06 * var(--d)));
+    border: calc(1px + 1px * var(--d)) solid
+      rgba(var(--mood-accent-rgb, 120,120,120), calc(0.06 + 0.14 * var(--d)));
+    box-shadow:
+      0 1px calc(4px + 8px * var(--d))
+        rgba(var(--mood-accent-rgb, 0,0,0), calc(0.02 + 0.08 * var(--d))),
+      0 calc(2px * var(--d)) calc(16px * var(--d))
+        rgba(var(--mood-accent-rgb, 0,0,0), calc(0.04 * var(--d)));
+    transition: box-shadow 200ms ease;
+  }
+  .loop-head {
+    display: flex; align-items: baseline; gap: 0.5rem;
+  }
+  .loop-question {
+    font-size: calc(0.82rem + 0.12rem * (1 - var(--d)));
+    line-height: 1.45;
+    opacity: calc(0.55 + 0.45 * var(--d));
+    font-weight: calc(400 + 100 * var(--d));
+  }
+  .loop-context {
+    margin: 0.4rem 0 0 1.35rem;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    opacity: calc(0.3 + 0.3 * var(--d));
+  }
+</style>
