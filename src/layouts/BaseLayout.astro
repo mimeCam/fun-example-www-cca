@@ -21,6 +21,8 @@ import { onboardHintScript } from '../lib/onboardHint';
 import { onboardProbeScript } from '../lib/onboardProbe';
 import { bloomOrchestratorScript } from '../lib/bloomOrchestrator';
 import { revivalRewardScript } from '../lib/revivalReward';
+import { heartbeatClientScript } from '../lib/heartbeatClient';
+import { heartbeatFxScript } from '../lib/heartbeatFx';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -39,6 +41,7 @@ import '../styles/bloom.css';
 import '../styles/hint.css';
 import '../styles/timetravel.css';
 import '../styles/reward.css';
+import '../styles/heartbeat.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const timeScript = timeAmbientScript();
@@ -53,6 +56,8 @@ const probeScript = onboardProbeScript();
 const hintScript = onboardHintScript();
 const bloomScript = bloomOrchestratorScript();
 const rewardScript = revivalRewardScript();
+const heartbeatScript = heartbeatClientScript();
+const heartbeatFx = heartbeatFxScript();
 
 interface Props {
   title: string;
@@ -85,6 +90,8 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={hintScript} />
     <script set:html={bloomScript} />
     <script set:html={rewardScript} />
+    <script set:html={heartbeatScript} />
+    <script set:html={heartbeatFx} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

@@ -3,6 +3,9 @@
 # Exposes the site on port 7100 (Caddy handles SSL & reverse-proxy upstream).
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
+#
+# Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
+#           SSE heartbeat (long-lived connections for real-time revival pulses).
 
 set -euo pipefail
 
@@ -24,7 +27,7 @@ echo "==> [deploy] Starting deployment of ${CONTAINER_NAME} at $(date)"
 # ── 1. Stop & remove existing container (idempotent) ─────────────────────────
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   echo "==> [deploy] Stopping existing container: ${CONTAINER_NAME}"
-  docker stop --time 10 "${CONTAINER_NAME}" || true
+  docker stop --time 15 "${CONTAINER_NAME}" || true
   echo "==> [deploy] Removing existing container: ${CONTAINER_NAME}"
   docker rm --force "${CONTAINER_NAME}" || true
 fi
@@ -47,6 +50,7 @@ docker build \
 echo "==> [deploy] Starting container: ${CONTAINER_NAME} on port ${HOST_PORT}"
 docker run \
   --detach \
+  --init \
   --restart unless-stopped \
   --name "${CONTAINER_NAME}" \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \

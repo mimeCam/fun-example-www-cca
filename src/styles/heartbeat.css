@@ -1,0 +1,47 @@
+/* src/styles/heartbeat.css
+ * Collective Heartbeat — ambient pulse when another visitor revives a post.
+ * GPU-composited only: box-shadow, opacity. Respects prefers-reduced-motion.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Card pulse glow — applied to .decay-card[data-slug] by heartbeatFx.ts
+ * ------------------------------------------------------------------------- */
+
+@keyframes heartbeat-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0); }
+  30%  { box-shadow: 0 0 24px 8px rgba(var(--mood-accent-rgb, 120,120,120), 0.25); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0); }
+}
+
+.heartbeat-pulse {
+  animation: heartbeat-glow 1.5s ease-out forwards;
+  z-index: 2;
+}
+
+/* ---------------------------------------------------------------------------
+ * Edge ripple — when the revived card is off-screen
+ * ------------------------------------------------------------------------- */
+
+@keyframes heartbeat-edge-ripple {
+  0%   { box-shadow: inset 0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0); }
+  25%  { box-shadow: inset 0 0 40px 2px rgba(var(--mood-accent-rgb, 120,120,120), 0.08); }
+  100% { box-shadow: inset 0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0); }
+}
+
+.heartbeat-ripple {
+  animation: heartbeat-edge-ripple 2s ease-out forwards;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion — simple opacity flash instead of glow
+ * ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .heartbeat-pulse {
+    animation: none;
+    opacity: 1;
+  }
+  .heartbeat-ripple {
+    animation: none;
+  }
+}

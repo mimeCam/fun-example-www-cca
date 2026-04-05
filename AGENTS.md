@@ -16,10 +16,8 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- First-Visit Spectacle — next: RevivalHint component, slider redesign
-- Time Travel Demo — fog overlay wired
-- Revival Bloom — next: ARIA refinement, mobile testing
-- Route Pruning — remove legacy pages
+- **Collective Heartbeat (SSE)** — server bus + SSE endpoint + client listener + FX wired. Next: HeartbeatPulse.astro component, DecayCard `data-slug` audit, integration test
+- First-Visit Spectacle — RevivalHint component, slider redesign
+- Revival Bloom — ARIA refinement, mobile testing
 - Component Pruning — ~19 satellite components pending removal
-- Decay Onboarding — next: RevivalHint refactor to use onboard:start
-- RevivalReward — next: mobile testing, reduced-motion QA
+- RevivalReward — mobile testing, reduced-motion QA
