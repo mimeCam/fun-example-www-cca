@@ -17,6 +17,7 @@ import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
+import DriftNav from '../components/DriftNav.astro';
 import MoodPills from '../components/MoodPills.astro';
 import GhostDrawer from '../components/GhostDrawer.astro';
 import CelestialWitness from '../components/CelestialWitness.astro';
@@ -100,6 +101,7 @@ const driftPick = pickCandidate(driftCandidates);
     <MoodPills />
     <GhostDrawer />
     <slot />
+    <DriftNav />
     <Hearth />
     <CelestialWitness />
     <DriftButton />

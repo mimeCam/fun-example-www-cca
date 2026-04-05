@@ -6,30 +6,28 @@
 //
 // TODO: add mood-accent animated underline on active link (v2)
 
+import { getActivePage, type PageId } from '../lib/nav';
+
 const path = Astro.url.pathname;
-const isBlogPost = path.startsWith('/blog/') && path !== '/blog/';
+const pageId = getActivePage(path);
+const isBlogPost = pageId === 'blog';
 
-const links = [
-  { label: 'wall',           href: '/wall' },
-  { label: 'embers',         href: '/embers' },
-  { label: 'tidepool',       href: '/tidepool' },
-  { label: 'lowtide',        href: '/lowtide' },
-  { label: 'constellations', href: '/constellations' },
-  { label: 'now',            href: '/now' },
-  { label: 'blog',           href: '/' },
-] as const;
-
-function isActive(href: string): boolean {
-  if (href === '/') return path === '/';
-  return path.startsWith(href);
-}
+const links: { label: string; href: string; id: PageId }[] = [
+  { label: 'wall',           href: '/wall',           id: 'wall' },
+  { label: 'embers',         href: '/embers',         id: 'embers' },
+  { label: 'tidepool',       href: '/tidepool',       id: 'tidepool' },
+  { label: 'lowtide',        href: '/lowtide',        id: 'lowtide' },
+  { label: 'constellations', href: '/constellations', id: 'constellations' },
+  { label: 'now',            href: '/now',            id: 'now' },
+  { label: 'blog',           href: '/',               id: 'home' },
+];
 ---
 
 <nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site navigation">
   {links.map(l => (
     <a href={l.href}
-       class:list={['nav-link', { active: isActive(l.href) }]}
-       aria-current={isActive(l.href) ? 'page' : undefined}>
+       class:list={['nav-link', { active: pageId === l.id }]}
+       aria-current={pageId === l.id ? 'page' : undefined}>
       {l.label}
     </a>
   ))}
