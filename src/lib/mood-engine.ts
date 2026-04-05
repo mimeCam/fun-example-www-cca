@@ -4,8 +4,7 @@
 // entire page transforms. Outputs the same CSSMoodVars interface the
 // rest of the site already consumes, so zero component changes needed.
 //
-// TODO: add "nostalgic" and "dreamy" presets once design tokens settle
-// TODO: blend article mood with user-selected mood (weighted merge)
+// TODO: blend article mood with user-selected mood (weighted merge) — see blend.ts
 
 import type { MoodDefinition, CSSMoodVars } from './mood';
 import { moodToCSSVars, moodToCSSString } from './mood';
@@ -16,7 +15,9 @@ export type ArticleMood =
   | 'melancholic'
   | 'playful'
   | 'focused'
-  | 'serene';
+  | 'serene'
+  | 'nostalgic'
+  | 'dreamy';
 
 const ARTICLE_MOODS: Record<ArticleMood, MoodDefinition> = {
   contemplative: {
@@ -54,6 +55,18 @@ const ARTICLE_MOODS: Record<ArticleMood, MoodDefinition> = {
     gradient_from: '#A8E6CF', gradient_to: '#88D8A8',
     temperature: 'cool', opacity: 0.08, animation_duration: '18s',
     shadow_rgb: '168, 230, 207', accent: '#88D8A8', accent_rgb: '136, 216, 168',
+  },
+  nostalgic: {
+    label: 'nostalgic',
+    gradient_from: '#C9956B', gradient_to: '#8B6D54',
+    temperature: 'warm', opacity: 0.10, animation_duration: '22s',
+    shadow_rgb: '201, 149, 107', accent: '#D4A574', accent_rgb: '212, 165, 116',
+  },
+  dreamy: {
+    label: 'dreamy',
+    gradient_from: '#B8A9D4', gradient_to: '#7E6BAE',
+    temperature: 'cool', opacity: 0.09, animation_duration: '20s',
+    shadow_rgb: '184, 169, 212', accent: '#A08ED0', accent_rgb: '160, 142, 208',
   },
 };
 

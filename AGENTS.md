@@ -17,6 +17,7 @@ Constellations — force-directed star field where proximity = relatedness. Post
 
 ## WIP
 
+- **Weighted Mood Blend Engine** — reader mood blends with article mood via HSL interpolation (35/65). Engine: `src/lib/blend.ts`. Next: wire into BaseLayout, sessionStorage persistence, snapshot URL params.
 - **Persona Lens** — per-article mood atmosphere via frontmatter `mood` field. Engine: `src/lib/mood-engine.ts`. Next: ambient particles, transition FX, mood badge.
 - Force-layout tuning — attraction/repulsion constants may need adjustment with 20+ posts.
 - Page consolidation — `/pulse`+`/wall` → `/now`, `/embers` → `/tidepool` (nav done, routes still separate).
