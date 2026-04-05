@@ -5,14 +5,14 @@
 // Mood-tinted, subdued — metadata, not headline.
 //
 // Props: count — revival count from collectiveMemory.
-//        threshold — minimum count to display (default 5).
+//        threshold — minimum count to display (default 1).
 
 interface Props {
   count: number;
   threshold?: number;
 }
 
-const { count, threshold = 5 } = Astro.props;
+const { count, threshold = 1 } = Astro.props;
 const visible = count >= threshold;
 const label = `remembered by ${count} readers`;
 ---

@@ -12,6 +12,7 @@
 import PostBadge from './PostBadge.astro';
 import RevivalBadge from './RevivalBadge.astro';
 import KeepButton from './KeepButton.astro';
+import BloomParticles from './BloomParticles.astro';
 import { formatPubDate } from '../lib/dates'
 import type { PostDisplayData } from '../lib/postMeta';
 
@@ -31,6 +32,7 @@ const formattedDate = formatPubDate(post.pubDate);
   data-revival-count={post.revivalCount}
   data-revival-warm={post.revivalWarm ? 'true' : undefined}
 >
+  <BloomParticles />
   <a href={href} class="post-link">
     <time datetime={post.pubDateISO} class="post-date">{formattedDate}</time>
     <h2 class="post-title">{post.title}</h2>
@@ -49,6 +51,8 @@ const formattedDate = formatPubDate(post.pubDate);
 
 <style>
   .post-card {
+    position: relative;
+    overflow: hidden;
     padding: 1.5rem 1.75rem;
     border-radius: var(--radius, 12px);
     background: rgba(255, 255, 255, 0.04);

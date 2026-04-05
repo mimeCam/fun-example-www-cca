@@ -1,0 +1,163 @@
+/* src/styles/bloom.css
+ * Revival Bloom — dramatic visual feedback when a reader revives a post.
+ * Three phases: Flash (0-200ms) → Hold (200-600ms) → Settle (600-1800ms).
+ * GPU-composited only: transform, opacity, filter, box-shadow.
+ * All animations respect prefers-reduced-motion.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Phase 1-2: Active bloom (JS adds .blooming via Web Animations API)
+ * ------------------------------------------------------------------------- */
+
+.decay-card.blooming {
+  pointer-events: none;
+  will-change: transform, opacity, filter, box-shadow;
+  z-index: 2;
+}
+
+/* ---------------------------------------------------------------------------
+ * Bloom ring: warm glow expanding outward from card center
+ * ------------------------------------------------------------------------- */
+
+.bloom-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0);
+  z-index: -1;
+}
+
+.decay-card.blooming .bloom-ring {
+  animation: bloom-ring 800ms ease-out forwards;
+}
+
+@keyframes bloom-ring {
+  0% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
+  }
+  40% {
+    opacity: 0.7;
+    box-shadow:
+      0 0 0 8px rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+  }
+  100% {
+    opacity: 0;
+    box-shadow:
+      0 0 0 20px rgba(var(--mood-accent-rgb, 120,120,120), 0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Bloom flash: brief warm overlay on card
+ * ------------------------------------------------------------------------- */
+
+.bloom-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(var(--mood-accent-rgb, 120,120,120), 0.08) 0%,
+    transparent 70%
+  );
+  z-index: 1;
+}
+
+.decay-card.blooming .bloom-flash {
+  animation: bloom-flash 400ms ease-out forwards;
+}
+
+@keyframes bloom-flash {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Phase 3: Settle — card eases to new (fresher) decay level
+ * Spring-like cubic-bezier with slight overshoot.
+ * ------------------------------------------------------------------------- */
+
+.decay-card.bloom-settle {
+  transition:
+    opacity 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------------------------------------------------------------------------
+ * Bloom particles: CSS-only burst scattered by .blooming parent
+ * ------------------------------------------------------------------------- */
+
+.bloom-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 3;
+}
+
+.bloom-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(var(--mood-accent-rgb, 120,120,120), 0.6);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.decay-card.blooming .bloom-particle {
+  animation: bloom-burst 700ms ease-out forwards;
+  animation-delay: var(--particle-delay, 0ms);
+}
+
+@keyframes bloom-burst {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  30% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(
+        calc(-50% + var(--particle-x, 40px)),
+        calc(-50% + var(--particle-y, -40px))
+      )
+      scale(0.3);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion: instant state swap, no animation
+ * ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .decay-card.blooming {
+    pointer-events: auto;
+  }
+
+  .decay-card.blooming .bloom-ring,
+  .decay-card.blooming .bloom-flash,
+  .decay-card.blooming .bloom-particle {
+    animation: none;
+    display: none;
+  }
+
+  .decay-card.bloom-settle {
+    transition: none;
+  }
+}

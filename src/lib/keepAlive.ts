@@ -2,19 +2,24 @@
 // Client-side handler for KeepButton clicks.
 // Fires fetch() POST to /api/revive, reads response { count },
 // triggers revival pulse animation, updates badge, swaps label.
+// Dispatches revival:success CustomEvent for bloom system.
 // Session-gated: one keep per slug via sessionStorage.
 
 const CARD_SEL = '.decay-card[data-slug]';
 const BTN_SEL = '[data-keep-slug]';
 const BADGE_SEL = '[data-revival-badge]';
 const PULSE_MS = 600;
-const BADGE_THRESHOLD = 5;
+const BADGE_THRESHOLD = 1;
 
 /** Returns inline IIFE for BaseLayout injection. */
 export function keepAliveScript(): string {
   return `(function(){
   var CS='${CARD_SEL}',BS='${BTN_SEL}',RS='${BADGE_SEL}';
   var TH=${BADGE_THRESHOLD},PM=${PULSE_MS};
+
+  function emit(s,count){
+    document.dispatchEvent(new CustomEvent('revival:success',
+      {detail:{slug:s,newCount:count,source:'keep'}}))}
 
   function kept(s){return sessionStorage.getItem('kept:'+s)==='1'}
   function markKept(s){sessionStorage.setItem('kept:'+s,'1')}
@@ -67,6 +72,7 @@ export function keepAliveScript(): string {
       btn.classList.remove('pulsing');
       disableBtn(btn);
       if(d&&d.ok){
+        emit(slug,d.count);
         animatePulse(card);
         updateBadge(card,d.count);
         card.setAttribute('data-revival-count',d.count);

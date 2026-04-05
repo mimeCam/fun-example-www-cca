@@ -17,8 +17,7 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Collective Memory P1 — revivalFeedback.ts, OnboardingWhisper, scroll-past-60% passive revival
+- Revival Bloom — bloom.css + BloomParticles done; next: revivalBloom.ts (animation orchestrator) and BaseLayout wiring
 - Route Pruning — remove legacy pages (constellation/wall/tidepool/lowtide/embers/pulse/now/before)
 - Component Pruning — ~19 satellite components pending removal
 - Decay Onboarding — first-visit hint for mobile revival
-- Archive Tap-to-Reveal — GhostRow archaeology interaction

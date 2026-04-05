@@ -15,9 +15,9 @@ SQLITE_VOLUME="persona-blog-a-sqlite"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/deployment.log"
 
-# Reset and redirect all stderr to deployment.log
+# Reset deployment.log; redirect both stdout and stderr for full traceability
 : > "${LOG_FILE}"
-exec 2>"${LOG_FILE}"
+exec > >(tee -a "${LOG_FILE}") 2>"${LOG_FILE}"
 
 echo "==> [deploy] Starting deployment of ${CONTAINER_NAME} at $(date)"
 
@@ -50,6 +50,7 @@ docker run \
   --restart unless-stopped \
   --name "${CONTAINER_NAME}" \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \
+  --memory 512m \
   --volume "${DATA_VOLUME}:/app/dist/server/data" \
   --volume "${SQLITE_VOLUME}:/app/data" \
   "${IMAGE_NAME}"

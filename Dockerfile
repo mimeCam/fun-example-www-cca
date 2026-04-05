@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Native build tools for better-sqlite3 (fallback if prebuilt binary unavailable)
+RUN apk add --no-cache python3 make g++
+
 # Copy dependency manifests first for better layer caching
 COPY package.json package-lock.json* ./
 

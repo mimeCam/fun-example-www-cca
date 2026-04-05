@@ -1,0 +1,49 @@
+---
+// src/components/BloomParticles.astro
+// CSS-only particle burst for Revival Bloom.
+// 6 spans with unique angle/distance via CSS custom properties.
+// Hidden by default; animated when parent .decay-card gets .blooming class.
+// No JS. No canvas. Pure CSS transforms.
+
+const PARTICLE_COUNT = 6;
+const BASE_DISTANCE = 48;
+const DISTANCE_VARIANCE = 24;
+
+interface ParticleData {
+  angle: number;
+  distance: number;
+  delay: number;
+}
+
+function buildParticles(count: number): ParticleData[] {
+  const step = 360 / count;
+  return Array.from({ length: count }, (_, i) => ({
+    angle: step * i + (i % 2 === 0 ? 10 : -10),
+    distance: BASE_DISTANCE + (i % 3) * DISTANCE_VARIANCE / 2,
+    delay: i * 35,
+  }));
+}
+
+function toXY(angle: number, dist: number) {
+  const rad = (angle * Math.PI) / 180;
+  const x = Math.round(Math.cos(rad) * dist);
+  const y = Math.round(Math.sin(rad) * dist);
+  return { x, y };
+}
+
+const particles = buildParticles(PARTICLE_COUNT);
+---
+
+<div class="bloom-particles" aria-hidden="true">
+  {particles.map((p) => {
+    const { x, y } = toXY(p.angle, p.distance);
+    return (
+      <span
+        class="bloom-particle"
+        style={`--particle-x:${x}px;--particle-y:${y}px;--particle-delay:${p.delay}ms`}
+      />
+    );
+  })}
+</div>
+<span class="bloom-ring" aria-hidden="true" />
+<span class="bloom-flash" aria-hidden="true" />
