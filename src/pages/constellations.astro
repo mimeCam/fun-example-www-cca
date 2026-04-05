@@ -1,13 +1,13 @@
 ---
 // src/pages/constellations.astro
-// Full-viewport star-field of curated reading paths.
-// Each constellation is a sequence of stars connected by lines.
-// Positions are deterministic; colors derive from mood CSS vars.
+// Full-viewport immersive star field — the killer feature page.
+// Each star is a semantic <a> with aria-label. Hover reveals glass info panels.
+// :target-based constellation filtering — zero JavaScript.
+// AmbientLayer, CelestialWitness, Hearth suppressed — star field IS the atmosphere.
 //
-// TODO: click-to-navigate on stars with href
-// TODO: hover labels with star descriptions
-// TODO: constellation selector / legend overlay
-// TODO: ambient twinkle animation via CSS keyframes
+// TODO: ambient twinkle intensity based on mood palette
+// TODO: cluster centroids for 200+ post scalability
+// TODO: chromatic aberration filter on hover (needs SVG filter def)
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { computeAllConstellations } from '../lib/constellation';
@@ -17,37 +17,62 @@ const constellations = computeAllConstellations(rawConstellations);
 ---
 
 <BaseLayout title="Constellations — Reading Paths">
+  <a href="#post-list" class="skip-link">Skip to post list</a>
+
   <main class="constellation-page">
     <header class="cs-header">
       <h1 class="cs-heading">constellations</h1>
-      <p class="cs-tagline">Curated reading paths. Each star is a thought; lines trace the journey.</p>
+      <p class="cs-tagline">Each star is a thought; lines trace the journey.</p>
+      <nav class="cs-filter" aria-label="Filter constellations">
+        <a href="#" class="cs-filter-pill">all</a>
+        {constellations.map(c => (
+          <a href={`#c-${c.constellation.name.replace(/\s+/g, '-')}`}
+             class="cs-filter-pill">{c.constellation.name}</a>
+        ))}
+      </nav>
     </header>
 
     <div class="star-field">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" class="star-svg">
-        {constellations.map(c => (
-          <g class="constellation-group" data-name={c.constellation.name}>
-            {c.stars.slice(1).map((s, i) => (
-              <line
-                x1={c.stars[i].x} y1={c.stars[i].y}
-                x2={s.x} y2={s.y}
-                class="star-line"
-                stroke-opacity={s.brightness * 0.3}
-              />
-            ))}
-            {c.stars.map(s => (
-              <g class="star-point" data-id={s.star.id}>
-                <circle cx={s.x} cy={s.y} r="0.6" class="star-glow" opacity={s.brightness * 0.4} />
-                <circle cx={s.x} cy={s.y} r="0.25" class="star-core" opacity={s.brightness} />
-                <text x={s.x} y={s.y + 1.6} class="star-label">{s.star.label}</text>
-              </g>
-            ))}
-          </g>
-        ))}
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
+           class="star-svg" role="img" aria-label="Star field of reading paths">
+        {constellations.map(c => {
+          const gId = `c-${c.constellation.name.replace(/\s+/g, '-')}`;
+          return (
+            <g class="constellation-group" id={gId} data-name={c.constellation.name}>
+              {c.stars.slice(1).map((s, i) => (
+                <line
+                  x1={c.stars[i].x} y1={c.stars[i].y}
+                  x2={s.x} y2={s.y}
+                  class="star-line"
+                  stroke-opacity={s.brightness * 0.3}
+                />
+              ))}
+              {c.stars.map(s => (
+                <a href={s.star.href ?? '#'}
+                   class="star-anchor"
+                   aria-label={`${s.star.label} — ${c.constellation.name}`}>
+                  <circle cx={s.x} cy={s.y} r="1.0"
+                          class="star-glow" opacity={s.brightness * 0.4} />
+                  <circle cx={s.x} cy={s.y} r="0.35"
+                          class="star-core" opacity={s.brightness} />
+                  <text x={s.x} y={s.y + 1.8}
+                        class="star-label">{s.star.label}</text>
+                  <foreignObject x={s.x + 1.5} y={s.y - 3}
+                                 width="22" height="6" class="star-panel-wrap">
+                    <div class="star-panel">
+                      <span class="sp-name">{s.star.label}</span>
+                      <span class="sp-path">{c.constellation.name}</span>
+                    </div>
+                  </foreignObject>
+                </a>
+              ))}
+            </g>
+          );
+        })}
       </svg>
     </div>
 
-    <aside class="cs-legend">
+    <aside class="cs-legend" id="post-list" aria-label="Constellation legend">
       {constellations.map(c => (
         <div class="cs-legend-item">
           <span class="cs-legend-name">{c.constellation.name}</span>
@@ -59,72 +84,122 @@ const constellations = computeAllConstellations(rawConstellations);
 </BaseLayout>
 
 <style>
+  /* --- Layer suppression: star field IS the atmosphere --- */
+  :global(.constellation-page ~ [data-ambient]),
+  :global(body:has(.constellation-page) [data-ambient]),
+  :global(body:has(.constellation-page) .ambient-time-tint),
+  :global(body:has(.constellation-page) #celestial-witness),
+  :global(body:has(.constellation-page) #hearth) {
+    display: none !important;
+  }
+
   .constellation-page {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     padding: 1rem;
+    background: radial-gradient(ellipse at 50% 40%, #0d1117 0%, #010409 100%);
+    color: rgba(255, 255, 255, 0.85);
   }
+
+  /* --- Skip link --- */
+  .skip-link {
+    position: absolute;
+    top: -3rem;
+    left: 1rem;
+    background: var(--mood-accent, #6BA3C4);
+    color: #000;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    z-index: 100;
+  }
+  .skip-link:focus { top: 0.5rem; }
+
+  /* --- Header --- */
   .cs-header { text-align: center; margin-bottom: 1rem; }
   .cs-heading {
-    font-size: 1.2rem;
-    font-weight: 400;
-    letter-spacing: 0.05em;
-    opacity: 0.85;
-    margin: 0 0 0.4rem;
+    font-size: 1.2rem; font-weight: 400;
+    letter-spacing: 0.05em; opacity: 0.85; margin: 0 0 0.4rem;
   }
   .cs-tagline {
-    font-size: 0.75rem;
-    opacity: 0.45;
-    margin: 0;
-    font-style: italic;
+    font-size: 0.75rem; opacity: 0.45; margin: 0 0 0.8rem; font-style: italic;
   }
+
+  /* --- Filter pills --- */
+  .cs-filter { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+  .cs-filter-pill {
+    font-size: 0.6rem; padding: 0.2rem 0.6rem; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.5);
+    text-decoration: none; transition: border-color 200ms, color 200ms;
+  }
+  .cs-filter-pill:hover { color: rgba(255,255,255,0.9); border-color: var(--mood-accent, #6BA3C4); }
+
+  /* --- :target filtering --- */
+  .constellation-group { transition: opacity 400ms ease; }
+  :target { opacity: 1 !important; }
+  .star-svg:has(:target) .constellation-group:not(:target) { opacity: 0.08; }
+
+  /* --- Star field --- */
   .star-field {
-    flex: 1;
-    min-height: 60vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex: 1; min-height: 65vh;
+    display: flex; align-items: center; justify-content: center;
   }
-  .star-svg { width: 100%; max-width: 50rem; height: auto; }
+  .star-svg { width: 100%; max-width: 56rem; height: auto; }
+
   .star-line {
     stroke: var(--mood-accent, rgba(255,255,255,0.5));
-    stroke-width: 0.08;
-    stroke-dasharray: 0.4 0.2;
+    stroke-width: 0.08; stroke-dasharray: 0.4 0.2;
   }
+
+  /* --- Star anchor + glow --- */
+  .star-anchor { cursor: pointer; }
   .star-glow {
     fill: var(--mood-accent, rgba(255,255,255,0.3));
-    filter: blur(0.3px);
+    animation: twinkle 4s ease-in-out infinite alternate;
   }
-  .star-core { fill: currentColor; }
+  .star-core { fill: #e8e8f0; }
   .star-label {
-    font-size: 0.22rem;
-    fill: currentColor;
-    opacity: 0.55;
-    text-anchor: middle;
-    pointer-events: none;
+    font-size: 0.22rem; fill: rgba(255,255,255,0.55);
+    text-anchor: middle; pointer-events: none;
+    transition: opacity 200ms;
   }
+  .star-anchor:hover .star-label { opacity: 1; fill: #fff; }
+  .star-anchor:hover .star-glow { animation: none; opacity: 0.8; }
+
+  /* --- Glass info panel on hover --- */
+  .star-panel-wrap { overflow: visible; opacity: 0; transition: opacity 200ms; pointer-events: none; }
+  .star-anchor:hover .star-panel-wrap { opacity: 1; }
+  .star-panel {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 0.3rem 0.5rem;
+    display: flex; flex-direction: column; gap: 0.1rem;
+    width: max-content;
+  }
+  .sp-name { font-size: 0.18rem; color: #fff; }
+  .sp-path { font-size: 0.14rem; color: rgba(255,255,255,0.45); font-style: italic; }
+
+  /* --- Twinkle animation --- */
+  @keyframes twinkle {
+    0%   { filter: blur(0.2px); opacity: var(--tw-base, 0.4); }
+    50%  { filter: blur(0.5px); opacity: calc(var(--tw-base, 0.4) * 1.6); }
+    100% { filter: blur(0.2px); opacity: var(--tw-base, 0.4); }
+  }
+
+  /* --- Legend --- */
   .cs-legend {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    padding: 1.5rem 0;
-    flex-wrap: wrap;
+    display: flex; justify-content: center; gap: 2rem;
+    padding: 1.5rem 0; flex-wrap: wrap;
   }
-  .cs-legend-item {
-    display: flex;
-    flex-direction: column;
-    max-width: 14rem;
-  }
-  .cs-legend-name {
-    font-size: 0.7rem;
-    letter-spacing: 0.04em;
-    opacity: 0.75;
-  }
-  .cs-legend-desc {
-    font-size: 0.65rem;
-    opacity: 0.4;
-    font-style: italic;
-    margin-top: 0.2rem;
+  .cs-legend-item { display: flex; flex-direction: column; max-width: 14rem; }
+  .cs-legend-name { font-size: 0.7rem; letter-spacing: 0.04em; opacity: 0.75; }
+  .cs-legend-desc { font-size: 0.65rem; opacity: 0.4; font-style: italic; margin-top: 0.2rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .star-glow { animation: none; }
+    .constellation-group { transition: none; }
   }
 </style>

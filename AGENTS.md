@@ -1,22 +1,19 @@
 # Persona Blog
 
-Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
-
-## Core Feature
-
-**Temporal Decay** — posts visually age (opacity, blur, saturation, shadow). Hover/long-press revives them.
+Astro 4 · TypeScript strict · @astrojs/node standalone · Docker
 
 ## Key Paths
 
-- `src/lib/` — shared utilities
-- `src/components/` — Astro components
-- `src/styles/` — styling and design tokens
-- `src/pages/` — routes and API endpoints
+- `src/lib/` — shared utilities (decay math, constellation graph, pulse engine)
+- `src/components/` — Astro components (DecayCard, PlanetariumWindow, PulseTeaser …)
+- `src/styles/` — design tokens and global styles
+- `src/pages/` — routes (`/`, `/constellations`, `/pulse`, `/now`, `/wall`)
 - `src/data/` — JSON flat-file storage
 
 ## WIP
 
-- Page consolidation — secondary pages need progressive disclosure hooks.
-- DecayCard extras — cover image slot, prev/next links (v2).
-- Mobile long-press — wired in, needs real-device testing.
-- Post Constellation — data layer done, needs SVG renderer + layout integration.
+- Constellation star field — accessible `<a>` stars, glass hover panels, `:target` filtering. Needs chromatic-aberration filter, 200+ post scalability.
+- PlanetariumWindow hero — shows preview constellation on homepage. Needs top-3 brightest stars, stroke-dashoffset line-draw animation.
+- Page consolidation — `/pulse`+`/wall` → `/now`, `/embers` → `/tidepool` (nav done, routes still separate).
+- DecayCard v2 — cover image slot, prev/next navigation.
+- Mobile long-press revival — wired, needs real-device testing.

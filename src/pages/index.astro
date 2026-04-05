@@ -10,6 +10,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
 import PulseTeaser from '../components/PulseTeaser.astro';
+import PlanetariumWindow from '../components/PlanetariumWindow.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { getPulseData, activeLoops } from '../lib/pulse';
 
@@ -22,6 +23,7 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
 
 <BaseLayout title="Persona Blog">
   <main class="feed">
+    <PlanetariumWindow />
     {freshestLoop && <PulseTeaser loop={freshestLoop} />}
     {displayPosts.map(post => (
       <DecayCard post={post} />
