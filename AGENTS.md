@@ -12,8 +12,7 @@ Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
 
 ## WIP
 
-- **Open Loop Lifecycle** — loops evolve through active → graduated → quiet-resolved. Next: 3-zone layout in `pulse.astro`, graduated card rendering, empty-state.
-- **Now Page Memory** — `/now/before` archive with geological eras. Next: permalink anchors, auto-archival at build time.
+- **Open Loop Pulse** — core feature. 3-zone lifecycle on `/pulse`, teaser on homepage. Next: graduated↔post bidirectional links, empty-state illustration.
+- **Nav consolidation** — 5-item nav, secondary pages via DriftNav.
+- **Now Page Memory** — `/now/before` archive. Next: permalink anchors, auto-archival.
 - **Mood Snapshots** — `?snap=` URL encoding. Next: OG preview, snapshot banner.
-- Ambient atmosphere & drone — mood palettes, shimmer, generative Web Audio.
-- Drift Navigation — `DriftNav` footer bar (pulse dot added).

@@ -12,15 +12,15 @@ const path = Astro.url.pathname;
 const pageId = getActivePage(path);
 const isBlogPost = pageId === 'blog';
 
+// Nav consolidated per UX spec: 8 → 5 items.
+// Secondary pages (embers, tidepool, lowtide, constellations)
+// remain accessible via DriftNav + internal links.
 const links: { label: string; href: string; id: PageId }[] = [
-  { label: 'wall',           href: '/wall',           id: 'wall' },
-  { label: 'embers',         href: '/embers',         id: 'embers' },
-  { label: 'tidepool',       href: '/tidepool',       id: 'tidepool' },
-  { label: 'lowtide',        href: '/lowtide',        id: 'lowtide' },
-  { label: 'constellations', href: '/constellations', id: 'constellations' },
-  { label: 'now',            href: '/now',            id: 'now' },
-  { label: 'pulse',          href: '/pulse',          id: 'pulse' },
-  { label: 'blog',           href: '/',               id: 'home' },
+  { label: 'blog',  href: '/',      id: 'home'  },
+  { label: 'pulse', href: '/pulse', id: 'pulse' },
+  { label: 'wall',  href: '/wall',  id: 'wall'  },
+  { label: 'now',   href: '/now',   id: 'now'   },
+  { label: 'embers', href: '/embers', id: 'embers' },
 ];
 ---
 

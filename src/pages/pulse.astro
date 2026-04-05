@@ -1,21 +1,27 @@
 ---
 // src/pages/pulse.astro
-// Two-zone page: open loops (decaying questions) + contradictions.
+// 3-zone lifecycle page: Still Itching → Graduated → Quietly Closed.
+// Visual weight: 60-70% / 20-25% / 10-15% per UX spec.
 // Cards use crystallization styling — denser as they age.
-// Layout: single column, no feature bloat.
 //
 // TODO: empty-state illustration when pulse is quiet
-// TODO: resolved-loop visual treatment (strikethrough + muted)
+// TODO: bidirectional links from graduated cards to blog posts
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import OpenLoopCard from '../components/OpenLoopCard.astro';
 import ContradictionCard from '../components/ContradictionCard.astro';
-import { getPulseData, isPulseQuiet } from '../lib/pulse';
+import {
+  getPulseData, isPulseQuiet,
+  activeLoops as getActive,
+  graduatedLoops as getGraduated,
+  quietResolvedLoops as getQuiet,
+} from '../lib/pulse';
 
 const data = await getPulseData();
 const quiet = isPulseQuiet(data);
-const activeLoops = data.openLoops.filter(l => !l.resolved);
-const resolvedLoops = data.openLoops.filter(l => l.resolved);
+const active = getActive(data);
+const graduated = getGraduated(data);
+const quietResolved = getQuiet(data);
 ---
 
 <BaseLayout title="Pulse">
@@ -23,21 +29,23 @@ const resolvedLoops = data.openLoops.filter(l => l.resolved);
     <header class="pulse-header">
       <h1>Pulse</h1>
       <p class="pulse-tagline">
-        {quiet ? 'All quiet — every question settled or fossilized.' : 'Open questions crystallizing in real time.'}
+        {quiet
+          ? 'All quiet — every question settled or fossilized.'
+          : 'Open questions crystallizing in real time.'}
       </p>
     </header>
 
-    {activeLoops.length > 0 && (
-      <section class="zone" aria-label="Open loops">
-        <h2 class="zone-title">Open Loops</h2>
+    {active.length > 0 && (
+      <section class="zone zone-active" aria-label="Still itching">
+        <h2 class="zone-title">Still Itching</h2>
         <div class="card-stack">
-          {activeLoops.map(l => <OpenLoopCard loop={l} />)}
+          {active.map(l => <OpenLoopCard loop={l} />)}
         </div>
       </section>
     )}
 
     {data.contradictions.length > 0 && (
-      <section class="zone" aria-label="Contradictions">
+      <section class="zone zone-active" aria-label="Contradictions">
         <h2 class="zone-title">Contradictions</h2>
         <div class="card-stack">
           {data.contradictions.map(c => <ContradictionCard item={c} />)}
@@ -45,11 +53,21 @@ const resolvedLoops = data.openLoops.filter(l => l.resolved);
       </section>
     )}
 
-    {resolvedLoops.length > 0 && (
-      <section class="zone zone-resolved" aria-label="Resolved">
-        <h2 class="zone-title">Resolved</h2>
+    {graduated.length > 0 && (
+      <section class="zone zone-graduated" aria-label="Graduated">
+        <h2 class="zone-title">Graduated</h2>
+        <p class="zone-sub">These became full essays.</p>
         <div class="card-stack">
-          {resolvedLoops.map(l => <OpenLoopCard loop={l} />)}
+          {graduated.map(l => <OpenLoopCard loop={l} />)}
+        </div>
+      </section>
+    )}
+
+    {quietResolved.length > 0 && (
+      <section class="zone zone-quiet" aria-label="Quietly closed">
+        <h2 class="zone-title">Quietly Closed</h2>
+        <div class="card-stack">
+          {quietResolved.map(l => <OpenLoopCard loop={l} />)}
         </div>
       </section>
     )}
@@ -61,11 +79,21 @@ const resolvedLoops = data.openLoops.filter(l => l.resolved);
   .pulse-header { margin-bottom: 2.5rem; text-align: center; }
   .pulse-header h1 { font-size: 1.4rem; font-weight: 600; margin: 0; }
   .pulse-tagline { font-size: 0.78rem; opacity: 0.45; margin-top: 0.5rem; }
+
   .zone { margin-bottom: 2.5rem; }
   .zone-title {
     font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
     opacity: 0.4; margin-bottom: 1rem;
   }
+  .zone-sub {
+    font-size: 0.72rem; opacity: 0.35; margin: -0.6rem 0 1rem;
+  }
   .card-stack { display: flex; flex-direction: column; gap: 0.75rem; }
-  .zone-resolved { opacity: 0.5; }
+
+  /* Progressive visual weight: active 60-70%, graduated 20-25%, quiet 10-15% */
+  .zone-active .card-stack { gap: 1.25rem; }
+  .zone-graduated { opacity: 0.7; }
+  .zone-graduated .card-stack { gap: 0.5rem; }
+  .zone-quiet { opacity: 0.45; }
+  .zone-quiet .card-stack { gap: 0.35rem; }
 </style>
