@@ -20,6 +20,7 @@ import { timeTravelBandsScript } from '../lib/timeTravelBands';
 import { spectacleScript } from '../lib/spectacle';
 import TimeTravelSlider from '../components/TimeTravelSlider.astro';
 import FogOverlay from '../components/FogOverlay.astro';
+import SkipButton from '../components/SkipButton.astro';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -35,6 +36,7 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
   <FogOverlay />
+  <SkipButton />
   <main class="feed">
     <TimeTravelSlider />
     {freshestLoop && <PulseTeaser loop={freshestLoop} />}

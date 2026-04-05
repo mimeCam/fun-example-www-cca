@@ -16,9 +16,9 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- First-Visit Spectacle — next: RevivalHint component, skip button UI, slider redesign
-- Time Travel Demo — fog overlay added; wired
+- First-Visit Spectacle — next: RevivalHint component, slider redesign
+- Time Travel Demo — fog overlay wired
 - Revival Bloom — next: ARIA refinement, mobile testing
 - Route Pruning — remove legacy pages
 - Component Pruning — ~19 satellite components pending removal
-- Decay Onboarding — next: RevivalHint + onboardProbe
+- Decay Onboarding — SkipButton + onboardProbe done; next: RevivalHint refactor to use onboard:start, RevivalReward component

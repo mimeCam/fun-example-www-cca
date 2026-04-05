@@ -1,0 +1,97 @@
+---
+// src/components/SkipButton.astro
+// Escape hatch for the first-visit spectacle animation.
+// Fades in 2s after spectacle starts, dispatches spectacle:skip on click.
+// Reduced-motion users see it immediately.
+//
+// ~55 LOC. No dependencies. No framework islands.
+---
+
+<button
+  id="spectacle-skip"
+  class="skip-btn"
+  aria-label="Skip introduction animation"
+  hidden
+>skip &rarr;</button>
+
+<script>
+(function () {
+  var btn = document.getElementById('spectacle-skip');
+  if (!btn) return;
+
+  var reducedMotion = window.matchMedia
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function show() {
+    btn.hidden = false;
+    btn.classList.add('skip-visible');
+    btn.focus();
+  }
+
+  function hide() {
+    btn.classList.remove('skip-visible');
+    btn.hidden = true;
+  }
+
+  function handleClick() {
+    document.dispatchEvent(new CustomEvent('spectacle:skip'));
+    hide();
+  }
+
+  function onPhase(e: any) {
+    if (e.detail === 'bloom') {
+      if (reducedMotion) { show(); return; }
+      setTimeout(show, 2000);
+    }
+  }
+
+  function onDone() { hide(); cleanup(); }
+
+  function cleanup() {
+    document.removeEventListener('spectacle:phase', onPhase);
+    document.removeEventListener('spectacle:complete', onDone);
+    btn.removeEventListener('click', handleClick);
+  }
+
+  btn.addEventListener('click', handleClick);
+  document.addEventListener('spectacle:phase', onPhase);
+  document.addEventListener('spectacle:complete', onDone);
+})();
+</script>
+
+<style>
+  .skip-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    background: none;
+    border: none;
+    color: currentColor;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    cursor: pointer;
+    padding: 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .skip-btn.skip-visible {
+    opacity: 0.35;
+    pointer-events: auto;
+  }
+
+  .skip-btn.skip-visible:hover,
+  .skip-btn.skip-visible:focus-visible {
+    opacity: 0.7;
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skip-btn { transition: none; }
+    .skip-btn.skip-visible { opacity: 0.7; }
+  }
+</style>

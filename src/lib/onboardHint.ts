@@ -74,11 +74,21 @@ export function onboardHintScript(): string {
 
   if(shouldSkip())return;
 
-  waitForChoreo(function(cards){
+  /* ── listen for orchestrator signal ──── */
+  document.addEventListener('onboard:start',function(){
+    var cards=document.querySelectorAll(SEL);
+    if(!cards.length){
+      waitForChoreo(function(c){startHint(c)});
+      return;
+    }
+    startHint(cards);
+  },{once:true});
+
+  function startHint(cards){
     var target=findMostDecayed(cards);
     if(!target)return;
     setTimeout(function(){showHint(target)},DELAY);
-  });
+  }
 
   function shouldSkip(){
     try{
@@ -158,6 +168,7 @@ export function onboardHintScript(): string {
     },400);
 
     try{sessionStorage.setItem(SK,'1')}catch(e){}
+    document.dispatchEvent(new CustomEvent('onboard:resolved'));
   }
 })();`;
 }

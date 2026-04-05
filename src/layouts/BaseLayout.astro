@@ -18,6 +18,7 @@ import { longPressReviveScript } from '../lib/longPressRevive';
 import { reviveClientScript } from '../lib/reviveClient';
 import { keepAliveScript } from '../lib/keepAlive';
 import { onboardHintScript } from '../lib/onboardHint';
+import { onboardProbeScript } from '../lib/onboardProbe';
 import { bloomOrchestratorScript } from '../lib/bloomOrchestrator';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
@@ -45,6 +46,7 @@ const snapScript = snapshotScript();
 const longPressScript = longPressReviveScript();
 const reviveScript = reviveClientScript();
 const keepScript = keepAliveScript();
+const probeScript = onboardProbeScript();
 const hintScript = onboardHintScript();
 const bloomScript = bloomOrchestratorScript();
 
@@ -75,6 +77,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={longPressScript} />
     <script set:html={reviveScript} />
     <script set:html={keepScript} />
+    <script set:html={probeScript} />
     <script set:html={hintScript} />
     <script set:html={bloomScript} />
     <style>
