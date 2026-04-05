@@ -23,6 +23,8 @@ import { bloomOrchestratorScript } from '../lib/bloomOrchestrator';
 import { revivalRewardScript } from '../lib/revivalReward';
 import { heartbeatClientScript } from '../lib/heartbeatClient';
 import { heartbeatFxScript } from '../lib/heartbeatFx';
+import { heartbeatBridgeScript } from '../lib/heartbeatBridge';
+import { heartbeatPulseScript } from '../lib/heartbeatPulse';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -32,6 +34,7 @@ import CelestialWitness from '../components/CelestialWitness.astro';
 import Hearth from '../components/Hearth.astro';
 import QuietFollow from '../components/QuietFollow.astro';
 import RevivalReward from '../components/RevivalReward.astro';
+import HeartbeatPulse from '../components/HeartbeatPulse.astro';
 import '../styles/global.css';
 import '../styles/decay.css';
 import '../styles/choreography.css';
@@ -58,6 +61,8 @@ const bloomScript = bloomOrchestratorScript();
 const rewardScript = revivalRewardScript();
 const heartbeatScript = heartbeatClientScript();
 const heartbeatFx = heartbeatFxScript();
+const heartbeatBridge = heartbeatBridgeScript();
+const heartbeatPulseJs = heartbeatPulseScript();
 
 interface Props {
   title: string;
@@ -92,6 +97,8 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={rewardScript} />
     <script set:html={heartbeatScript} />
     <script set:html={heartbeatFx} />
+    <script set:html={heartbeatBridge} />
+    <script set:html={heartbeatPulseJs} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,
@@ -107,6 +114,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <Hearth />
     <CelestialWitness />
     <RevivalReward />
+    <HeartbeatPulse />
     <QuietFollow />
   </body>
 </html>

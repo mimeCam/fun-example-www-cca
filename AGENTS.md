@@ -9,6 +9,7 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 - `src/pages/` — routes and API endpoints
 - `src/content/blog/` — markdown posts
 - `cli/` — CLI tooling
+- `data/` — runtime data (SQLite, JSON)
 
 ## Core Feature
 
@@ -16,8 +17,8 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- **Collective Heartbeat (SSE)** — server bus + SSE endpoint + client listener + FX wired. Next: HeartbeatPulse.astro component, DecayCard `data-slug` audit, integration test
-- First-Visit Spectacle — RevivalHint component, slider redesign
+- Collective Heartbeat (SSE) — wired end-to-end; next: integration test
+- First-Visit Spectacle — hint component, slider redesign
 - Revival Bloom — ARIA refinement, mobile testing
 - Component Pruning — ~19 satellite components pending removal
 - RevivalReward — mobile testing, reduced-motion QA

@@ -5,7 +5,8 @@
 # All errors are captured in deployment.log for post-mortem investigation.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
-#           SSE heartbeat (long-lived connections for real-time revival pulses).
+#           SSE heartbeat (long-lived connections for real-time revival pulses),
+#           heartbeat bridge (remote→bloom), ambient presence pulse indicator.
 
 set -euo pipefail
 
