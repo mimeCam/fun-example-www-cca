@@ -11,6 +11,7 @@ import {
   recordRevival,
 } from '../../lib/collectiveMemory';
 import { broadcast } from '../../lib/heartbeat';
+import { getConstellation } from '../../lib/constellationLookup';
 
 export const prerender = false;
 
@@ -42,8 +43,12 @@ export const POST: APIRoute = async ({ request }) => {
 
   const count = incrementRevival(slug);
   recordRevival(ip, slug);
-  broadcast({ slug, count, ts: Date.now() });
-  return jsonOk({ ok: true, count });
+
+  const constellation = await getConstellation(slug);
+  const resonance = constellation.length > 0 ? constellation : undefined;
+  broadcast({ slug, count, ts: Date.now(), resonance });
+
+  return jsonOk({ ok: true, count, resonance: resonance ?? [] });
 };
 
 // ---------------------------------------------------------------------------

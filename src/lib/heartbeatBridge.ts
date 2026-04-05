@@ -26,3 +26,6 @@ function bridgeIIFE(): void {
     );
   }
 }
+
+// Note: resonance[] from heartbeat events is handled by sympatheticBloom.ts
+// which listens directly to 'heartbeat:revival'. No bridge needed for cascade.

@@ -176,6 +176,44 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * Sympathetic bloom: half-intensity cascade on connected posts
+ * No particles — just ring glow, opacity lift, shadow deepening.
+ * Intensity driven by --bloom-intensity custom property (0–1).
+ * ------------------------------------------------------------------------- */
+
+.decay-card.sympathetic .bloom-ring {
+  animation: sympathetic-ring var(--sympathetic-duration, 1000ms) ease-out forwards;
+}
+
+.decay-card.sympathetic .bloom-particle {
+  animation: none;
+  display: none;
+}
+
+.decay-card.sympathetic.bloom-lift {
+  transform: translateY(var(--sympathetic-lift-y, -1.5px));
+}
+
+@keyframes sympathetic-ring {
+  0% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0);
+  }
+  25% {
+    opacity: calc(var(--bloom-intensity, 0.5) * 1);
+    box-shadow:
+      0 0 0 6px rgba(var(--mood-accent-rgb, 120,120,120),
+      var(--sympathetic-ring-alpha, 0.10));
+  }
+  100% {
+    opacity: 0;
+    box-shadow:
+      0 0 0 var(--sympathetic-ring-spread, 14px)
+      rgba(var(--mood-accent-rgb, 120,120,120), 0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * Reduced motion: instant state swap, no animation
  * ------------------------------------------------------------------------- */
 
@@ -196,5 +234,15 @@
   .decay-card.bloom-lift {
     transition: none;
     transform: none;
+  }
+
+  .decay-card.sympathetic {
+    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.20);
+    transition: border-color 200ms ease;
+  }
+
+  .decay-card.sympathetic .bloom-ring {
+    animation: none;
+    display: none;
   }
 }

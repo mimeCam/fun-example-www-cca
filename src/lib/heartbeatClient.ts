@@ -36,7 +36,7 @@ function clientIIFE(): void {
     const data = safeParse(e.data);
     if (!data || !data.slug) return;
     if (isOwnRevival(data.slug)) return;
-    debounced(data.slug, data.count, data.ts);
+    debounced(data.slug, data.count as number, data.ts as number, data.resonance as unknown[]);
   }
 
   function onError(): void {
@@ -53,21 +53,21 @@ function clientIIFE(): void {
   }
 
   /** Debounce rapid-fire events for the same slug. */
-  function debounced(slug: string, count: number, ts: number): void {
+  function debounced(slug: string, count: number, ts: number, resonance?: unknown[]): void {
     const prev = debounceMap.get(slug);
     if (prev) clearTimeout(prev);
     const timer = window.setTimeout(() => {
       debounceMap.delete(slug);
-      dispatch(slug, count, ts);
+      dispatch(slug, count, ts, resonance);
     }, 500);
     debounceMap.set(slug, timer);
   }
 
   /** Dispatch the custom event for other modules to consume. */
-  function dispatch(slug: string, count: number, ts: number): void {
+  function dispatch(slug: string, count: number, ts: number, resonance?: unknown[]): void {
     document.dispatchEvent(
       new CustomEvent('heartbeat:revival', {
-        detail: { slug, count, ts },
+        detail: { slug, count, ts, resonance },
       })
     );
   }

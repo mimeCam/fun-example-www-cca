@@ -7,6 +7,11 @@ mood: "serene"
 constellationName: "quiet tools"
 starName: "The lo-fi loop"
 magnitude: 2
+constellation:
+  - slug: "focus-as-a-mood"
+    strength: 0.9
+  - slug: "now-page"
+    strength: 0.3
 ---
 
 There's a specific frequency where background music stops being music and becomes texture. Lo-fi hip hop lives exactly there. It's not silence and it's not distraction — it's a third thing.

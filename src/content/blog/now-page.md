@@ -6,6 +6,11 @@ badge: "Evergreen"
 constellationName: "quiet tools"
 starName: "The now page"
 magnitude: 3
+constellation:
+  - slug: "building-in-public"
+    strength: 0.7
+  - slug: "the-decay-theory"
+    strength: 0.5
 ---
 
 Derek Sivers invented the /now page. It answers the question friends ask when they haven't seen you in a while: "What are you up to these days?"

@@ -23,13 +23,17 @@ export function reviveClientScript(): string {
   function emit(s,count,src){
     document.dispatchEvent(new CustomEvent('revival:success',
       {detail:{slug:s,newCount:count,source:src}}))}
+  function emitResonance(resonance){
+    if(!resonance||!resonance.length)return;
+    document.dispatchEvent(new CustomEvent('revival:local:resonance',
+      {detail:{resonance:resonance}}))}
   function send(s,src){
     if(fired(s))return;mark(s);
     fetch('/api/revive',{method:'POST',keepalive:true,
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({slug:s})})
     .then(function(r){return r.json()})
-    .then(function(d){if(d&&d.ok)emit(s,d.count,src||'hover')})
+    .then(function(d){if(d&&d.ok){emit(s,d.count,src||'hover');emitResonance(d.resonance)}})
     .catch(function(){})}
   function init(){
     var cards=document.querySelectorAll(C);

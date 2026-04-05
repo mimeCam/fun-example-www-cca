@@ -25,6 +25,7 @@ import { heartbeatClientScript } from '../lib/heartbeatClient';
 import { heartbeatFxScript } from '../lib/heartbeatFx';
 import { heartbeatBridgeScript } from '../lib/heartbeatBridge';
 import { heartbeatPulseScript } from '../lib/heartbeatPulse';
+import { sympatheticBloomScript } from '../lib/sympatheticBloom';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -63,6 +64,7 @@ const heartbeatScript = heartbeatClientScript();
 const heartbeatFx = heartbeatFxScript();
 const heartbeatBridge = heartbeatBridgeScript();
 const heartbeatPulseJs = heartbeatPulseScript();
+const sympatheticScript = sympatheticBloomScript();
 
 interface Props {
   title: string;
@@ -99,6 +101,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={heartbeatFx} />
     <script set:html={heartbeatBridge} />
     <script set:html={heartbeatPulseJs} />
+    <script set:html={sympatheticScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

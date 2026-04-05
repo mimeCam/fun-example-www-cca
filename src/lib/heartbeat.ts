@@ -3,11 +3,19 @@
 // Manages SSE connections, broadcasts revival events, auto-cleans on disconnect.
 // Zero dependencies — uses native ReadableStream controllers.
 
+/** A constellation connection included in revival broadcasts. */
+export interface ResonanceLink {
+  slug: string;
+  strength: number;
+}
+
 /** Shape of a heartbeat event sent to all connected clients. */
 export interface HeartbeatEvent {
   slug: string;
   count: number;
   ts: number;
+  /** Constellation connections — present when revival triggers cascade. */
+  resonance?: ResonanceLink[];
 }
 
 type Controller = ReadableStreamDefaultController<Uint8Array>;

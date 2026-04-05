@@ -6,6 +6,11 @@ badge: "Meta"
 constellationName: "first light"
 starName: "Building in public"
 magnitude: 2
+constellation:
+  - slug: "hello-world"
+    strength: 0.8
+  - slug: "the-decay-theory"
+    strength: 0.7
 ---
 
 Most personal sites are finished products. This one isn't. You're watching the construction — the scaffolding is part of the architecture.

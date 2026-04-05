@@ -15,4 +15,14 @@
   --shadow-fresh-y: 8px;
   --shadow-fresh-spread: 32px;
   --shadow-fresh-alpha: 0.22;
+
+  /* Sympathetic bloom tokens — cascade glow on connected posts */
+  --sympathetic-ring-spread: 14px;
+  --sympathetic-ring-alpha: 0.10;
+  --sympathetic-opacity-lift: 0.15;
+  --sympathetic-shadow-lift: 4px;
+  --sympathetic-shadow-alpha-lift: 0.06;
+  --sympathetic-duration: 1000ms;
+  --sympathetic-settle-duration: 1000ms;
+  --sympathetic-lift-y: -1.5px;
 }

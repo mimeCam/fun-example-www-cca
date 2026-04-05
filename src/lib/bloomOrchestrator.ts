@@ -77,7 +77,8 @@ export function bloomOrchestratorScript(): string {
     blooming.delete(slug)
   }
 
-  function runBloom(slug,count){
+  function runBloom(slug,count,intensity){
+    intensity=typeof intensity==='number'?intensity:1;
     var el=findCard(slug);
     if(!el)return dequeue();
     if(blooming.has(slug))return dequeue();
@@ -91,10 +92,11 @@ export function bloomOrchestratorScript(): string {
       return dequeue()
     }
 
+    applyIntensity(el,intensity);
     el.setAttribute('data-bloom-lock','1');
     el.classList.add('blooming','bloom-lift');
     updateBadge(el,count);
-    announce(el,count);
+    if(intensity>=1)announce(el,count);
 
     setTimeout(function(){
       patchDecay(el,count)
@@ -113,6 +115,7 @@ export function bloomOrchestratorScript(): string {
     setTimeout(function(){
       el.classList.remove('bloom-settle');
       el.removeAttribute('data-bloom-lock');
+      clearIntensity(el);
       blooming.delete(slug);
       dequeue()
     },${PHASE_CLEANUP_MS})
@@ -121,23 +124,36 @@ export function bloomOrchestratorScript(): string {
   function dequeue(){
     if(queue.length===0)return;
     var next=queue.shift();
-    runBloom(next.slug,next.count)
+    runBloom(next.slug,next.count,next.intensity)
   }
 
-  function enqueue(slug,count){
+  function applyIntensity(el,intensity){
+    el.style.setProperty('--bloom-intensity',intensity.toFixed(2));
+    if(intensity<1){
+      el.classList.add('sympathetic')
+    }
+  }
+
+  function clearIntensity(el){
+    el.style.removeProperty('--bloom-intensity');
+    el.classList.remove('sympathetic')
+  }
+
+  function enqueue(slug,count,intensity){
+    intensity=typeof intensity==='number'?intensity:1;
     if(blooming.has(slug)){
       var exists=queue.some(function(q){return q.slug===slug});
-      if(!exists)queue.push({slug:slug,count:count});
+      if(!exists)queue.push({slug:slug,count:count,intensity:intensity});
       return
     }
-    runBloom(slug,count)
+    runBloom(slug,count,intensity)
   }
 
   document.addEventListener('revival:success',function(e){
     var d=e.detail;
     if(!d||!d.slug)return;
     if(d.programmatic)ttActive=false;
-    enqueue(d.slug,d.newCount||1)
+    enqueue(d.slug,d.newCount||1,d.intensity)
   });
 
   document.addEventListener('timetravel:seek',function(){ttActive=true});

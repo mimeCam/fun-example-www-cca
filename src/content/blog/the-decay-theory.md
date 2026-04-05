@@ -7,6 +7,13 @@ mood: "contemplative"
 constellationName: "first light"
 starName: "The decay theory"
 magnitude: 2
+constellation:
+  - slug: "hello-world"
+    strength: 0.6
+  - slug: "building-in-public"
+    strength: 0.9
+  - slug: "now-page"
+    strength: 0.4
 ---
 
 Content decays. Posts fade. The newest writing glows brightest; older pieces dim and blur at the edges. This isn't entropy — it's editorial.
