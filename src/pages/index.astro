@@ -16,6 +16,7 @@ import { getPulseData, activeLoops } from '../lib/pulse';
 import { groupIntoBands } from '../lib/timeBands';
 import { decayChoreographyScript } from '../lib/decayChoreography';
 import { timeTravelScript } from '../lib/timeTravel';
+import { timeTravelBandsScript } from '../lib/timeTravelBands';
 import TimeTravelSlider from '../components/TimeTravelSlider.astro';
 
 const posts = await getCollection('blog');
@@ -29,25 +30,26 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
 <BaseLayout title="Persona Blog">
   <script set:html={decayChoreographyScript()} />
   <script set:html={timeTravelScript()} />
+  <script set:html={timeTravelBandsScript()} />
   <main class="feed">
     <TimeTravelSlider />
     {freshestLoop && <PulseTeaser loop={freshestLoop} />}
 
     {bands.now.posts.length > 0 && (
-      <section class="band" aria-label={bands.now.hint}>
+      <section class="band" data-band="now" aria-label={bands.now.hint}>
         {bands.now.posts.map(post => <DecayCard post={post} />)}
       </section>
     )}
 
     {bands.recent.posts.length > 0 && (
-      <section class="band band--recent" aria-label={bands.recent.hint}>
+      <section class="band band--recent" data-band="recent" aria-label={bands.recent.hint}>
         <h2 class="band-label">{bands.recent.label}</h2>
         {bands.recent.posts.map(post => <DecayCard post={post} />)}
       </section>
     )}
 
     {bands.archive.posts.length > 0 && (
-      <section class="band band--archive" aria-label={bands.archive.hint}>
+      <section class="band band--archive" data-band="archive" aria-label={bands.archive.hint}>
         <h2 class="band-label">{bands.archive.label}</h2>
         {bands.archive.posts.map(post => <DecayCard post={post} />)}
         {bands.archive.overflow > 0 && (
@@ -76,6 +78,8 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
     font-weight: 400;
   }
   .band--archive { opacity: 0.6; }
+  .time-traveling .band { transition: opacity 0.3s ease; }
+  .time-traveling .decay-card { will-change: transform; }
   .archive-hint {
     text-align: center;
     font-size: 0.65rem;

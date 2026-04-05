@@ -17,7 +17,7 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Time Travel Demo — slider + engine wired; next: band re-sorting, fog overlay, guided auto-play
+- Time Travel Demo — slider + engine + band re-sorting wired; next: fog overlay, guided auto-play
 - Revival Bloom — orchestrator wired (4-phase choreography); next: ARIA refinement, mobile testing
 - Route Pruning — remove legacy pages
 - Component Pruning — ~19 satellite components pending removal
