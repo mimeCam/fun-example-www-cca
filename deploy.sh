@@ -17,7 +17,7 @@ LOG_FILE="${SCRIPT_DIR}/deployment.log"
 
 # Reset deployment.log; redirect both stdout and stderr for full traceability
 : > "${LOG_FILE}"
-exec > >(tee -a "${LOG_FILE}") 2>"${LOG_FILE}"
+exec > >(tee -a "${LOG_FILE}") 2>&1
 
 echo "==> [deploy] Starting deployment of ${CONTAINER_NAME} at $(date)"
 

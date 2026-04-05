@@ -20,4 +20,4 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 - Revival Bloom — bloom.css + BloomParticles done; next: revivalBloom.ts (animation orchestrator) and BaseLayout wiring
 - Route Pruning — remove legacy pages (constellation/wall/tidepool/lowtide/embers/pulse/now/before)
 - Component Pruning — ~19 satellite components pending removal
-- Decay Onboarding — first-visit hint for mobile revival
+- Decay Onboarding — Phase 1 done (onboardHint.ts + hint.css); Phase 2 WIP: RevivalHint.astro component, onboardProbe.ts, DecayCard data-onboard-target
