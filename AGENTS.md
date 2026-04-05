@@ -19,3 +19,4 @@ Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
 - Page consolidation — secondary pages need progressive disclosure hooks.
 - DecayCard extras — cover image slot, prev/next links (v2).
 - Mobile long-press — wired in, needs real-device testing.
+- Post Constellation — data layer done, needs SVG renderer + layout integration.

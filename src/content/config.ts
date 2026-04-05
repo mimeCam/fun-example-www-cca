@@ -18,6 +18,10 @@ const blog = defineCollection({
       text: z.string(),   // curated sentence from the echoed post
       from: z.string(),   // slug of the source post (e.g. "hello-world")
     }).optional(),
+    constellation: z.array(z.object({
+      slug: z.string(),          // slug of the related post
+      strength: z.number().min(0).max(1).default(0.5),
+    })).optional(),
   }),
 });
 

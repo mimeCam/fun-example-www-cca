@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.gitignore
+deployment.log
+openloop
+cli
+*.md
+!src/**/*.md

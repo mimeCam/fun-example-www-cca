@@ -4,6 +4,11 @@ pubDate: 2026-04-04
 description: "The first post. It will probably bother some people."
 badge: "Will bother some people"
 variants: true
+constellation:
+  - slug: "building-in-public"
+    strength: 0.8
+  - slug: "the-decay-theory"
+    strength: 0.6
 ---
 
 This is the first post on this blog.
