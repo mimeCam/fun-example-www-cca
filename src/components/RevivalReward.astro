@@ -1,0 +1,17 @@
+---
+// src/components/RevivalReward.astro
+// Renders the aria-live region and banner template for RevivalReward.
+// Injected once in BaseLayout.astro — provides:
+//   1. Screen reader announcement region (polite)
+//   2. <template> for the inline reward banner (cloned per event)
+---
+
+<div class="revival-reward-root" aria-live="polite" aria-atomic="true">
+  <span class="sr-only" id="revival-announce"></span>
+</div>
+
+<template id="revival-reward-tpl">
+  <div class="revival-reward-banner" role="status">
+    <span class="reward-text"></span>
+  </div>
+</template>

@@ -21,4 +21,5 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 - Revival Bloom — next: ARIA refinement, mobile testing
 - Route Pruning — remove legacy pages
 - Component Pruning — ~19 satellite components pending removal
-- Decay Onboarding — SkipButton + onboardProbe done; next: RevivalHint refactor to use onboard:start, RevivalReward component
+- Decay Onboarding — next: RevivalHint refactor to use onboard:start
+- RevivalReward — next: mobile testing, reduced-motion QA
