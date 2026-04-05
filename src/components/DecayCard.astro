@@ -34,12 +34,12 @@ const formattedDate = formatPubDate(post.pubDate);
 
 <style>
   .post-card {
-    padding: 1.25rem 1.5rem;
-    border-radius: 10px;
+    padding: 1.5rem 1.75rem;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
+    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
     max-width: 40rem;
-    margin: 0 auto 1rem;
+    margin: 0 auto 1.25rem;
   }
 
   .post-link {
@@ -67,7 +67,8 @@ const formattedDate = formatPubDate(post.pubDate);
 
   .post-link:hover .post-title {
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
   }
 
   .post-excerpt {

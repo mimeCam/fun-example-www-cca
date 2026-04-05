@@ -1,19 +1,33 @@
 /* src/styles/decay.css
  * Decay visual system — driven by CSS custom properties from decay.ts.
- * The hover "revival" effect is the signature interaction:
- * old content fades, you hover, it sharpens, you leave, it fades again.
+ *
+ * Three decay signals: opacity/blur/saturation (original) + shadow (new).
+ * Fresh posts cast generous accent-tinted shadows. Fossils cast none.
+ * Hover "revival" uses a springy bezier — cards physically lift off the page.
  */
 
 .decay-card {
   opacity: var(--decay-opacity, 1);
   filter: blur(var(--decay-blur, 0px)) saturate(var(--decay-saturation, 1));
-  transition: opacity 0.6s ease, filter 0.6s ease;
+  box-shadow:
+    0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
+    rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.18));
+  transition:
+    opacity 0.5s ease,
+    filter 0.5s ease,
+    box-shadow 0.5s ease,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(0);
+  will-change: transform, box-shadow;
 }
 
 .decay-card:hover,
 .decay-card:focus-within {
   opacity: 1;
   filter: blur(0px) saturate(1);
+  box-shadow:
+    0 8px 32px rgba(var(--mood-accent-rgb, 120,120,120), 0.22);
+  transform: translateY(-2px);
 }
 
 /* Freshness tag — screen-reader friendly, visually subtle */

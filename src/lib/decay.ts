@@ -42,6 +42,21 @@ export function saturationFromDecay(factor: number): number {
   return +(1 - factor * 0.4).toFixed(2);
 }
 
+/** Shadow spread in px: 32 (fresh) → 0 (ancient). Decay eats the shadow. */
+export function shadowSpreadFromDecay(factor: number): number {
+  return +((1 - factor) * 32).toFixed(1);
+}
+
+/** Shadow opacity: 0.18 (fresh) → 0 (ancient). */
+export function shadowAlphaFromDecay(factor: number): number {
+  return +((1 - factor) * 0.18).toFixed(3);
+}
+
+/** Y-offset for shadow: 8 (fresh) → 0 (ancient). */
+export function shadowYFromDecay(factor: number): number {
+  return +((1 - factor) * 8).toFixed(1);
+}
+
 // ---------------------------------------------------------------------------
 // Accessibility label (screen readers only)
 // ---------------------------------------------------------------------------
@@ -70,6 +85,9 @@ export interface DecayCSSVars {
   '--decay-opacity': string;
   '--decay-blur': string;
   '--decay-saturation': string;
+  '--decay-shadow-y': string;
+  '--decay-shadow-spread': string;
+  '--decay-shadow-alpha': string;
 }
 
 /** Returns CSS custom properties for inline style binding. */
@@ -78,6 +96,9 @@ export function decayCSSVars(factor: number): DecayCSSVars {
     '--decay-opacity': String(opacityFromDecay(factor)),
     '--decay-blur': `${blurFromDecay(factor)}px`,
     '--decay-saturation': String(saturationFromDecay(factor)),
+    '--decay-shadow-y': `${shadowYFromDecay(factor)}px`,
+    '--decay-shadow-spread': `${shadowSpreadFromDecay(factor)}px`,
+    '--decay-shadow-alpha': String(shadowAlphaFromDecay(factor)),
   };
 }
 
@@ -118,12 +139,21 @@ export function _testDecayLib(): void {
   console.assert(freshnessTag(0.6) === 'aged', 'tag at 0.6');
   console.assert(freshnessTag(0.9) === 'fossil', 'tag at 0.9');
 
+  console.assert(shadowSpreadFromDecay(0) === 32, 'fresh shadow spread');
+  console.assert(shadowSpreadFromDecay(1) === 0, 'fossil shadow spread');
+  console.assert(shadowAlphaFromDecay(0) === 0.18, 'fresh shadow alpha');
+  console.assert(shadowAlphaFromDecay(1) === 0, 'fossil shadow alpha');
+  console.assert(shadowYFromDecay(0) === 8, 'fresh shadow y-offset');
+  console.assert(shadowYFromDecay(1) === 0, 'fossil shadow y-offset');
+
   const css = decayCSSVars(0.5);
   console.assert(css['--decay-opacity'] === String(opacityFromDecay(0.5)));
   console.assert(css['--decay-blur'] === `${blurFromDecay(0.5)}px`);
+  console.assert(css['--decay-shadow-spread'] === `${shadowSpreadFromDecay(0.5)}px`);
 
   const style = decayStyleString(0);
   console.assert(style.includes('--decay-opacity:1'), 'style string');
+  console.assert(style.includes('--decay-shadow-alpha:0.18'), 'shadow in style');
 
-  console.log('[decay] lib OK — factor, visuals, tags, CSS vars verified');
+  console.log('[decay] lib OK — factor, visuals, shadow, tags, CSS vars verified');
 }
