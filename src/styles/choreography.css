@@ -1,0 +1,67 @@
+/* src/styles/choreography.css
+ * Decay entrance choreography — staggered reveal on first visit.
+ * Cards load hidden, fade in bright, then settle to true decay.
+ *
+ * Three states: .choreo-pending → .choreo-reveal → .choreo-done
+ * JS orchestrates class toggling; CSS handles all visuals.
+ */
+
+/* ---- Phase 0: Hidden, waiting for IntersectionObserver ---- */
+.choreo-pending {
+  opacity: 0;
+  transform: translateY(12px);
+  filter: blur(0px) saturate(1);
+  transition: none;
+}
+
+/* ---- Phase 1: Fade in at full brightness ---- */
+.choreo-reveal {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px) saturate(1);
+  box-shadow:
+    0 8px 32px
+    rgba(var(--mood-accent-rgb, 120,120,120), 0.22);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.25s ease-out;
+}
+
+/* ---- Phase 2: Settle to true decay values ---- */
+.choreo-settle {
+  opacity: var(--decay-opacity, 1);
+  filter:
+    blur(var(--decay-blur, 0px))
+    saturate(var(--decay-saturation, 1));
+  box-shadow:
+    0 var(--decay-shadow-y, 8px)
+      var(--decay-shadow-spread, 32px)
+    rgba(var(--mood-accent-rgb, 120,120,120),
+         var(--decay-shadow-alpha, 0.18));
+  transform: translateY(0);
+  transition:
+    opacity 0.8s ease-out,
+    filter 0.8s ease-out,
+    box-shadow 0.8s cubic-bezier(0.0, 0.0, 0.2, 1),
+    transform 0.4s ease-out;
+}
+
+/* ---- Phase 3: Done — hand control to decay.css ---- */
+.choreo-done {
+  /* No overrides; decay.css .decay-card rules take over */
+}
+
+/* ---- Reduced motion: skip everything ---- */
+@media (prefers-reduced-motion: reduce) {
+  .choreo-pending {
+    opacity: var(--decay-opacity, 1);
+    transform: none;
+    filter:
+      blur(var(--decay-blur, 0px))
+      saturate(var(--decay-saturation, 1));
+  }
+  .choreo-reveal,
+  .choreo-settle {
+    transition: none;
+  }
+}

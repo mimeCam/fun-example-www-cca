@@ -7,9 +7,11 @@
 // This script is the correction — imperceptible transition to true values.
 
 const SELECTOR = '.decay-card[data-pub-date]';
+const READY_SELECTOR = '.decay-card.choreo-done[data-pub-date]';
 const MAX_DAYS = 365;
 const MS_PER_DAY = 86_400_000;
 const TICK_INTERVAL_MS = 60_000; // 1 minute
+const CHOREO_FALLBACK_MS = 3_000; // wait max 3s for choreography
 
 // ---------------------------------------------------------------------------
 // Pure helpers (duplicated from decay.ts to keep the client bundle tiny —
@@ -69,7 +71,7 @@ function startLoop(): void {
     const now = Date.now();
     if (now - lastTick >= TICK_INTERVAL_MS) {
       lastTick = now;
-      const cards = document.querySelectorAll<HTMLElement>(SELECTOR);
+      const cards = document.querySelectorAll<HTMLElement>(READY_SELECTOR);
       cards.forEach(card => patchCard(card, now));
     }
     requestAnimationFrame(tick);
@@ -84,7 +86,8 @@ function startLoop(): void {
 /** Returns a self-executing script body for BaseLayout injection. */
 export function liveDecayScript(): string {
   return `(function(){
-  var S='${SELECTOR}',M=${MAX_DAYS},D=${MS_PER_DAY},I=${TICK_INTERVAL_MS},L=0;
+  var S='${READY_SELECTOR}',M=${MAX_DAYS},D=${MS_PER_DAY};
+  var I=${TICK_INTERVAL_MS},L=0,FB=${CHOREO_FALLBACK_MS};
   function f(p,n){return Math.min(1,Math.max(0,(n-p)/D/M))}
   function patch(e,n){var d=f(new Date(e.dataset.pubDate).getTime(),n);
     e.style.setProperty('--decay-opacity',Math.max(.35,1-d*.65));
@@ -96,7 +99,7 @@ export function liveDecayScript(): string {
   function tick(){var n=Date.now();if(n-L>=I){L=n;
     document.querySelectorAll(S).forEach(function(c){patch(c,n)})}
     requestAnimationFrame(tick)}
-  requestAnimationFrame(tick)
+  setTimeout(function(){requestAnimationFrame(tick)},FB)
 })();`;
 }
 
