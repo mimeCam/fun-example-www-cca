@@ -8,6 +8,7 @@
 
 import { resolveMood, moodToCSSVars, moodToCSSString, activeMoodIds, moodSwitchCSS } from '../lib/mood';
 import { articleMoodCSS } from '../lib/mood-engine';
+import { simpleMoodCSSString } from '../lib/mood-simple';
 import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
 import { liveDecayScript } from '../lib/temporal';
@@ -19,6 +20,7 @@ import { canonicalUrl } from '../config/seo.config';
 import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
 import DriftNav from '../components/DriftNav.astro';
+// TODO: remove MoodPills entirely once old mood system is fully cut
 import MoodPills from '../components/MoodPills.astro';
 import GhostDrawer from '../components/GhostDrawer.astro';
 import CelestialWitness from '../components/CelestialWitness.astro';
@@ -40,6 +42,8 @@ import '../styles/shimmer.css';
 
 const pillMoods = activeMoodIds();
 const switchCSS = moodSwitchCSS();
+// TODO: replace old mood pipeline with simpleMoodCSSString(moodConfig.current_mood)
+// once all components are migrated to the 3-mood system
 const timeScript = timeAmbientScript();
 const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();

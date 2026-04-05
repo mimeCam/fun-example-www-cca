@@ -1,0 +1,42 @@
+---
+// src/components/MoodDot.astro
+// Tiny 8px colored dot — the entire mood UI. Decay is the feature;
+// mood is background seasoning expressed as a single pixel of color.
+//
+// Renders in the sticky header zone. Tooltip on hover shows mood name.
+// TODO: cycle mood on click (wire into sessionStorage + CSS vars)
+
+import { moodDotColor, resolveSimpleMood } from '../lib/mood-simple';
+
+interface Props { mood: string; }
+
+const { mood } = Astro.props;
+const color = moodDotColor(mood);
+const label = resolveSimpleMood(mood).label;
+---
+
+<span
+  class="mood-dot"
+  style={`--dot-color: ${color}`}
+  title={label}
+  aria-label={`Current mood: ${label}`}
+  role="status"
+/>
+
+<style>
+  .mood-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dot-color, #9CA3AF);
+    opacity: 0.85;
+    transition: opacity 200ms ease, transform 200ms ease;
+    cursor: default;
+    flex-shrink: 0;
+  }
+  .mood-dot:hover {
+    opacity: 1;
+    transform: scale(1.4);
+  }
+</style>

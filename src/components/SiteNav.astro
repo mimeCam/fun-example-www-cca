@@ -1,19 +1,18 @@
 ---
 // src/components/SiteNav.astro
-// Minimal sticky nav — three words in frosted glass.
+// Minimal sticky nav — three words + mood dot in frosted glass.
 // Highlights current page via Astro.url pathname matching.
 // Zero JS. Consistent with glassmorphism language.
-//
-// TODO: add mood-accent animated underline on active link (v2)
 
 import { getActivePage, type PageId } from '../lib/nav';
+import MoodDot from './MoodDot.astro';
+import moodConfig from '../data/mood.config.json';
 
 const path = Astro.url.pathname;
 const pageId = getActivePage(path);
 const isBlogPost = pageId === 'blog';
 
 // Nav consolidated per UX spec: 10 → 3 items.
-// Secondary pages surface via progressive disclosure, not navigation.
 const links: { label: string; href: string; id: PageId }[] = [
   { label: 'blog',  href: '/',      id: 'home'  },
   { label: 'pulse', href: '/pulse', id: 'pulse' },
@@ -22,6 +21,7 @@ const links: { label: string; href: string; id: PageId }[] = [
 ---
 
 <nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site navigation">
+  <MoodDot mood={moodConfig.current_mood} />
   {links.map(l => (
     <a href={l.href}
        class:list={['nav-link', { active: pageId === l.id }]}

@@ -8,17 +8,19 @@ Astro 4 · TypeScript strict · @astrojs/node standalone · Docker
 - `src/components/` — Astro components
 - `src/styles/` — design tokens and global styles
 - `src/pages/` — routes
-- `src/content/blog/` — blog posts (frontmatter drives constellations + mood)
+- `src/content/blog/` — blog posts (frontmatter drives mood)
 - `src/data/` — JSON flat-file storage
 
 ## Core Feature
 
-Constellations — force-directed star field where proximity = relatedness. Posts become stars; shared themes cluster visually.
+Temporal Decay — posts visually age over time. Fresh posts float with deep shadows, old posts sink into the ground. Shadow depth is the primary age signal. Hover revives any card. The 3-second test: landing on the homepage, you should immediately notice posts are fading.
+
+- Decay engine: `src/lib/decay.ts` → CSS custom properties
+- Decay visuals: `src/styles/decay.css` → hover revival
+- Time bands: `src/lib/timeBands.ts` → Now / Recent / Archive grouping
 
 ## WIP
 
-- **Weighted Mood Blend Engine** — reader mood blends with article mood via HSL interpolation (35/65). Engine: `src/lib/blend.ts`. Next: wire into BaseLayout, sessionStorage persistence, snapshot URL params.
-- **Persona Lens** — per-article mood atmosphere via frontmatter `mood` field. Engine: `src/lib/mood-engine.ts`. Next: ambient particles, transition FX, mood badge.
-- Force-layout tuning — attraction/repulsion constants may need adjustment with 20+ posts.
-- Page consolidation — `/pulse`+`/wall` → `/now`, `/embers` → `/tidepool` (nav done, routes still separate).
-- Constellation decay — dim older paths over time (TODO in constellation.ts).
+- **Mood Simplification** — Old system (13 moods) being replaced with 3 moods (warm/sharp/raw). New engine: `src/lib/mood-simple.ts`. MoodDot component in nav: `src/components/MoodDot.astro`. Next: fully wire into BaseLayout, remove old MoodPills + radio machinery.
+- **Route Pruning** — Target: cut constellations, wall, tidepool, lowtide, embers pages. Homepage already cleaned (PlanetariumWindow removed). Routes still exist, pending deletion.
+- **Component Pruning** — Target: ~10 components. Many satellite components still present, pending removal after route pruning.
