@@ -14,10 +14,13 @@ import { daysSince } from './temporal';
 export interface OpenLoop {
   id: string;
   question: string;
-  dateAdded: string;   // ISO date
+  dateAdded: string;          // ISO date — when the itch started
   context: string;
   resolved: boolean;
-  decayDays: number;   // freshness window in days
+  decayDays: number;          // freshness window in days
+  resolvedDate?: string;      // ISO date — when it clicked
+  resolvedPostSlug?: string;  // → /blog/[slug] if it graduated to an essay
+  resolvedNote?: string;      // 1-liner closure: "Turns out it was about X"
 }
 
 export interface PostRef {
@@ -60,6 +63,59 @@ export function decayLabel(ratio: number): DecayLabel {
 /** CSS opacity derived from decay ratio: fresh = 1.0, stale = 0.35. */
 export function decayOpacity(ratio: number): number {
   return Math.max(0.35, 1 - ratio * 0.65);
+}
+
+// ---------------------------------------------------------------------------
+// Lifecycle states
+// ---------------------------------------------------------------------------
+
+export type LoopState = 'active' | 'graduated' | 'quiet-resolved';
+
+/** Classify a loop into its lifecycle stage. */
+export function loopState(loop: OpenLoop): LoopState {
+  if (!loop.resolved) return 'active';
+  if (loop.resolvedPostSlug) return 'graduated';
+  return 'quiet-resolved';
+}
+
+/** Active (unresolved) loops, sorted freshest-first by decay ratio. */
+export function activeLoops(data: PulseData, now = new Date()): OpenLoop[] {
+  return data.openLoops
+    .filter(l => loopState(l) === 'active')
+    .sort((a, b) =>
+      decayRatio(a.dateAdded, a.decayDays, now) -
+      decayRatio(b.dateAdded, b.decayDays, now),
+    );
+}
+
+/** Graduated loops (resolved + linked to a blog post), newest first. */
+export function graduatedLoops(data: PulseData): OpenLoop[] {
+  return data.openLoops
+    .filter(l => loopState(l) === 'graduated')
+    .sort((a, b) =>
+      new Date(b.resolvedDate!).getTime() -
+      new Date(a.resolvedDate!).getTime(),
+    );
+}
+
+/** Quietly resolved loops (no blog post), newest first. */
+export function quietResolvedLoops(data: PulseData): OpenLoop[] {
+  return data.openLoops
+    .filter(l => loopState(l) === 'quiet-resolved')
+    .sort((a, b) =>
+      new Date(b.resolvedDate!).getTime() -
+      new Date(a.resolvedDate!).getTime(),
+    );
+}
+
+/** Build-time: verify every resolvedPostSlug points to a real blog post. */
+export function validateSlugs(
+  data: PulseData,
+  blogSlugs: string[],
+): string[] {
+  return data.openLoops
+    .filter(l => l.resolvedPostSlug && !blogSlugs.includes(l.resolvedPostSlug))
+    .map(l => `Loop "${l.id}": slug "${l.resolvedPostSlug}" not found`);
 }
 
 /** True when every open loop is either resolved or fully stale. */
@@ -112,5 +168,24 @@ export function _testPulseLib(): void {
   };
   console.assert(!isPulseQuiet(loud, new Date('2026-04-04')), 'fresh loop → not quiet');
 
-  console.log('[pulse] lib OK — decayRatio, decayLabel, decayOpacity, isPulseQuiet verified');
+  // Lifecycle state tests
+  const active: OpenLoop = { id: 'a', question: 'q', dateAdded: '2026-04-01', context: '', resolved: false, decayDays: 30 };
+  const grad: OpenLoop = { ...active, id: 'g', resolved: true, resolvedDate: '2026-04-03', resolvedPostSlug: 'hello-world' };
+  const quietR: OpenLoop = { ...active, id: 'qr', resolved: true, resolvedDate: '2026-04-02', resolvedNote: 'Wrong question' };
+
+  console.assert(loopState(active) === 'active', 'unresolved → active');
+  console.assert(loopState(grad) === 'graduated', 'resolved+slug → graduated');
+  console.assert(loopState(quietR) === 'quiet-resolved', 'resolved no slug → quiet');
+
+  const mixed: PulseData = { lastUpdated: '2026-04-04', openLoops: [active, grad, quietR], contradictions: [] };
+  console.assert(activeLoops(mixed).length === 1, 'activeLoops filters correctly');
+  console.assert(graduatedLoops(mixed).length === 1, 'graduatedLoops filters correctly');
+  console.assert(quietResolvedLoops(mixed).length === 1, 'quietResolvedLoops filters correctly');
+
+  const slugErrors = validateSlugs(mixed, ['hello-world']);
+  console.assert(slugErrors.length === 0, 'valid slug passes validation');
+  const badErrors = validateSlugs(mixed, ['other-post']);
+  console.assert(badErrors.length === 1, 'invalid slug caught by validation');
+
+  console.log('[pulse] lib OK — decay, lifecycle, validation verified');
 }

@@ -6,8 +6,11 @@
       "question": "Is long-form writing dead, or just badly distributed?",
       "dateAdded": "2026-03-20",
       "context": "After writing 3 essays that got 10x more reads as tweet threads.",
-      "resolved": false,
-      "decayDays": 30
+      "resolved": true,
+      "decayDays": 30,
+      "resolvedDate": "2026-04-04",
+      "resolvedPostSlug": "hello-world",
+      "resolvedNote": "Turns out distribution is the whole game."
     },
     {
       "id": "ol-002",
@@ -16,6 +19,40 @@
       "context": "Third time this happened. Starting to think it's a ritual, not a bug.",
       "resolved": false,
       "decayDays": 45
+    },
+    {
+      "id": "ol-003",
+      "question": "Does anyone actually read About pages, or are they trust signals?",
+      "dateAdded": "2026-03-28",
+      "context": "Removed mine for a week. Nobody noticed.",
+      "resolved": false,
+      "decayDays": 30
+    },
+    {
+      "id": "ol-004",
+      "question": "Why does every side project start with a README instead of code?",
+      "dateAdded": "2026-04-01",
+      "context": "Caught myself writing docs for something that doesn't exist yet. Again.",
+      "resolved": false,
+      "decayDays": 14
+    },
+    {
+      "id": "ol-005",
+      "question": "Is RSS making a comeback or is it just my bubble?",
+      "dateAdded": "2026-03-05",
+      "context": "Three people told me they subscribed via RSS this month. That's 3x my usual.",
+      "resolved": true,
+      "decayDays": 60,
+      "resolvedDate": "2026-03-30",
+      "resolvedNote": "It's my bubble. But bubbles are where the good stuff lives."
+    },
+    {
+      "id": "ol-006",
+      "question": "Can you build an audience without ever going viral?",
+      "dateAdded": "2026-02-20",
+      "context": "Watching creators who grow at 10 followers/month for years. Seems more durable.",
+      "resolved": false,
+      "decayDays": 60
     }
   ],
   "contradictions": [
