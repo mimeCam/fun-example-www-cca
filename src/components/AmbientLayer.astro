@@ -47,4 +47,9 @@
     0%   { background-position: 0% 50%; }
     100% { background-position: 100% 50%; }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-layer  { animation: none; }
+    .ambient-time-tint { transition: none; }
+  }
 </style>

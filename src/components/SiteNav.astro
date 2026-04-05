@@ -81,11 +81,21 @@ function isActive(href: string): boolean {
     width: 100%;
     height: 2px;
     border-radius: 0 0 1px 1px;
-    background: rgba(var(--mood-accent-rgb, 0,0,0), 0.18);
+    /* Mood-tinted gradient — bar mirrors the ambient palette */
+    background: linear-gradient(
+      90deg,
+      var(--mood-from, rgba(var(--mood-accent-rgb, 0,0,0), 0.18)),
+      var(--mood-to,   rgba(var(--mood-accent-rgb, 0,0,0), 0.18))
+    );
     box-shadow: 0 1px 6px rgba(var(--mood-accent-rgb, 0,0,0), 0.10);
     transform-origin: left;
     transform: scaleX(var(--erosion-progress, 1));
-    opacity: calc(0.3 + 0.7 * var(--erosion-progress, 1));
+    /* Quiet exhale: fade smoothly to 0 in the final 5% */
+    --ep: var(--erosion-progress, 1);
+    opacity: calc(
+      (0.3 + 0.7 * var(--ep)) *
+      clamp(0, var(--ep) / 0.05, 1)
+    );
     mask-image: linear-gradient(to right, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
     transition: transform 120ms ease-out, opacity 120ms ease-out;

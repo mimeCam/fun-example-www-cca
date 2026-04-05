@@ -11,3 +11,7 @@ Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
 - `src/styles/` — CSS modules
 - `src/pages/api/` — SSR endpoints
 - `cli/` — author CLI tools
+
+## WIP
+
+- Ambient atmosphere stack (mood palettes, time-phase tints, seasonal drift, shimmer, dissolve, erosion bar, celestial witness) — all CSS custom properties, zero client framework, respects `prefers-reduced-motion`.
