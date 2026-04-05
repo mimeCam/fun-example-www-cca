@@ -1,0 +1,79 @@
+---
+// src/components/DecayCard.astro
+// The core feature card — blog posts visually age over time.
+// Opacity fades, blur increases, saturation drops. Hover revives.
+// Uses CSS class .decay-card from decay.css for hover revival.
+//
+// Props: PostDisplayData from postMeta.ts — one call gives everything.
+//
+// TODO: add cover image slot once content schema supports it
+// TODO: add prev/next linking (v2)
+
+import PostBadge from './PostBadge.astro';
+import { formatPubDate } from '../lib/dates';
+import type { PostDisplayData } from '../lib/postMeta';
+
+interface Props { post: PostDisplayData; }
+
+const { post } = Astro.props;
+const href = `/blog/${post.slug}`;
+const formattedDate = formatPubDate(post.pubDate);
+---
+
+<article class="decay-card post-card" style={post.decayStyle}>
+  <a href={href} class="post-link">
+    <time datetime={post.pubDateISO} class="post-date">{formattedDate}</time>
+    <h2 class="post-title">{post.title}</h2>
+  </a>
+  <PostBadge readingTime={post.readingTime} badge={post.badge} />
+  {post.description && <p class="post-excerpt">{post.description}</p>}
+  <span class="decay-freshness" aria-label={`Freshness: ${post.freshness}`}>
+    {post.freshness}
+  </span>
+</article>
+
+<style>
+  .post-card {
+    padding: 1.25rem 1.5rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
+    max-width: 40rem;
+    margin: 0 auto 1rem;
+  }
+
+  .post-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .post-date {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 0.25rem;
+  }
+
+  .post-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--mood-accent, currentColor);
+  }
+
+  .post-link:hover .post-title {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .post-excerpt {
+    margin: 0.5rem 0 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    opacity: 0.7;
+  }
+</style>
