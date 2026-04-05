@@ -1,0 +1,67 @@
+---
+// src/components/KeepButton.astro
+// Explicit "keep alive" revival button for DecayCards.
+// Fires POST /api/revive, shows warm pulse, swaps label to "kept".
+// Session-gated: one keep per slug per session via sessionStorage.
+//
+// Props: slug — the blog post slug for the revival API call.
+
+interface Props { slug: string; }
+
+const { slug } = Astro.props;
+---
+
+<button
+  class="keep-btn"
+  data-keep-slug={slug}
+  aria-label="Keep this post alive"
+>
+  <span class="keep-icon">&hearts;</span>
+  <span class="keep-label">keep</span>
+</button>
+
+<style>
+  .keep-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.65rem;
+    font-family: inherit;
+    letter-spacing: 0.03em;
+    color: rgba(var(--mood-accent-rgb, 120,120,120), 0.55);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.1);
+    border-radius: 999px;
+    cursor: pointer;
+    transition:
+      border-color 150ms ease,
+      background 300ms ease,
+      opacity 800ms ease-out,
+      transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .keep-btn:hover {
+    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
+    box-shadow: 0 2px 8px rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+  }
+
+  .keep-btn:active {
+    transform: scale(0.96);
+  }
+
+  .keep-btn.kept {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+  }
+
+  .keep-btn.pulsing {
+    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.2);
+    transform: scale(1.02);
+  }
+
+  .keep-icon { font-size: 0.72rem; }
+</style>

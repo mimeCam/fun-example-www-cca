@@ -1,7 +1,7 @@
 // src/pages/api/revive.ts
 // POST endpoint for collective memory revival signals.
-// Fire-and-forget from client — accepts { slug }, increments count.
-// Rate-limited by IP+slug (30s window). No response body needed.
+// Accepts { slug }, increments count, returns { ok, count }.
+// Rate-limited by IP+slug (30s window). Returns JSON for UI feedback.
 
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
@@ -39,9 +39,9 @@ export const POST: APIRoute = async ({ request }) => {
   const ip = clientIp(request);
   if (!canRevive(ip, slug)) return tooManyRequests();
 
-  incrementRevival(slug);
+  const count = incrementRevival(slug);
   recordRevival(ip, slug);
-  return new Response(null, { status: 204 });
+  return jsonOk({ ok: true, count });
 };
 
 // ---------------------------------------------------------------------------
@@ -55,6 +55,11 @@ async function parseBody(req: Request): Promise<Record<string, unknown> | null> 
 
 function badRequest(msg: string): Response {
   return new Response(msg, { status: 400 });
+}
+
+function jsonOk(data: Record<string, unknown>): Response {
+  const headers = { 'Content-Type': 'application/json' };
+  return new Response(JSON.stringify(data), { status: 200, headers });
 }
 
 function tooManyRequests(): Response {

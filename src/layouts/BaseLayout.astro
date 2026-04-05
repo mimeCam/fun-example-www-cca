@@ -16,6 +16,7 @@ import { shimmerScript } from '../lib/shimmer';
 import { snapshotScript } from '../lib/snapshot';
 import { longPressReviveScript } from '../lib/longPressRevive';
 import { reviveClientScript } from '../lib/reviveClient';
+import { keepAliveScript } from '../lib/keepAlive';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -28,6 +29,7 @@ import '../styles/global.css';
 import '../styles/decay.css';
 import '../styles/choreography.css';
 import '../styles/shimmer.css';
+import '../styles/revival.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const timeScript = timeAmbientScript();
@@ -37,6 +39,7 @@ const shimScript = shimmerScript();
 const snapScript = snapshotScript();
 const longPressScript = longPressReviveScript();
 const reviveScript = reviveClientScript();
+const keepScript = keepAliveScript();
 
 interface Props {
   title: string;
@@ -64,6 +67,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={shimScript} />
     <script set:html={longPressScript} />
     <script set:html={reviveScript} />
+    <script set:html={keepScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

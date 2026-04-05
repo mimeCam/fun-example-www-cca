@@ -10,7 +10,9 @@
 // DONE: prev/next linking lives in PostNav.astro (blog detail pages)
 
 import PostBadge from './PostBadge.astro';
-import { formatPubDate } from '../lib/dates';
+import RevivalBadge from './RevivalBadge.astro';
+import KeepButton from './KeepButton.astro';
+import { formatPubDate } from '../lib/dates'
 import type { PostDisplayData } from '../lib/postMeta';
 
 interface Props { post: PostDisplayData; }
@@ -23,6 +25,7 @@ const formattedDate = formatPubDate(post.pubDate);
 <article
   class="decay-card post-card choreo-pending"
   style={post.decayStyle}
+  data-slug={post.slug}
   data-pub-date={post.pubDateISO}
   data-decay-factor={post.decay.toFixed(4)}
   data-revival-count={post.revivalCount}
@@ -34,9 +37,14 @@ const formattedDate = formatPubDate(post.pubDate);
   </a>
   <PostBadge readingTime={post.readingTime} badge={post.badge} />
   {post.description && <p class="post-excerpt">{post.description}</p>}
-  <span class="decay-freshness" aria-label={`Freshness: ${post.freshness}`}>
-    {post.freshness}
-  </span>
+  <div class="card-footer">
+    <span class="decay-freshness" aria-label={`Freshness: ${post.freshness}`}>
+      {post.freshness}
+    </span>
+    {post.revivalCount > 0 && <span class="footer-dot">&middot;</span>}
+    <RevivalBadge count={post.revivalCount} />
+    <KeepButton slug={post.slug} />
+  </div>
 </article>
 
 <style>

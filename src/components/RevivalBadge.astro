@@ -1,0 +1,41 @@
+---
+// src/components/RevivalBadge.astro
+// "remembered by X readers" label for DecayCards.
+// Hidden when count < threshold (avoids cold-start embarrassment).
+// Mood-tinted, subdued — metadata, not headline.
+//
+// Props: count — revival count from collectiveMemory.
+//        threshold — minimum count to display (default 5).
+
+interface Props {
+  count: number;
+  threshold?: number;
+}
+
+const { count, threshold = 5 } = Astro.props;
+const visible = count >= threshold;
+const label = `remembered by ${count} readers`;
+---
+
+<span
+  class:list={['revival-badge', { 'revival-hidden': !visible }]}
+  data-revival-badge
+  aria-label={visible ? label : undefined}
+  aria-hidden={!visible ? 'true' : undefined}
+>
+  {visible && label}
+</span>
+
+<style>
+  .revival-badge {
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    color: rgba(var(--mood-accent-rgb, 120,120,120), 0.4);
+    transition: opacity 0.6s ease;
+  }
+
+  .revival-hidden {
+    display: none;
+  }
+</style>

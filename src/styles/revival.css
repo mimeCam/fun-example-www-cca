@@ -1,0 +1,84 @@
+/* src/styles/revival.css
+ * Revival feedback animations — the visible half of collective memory.
+ *
+ * .just-revived: warm glow pulse when a keep succeeds.
+ * Badge fade-in after pulse. Keep button micro-interaction.
+ * All animations respect prefers-reduced-motion.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Revival pulse: card glows warm after successful keep
+ * ------------------------------------------------------------------------- */
+
+@keyframes revival-pulse {
+  0%   { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 120,120,120), 0.35); }
+  50%  { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 120,120,120), 0.25),
+                     0 0 24px rgba(var(--mood-accent-rgb, 120,120,120), 0.08); }
+  100% { box-shadow: 0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
+                     rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.18)); }
+}
+
+.decay-card.just-revived {
+  animation: revival-pulse 600ms ease-out forwards;
+  transform: translateY(-3px);
+}
+
+/* Badge counter fades in after the pulse */
+.decay-card.just-revived [data-revival-badge] {
+  animation: badge-fadein 300ms ease-out 300ms both;
+}
+
+@keyframes badge-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------------------------------------------------------------------
+ * Warm halo: recently-revived cards (revival bonus > 0.15)
+ * ------------------------------------------------------------------------- */
+
+.decay-card[data-revival-warm="true"] {
+  border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+}
+
+/* ---------------------------------------------------------------------------
+ * Card footer: badge + freshness + keep on one line
+ * ------------------------------------------------------------------------- */
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.card-footer .decay-freshness {
+  margin: 0;
+}
+
+.card-footer .footer-dot {
+  font-size: 0.6rem;
+  opacity: 0.3;
+}
+
+.card-footer .keep-btn {
+  margin-left: auto;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion: instant state changes, no keyframes
+ * ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .decay-card.just-revived {
+    animation: none;
+    box-shadow:
+      0 8px 32px rgba(var(--mood-accent-rgb, 120,120,120), 0.22);
+  }
+
+  .decay-card.just-revived [data-revival-badge] {
+    animation: none;
+    opacity: 1;
+  }
+}

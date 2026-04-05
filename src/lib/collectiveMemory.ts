@@ -66,12 +66,15 @@ export function getRevivalCount(slug: string): number {
 // Public writes
 // ---------------------------------------------------------------------------
 
-/** Atomically increment the revival count for a slug. */
-export function incrementRevival(slug: string): void {
-  db().prepare(`
+/** Atomically increment the revival count for a slug. Returns new count. */
+export function incrementRevival(slug: string): number {
+  const stmt = db().prepare(`
     INSERT INTO revivals (slug, count) VALUES (?, 1)
     ON CONFLICT(slug) DO UPDATE SET count = count + 1
-  `).run(slug);
+    RETURNING count
+  `);
+  const row = stmt.get(slug) as { count: number } | undefined;
+  return row?.count ?? 1;
 }
 
 // ---------------------------------------------------------------------------
