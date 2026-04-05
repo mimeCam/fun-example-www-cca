@@ -18,8 +18,13 @@ const CHOREO_FALLBACK_MS = 3_000; // wait max 3s for choreography
 // no import tree, no bundler, just an inline IIFE)
 // ---------------------------------------------------------------------------
 
-function factor(pubMs: number, nowMs: number): number {
-  return Math.min(1, Math.max(0, (nowMs - pubMs) / MS_PER_DAY / MAX_DAYS));
+function revBonus(count: number): number {
+  return Math.min(0.3, Math.log(count + 1) * 0.05);
+}
+
+function factor(pubMs: number, nowMs: number, revivals = 0): number {
+  const raw = Math.min(1, Math.max(0, (nowMs - pubMs) / MS_PER_DAY / MAX_DAYS));
+  return Math.max(0, raw - revBonus(revivals));
 }
 
 function opacity(f: number): string {
@@ -52,7 +57,8 @@ function shadowAlpha(f: number): string {
 
 function patchCard(el: HTMLElement, nowMs: number): void {
   const pubMs = new Date(el.dataset.pubDate!).getTime();
-  const f = factor(pubMs, nowMs);
+  const revivals = +(el.dataset.revivalCount || '0');
+  const f = factor(pubMs, nowMs, revivals);
   el.style.setProperty('--decay-opacity', opacity(f));
   el.style.setProperty('--decay-blur', blur(f));
   el.style.setProperty('--decay-saturation', saturation(f));
@@ -88,8 +94,10 @@ export function liveDecayScript(): string {
   return `(function(){
   var S='${READY_SELECTOR}',M=${MAX_DAYS},D=${MS_PER_DAY};
   var I=${TICK_INTERVAL_MS},L=0,FB=${CHOREO_FALLBACK_MS};
-  function f(p,n){return Math.min(1,Math.max(0,(n-p)/D/M))}
-  function patch(e,n){var d=f(new Date(e.dataset.pubDate).getTime(),n);
+  function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
+  function f(p,n,r){var raw=Math.min(1,Math.max(0,(n-p)/D/M));return Math.max(0,raw-rb(r))}
+  function patch(e,n){var r=+(e.dataset.revivalCount||'0');
+    var d=f(new Date(e.dataset.pubDate).getTime(),n,r);
     e.style.setProperty('--decay-opacity',Math.max(.35,1-d*.65));
     e.style.setProperty('--decay-blur',(d*1.5).toFixed(2)+'px');
     e.style.setProperty('--decay-saturation',(1-d*.4).toFixed(2));

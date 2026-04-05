@@ -11,6 +11,7 @@ IMAGE_NAME="persona-blog-a"
 HOST_PORT=7100
 CONTAINER_PORT=7100
 DATA_VOLUME="persona-blog-a-data"
+SQLITE_VOLUME="persona-blog-a-sqlite"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/deployment.log"
 
@@ -28,9 +29,11 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   docker rm   "${CONTAINER_NAME}" || true
 fi
 
-# ── 2. Ensure the named data volume exists (preserves whisper queue) ─────────
+# ── 2. Ensure named data volumes exist (whisper queue + SQLite collective memory)
 echo "==> [deploy] Ensuring data volume: ${DATA_VOLUME}"
 docker volume create "${DATA_VOLUME}" || true
+echo "==> [deploy] Ensuring SQLite volume: ${SQLITE_VOLUME}"
+docker volume create "${SQLITE_VOLUME}" || true
 
 # ── 3. Build Docker image ────────────────────────────────────────────────────
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
@@ -48,6 +51,7 @@ docker run \
   --name "${CONTAINER_NAME}" \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \
   --volume "${DATA_VOLUME}:/app/dist/server/data" \
+  --volume "${SQLITE_VOLUME}:/app/data" \
   "${IMAGE_NAME}"
 
 # ── 5. Quick health check ───────────────────────────────────────────────────

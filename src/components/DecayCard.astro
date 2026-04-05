@@ -25,6 +25,8 @@ const formattedDate = formatPubDate(post.pubDate);
   style={post.decayStyle}
   data-pub-date={post.pubDateISO}
   data-decay-factor={post.decay.toFixed(4)}
+  data-revival-count={post.revivalCount}
+  data-revival-warm={post.revivalWarm ? 'true' : undefined}
 >
   <a href={href} class="post-link">
     <time datetime={post.pubDateISO} class="post-date">{formattedDate}</time>

@@ -14,13 +14,20 @@ import { daysSince } from './temporal';
 // Core decay
 // ---------------------------------------------------------------------------
 
+/** Revival bonus: logarithmic, capped at 0.3. First revivals matter most. */
+export function revivalBonus(revivalCount: number): number {
+  return Math.min(0.3, Math.log(revivalCount + 1) * 0.05);
+}
+
 /** Continuous decay factor: 0.0 (just published) → 1.0 (ancient). */
 export function decayFactor(
   pubDate: string,
   maxDays = 365,
   now = new Date(),
+  revivalCount = 0,
 ): number {
-  return Math.min(1, daysSince(pubDate, now) / maxDays);
+  const raw = Math.min(1, daysSince(pubDate, now) / maxDays);
+  return Math.max(0, raw - revivalBonus(revivalCount));
 }
 
 // ---------------------------------------------------------------------------
@@ -155,5 +162,15 @@ export function _testDecayLib(): void {
   console.assert(style.includes('--decay-opacity:1'), 'style string');
   console.assert(style.includes('--decay-shadow-alpha:0.18'), 'shadow in style');
 
-  console.log('[decay] lib OK — factor, visuals, shadow, tags, CSS vars verified');
+  // Revival bonus checks
+  console.assert(revivalBonus(0) === 0, 'zero revivals = zero bonus');
+  const rb7 = revivalBonus(7);
+  console.assert(rb7 > 0.09 && rb7 < 0.12, `7 revivals bonus: ${rb7}`);
+  console.assert(revivalBonus(9999) === 0.3, 'bonus capped at 0.3');
+
+  // Revival slows decay
+  const withRev = decayFactor('2025-04-05', 365, new Date('2026-04-05'), 50);
+  console.assert(withRev < 1, `revived fossil should be < 1, got ${withRev}`);
+
+  console.log('[decay] lib OK — factor, visuals, shadow, tags, CSS vars, revival verified');
 }

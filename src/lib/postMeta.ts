@@ -10,8 +10,9 @@ import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
 import { hourToPhase } from './timeAmbient';
 import type { TimePhase } from './timeAmbient';
-import { decayFactor, freshnessTag, decayStyleString } from './decay';
+import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './decay';
 import type { FreshnessTag } from './decay';
+import { getRevivalCounts } from './collectiveMemory';
 
 export interface PostMeta {
   slug: string;
@@ -62,30 +63,43 @@ export interface PostDisplayData extends PostMeta {
   decay: number;
   freshness: FreshnessTag;
   decayStyle: string;
+  revivalCount: number;
+  revivalWarm: boolean;
 }
 
 /** Bundles metadata + decay visuals for a single post. */
 export function getPostDisplayData(
   post: CollectionEntry<'blog'>,
   now = new Date(),
+  revivals = 0,
 ): PostDisplayData {
   const meta = extractMeta(post);
-  const factor = decayFactor(meta.pubDateISO, 365, now);
+  const factor = decayFactor(meta.pubDateISO, 365, now, revivals);
+  const warm = revivalBonus(revivals) > 0.15;
   return {
     ...meta,
     decay: factor,
     freshness: freshnessTag(factor),
     decayStyle: decayStyleString(factor),
+    revivalCount: revivals,
+    revivalWarm: warm,
   };
 }
 
-/** Display data for all posts, sorted newest-first. */
+/** Display data for all posts, sorted newest-first. Single DB query. */
 export function allPostDisplayData(
   posts: CollectionEntry<'blog'>[],
   now = new Date(),
 ): PostDisplayData[] {
+  const counts = safeRevivalCounts();
   const sorted = [...posts].sort(byNewest);
-  return sorted.map(p => getPostDisplayData(p, now));
+  return sorted.map(p => getPostDisplayData(p, now, counts.get(p.slug) ?? 0));
+}
+
+/** Graceful fallback: returns empty map if DB unavailable (e.g. SSG build). */
+function safeRevivalCounts(): Map<string, number> {
+  try { return getRevivalCounts(); }
+  catch { return new Map(); }
 }
 
 // ---------------------------------------------------------------------------

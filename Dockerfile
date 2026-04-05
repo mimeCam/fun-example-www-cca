@@ -26,13 +26,14 @@ COPY --from=builder /app/dist ./dist
 # Copy production node_modules — @astrojs/node SSR needs @astrojs/internal-helpers at runtime
 COPY --from=builder /app/node_modules ./node_modules
 
-# Ensure the data directory exists for the whisper moderation queue.
-# Seed with an empty array so the API endpoint works on first run.
+# Ensure data directories exist for whisper queue and collective memory DB.
 RUN mkdir -p /app/dist/server/data \
- && echo '[]' > /app/dist/server/data/wall-pending.json
+ && echo '[]' > /app/dist/server/data/wall-pending.json \
+ && mkdir -p /app/data
 
-# Mark data dir as a volume mount-point for persistence across deploys
+# Mark data dirs as volume mount-points for persistence across deploys
 VOLUME /app/dist/server/data
+VOLUME /app/data
 
 # @astrojs/node standalone serves both static and SSR routes
 ENV HOST=0.0.0.0
