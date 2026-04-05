@@ -6,11 +6,10 @@
 // The "staleness" mechanic is the soul of this module: neglect the page
 // long enough and it starts talking back to your visitors.
 //
-// TODO: add optional `reading` and `listening` fields once the page ships
 // TODO: wire _testNowLib() into a build sanity step
 
 import type { MoodId } from './mood';
-import { daysSince as _daysSince } from './temporal';
+import { daysSince as _daysSince, decay } from './temporal';
 
 // Re-export for backward compat — canonical home is temporal.ts
 export const daysSince = _daysSince;
@@ -24,12 +23,41 @@ export interface NowEntry {
   text: string;
 }
 
+/** Legacy flat shape — kept for type compat. */
 export interface NowData {
   mood: MoodId;
-  updated: string;       // ISO date, e.g. "2026-04-01"
+  updated: string;
   doing: NowEntry[];
   thinking: string;
   location?: string;
+}
+
+/** A single item in the three-tier now structure. */
+export interface NowItem {
+  emoji: string;
+  text: string;
+  updated: string;       // ISO date
+  thinking?: string;     // only rightNow uses this
+}
+
+/** Three-tier data shape stored in now.json. */
+export interface NowTiered {
+  mood: MoodId;
+  rightNow: NowItem;
+  season: NowItem[];
+  residue: NowItem[];
+  location?: string;
+}
+
+/** Tier label for each now item after partition logic runs. */
+export type NowTier = 'hero' | 'season' | 'residue' | 'empty';
+
+/** A computed now item ready for rendering. */
+export interface ComputedNowItem {
+  item: NowItem;
+  tier: NowTier;
+  decay: number;         // 0–1 continuous
+  freshness: FreshnessInfo;
 }
 
 export type Freshness = 'fresh' | 'recent' | 'stale' | 'dormant';
@@ -97,6 +125,60 @@ export function computeDecay(updated: string, now = new Date()): number {
 }
 
 // ---------------------------------------------------------------------------
+// Three-tier partition logic
+// ---------------------------------------------------------------------------
+
+const HERO_MAX_DAYS  = 90;   // hero decay ceiling
+const SEASON_MAX_DAYS = 60;  // season items decay faster
+const HERO_DEMOTE_DAYS = 30; // auto-demote hero after this
+
+/** Max items per tier — constraints ARE the design. */
+const MAX_SEASON  = 4;
+const MAX_RESIDUE = 8;
+const PURGE_DAYS  = 180;
+
+/** Quips specific to the "empty hero" state. */
+export function emptyHeroQuip(): string {
+  return 'The author is somewhere, doing something. Probably.';
+}
+
+/** Compute a single NowItem into a renderable ComputedNowItem. */
+export function computeNowItem(
+  item: NowItem, tier: NowTier, maxDays: number, now = new Date(),
+): ComputedNowItem {
+  const d = decay(item.updated, maxDays, now);
+  const freshness = computeFreshness(item.updated, now);
+  return { item, tier, decay: d, freshness };
+}
+
+/**
+ * Partition a NowTiered data object into render-ready tiers.
+ * Auto-demotes hero if stale. Purges residue older than 180 days.
+ * Returns { hero, season, residue } arrays of ComputedNowItem.
+ */
+export function partitionNow(data: NowTiered, now = new Date()) {
+  const heroDays = daysSince(data.rightNow.updated, now);
+  const heroActive = heroDays <= HERO_DEMOTE_DAYS;
+
+  const hero = heroActive
+    ? [computeNowItem(data.rightNow, 'hero', HERO_MAX_DAYS, now)]
+    : [];
+
+  const demoted = heroActive ? [] : [data.rightNow];
+  const seasonSrc = [...demoted, ...data.season].slice(0, MAX_SEASON);
+  const season = seasonSrc.map(
+    i => computeNowItem(i, 'season', SEASON_MAX_DAYS, now),
+  );
+
+  const residue = data.residue
+    .filter(i => daysSince(i.updated, now) <= PURGE_DAYS)
+    .slice(0, MAX_RESIDUE)
+    .map(i => computeNowItem(i, 'residue', STALE_MAX, now));
+
+  return { hero, season, residue };
+}
+
+// ---------------------------------------------------------------------------
 // Isolated-run sanity check (see openloop/inplace-testing-howto.md)
 // ---------------------------------------------------------------------------
 
@@ -122,5 +204,34 @@ export function _testNowLib(): void {
   const decayMid = computeDecay('2026-03-05', new Date('2026-04-04'));
   console.assert(decayMid > 0 && decayMid < 1, `30-day decay should be mid-range`);
 
-  console.log('[now] lib OK — staleness thresholds, quips, and decay verified');
+  // --- Three-tier partition tests ---
+  const tiered: NowTiered = {
+    mood: 'lo-fi',
+    rightNow: { emoji: '🛠️', text: 'building', updated: '2026-04-01' },
+    season: [{ emoji: '📖', text: 'reading', updated: '2026-03-20' }],
+    residue: [{ emoji: '🧪', text: 'shaders', updated: '2026-01-15' }],
+  };
+
+  const p = partitionNow(tiered, new Date('2026-04-04'));
+  console.assert(p.hero.length === 1, 'hero should have 1 item');
+  console.assert(p.season.length === 1, 'season should have 1 item');
+  console.assert(p.residue.length === 1, 'residue should have 1 item');
+  console.assert(p.hero[0].tier === 'hero', 'hero tier label');
+
+  // Stale hero demotes
+  const stale: NowTiered = { ...tiered,
+    rightNow: { ...tiered.rightNow, updated: '2026-02-01' },
+  };
+  const ps = partitionNow(stale, new Date('2026-04-04'));
+  console.assert(ps.hero.length === 0, 'stale hero should demote');
+  console.assert(ps.season.length === 2, 'demoted hero joins season');
+
+  // Purge old residue
+  const ancient: NowTiered = { ...tiered,
+    residue: [{ emoji: '💀', text: 'old', updated: '2025-01-01' }],
+  };
+  const pa = partitionNow(ancient, new Date('2026-04-04'));
+  console.assert(pa.residue.length === 0, 'ancient residue should purge');
+
+  console.log('[now] lib OK — staleness, quips, decay, partitions verified');
 }

@@ -1,11 +1,29 @@
 {
   "mood": "lo-fi",
-  "updated": "2026-04-01",
-  "doing": [
-    { "emoji": "🛠️", "text": "building this very website" },
-    { "emoji": "📖", "text": "re-reading Designing Data-Intensive Applications" },
-    { "emoji": "🎧", "text": "looping Nujabes playlists on repeat" }
+  "rightNow": {
+    "emoji": "🛠️",
+    "text": "building this very website",
+    "updated": "2026-04-01",
+    "thinking": "How little JavaScript can a blog actually need?"
+  },
+  "season": [
+    {
+      "emoji": "📖",
+      "text": "re-reading Designing Data-Intensive Applications",
+      "updated": "2026-03-20"
+    },
+    {
+      "emoji": "🎧",
+      "text": "looping Nujabes playlists on repeat",
+      "updated": "2026-03-10"
+    }
   ],
-  "thinking": "How little JavaScript can a blog actually need?",
+  "residue": [
+    {
+      "emoji": "🧪",
+      "text": "experimenting with WebGL shaders",
+      "updated": "2026-01-15"
+    }
+  ],
   "location": "Berlin"
 }

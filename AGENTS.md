@@ -14,11 +14,9 @@ Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
 
 ## WIP
 
-- Ambient atmosphere stack (mood palettes, time-phase tints, seasonal drift,
-  shimmer, dissolve, erosion bar, celestial witness) — all CSS custom properties,
-  zero client framework, respects `prefers-reduced-motion`.
-- Ambient audio drone — generative Web Audio synthesis shifts with time-of-day
-  and season. Toggle button wired. DONE: cross-fade on phase boundary (4s smooth
-  transition), visibility lifecycle (suspend/resume AudioContext), mood label API
-  (`window.__drone.label()`). TODO: DroneToggle tooltip showing mood label,
-  pulse animation when playing, play/pause icon states.
+- Ambient atmosphere — mood palettes, time-phase tints, seasonal drift, shimmer,
+  erosion bar, celestial witness. CSS custom props, respects `prefers-reduced-motion`.
+- Ambient drone — generative Web Audio, shifts with time/season. TODO: tooltip,
+  pulse animation, play/pause icon states.
+- Living Now Page — three-tier temporal decay (`rightNow` → `season` → `residue`).
+  TODO: NowHero, NowLayer, NowResidue dedicated components.
