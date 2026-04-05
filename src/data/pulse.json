@@ -1,0 +1,30 @@
+{
+  "lastUpdated": "2026-04-05",
+  "openLoops": [
+    {
+      "id": "ol-001",
+      "question": "Is long-form writing dead, or just badly distributed?",
+      "dateAdded": "2026-03-20",
+      "context": "After writing 3 essays that got 10x more reads as tweet threads.",
+      "resolved": false,
+      "decayDays": 30
+    },
+    {
+      "id": "ol-002",
+      "question": "Why do I mass-delete bookmarks every 6 months — and then re-save the same ones?",
+      "dateAdded": "2026-02-10",
+      "context": "Third time this happened. Starting to think it's a ritual, not a bug.",
+      "resolved": false,
+      "decayDays": 45
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "ct-001",
+      "postA": { "slug": "hello-world", "title": "Hello World" },
+      "postB": { "slug": "hello-world", "title": "Hello World" },
+      "reflection": "I genuinely believed both when I wrote them. The contradiction isn't resolved — it's load-bearing.",
+      "dateAdded": "2026-03-15"
+    }
+  ]
+}
