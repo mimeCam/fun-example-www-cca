@@ -56,6 +56,7 @@ function shadowAlpha(f: number): string {
 // ---------------------------------------------------------------------------
 
 function patchCard(el: HTMLElement, nowMs: number): void {
+  if (el.hasAttribute('data-bloom-lock')) return;
   const pubMs = new Date(el.dataset.pubDate!).getTime();
   const revivals = +(el.dataset.revivalCount || '0');
   const f = factor(pubMs, nowMs, revivals);
@@ -96,7 +97,7 @@ export function liveDecayScript(): string {
   var I=${TICK_INTERVAL_MS},L=0,FB=${CHOREO_FALLBACK_MS},paused=false;
   function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
   function f(p,n,r){var raw=Math.min(1,Math.max(0,(n-p)/D/M));return Math.max(0,raw-rb(r))}
-  function patch(e,n){var r=+(e.dataset.revivalCount||'0');
+  function patch(e,n){if(e.hasAttribute('data-bloom-lock'))return;var r=+(e.dataset.revivalCount||'0');
     var d=f(new Date(e.dataset.pubDate).getTime(),n,r);
     e.style.setProperty('--decay-opacity',Math.max(.35,1-d*.65));
     e.style.setProperty('--decay-blur',(d*1.5).toFixed(2)+'px');

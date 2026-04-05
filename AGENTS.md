@@ -4,7 +4,7 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — shared utilities (decay engine, mood, pulse, time-travel)
+- `src/lib/` — shared utilities (decay engine, mood, bloom, time-travel)
 - `src/components/` — Astro components
 - `src/pages/` — routes and API endpoints
 - `src/content/blog/` — markdown posts
@@ -17,8 +17,8 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Time Travel Demo — slider + engine wired; next: band re-sorting during scrub, fog overlay, guided auto-play
-- Revival Bloom — particles done; next: animation orchestrator + BaseLayout wiring
-- Route Pruning — remove legacy pages (constellation/wall/tidepool/lowtide/embers/pulse/now/before)
+- Time Travel Demo — slider + engine wired; next: band re-sorting, fog overlay, guided auto-play
+- Revival Bloom — orchestrator wired (4-phase choreography); next: ARIA refinement, mobile testing
+- Route Pruning — remove legacy pages
 - Component Pruning — ~19 satellite components pending removal
-- Decay Onboarding — Phase 1 done; Phase 2: RevivalHint component + onboardProbe
+- Decay Onboarding — Phase 1 done; next: RevivalHint component + onboardProbe
