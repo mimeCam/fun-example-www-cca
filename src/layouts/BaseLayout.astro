@@ -24,6 +24,8 @@ import Hearth from '../components/Hearth.astro';
 import DriftButton from '../components/DriftButton.astro';
 import DriftCard from '../components/DriftCard.astro';
 import QuietFollow from '../components/QuietFollow.astro';
+import DroneToggle from '../components/DroneToggle.astro';
+import { droneControllerScript } from '../lib/droneController';
 import { filterCandidates, pickCandidate } from '../lib/drift';
 import type { DriftCandidate } from '../lib/drift';
 import wallData from '../data/wall.json';
@@ -38,6 +40,7 @@ const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();
 const cycleScript = moodCycleScript();
 const shimScript = shimmerScript();
+const droneScript = droneControllerScript();
 
 interface Props {
   title: string;
@@ -74,6 +77,7 @@ const driftPick = pickCandidate(driftCandidates);
     <script set:html={decayScript} />
     <script set:html={cycleScript} />
     <script set:html={shimScript} />
+    <script set:html={droneScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,
@@ -100,6 +104,7 @@ const driftPick = pickCandidate(driftCandidates);
     <CelestialWitness />
     <DriftButton />
     <DriftCard candidate={driftPick} />
+    <DroneToggle />
     <QuietFollow />
   </body>
 </html>
