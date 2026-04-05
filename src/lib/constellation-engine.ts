@@ -4,6 +4,7 @@
 // No manual JSON. Single source of truth = content files.
 
 import type { Constellation, Star } from './constellation';
+import type { RelatednessEntry } from './relatedness';
 
 interface PostEntry {
   slug: string;
@@ -14,6 +15,7 @@ interface PostEntry {
     starName?: string;
     magnitude?: number;
     description?: string;
+    constellation?: { slug: string; strength: number }[];
   };
 }
 
@@ -75,4 +77,15 @@ export function constellationsFromPosts(posts: PostEntry[]): Constellation[] {
   }
 
   return result;
+}
+
+/** Extract relatedness metadata from posts for force-layout. */
+export function relatednessFromPosts(posts: PostEntry[]): RelatednessEntry[] {
+  return posts
+    .filter(p => p.data.constellationName)
+    .map(p => ({
+      id: p.slug,
+      constellationName: p.data.constellationName,
+      links: p.data.constellation,
+    }));
 }

@@ -11,10 +11,13 @@ Astro 4 · TypeScript strict · @astrojs/node standalone · Docker
 - `src/content/blog/` — blog posts (frontmatter drives constellations)
 - `src/data/` — JSON flat-file storage
 
+## Core Feature
+
+Constellations — force-directed star field where proximity = relatedness. Posts become stars; shared themes cluster visually. Zero client JS.
+
 ## WIP
 
-- Homepage time bands — needs 20+ posts to fully exercise Recent & Archive bands.
+- Force-layout tuning — attraction/repulsion constants may need adjustment with 20+ posts.
 - Page consolidation — `/pulse`+`/wall` → `/now`, `/embers` → `/tidepool` (nav done, routes still separate).
-- DecayCard v2 — cover image slot (schema field needed).
+- Constellation decay — dim older paths over time (TODO in constellation.ts).
 - Mobile long-press revival — wired, needs real-device testing.
-- Constellation pipeline — posts declare stars via frontmatter; static JSON being phased out.

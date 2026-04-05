@@ -12,11 +12,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import { computeAllConstellations } from '../lib/constellation';
-import { constellationsFromPosts } from '../lib/constellation-engine';
+import { constellationsFromPosts, relatednessFromPosts } from '../lib/constellation-engine';
 
 const posts = await getCollection('blog');
 const derived = constellationsFromPosts(posts);
-const constellations = computeAllConstellations(derived);
+const entries = relatednessFromPosts(posts);
+const constellations = computeAllConstellations(derived, new Date(), entries);
 ---
 
 <BaseLayout title="Constellations — Reading Paths">

@@ -2,14 +2,16 @@
 // Shared utilities for the /constellations page — curated reading paths
 // visualized as star-field constellations. Each star is a content reference;
 // lines connect them into author-curated sequences.
-// Positions are deterministic via simple string hash → viewport coords.
+// Positions via force-directed layout — proximity = relatedness.
 // Integrates with mood system via CSS custom properties. Zero dependencies.
 //
 // TODO: add optional `description` field per star for tooltip overlays
 // TODO: wire constellation decay — older paths dim over time like everything else
-// TODO: link stars to actual content pages (blog posts, wall entries, etc.)
 
 import { daysSince } from './temporal';
+import { forceLayout } from './force-layout';
+import type { RelatednessEntry } from './relatedness';
+import { buildRelatedness } from './relatedness';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,54 +44,59 @@ export interface ComputedConstellation {
 }
 
 // ---------------------------------------------------------------------------
-// Deterministic positioning — hash a string to a coordinate
+// Brightness — positional rank within a constellation path
 // ---------------------------------------------------------------------------
 
-/** Simple string hash → number. Deterministic, no crypto needed. */
-function hashCode(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-/** Map a star ID to a viewport coordinate, padded from edges. */
-export function starPosition(id: string, salt: string): { x: number; y: number } {
-  const pad = 8;
-  const range = 100 - pad * 2;
-  const hx = hashCode(id + ':x:' + salt);
-  const hy = hashCode(id + ':y:' + salt);
-  return { x: pad + (hx % range), y: pad + (hy % range) };
+function brightness(index: number, total: number): number {
+  return 1 - (index / Math.max(1, total - 1)) * 0.4;
 }
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Compute a single star with position and brightness. */
-export function computeStar(
-  star: Star, index: number, total: number, salt: string,
+/** Attach pre-computed position + brightness to a star. */
+function applyStar(
+  star: Star, pos: { x: number; y: number }, index: number, total: number,
 ): ComputedStar {
-  const { x, y } = starPosition(star.id, salt);
-  const brightness = 1 - (index / Math.max(1, total - 1)) * 0.4;
-  return { star, x, y, brightness };
+  return { star, x: pos.x, y: pos.y, brightness: brightness(index, total) };
 }
 
-/** Compute all stars in a constellation. */
-export function computeConstellation(
-  c: Constellation, now = new Date(),
-): ComputedConstellation {
-  const stars = c.stars.map((s, i) => computeStar(s, i, c.stars.length, c.name));
-  return { constellation: c, stars, age: daysSince(c.created, now) };
-}
-
-/** Compute all constellations, sorted newest-first. */
+/**
+ * Compute all constellations with force-directed positions.
+ * Proximity = relatedness. Runs at build time — zero client JS.
+ * @param entries  optional relatedness metadata per post
+ */
 export function computeAllConstellations(
-  cs: Constellation[], now = new Date(),
+  cs: Constellation[],
+  now = new Date(),
+  entries: RelatednessEntry[] = [],
 ): ComputedConstellation[] {
-  return cs.map(c => computeConstellation(c, now))
+  const allStars = cs.flatMap(c => c.stars);
+  const ids = allStars.map(s => s.id);
+
+  const rel = buildRelatedness(
+    entries.length ? entries : inferEntries(cs),
+  );
+  const positioned = forceLayout(ids, rel.score);
+  const posMap = new Map(positioned.map(n => [n.id, n]));
+
+  return cs
+    .map(c => {
+      const stars = c.stars.map((s, i) => {
+        const pos = posMap.get(s.id) ?? { x: 50, y: 50 };
+        return applyStar(s, pos, i, c.stars.length);
+      });
+      return { constellation: c, stars, age: daysSince(c.created, now) };
+    })
     .sort((a, b) => a.age - b.age);
+}
+
+/** Fallback: infer entries from constellation grouping alone. */
+function inferEntries(cs: Constellation[]): RelatednessEntry[] {
+  return cs.flatMap(c =>
+    c.stars.map(s => ({ id: s.id, constellationName: c.name })),
+  );
 }
 
 /** Top-N brightest stars across all constellations. */
@@ -106,13 +113,6 @@ export function brightestStars(
 // ---------------------------------------------------------------------------
 
 export function _testConstellationLib(): void {
-  const pos = starPosition('test-star', 'salt');
-  console.assert(pos.x >= 8 && pos.x <= 92, `x in bounds: ${pos.x}`);
-  console.assert(pos.y >= 8 && pos.y <= 92, `y in bounds: ${pos.y}`);
-
-  const pos2 = starPosition('test-star', 'salt');
-  console.assert(pos.x === pos2.x && pos.y === pos2.y, 'positions deterministic');
-
   const stub: Constellation = {
     name: 'test', description: 'A test path', created: '2026-04-01',
     stars: [
@@ -120,20 +120,31 @@ export function _testConstellationLib(): void {
       { id: 'b', label: 'Second' },
     ],
   };
-  const cc = computeConstellation(stub, new Date('2026-04-04'));
-  console.assert(cc.stars.length === 2, 'two stars computed');
-  console.assert(cc.age === 3, `age should be 3, got ${cc.age}`);
-  console.assert(cc.stars[0].brightness === 1, 'first star is brightest');
-  console.assert(cc.stars[1].brightness < 1, 'last star dimmer');
-
   const stub2: Constellation = {
     name: 'other', description: 'B', created: '2026-04-01',
     stars: [{ id: 'c', label: 'Third' }],
   };
-  const all = computeAllConstellations([stub, stub2], new Date('2026-04-04'));
-  const top = brightestStars(all, 2);
-  console.assert(top.length === 2, `brightestStars: expected 2, got ${top.length}`);
-  console.assert(top[0].brightness >= top[1].brightness, 'sorted by brightness');
 
-  console.log('[constellation] lib OK — hash, position, compute, brightestStars verified');
+  const all = computeAllConstellations([stub, stub2], new Date('2026-04-04'));
+  const cc = all.find(c => c.constellation.name === 'test')!;
+  console.assert(cc.stars.length === 2, 'two stars computed');
+  console.assert(cc.age === 3, `age should be 3, got ${cc.age}`);
+  console.assert(cc.stars[0].brightness === 1, 'first star brightest');
+  console.assert(cc.stars[1].brightness < 1, 'last star dimmer');
+
+  // Force layout should place same-group stars closer together
+  const dx = Math.abs(cc.stars[0].x - cc.stars[1].x);
+  const dy = Math.abs(cc.stars[0].y - cc.stars[1].y);
+  const sameGroupDist = Math.sqrt(dx * dx + dy * dy);
+  const other = all.find(c => c.constellation.name === 'other')!;
+  const cx = Math.abs(cc.stars[0].x - other.stars[0].x);
+  const cy = Math.abs(cc.stars[0].y - other.stars[0].y);
+  const crossGroupDist = Math.sqrt(cx * cx + cy * cy);
+  console.assert(sameGroupDist < crossGroupDist, 'related stars closer');
+
+  const top = brightestStars(all, 2);
+  console.assert(top.length === 2, `brightestStars: expected 2`);
+  console.assert(top[0].brightness >= top[1].brightness, 'sorted');
+
+  console.log('[constellation] lib OK — force-layout, brightness, relatedness verified');
 }

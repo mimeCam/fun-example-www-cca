@@ -8,11 +8,12 @@
 
 import { getCollection } from 'astro:content';
 import { computeAllConstellations, brightestStars } from '../lib/constellation';
-import { constellationsFromPosts } from '../lib/constellation-engine';
+import { constellationsFromPosts, relatednessFromPosts } from '../lib/constellation-engine';
 
 const posts = await getCollection('blog');
 const derived = constellationsFromPosts(posts);
-const all = computeAllConstellations(derived);
+const entries = relatednessFromPosts(posts);
+const all = computeAllConstellations(derived, new Date(), entries);
 const stars = brightestStars(all, 3);
 const previewName = all.map(c => c.constellation.name).join(' · ');
 ---

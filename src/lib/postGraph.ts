@@ -4,11 +4,11 @@
 // frontmatter (`constellation` field) and merged bidirectionally so post A
 // linking to B automatically means B links back to A.
 //
-// Deterministic layout is inherited from constellation.ts (hashCode + starPosition).
-// Zero dependencies beyond Astro content collections.
+// Layout via force-directed positioning — related posts cluster together.
+// Zero dependencies beyond Astro content collections + force-layout.
 
 import type { CollectionEntry } from 'astro:content';
-import { starPosition } from './constellation';
+import { forceLayout } from './force-layout';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -111,13 +111,25 @@ export interface LayoutNode extends PostNode {
   y: number;
 }
 
-/** Assign deterministic positions to all nodes in a graph. */
+/** Assign force-directed positions to all nodes in a graph. */
 export function layoutGraph(
-  graph: PostGraph, salt = 'post',
+  graph: PostGraph,
 ): { nodes: LayoutNode[]; edges: PostEdge[] } {
+  const strengthMap = new Map<string, number>();
+  for (const e of graph.edges) {
+    const key = edgeKey(e.from, e.to);
+    strengthMap.set(key, e.strength);
+  }
+  const scoreFn = (a: string, b: string) =>
+    a === b ? 1 : (strengthMap.get(edgeKey(a, b)) ?? 0.05);
+
+  const ids = graph.nodes.map(n => n.slug);
+  const positioned = forceLayout(ids, scoreFn);
+  const posMap = new Map(positioned.map(n => [n.id, n]));
+
   const nodes = graph.nodes.map(n => {
-    const { x, y } = starPosition(n.slug, salt);
-    return { ...n, x, y };
+    const pos = posMap.get(n.slug) ?? { x: 50, y: 50 };
+    return { ...n, x: pos.x, y: pos.y };
   });
   return { nodes, edges: graph.edges };
 }
@@ -152,8 +164,8 @@ export function _testPostGraph(): void {
 
   const laid = layoutGraph(local);
   for (const n of laid.nodes) {
-    console.assert(n.x >= 8 && n.x <= 92, `x in bounds: ${n.x}`);
-    console.assert(n.y >= 8 && n.y <= 92, `y in bounds: ${n.y}`);
+    console.assert(n.x >= 10 && n.x <= 90, `x in bounds: ${n.x}`);
+    console.assert(n.y >= 10 && n.y <= 90, `y in bounds: ${n.y}`);
   }
 
   console.log('[postGraph] lib OK — build, local, layout verified');
