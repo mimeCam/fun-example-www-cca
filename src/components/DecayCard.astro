@@ -20,7 +20,7 @@ const href = `/blog/${post.slug}`;
 const formattedDate = formatPubDate(post.pubDate);
 ---
 
-<article class="decay-card post-card" style={post.decayStyle}>
+<article class="decay-card post-card" style={post.decayStyle} data-pub-date={post.pubDateISO}>
   <a href={href} class="post-link">
     <time datetime={post.pubDateISO} class="post-date">{formattedDate}</time>
     <h2 class="post-title">{post.title}</h2>

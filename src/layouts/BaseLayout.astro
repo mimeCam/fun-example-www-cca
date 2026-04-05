@@ -1,55 +1,37 @@
 ---
 // src/layouts/BaseLayout.astro
 // Root HTML shell — injects mood CSS vars into :root, slots page content.
-// All pages extend this layout. No client-side JS. No framework islands.
+// All pages extend this layout. Minimal client-side JS islands.
 //
-// TODO: add <MoodBadge /> once src/components/MoodBadge.astro is built
 // DONE: OG meta tags + canonical URL via SEOMeta component
+// DONE: Pruned 6 overlay elements (MoodPills, GhostDrawer, DriftButton,
+//       DriftCard, DroneToggle, DriftNav) per UX audit.
+// DONE: Wired simple 3-mood system, removed old mood radio machinery.
 
-import { resolveMood, moodToCSSVars, moodToCSSString, activeMoodIds, moodSwitchCSS } from '../lib/mood';
-import { articleMoodCSS } from '../lib/mood-engine';
 import { simpleMoodCSSString } from '../lib/mood-simple';
 import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
-import { liveDecayScript } from '../lib/temporal';
-import { moodCycleScript } from '../lib/moodCycle';
+import { liveDecayScript } from '../lib/live-decay';
 import { shimmerScript } from '../lib/shimmer';
+import { snapshotScript } from '../lib/snapshot';
+import { longPressReviveScript } from '../lib/longPressRevive';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import AmbientLayer from '../components/AmbientLayer.astro';
 import SiteNav from '../components/SiteNav.astro';
-import DriftNav from '../components/DriftNav.astro';
-// TODO: remove MoodPills entirely once old mood system is fully cut
-import MoodPills from '../components/MoodPills.astro';
-import GhostDrawer from '../components/GhostDrawer.astro';
 import CelestialWitness from '../components/CelestialWitness.astro';
 import Hearth from '../components/Hearth.astro';
-import DriftButton from '../components/DriftButton.astro';
-import DriftCard from '../components/DriftCard.astro';
 import QuietFollow from '../components/QuietFollow.astro';
-import DroneToggle from '../components/DroneToggle.astro';
-import { droneControllerScript } from '../lib/droneController';
-import { snapshotScript } from '../lib/snapshot';
-import { longPressReviveScript } from '../lib/longPressRevive';
-import { filterCandidates, pickCandidate } from '../lib/drift';
-import type { DriftCandidate } from '../lib/drift';
-import wallData from '../data/wall.json';
-import embersData from '../data/embers.json';
 import '../styles/global.css';
 import '../styles/decay.css';
 import '../styles/shimmer.css';
 
-const pillMoods = activeMoodIds();
-const switchCSS = moodSwitchCSS();
-// TODO: replace old mood pipeline with simpleMoodCSSString(moodConfig.current_mood)
-// once all components are migrated to the 3-mood system
+const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const timeScript = timeAmbientScript();
 const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();
-const cycleScript = moodCycleScript();
 const shimScript = shimmerScript();
-const droneScript = droneControllerScript();
 const snapScript = snapshotScript();
 const longPressScript = longPressReviveScript();
 
@@ -58,23 +40,10 @@ interface Props {
   description?: string;
   type?: 'website' | 'article';
   publishedAt?: string;
-  articleMood?: string; // per-article mood override from frontmatter
 }
 
-const { title, description, type, publishedAt, articleMood } = Astro.props;
+const { title, description, type, publishedAt } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
-const cssVars = moodToCSSVars(resolveMood(moodConfig.current_mood));
-const baseCSSString = moodToCSSString(cssVars);
-const articleOverride = articleMoodCSS(articleMood);
-const cssString = articleOverride || baseCSSString;
-
-// Drift: collect aged entries from wall + embers, pick one per day
-const driftPool: DriftCandidate[] = [
-  ...wallData.map(e => ({ ...e, source: 'wall' as const })),
-  ...embersData.map(e => ({ ...e, source: 'ember' as const })),
-];
-const driftCandidates = filterCandidates(driftPool, 0.5, 30);
-const driftPick = pickCandidate(driftCandidates);
 ---
 
 <!doctype html>
@@ -85,14 +54,11 @@ const driftPick = pickCandidate(driftCandidates);
     <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />
-    <style set:html={`.mood-input, .ghost-input { display: none; }\n${switchCSS}\n#ghost-toggle:checked ~ [data-ghost-drawer] { display: block; }\n#ghost-toggle:checked ~ [data-mood-bar] .ghost-pill { opacity: 1; box-shadow: 0 0 10px rgba(212, 149, 106, 0.3); }`} />
     <script set:html={timeScript} />
     <script set:html={seasonScript} />
     <script set:html={decayScript} />
-    <script set:html={cycleScript} />
     <script set:html={snapScript} />
     <script set:html={shimScript} />
-    <script set:html={droneScript} />
     <script set:html={longPressScript} />
     <style>
       :root {
@@ -103,25 +69,11 @@ const driftPick = pickCandidate(driftCandidates);
     </style>
   </head>
   <body>
-    {pillMoods.map(id => (
-      <input
-        type="radio" name="mood" id={`mood-${id}`}
-        class="mood-input"
-        checked={id === moodConfig.current_mood}
-      />
-    ))}
-    <input type="checkbox" id="ghost-toggle" class="ghost-input" />
     <AmbientLayer />
     <SiteNav />
-    <MoodPills />
-    <GhostDrawer />
     <slot />
-    <DriftNav />
     <Hearth />
     <CelestialWitness />
-    <DriftButton />
-    <DriftCard candidate={driftPick} />
-    <DroneToggle />
     <QuietFollow />
   </body>
 </html>
