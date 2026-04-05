@@ -21,6 +21,7 @@ function fxIIFE(): void {
   document.addEventListener('heartbeat:revival', ((e: CustomEvent) => {
     const { slug, count } = e.detail || {};
     if (!slug) return;
+    if (document.body.hasAttribute('data-spectacle-active')) return;
     const card = findCard(slug);
     if (card) {
       pulseCard(card, count);

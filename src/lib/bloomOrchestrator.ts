@@ -136,6 +136,7 @@ export function bloomOrchestratorScript(): string {
   document.addEventListener('revival:success',function(e){
     var d=e.detail;
     if(!d||!d.slug)return;
+    if(d.programmatic)ttActive=false;
     enqueue(d.slug,d.newCount||1)
   });
 

@@ -4,7 +4,7 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — shared utilities
+- `src/lib/` — shared utilities (decay, bloom, collective memory, heartbeat)
 - `src/components/` — Astro components
 - `src/pages/` — routes and API endpoints
 - `src/content/blog/` — markdown posts
@@ -17,8 +17,8 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Collective Heartbeat (SSE) — wired end-to-end; next: integration test
-- First-Visit Spectacle — hint component, slider redesign
+- Collective Heartbeat (SSE) — next: integration test
+- First-Visit Spectacle — next: remove legacy `spectacle.ts` and `SkipButton`
 - Revival Bloom — ARIA refinement, mobile testing
 - Component Pruning — ~19 satellite components pending removal
 - RevivalReward — mobile testing, reduced-motion QA

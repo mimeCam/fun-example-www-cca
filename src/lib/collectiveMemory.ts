@@ -62,6 +62,14 @@ export function getRevivalCount(slug: string): number {
   return row?.count ?? 0;
 }
 
+/** Most-revived post. Used by first-visit spectacle for social proof. */
+export function getTopRevival(): { slug: string; count: number } {
+  const row = db()
+    .prepare('SELECT slug, count FROM revivals ORDER BY count DESC LIMIT 1')
+    .get() as { slug: string; count: number } | undefined;
+  return row ?? { slug: '', count: 0 };
+}
+
 // ---------------------------------------------------------------------------
 // Public writes
 // ---------------------------------------------------------------------------

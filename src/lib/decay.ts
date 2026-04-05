@@ -122,6 +122,11 @@ export function decayCSSVars(factor: number): DecayCSSVars {
   };
 }
 
+/** CSS vars at maximum decay (factor=1). Used by spectacle for dramatic start. */
+export function maxDecayVars(): DecayCSSVars {
+  return decayCSSVars(1);
+}
+
 /** Converts DecayCSSVars to an inline style string. */
 export function decayStyleString(factor: number): string {
   const vars = decayCSSVars(factor);
@@ -174,6 +179,12 @@ export function _testDecayLib(): void {
   const style = decayStyleString(0);
   console.assert(style.includes('--decay-opacity:1'), 'style string');
   console.assert(style.includes('--decay-shadow-alpha:0.18'), 'shadow in style');
+
+  // maxDecayVars: must match factor=1 values
+  const max = maxDecayVars();
+  console.assert(max['--decay-opacity'] === String(opacityFromDecay(1)), 'maxDecay opacity');
+  console.assert(max['--decay-blur'] === `${blurFromDecay(1)}px`, 'maxDecay blur');
+  console.assert(max['--decay-shadow-spread'] === `${shadowSpreadFromDecay(1)}px`, 'maxDecay spread');
 
   // Revival bonus checks
   console.assert(revivalBonus(0) === 0, 'zero revivals = zero bonus');

@@ -17,10 +17,9 @@ import { groupIntoBands } from '../lib/timeBands';
 import { decayChoreographyScript } from '../lib/decayChoreography';
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
-import { spectacleScript } from '../lib/spectacle';
 import TimeTravelSlider from '../components/TimeTravelSlider.astro';
 import FogOverlay from '../components/FogOverlay.astro';
-import SkipButton from '../components/SkipButton.astro';
+import FirstVisitSpectacle from '../components/FirstVisitSpectacle.astro';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -32,11 +31,10 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
 
 <BaseLayout title="Persona Blog">
   <script set:html={decayChoreographyScript()} />
-  <script set:html={spectacleScript()} />
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
   <FogOverlay />
-  <SkipButton />
+  <FirstVisitSpectacle />
   <main class="feed">
     <TimeTravelSlider />
     {freshestLoop && <PulseTeaser loop={freshestLoop} />}
@@ -95,10 +93,10 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
   }
 
   /* ── Spectacle overrides ─────────────────────────── */
-  :global(.spectacle-active) .feed {
+  :global([data-spectacle-active]) .feed {
     pointer-events: none;
   }
-  :global(.spectacle-active) .tt-bar {
+  :global([data-spectacle-active]) .tt-bar {
     pointer-events: none;
   }
 </style>
