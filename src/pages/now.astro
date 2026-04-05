@@ -15,6 +15,7 @@ import nowRaw from '../data/now.json';
 const data = nowRaw as NowTiered;
 const { hero, season, residue } = partitionNow(data);
 const hasHero = hero.length > 0;
+const hasArchive = (data.archive ?? []).length > 0;
 // TODO: replace NowCard with NowHero, NowLayer, NowResidue components
 // For now, wire hero item through the existing NowCard as a bridge
 const heroEntry = hasHero ? hero[0] : null;
@@ -57,6 +58,10 @@ const heroEntry = hasHero ? hero[0] : null;
           </li>
         ))}
       </ul>
+    )}
+
+    {hasArchive && (
+      <a class="now-portal-seam" href="/now/before">what I was doing before…</a>
     )}
   </main>
 </BaseLayout>
@@ -108,4 +113,14 @@ const heroEntry = hasHero ? hero[0] : null;
     font-size: 0.82rem;
     filter: blur(0.3px);
   }
+
+  .now-portal-seam {
+    margin-top: 3rem;
+    font-size: 0.75rem;
+    font-style: italic;
+    opacity: 0.25;
+    text-decoration: none;
+    transition: opacity 0.3s;
+  }
+  .now-portal-seam:hover { opacity: 0.5; }
 </style>

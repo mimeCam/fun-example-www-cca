@@ -22,18 +22,23 @@ function wallRedirect(status: string): Response {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  try {
+    return await handleWhisper(request);
+  } catch (_) {
+    return wallRedirect('error');
+  }
+};
+
+/** Core whisper handler — separated for clarity and testability. */
+async function handleWhisper(request: Request): Promise<Response> {
   const form = await request.formData();
-  // Silent rejection — bots see a normal redirect.
   if (isHoneypotTripped(form.get(HONEYPOT_FIELD))) return wallRedirect('ok');
 
   const text = form.get('text');
   const mood = form.get('mood') || 'default';
 
-  const textErr = validateText(text);
-  if (textErr) return wallRedirect('invalid');
-
-  const moodErr = validateMood(mood);
-  if (moodErr) return wallRedirect('invalid');
+  if (validateText(text)) return wallRedirect('invalid');
+  if (validateMood(mood)) return wallRedirect('invalid');
 
   const entry: PendingWhisper = {
     id: crypto.randomUUID().slice(0, 8),
@@ -47,4 +52,4 @@ export const POST: APIRoute = async ({ request }) => {
   writePending(pending);
 
   return wallRedirect('ok');
-};
+}

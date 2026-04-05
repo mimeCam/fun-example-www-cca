@@ -25,5 +25,18 @@
       "updated": "2026-01-15"
     }
   ],
+  "archive": [
+    {
+      "emoji": "🎸",
+      "text": "learning fingerstyle guitar",
+      "updated": "2025-09-10",
+      "changed_mind": "Turns out my fingers had other plans. Still love listening though."
+    },
+    {
+      "emoji": "🏃",
+      "text": "training for a half-marathon",
+      "updated": "2025-06-01"
+    }
+  ],
   "location": "Berlin"
 }

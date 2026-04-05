@@ -18,100 +18,100 @@
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 23.41kB 0.1s done
+#6 transferring context: 32.27kB 0.2s done
 #6 DONE 0.2s
 
 #7 [builder 3/7] COPY package.json package-lock.json* ./
 #7 DONE 0.0s
 
 #8 [builder 4/7] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#8 7.859 
-#8 7.859 added 380 packages, and audited 381 packages in 8s
-#8 7.860 
-#8 7.861 161 packages are looking for funding
-#8 7.861   run `npm fund` for details
-#8 7.903 
-#8 7.903 4 vulnerabilities (3 moderate, 1 high)
-#8 7.903 
-#8 7.903 To address all issues (including breaking changes), run:
-#8 7.903   npm audit fix --force
-#8 7.903 
-#8 7.903 Run `npm audit` for details.
-#8 DONE 8.4s
+#8 9.434 
+#8 9.434 added 380 packages, and audited 381 packages in 9s
+#8 9.436 
+#8 9.436 161 packages are looking for funding
+#8 9.436   run `npm fund` for details
+#8 9.504 
+#8 9.504 4 vulnerabilities (3 moderate, 1 high)
+#8 9.504 
+#8 9.504 To address all issues (including breaking changes), run:
+#8 9.504   npm audit fix --force
+#8 9.504 
+#8 9.504 Run `npm audit` for details.
+#8 DONE 9.7s
 
 #9 [builder 5/7] COPY astro.config.mjs tsconfig.json ./
 #9 DONE 0.0s
 
 #10 [builder 6/7] COPY src/ ./src/
-#10 DONE 0.0s
+#10 DONE 0.1s
 
 #11 [builder 7/7] RUN npm run build
-#11 0.321 
-#11 0.321 > persona-blog@0.1.0 build
-#11 0.321 > astro build
-#11 0.321 
-#11 0.995 ▶ Astro collects anonymous usage data.
-#11 0.995   This information helps us improve Astro.
-#11 0.995   Run "astro telemetry disable" to opt-out.
-#11 0.995   https://astro.build/telemetry
-#11 0.995 
-#11 2.420 02:11:38 [types] Generated 646ms
-#11 2.421 02:11:38 [build] output: "hybrid"
-#11 2.421 02:11:38 [build] directory: /app/dist/
-#11 2.421 02:11:38 [build] adapter: @astrojs/node
-#11 2.421 02:11:38 [build] Collecting build info...
-#11 2.421 02:11:38 [build] ✓ Completed in 669ms.
-#11 2.424 02:11:38 [build] Building hybrid entrypoints...
-#11 5.870 02:11:42 [vite] ✓ built in 3.40s
-#11 5.871 02:11:42 [build] ✓ Completed in 3.45s.
-#11 5.871 
-#11 5.871  building client (vite) 
-#11 5.880 02:11:42 [vite] transforming...
-#11 5.889 02:11:42 [vite] ✓ 4 modules transformed.
-#11 5.900 02:11:42 [vite] rendering chunks...
-#11 5.905 02:11:42 [vite] computing gzip size...
-#11 5.909 02:11:42 [vite] dist/client/_astro/hoisted.Cu_cv1_6.js  0.20 kB │ gzip: 0.18 kB
-#11 5.911 02:11:42 [vite] dist/client/_astro/hoisted.Cp6U1Tqe.js  0.41 kB │ gzip: 0.29 kB
-#11 5.911 02:11:42 [vite] ✓ built in 35ms
-#11 5.952 
-#11 5.952  prerendering static routes 
-#11 5.989 02:11:42 ▶ src/pages/blog/[slug].astro
-#11 5.997 02:11:42   └─ /blog/hello-world/index.html (+43ms)
-#11 6.047 02:11:42 ▶ src/pages/constellations.astro
-#11 6.049 02:11:42   └─ /constellations/index.html (+37ms)
-#11 6.095 02:11:42 ▶ src/pages/embers.astro
-#11 6.096 02:11:42   └─ /embers/index.html (+31ms)
-#11 6.132 02:11:42 λ src/pages/feed.xml.ts
-#11 6.133 02:11:42   └─ /feed.xml (+4ms)
-#11 6.141 02:11:42 ▶ src/pages/lowtide.astro
-#11 6.141 02:11:42   └─ /lowtide/index.html (+9ms)
-#11 6.153 02:11:42 ▶ src/pages/now.astro
-#11 6.154 02:11:42   └─ /now/index.html (+17ms)
-#11 6.203 02:11:42 ▶ src/pages/tidepool.astro
-#11 6.203 02:11:42   └─ /tidepool/index.html (+16ms)
-#11 6.245 02:11:42 ▶ src/pages/wall.astro
-#11 6.245 02:11:42   └─ /wall/index.html (+12ms)
-#11 6.265 02:11:42 ▶ src/pages/index.astro
-#11 6.265 02:11:42   └─ /index.html (+5ms)
-#11 6.272 02:11:42 ✓ Completed in 350ms.
-#11 6.272 
-#11 6.272 02:11:42 [build] Rearranging server assets...
-#11 6.276 02:11:42 [build] Server built in 4.52s
-#11 6.276 02:11:42 [build] Complete!
-#11 DONE 6.4s
+#11 0.501 
+#11 0.501 > persona-blog@0.1.0 build
+#11 0.501 > astro build
+#11 0.501 
+#11 1.965 ▶ Astro collects anonymous usage data.
+#11 1.965   This information helps us improve Astro.
+#11 1.965   Run "astro telemetry disable" to opt-out.
+#11 1.965   https://astro.build/telemetry
+#11 1.965 
+#11 4.841 02:52:56 [types] Generated 1.36s
+#11 4.843 02:52:56 [build] output: "hybrid"
+#11 4.843 02:52:56 [build] directory: /app/dist/
+#11 4.843 02:52:56 [build] adapter: @astrojs/node
+#11 4.843 02:52:56 [build] Collecting build info...
+#11 4.843 02:52:56 [build] ✓ Completed in 1.41s.
+#11 4.846 02:52:56 [build] Building hybrid entrypoints...
+#11 10.66 02:53:02 [vite] ✓ built in 5.71s
+#11 10.66 02:53:02 [build] ✓ Completed in 5.81s.
+#11 10.66 
+#11 10.66  building client (vite) 
+#11 10.67 02:53:02 [vite] transforming...
+#11 10.68 02:53:02 [vite] ✓ 4 modules transformed.
+#11 10.68 02:53:02 [vite] rendering chunks...
+#11 10.68 02:53:02 [vite] computing gzip size...
+#11 10.69 02:53:02 [vite] dist/client/_astro/hoisted.Cu_cv1_6.js  0.20 kB │ gzip: 0.18 kB
+#11 10.69 02:53:02 [vite] dist/client/_astro/hoisted.Cp6U1Tqe.js  0.41 kB │ gzip: 0.29 kB
+#11 10.69 02:53:02 [vite] ✓ built in 21ms
+#11 10.71 
+#11 10.71  prerendering static routes 
+#11 10.73 02:53:02 ▶ src/pages/blog/[slug].astro
+#11 10.73 02:53:02   └─ /blog/hello-world/index.html (+26ms)
+#11 10.76 02:53:02 ▶ src/pages/constellations.astro
+#11 10.76 02:53:02   └─ /constellations/index.html (+6ms)
+#11 10.77 02:53:02 ▶ src/pages/embers.astro
+#11 10.77 02:53:02   └─ /embers/index.html (+6ms)
+#11 10.78 02:53:02 λ src/pages/feed.xml.ts
+#11 10.78 02:53:02   └─ /feed.xml (+2ms)
+#11 10.78 02:53:02 ▶ src/pages/lowtide.astro
+#11 10.78 02:53:02   └─ /lowtide/index.html (+6ms)
+#11 10.79 02:53:02 ▶ src/pages/now/before.astro
+#11 10.79 02:53:02   └─ /now/before/index.html (+11ms)
+#11 10.81 02:53:02 ▶ src/pages/now.astro
+#11 10.81 02:53:02   └─ /now/index.html (+14ms)
+#11 10.82 02:53:02 ▶ src/pages/tidepool.astro
+#11 10.82 02:53:02   └─ /tidepool/index.html (+5ms)
+#11 10.83 02:53:02 ▶ src/pages/index.astro
+#11 10.83 02:53:02   └─ /index.html (+6ms)
+#11 10.84 02:53:02 ✓ Completed in 147ms.
+#11 10.84 
+#11 10.84 02:53:02 [build] Rearranging server assets...
+#11 10.84 02:53:02 [build] Server built in 7.41s
+#11 10.84 02:53:02 [build] Complete!
+#11 DONE 11.0s
 
 #12 [server 3/5] COPY --from=builder /app/dist ./dist
-#12 DONE 0.2s
+#12 DONE 0.0s
 
 #13 [server 4/5] COPY --from=builder /app/node_modules ./node_modules
-#13 DONE 2.6s
+#13 DONE 2.4s
 
 #14 [server 5/5] RUN mkdir -p /app/dist/server/data  && echo '[]' > /app/dist/server/data/wall-pending.json
-#14 DONE 0.2s
+#14 DONE 0.3s
 
 #15 exporting to image
 #15 exporting layers
-#15 exporting layers 1.4s done
-#15 writing image sha256:e53d6da06b9bf46cd11fecac243a3613116e15fdf4083354b1d899101e1a1111 done
+#15 exporting layers 2.0s done
+#15 writing image sha256:4ea82c4e27abb187d60b5aacec467285141e94569790072f17f9d1b25002b6d4 done
 #15 naming to docker.io/library/persona-blog-a done
-#15 DONE 1.4s
+#15 DONE 2.0s

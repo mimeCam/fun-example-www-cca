@@ -5,8 +5,12 @@
 // Scroll is excavation: digging through time.
 // Zero client-side JS; decay is baked at build time.
 //
+// SSR (prerender=false) so the ?ws= query param status works at runtime.
+//
 // TODO: add OG meta tags via WallMeta component (separate ticket)
 // TODO: add geology.css texture classes per mood (v2)
+
+export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import WallEntry from '../components/WallEntry.astro';

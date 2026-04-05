@@ -15,10 +15,13 @@ const status = url.searchParams.get('ws');
 
 <form class="wall-form" method="POST" action="/api/whisper">
   {status === 'ok' && (
-    <p class="wall-form-status wall-form-ok">Whisper received. It'll appear once approved.</p>
+    <p class="wall-form-status wall-form-ok">Your whisper is settling beneath the surface.</p>
   )}
   {status === 'invalid' && (
-    <p class="wall-form-status wall-form-err">Something was off — try again?</p>
+    <p class="wall-form-status wall-form-err">That didn't quite take shape. Check your words (2–280 characters).</p>
+  )}
+  {status === 'error' && (
+    <p class="wall-form-status wall-form-err">Something shifted underground. Try again.</p>
   )}
 
   {/* Honeypot — invisible to humans, irresistible to bots */}
