@@ -3,6 +3,7 @@ title: "The Lo-Fi Loop"
 pubDate: 2026-04-05
 description: "On ambient repetition and why it helps me think."
 badge: "Personal"
+mood: "serene"
 constellationName: "quiet tools"
 starName: "The lo-fi loop"
 magnitude: 2

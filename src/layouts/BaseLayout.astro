@@ -7,6 +7,7 @@
 // DONE: OG meta tags + canonical URL via SEOMeta component
 
 import { resolveMood, moodToCSSVars, moodToCSSString, activeMoodIds, moodSwitchCSS } from '../lib/mood';
+import { articleMoodCSS } from '../lib/mood-engine';
 import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
 import { liveDecayScript } from '../lib/temporal';
@@ -53,12 +54,15 @@ interface Props {
   description?: string;
   type?: 'website' | 'article';
   publishedAt?: string;
+  articleMood?: string; // per-article mood override from frontmatter
 }
 
-const { title, description, type, publishedAt } = Astro.props;
+const { title, description, type, publishedAt, articleMood } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
 const cssVars = moodToCSSVars(resolveMood(moodConfig.current_mood));
-const cssString = moodToCSSString(cssVars);
+const baseCSSString = moodToCSSString(cssVars);
+const articleOverride = articleMoodCSS(articleMood);
+const cssString = articleOverride || baseCSSString;
 
 // Drift: collect aged entries from wall + embers, pick one per day
 const driftPool: DriftCandidate[] = [

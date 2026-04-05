@@ -3,6 +3,7 @@ title: "Focus as a Mood"
 pubDate: 2026-04-05
 description: "The site changes color when you change modes. Here's why."
 badge: "Quiet"
+mood: "focused"
 constellationName: "quiet tools"
 starName: "Focus as a mood"
 magnitude: 1

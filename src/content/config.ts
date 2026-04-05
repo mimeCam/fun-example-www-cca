@@ -13,6 +13,7 @@ const blog = defineCollection({
     pubDate: z.date(),
     description: z.string().optional(),
     badge: z.string().optional(), // editorial tone phrase — see openloop/badge-guide.md
+    mood: z.string().optional(),  // article atmosphere — see lib/mood-engine.ts for valid values
     variants: z.boolean().optional(), // opt-in: post content shifts with time/celestial/age
     echo: z.object({
       text: z.string(),   // curated sentence from the echoed post

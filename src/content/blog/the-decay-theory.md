@@ -3,6 +3,7 @@ title: "The Decay Theory"
 pubDate: 2026-04-04
 description: "Everything on this site fades. That's a feature, not a bug."
 badge: "Design philosophy"
+mood: "contemplative"
 constellationName: "first light"
 starName: "The decay theory"
 magnitude: 2
