@@ -17,7 +17,9 @@ import { groupIntoBands } from '../lib/timeBands';
 import { decayChoreographyScript } from '../lib/decayChoreography';
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
+import { spectacleScript } from '../lib/spectacle';
 import TimeTravelSlider from '../components/TimeTravelSlider.astro';
+import FogOverlay from '../components/FogOverlay.astro';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -29,8 +31,10 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
 
 <BaseLayout title="Persona Blog">
   <script set:html={decayChoreographyScript()} />
+  <script set:html={spectacleScript()} />
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
+  <FogOverlay />
   <main class="feed">
     <TimeTravelSlider />
     {freshestLoop && <PulseTeaser loop={freshestLoop} />}
@@ -86,5 +90,13 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
     opacity: 0.3;
     margin-top: 0.5rem;
     font-style: italic;
+  }
+
+  /* ── Spectacle overrides ─────────────────────────── */
+  :global(.spectacle-active) .feed {
+    pointer-events: none;
+  }
+  :global(.spectacle-active) .tt-bar {
+    pointer-events: none;
   }
 </style>

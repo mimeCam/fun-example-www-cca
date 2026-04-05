@@ -24,9 +24,9 @@ echo "==> [deploy] Starting deployment of ${CONTAINER_NAME} at $(date)"
 # ── 1. Stop & remove existing container (idempotent) ─────────────────────────
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   echo "==> [deploy] Stopping existing container: ${CONTAINER_NAME}"
-  docker stop "${CONTAINER_NAME}" || true
+  docker stop --time 10 "${CONTAINER_NAME}" || true
   echo "==> [deploy] Removing existing container: ${CONTAINER_NAME}"
-  docker rm   "${CONTAINER_NAME}" || true
+  docker rm --force "${CONTAINER_NAME}" || true
 fi
 
 # ── 2. Ensure named data volumes exist (whisper queue + SQLite collective memory)
