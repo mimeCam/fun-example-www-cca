@@ -22,6 +22,10 @@ const blog = defineCollection({
       slug: z.string(),          // slug of the related post
       strength: z.number().min(0).max(1).default(0.5),
     })).optional(),
+    // --- Constellation pipeline: post → star ---
+    constellationName: z.string().optional(),     // group name, e.g. "first light"
+    starName: z.string().optional(),              // display label in star field
+    magnitude: z.number().min(1).max(5).default(3).optional(), // visual weight
   }),
 });
 

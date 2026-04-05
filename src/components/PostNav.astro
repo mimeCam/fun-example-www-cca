@@ -1,0 +1,89 @@
+---
+// src/components/PostNav.astro
+// Prev/next navigation for blog detail pages.
+// Arrows point in reading-order: ← newer · older →
+// Freshness label decays with the target post — visual hint of where you're heading.
+// Zero JS. Pure semantic HTML + CSS.
+
+import type { PostNavPair } from '../lib/postNav';
+
+interface Props { nav: PostNavPair; }
+
+const { nav } = Astro.props;
+const show = nav.newer || nav.older;
+---
+
+{show && (
+  <nav class="post-nav" aria-label="Post navigation">
+    {nav.newer ? (
+      <a href={nav.newer.href} class="post-nav__link post-nav__link--newer">
+        <span class="post-nav__arrow" aria-hidden="true">←</span>
+        <span class="post-nav__meta">
+          <span class="post-nav__dir">Newer</span>
+          <span class="post-nav__title">{nav.newer.title}</span>
+        </span>
+      </a>
+    ) : <span class="post-nav__spacer" />}
+
+    {nav.older ? (
+      <a href={nav.older.href} class="post-nav__link post-nav__link--older">
+        <span class="post-nav__meta">
+          <span class="post-nav__dir">Older</span>
+          <span class="post-nav__title">{nav.older.title}</span>
+        </span>
+        <span class="post-nav__arrow" aria-hidden="true">→</span>
+      </a>
+    ) : <span class="post-nav__spacer" />}
+  </nav>
+)}
+
+<style>
+  .post-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 40rem;
+    margin: 3rem auto 0;
+    padding: 2rem 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .post-nav__link {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.55;
+    transition: opacity 250ms ease;
+    max-width: 48%;
+  }
+  .post-nav__link:hover { opacity: 1; }
+
+  .post-nav__link--older { margin-left: auto; text-align: right; }
+
+  .post-nav__arrow {
+    font-size: 1.1rem;
+    line-height: 1.4;
+    flex-shrink: 0;
+    color: var(--mood-accent, currentColor);
+  }
+
+  .post-nav__meta { display: flex; flex-direction: column; }
+
+  .post-nav__dir {
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  .post-nav__title {
+    font-size: 0.88rem;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--mood-accent, currentColor);
+  }
+
+  .post-nav__spacer { flex: 1; }
+</style>

@@ -10,10 +10,13 @@
 // TODO: chromatic aberration filter on hover (needs SVG filter def)
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
 import { computeAllConstellations } from '../lib/constellation';
-import rawConstellations from '../data/constellations.json';
+import { constellationsFromPosts } from '../lib/constellation-engine';
 
-const constellations = computeAllConstellations(rawConstellations);
+const posts = await getCollection('blog');
+const derived = constellationsFromPosts(posts);
+const constellations = computeAllConstellations(derived);
 ---
 
 <BaseLayout title="Constellations — Reading Paths">

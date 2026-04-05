@@ -5,12 +5,15 @@
 //
 // DONE: reading progress "erosion bar" — see SiteNav.astro + inline script below
 // DONE: share button (native Web Share API with clipboard fallback) — see ShareSheet.astro
-// TODO: add prev/next post navigation at bottom
+// DONE: prev/next post navigation at bottom — see PostNav.astro + postNav.ts
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
 import Echo from '../../components/Echo.astro';
+import PostNav from '../../components/PostNav.astro';
+import { allPostDisplayData } from '../../lib/postMeta';
+import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import { variantScript } from '../../lib/variants';
@@ -19,13 +22,14 @@ import ShareSheet from '../../components/ShareSheet.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
+  const sorted = allPostDisplayData(posts);
   return posts.map(post => ({
     params: { slug: post.slug },
-    props: { post },
+    props: { post, nav: getPostNav(post.slug, sorted) },
   }));
 }
 
-const { post } = Astro.props;
+const { post, nav } = Astro.props;
 const { Content } = await post.render();
 const readingTime = getReadingTime(post.body);
 const pubDate = formatPubDate(post.data.pubDate);
@@ -66,6 +70,7 @@ async function resolveEchoTitle(slug?: string) {
   </main>
 
   <ShareSheet title={post.data.title} description={post.data.description} />
+  <PostNav nav={nav} />
   <script set:html={sScript} />
 
   <!-- Erosion Bar: scroll-driven progress as a CSS custom property -->

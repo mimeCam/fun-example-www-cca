@@ -6,10 +6,13 @@
 //
 // TODO: animate line drawing on page load via stroke-dashoffset
 
+import { getCollection } from 'astro:content';
 import { computeAllConstellations, brightestStars } from '../lib/constellation';
-import rawConstellations from '../data/constellations.json';
+import { constellationsFromPosts } from '../lib/constellation-engine';
 
-const all = computeAllConstellations(rawConstellations);
+const posts = await getCollection('blog');
+const derived = constellationsFromPosts(posts);
+const all = computeAllConstellations(derived);
 const stars = brightestStars(all, 3);
 const previewName = all.map(c => c.constellation.name).join(' · ');
 ---
