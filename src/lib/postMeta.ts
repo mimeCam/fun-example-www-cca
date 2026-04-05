@@ -10,6 +10,8 @@ import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
 import { hourToPhase } from './timeAmbient';
 import type { TimePhase } from './timeAmbient';
+import { decayFactor, freshnessTag, decayStyleString } from './decay';
+import type { FreshnessTag } from './decay';
 
 export interface PostMeta {
   slug: string;
@@ -50,6 +52,40 @@ function byNewest(a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>): numbe
 /** Returns the current server-side time phase for OG meta hints. */
 export function currentPhase(): TimePhase {
   return hourToPhase(new Date().getHours());
+}
+
+// ---------------------------------------------------------------------------
+// Unified display data — one call per post, used by homepage + blog pages
+// ---------------------------------------------------------------------------
+
+export interface PostDisplayData extends PostMeta {
+  decay: number;
+  freshness: FreshnessTag;
+  decayStyle: string;
+}
+
+/** Bundles metadata + decay visuals for a single post. */
+export function getPostDisplayData(
+  post: CollectionEntry<'blog'>,
+  now = new Date(),
+): PostDisplayData {
+  const meta = extractMeta(post);
+  const factor = decayFactor(meta.pubDateISO, 365, now);
+  return {
+    ...meta,
+    decay: factor,
+    freshness: freshnessTag(factor),
+    decayStyle: decayStyleString(factor),
+  };
+}
+
+/** Display data for all posts, sorted newest-first. */
+export function allPostDisplayData(
+  posts: CollectionEntry<'blog'>[],
+  now = new Date(),
+): PostDisplayData[] {
+  const sorted = [...posts].sort(byNewest);
+  return sorted.map(p => getPostDisplayData(p, now));
 }
 
 // ---------------------------------------------------------------------------

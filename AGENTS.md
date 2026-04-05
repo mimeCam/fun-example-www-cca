@@ -2,17 +2,19 @@
 
 Astro 4 hybrid · TypeScript strict · @astrojs/node standalone · Docker
 
+## Core Feature
+
+**Decay-Aware Blog Feed** — posts visually age over time (opacity, blur, saturation fade). Hover revives them. The signature interaction. Built on `src/lib/decay.ts` → `src/styles/decay.css`.
+
 ## Key Paths
 
-- `src/lib/` — shared utilities
+- `src/lib/` — shared utilities (decay, temporal, mood, pulse, postMeta)
 - `src/components/` — Astro components
 - `src/pages/api/` — SSR endpoints
 - `src/data/` — JSON flat-file storage
-- `cli/` — author CLI tools
 
 ## WIP
 
-- **Open Loop Pulse** — core feature. 3-zone lifecycle on `/pulse`, teaser on homepage. Next: graduated↔post bidirectional links, empty-state illustration.
+- **DecayCard component** — next: build `DecayCard.astro`, wire into homepage `index.astro`. Foundation (`decay.ts`, `decay.css`, `postMeta.ts` display data) is done.
+- **Open Loop Pulse** — 3-zone lifecycle on `/pulse`, teaser on homepage.
 - **Nav consolidation** — 5-item nav, secondary pages via DriftNav.
-- **Now Page Memory** — `/now/before` archive. Next: permalink anchors, auto-archival.
-- **Mood Snapshots** — `?snap=` URL encoding. Next: OG preview, snapshot banner.

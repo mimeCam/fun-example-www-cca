@@ -1,0 +1,25 @@
+/* src/styles/decay.css
+ * Decay visual system — driven by CSS custom properties from decay.ts.
+ * The hover "revival" effect is the signature interaction:
+ * old content fades, you hover, it sharpens, you leave, it fades again.
+ */
+
+.decay-card {
+  opacity: var(--decay-opacity, 1);
+  filter: blur(var(--decay-blur, 0px)) saturate(var(--decay-saturation, 1));
+  transition: opacity 0.6s ease, filter 0.6s ease;
+}
+
+.decay-card:hover,
+.decay-card:focus-within {
+  opacity: 1;
+  filter: blur(0px) saturate(1);
+}
+
+/* Freshness tag — screen-reader friendly, visually subtle */
+.decay-freshness {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
