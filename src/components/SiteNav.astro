@@ -12,15 +12,12 @@ const path = Astro.url.pathname;
 const pageId = getActivePage(path);
 const isBlogPost = pageId === 'blog';
 
-// Nav consolidated per UX spec: 8 → 5 items.
-// Secondary pages (embers, tidepool, lowtide, constellations)
-// remain accessible via DriftNav + internal links.
+// Nav consolidated per UX spec: 10 → 3 items.
+// Secondary pages surface via progressive disclosure, not navigation.
 const links: { label: string; href: string; id: PageId }[] = [
   { label: 'blog',  href: '/',      id: 'home'  },
   { label: 'pulse', href: '/pulse', id: 'pulse' },
-  { label: 'wall',  href: '/wall',  id: 'wall'  },
   { label: 'now',   href: '/now',   id: 'now'   },
-  { label: 'embers', href: '/embers', id: 'embers' },
 ];
 ---
 

@@ -10,11 +10,11 @@ import { getActivePage, type PageId } from '../lib/nav';
 
 const pageId = getActivePage(Astro.url.pathname);
 
+// Mirrors SiteNav: blog | pulse | now — consistent wayfinding.
 const links: { label: string; href: string; id: PageId }[] = [
-  { label: 'home',  href: '/',    id: 'home' },
-  { label: 'now',   href: '/now', id: 'now'  },
-  { label: 'wall',  href: '/wall', id: 'wall' },
-  { label: '·',     href: '/pulse', id: 'pulse' },
+  { label: 'blog',  href: '/',      id: 'home'  },
+  { label: 'pulse', href: '/pulse', id: 'pulse' },
+  { label: 'now',   href: '/now',   id: 'now'   },
 ];
 ---
 

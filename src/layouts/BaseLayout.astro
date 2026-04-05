@@ -28,11 +28,13 @@ import QuietFollow from '../components/QuietFollow.astro';
 import DroneToggle from '../components/DroneToggle.astro';
 import { droneControllerScript } from '../lib/droneController';
 import { snapshotScript } from '../lib/snapshot';
+import { longPressReviveScript } from '../lib/longPressRevive';
 import { filterCandidates, pickCandidate } from '../lib/drift';
 import type { DriftCandidate } from '../lib/drift';
 import wallData from '../data/wall.json';
 import embersData from '../data/embers.json';
 import '../styles/global.css';
+import '../styles/decay.css';
 import '../styles/shimmer.css';
 
 const pillMoods = activeMoodIds();
@@ -44,6 +46,7 @@ const cycleScript = moodCycleScript();
 const shimScript = shimmerScript();
 const droneScript = droneControllerScript();
 const snapScript = snapshotScript();
+const longPressScript = longPressReviveScript();
 
 interface Props {
   title: string;
@@ -82,6 +85,7 @@ const driftPick = pickCandidate(driftCandidates);
     <script set:html={snapScript} />
     <script set:html={shimScript} />
     <script set:html={droneScript} />
+    <script set:html={longPressScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

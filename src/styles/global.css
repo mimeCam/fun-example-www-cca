@@ -1,3 +1,18 @@
 @import "tailwindcss";
 
-/* TODO: add brand tokens (colors, fonts) once design system is settled */
+/* ── Design tokens (from UX spec) ────────────────────────────── */
+
+:root {
+  /* Identity: constant corners — decay changes vitality, never shape */
+  --radius: 12px;
+
+  /* Warm decay palette — low-saturation earth tones */
+  --decay-bg-fresh: rgba(255, 255, 255, 0.06);
+  --decay-bg-fossil: rgba(255, 255, 255, 0.02);
+  --decay-border-alpha: 0.06;
+
+  /* Shadow depth tokens — shadow is the PRIMARY age signal */
+  --shadow-fresh-y: 8px;
+  --shadow-fresh-spread: 32px;
+  --shadow-fresh-alpha: 0.22;
+}
