@@ -1,0 +1,48 @@
+---
+// src/components/TimeTravelSlider.astro
+// Time-travel slider — hidden by default, revealed via toggle button.
+// Range: 0 (today) → 365 (1 year forward). Pure client-side simulation.
+// No server calls, no DB writes, no revival counts affected.
+---
+
+<div id="tt-bar" class="tt-bar" aria-label="Time travel controls">
+  <button
+    id="tt-toggle"
+    class="tt-toggle"
+    type="button"
+    aria-pressed="false"
+    title="Feel time pass"
+  >
+    <span class="tt-icon" aria-hidden="true">⏳</span>
+    <span class="tt-toggle-label">feel time pass</span>
+  </button>
+
+  <div class="tt-slider-wrap">
+    <label for="tt-slider" class="sr-only">Time offset in days</label>
+    <span class="tt-endpoint">today</span>
+    <input
+      id="tt-slider"
+      type="range"
+      min="0"
+      max="365"
+      value="0"
+      step="1"
+      aria-valuetext="today"
+    />
+    <span class="tt-endpoint">1 year</span>
+    <span id="tt-label" class="tt-date-label" aria-live="polite"></span>
+  </div>
+</div>
+
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+</style>

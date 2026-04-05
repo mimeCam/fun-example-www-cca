@@ -93,7 +93,7 @@ function startLoop(): void {
 export function liveDecayScript(): string {
   return `(function(){
   var S='${READY_SELECTOR}',M=${MAX_DAYS},D=${MS_PER_DAY};
-  var I=${TICK_INTERVAL_MS},L=0,FB=${CHOREO_FALLBACK_MS};
+  var I=${TICK_INTERVAL_MS},L=0,FB=${CHOREO_FALLBACK_MS},paused=false;
   function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
   function f(p,n,r){var raw=Math.min(1,Math.max(0,(n-p)/D/M));return Math.max(0,raw-rb(r))}
   function patch(e,n){var r=+(e.dataset.revivalCount||'0');
@@ -104,9 +104,11 @@ export function liveDecayScript(): string {
     e.style.setProperty('--decay-shadow-y',((1-d)*8).toFixed(1)+'px');
     e.style.setProperty('--decay-shadow-spread',((1-d)*32).toFixed(1)+'px');
     e.style.setProperty('--decay-shadow-alpha',((1-d)*.18).toFixed(3))}
-  function tick(){var n=Date.now();if(n-L>=I){L=n;
-    document.querySelectorAll(S).forEach(function(c){patch(c,n)})}
+  function tick(){if(!paused){var n=Date.now();if(n-L>=I){L=n;
+    document.querySelectorAll(S).forEach(function(c){patch(c,n)})}}
     requestAnimationFrame(tick)}
+  document.addEventListener('timetravel:seek',function(){paused=true});
+  document.addEventListener('timetravel:exit',function(){paused=false;L=0});
   setTimeout(function(){requestAnimationFrame(tick)},FB)
 })();`;
 }

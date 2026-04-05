@@ -65,6 +65,19 @@ export function shadowYFromDecay(factor: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// Time band classification (for homepage grouping + time-travel re-sorting)
+// ---------------------------------------------------------------------------
+
+export type TimeBandName = 'now' | 'recent' | 'archive';
+
+/** Classify a day-offset into a time band. */
+export function timeBand(daysSincePublished: number): TimeBandName {
+  if (daysSincePublished <= 30) return 'now';
+  if (daysSincePublished <= 180) return 'recent';
+  return 'archive';
+}
+
+// ---------------------------------------------------------------------------
 // Accessibility label (screen readers only)
 // ---------------------------------------------------------------------------
 
@@ -172,5 +185,12 @@ export function _testDecayLib(): void {
   const withRev = decayFactor('2025-04-05', 365, new Date('2026-04-05'), 50);
   console.assert(withRev < 1, `revived fossil should be < 1, got ${withRev}`);
 
-  console.log('[decay] lib OK — factor, visuals, shadow, tags, CSS vars, revival verified');
+  // Time band checks
+  console.assert(timeBand(0) === 'now', 'day 0 = now');
+  console.assert(timeBand(30) === 'now', 'day 30 = now');
+  console.assert(timeBand(31) === 'recent', 'day 31 = recent');
+  console.assert(timeBand(180) === 'recent', 'day 180 = recent');
+  console.assert(timeBand(181) === 'archive', 'day 181 = archive');
+
+  console.log('[decay] lib OK — factor, visuals, shadow, tags, CSS vars, revival, timeBand verified');
 }
