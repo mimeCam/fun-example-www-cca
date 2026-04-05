@@ -1,8 +1,9 @@
 ---
 // src/pages/index.astro
-// Blog listing with decay-aware cards — the signature feature.
-// Posts visually age: opacity, blur, saturation fade over time. Hover revives.
-// Shows freshest active loop as a teaser hook into /pulse.
+// Homepage "Decay Field" — posts grouped into time bands.
+// Three bands: Now (≤30d, full glow), Recent (1–6mo, partially decayed),
+// Archive (6+mo, ghost previews with nudge to Constellations).
+// Hover revives any card. PlanetariumWindow teases the star field.
 //
 // TODO: add pagination once post count grows beyond ~20
 
@@ -13,9 +14,11 @@ import PulseTeaser from '../components/PulseTeaser.astro';
 import PlanetariumWindow from '../components/PlanetariumWindow.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { getPulseData, activeLoops } from '../lib/pulse';
+import { groupIntoBands } from '../lib/timeBands';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
+const bands = groupIntoBands(displayPosts);
 
 const pulseData = await getPulseData();
 const freshestLoop = activeLoops(pulseData)[0] ?? null;
@@ -25,9 +28,31 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
   <main class="feed">
     <PlanetariumWindow />
     {freshestLoop && <PulseTeaser loop={freshestLoop} />}
-    {displayPosts.map(post => (
-      <DecayCard post={post} />
-    ))}
+
+    {bands.now.posts.length > 0 && (
+      <section class="band" aria-label={bands.now.hint}>
+        {bands.now.posts.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
+
+    {bands.recent.posts.length > 0 && (
+      <section class="band band--recent" aria-label={bands.recent.hint}>
+        <h2 class="band-label">{bands.recent.label}</h2>
+        {bands.recent.posts.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
+
+    {bands.archive.posts.length > 0 && (
+      <section class="band band--archive" aria-label={bands.archive.hint}>
+        <h2 class="band-label">{bands.archive.label}</h2>
+        {bands.archive.posts.map(post => <DecayCard post={post} />)}
+        {bands.archive.overflow > 0 && (
+          <a href="/constellations" class="archive-nudge">
+            ✦ {bands.archive.overflow} more in Constellations
+          </a>
+        )}
+      </section>
+    )}
   </main>
 </BaseLayout>
 
@@ -37,4 +62,25 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
     max-width: 44rem;
     margin: 0 auto;
   }
+  .band { margin-bottom: 2rem; }
+  .band-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.35;
+    margin: 0 0 0.75rem;
+    font-weight: 400;
+  }
+  .band--archive { opacity: 0.6; }
+  .archive-nudge {
+    display: block;
+    text-align: center;
+    font-size: 0.72rem;
+    opacity: 0.4;
+    margin-top: 0.5rem;
+    color: var(--mood-accent, currentColor);
+    text-decoration: none;
+    transition: opacity 200ms;
+  }
+  .archive-nudge:hover { opacity: 0.8; }
 </style>

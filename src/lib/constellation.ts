@@ -92,6 +92,15 @@ export function computeAllConstellations(
     .sort((a, b) => a.age - b.age);
 }
 
+/** Top-N brightest stars across all constellations. */
+export function brightestStars(
+  cs: ComputedConstellation[], count: number,
+): ComputedStar[] {
+  return cs.flatMap(c => c.stars)
+    .sort((a, b) => b.brightness - a.brightness)
+    .slice(0, count);
+}
+
 // ---------------------------------------------------------------------------
 // Isolated-run sanity check
 // ---------------------------------------------------------------------------
@@ -117,5 +126,14 @@ export function _testConstellationLib(): void {
   console.assert(cc.stars[0].brightness === 1, 'first star is brightest');
   console.assert(cc.stars[1].brightness < 1, 'last star dimmer');
 
-  console.log('[constellation] lib OK — hash, position, compute verified');
+  const stub2: Constellation = {
+    name: 'other', description: 'B', created: '2026-04-01',
+    stars: [{ id: 'c', label: 'Third' }],
+  };
+  const all = computeAllConstellations([stub, stub2], new Date('2026-04-04'));
+  const top = brightestStars(all, 2);
+  console.assert(top.length === 2, `brightestStars: expected 2, got ${top.length}`);
+  console.assert(top[0].brightness >= top[1].brightness, 'sorted by brightness');
+
+  console.log('[constellation] lib OK — hash, position, compute, brightestStars verified');
 }

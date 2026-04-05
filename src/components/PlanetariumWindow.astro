@@ -4,18 +4,17 @@
 // Shows a glimpse of the first constellation, inviting exploration.
 // Links to /constellations. Pure CSS, no JS.
 //
-// TODO: show top-3 brightest stars across all constellations instead of first only
 // TODO: animate line drawing on page load via stroke-dashoffset
 
-import { computeAllConstellations } from '../lib/constellation';
+import { computeAllConstellations, brightestStars } from '../lib/constellation';
 import rawConstellations from '../data/constellations.json';
 
 const all = computeAllConstellations(rawConstellations);
-const preview = all[0];
-const stars = preview?.stars.slice(0, 4) ?? [];
+const stars = brightestStars(all, 3);
+const previewName = all.map(c => c.constellation.name).join(' · ');
 ---
 
-{preview && (
+{stars.length > 0 && (
   <a href="/constellations" class="pw-link" aria-label="Explore constellations">
     <div class="planetarium-window">
       <svg viewBox="20 20 60 40" preserveAspectRatio="xMidYMid slice"
@@ -33,7 +32,7 @@ const stars = preview?.stars.slice(0, 4) ?? [];
           </g>
         ))}
       </svg>
-      <span class="pw-caption">{preview.constellation.name}</span>
+      <span class="pw-caption">{previewName}</span>
     </div>
   </a>
 )}
