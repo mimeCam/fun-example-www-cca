@@ -20,6 +20,8 @@ export interface RevivalResult {
   decayAfterRevival: number;
   decayPct: number;
   monthlyCount: number;
+  /** Present on 429 when this tab has already revived this post. */
+  alreadyRevived?: boolean;
 }
 
 export interface RevivalCounterConfig {
@@ -79,25 +81,59 @@ export function flashDaysBanner(bannerEl: HTMLElement, days: number): void {
 // SSE subscription
 // ---------------------------------------------------------------------------
 
-/** Subscribe to /api/heartbeat, call onRevival when this slug is revived by another reader. */
-export function subscribeHeartbeat(
-  slug: string,
-  onRevival: (count: number, decayAfterRevival: number) => void,
-): () => void {
+type RevivalSSEPayload = { slug: string; count: number; decayAfterRevival: number };
+type RevivalHandler = (count: number, decay: number) => void;
+
+/** Subscribe to /api/heartbeat with auto-reconnect + exponential backoff. */
+export function subscribeHeartbeat(slug: string, onRevival: RevivalHandler): () => void {
   if (typeof EventSource === 'undefined') return () => {};
+  const state = { disposed: false, delay: 2_000, es: null as EventSource | null, timer: null as ReturnType<typeof setTimeout> | null };
+  connectSSE(slug, onRevival, state);
+  return () => disposeSSE(state);
+}
+
+/** Open one EventSource connection; wire revival + error handlers. */
+function connectSSE(slug: string, onRevival: RevivalHandler, state: SSEState): void {
+  if (state.disposed) return;
   let es: EventSource;
-  try { es = new EventSource('/api/heartbeat'); } catch { return () => {}; }
+  try { es = new EventSource('/api/heartbeat'); } catch { return; }
+  state.es = es;
+  es.addEventListener('revival', (e: MessageEvent) => handleRevivalEvent(e, slug, onRevival));
+  es.addEventListener('open', () => { state.delay = 2_000; }); // reset on successful connect
+  es.addEventListener('error', () => scheduleReconnect(slug, onRevival, state));
+}
 
-  function handler(e: MessageEvent) {
-    try {
-      const data = JSON.parse(e.data) as { slug: string; count: number; decayAfterRevival: number };
-      if (data.slug !== slug) return;
-      onRevival(data.count, data.decayAfterRevival);
-    } catch { /* malformed event */ }
-  }
+/** Attempt reconnect after delay, doubling it each time (max 32s). */
+function scheduleReconnect(slug: string, onRevival: RevivalHandler, state: SSEState): void {
+  if (state.disposed) return;
+  state.es?.close();
+  state.es = null;
+  state.timer = setTimeout(() => {
+    state.delay = Math.min(state.delay * 2, 32_000);
+    connectSSE(slug, onRevival, state);
+  }, state.delay);
+}
 
-  es.addEventListener('revival', handler);
-  return () => { es.removeEventListener('revival', handler); es.close(); };
+/** Parse and filter an SSE revival event for the current slug. */
+function handleRevivalEvent(e: MessageEvent, slug: string, onRevival: RevivalHandler): void {
+  try {
+    const d = JSON.parse(e.data) as RevivalSSEPayload;
+    if (d.slug === slug) onRevival(d.count, d.decayAfterRevival);
+  } catch { /* malformed — ignore */ }
+}
+
+/** Tear down the EventSource and cancel any pending reconnect timer. */
+function disposeSSE(state: SSEState): void {
+  state.disposed = true;
+  if (state.timer) clearTimeout(state.timer);
+  state.es?.close();
+}
+
+interface SSEState {
+  disposed: boolean;
+  delay: number;
+  es: EventSource | null;
+  timer: ReturnType<typeof setTimeout> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,40 +151,69 @@ export function wireKeepButton(
   lifespan: number,
 ): void {
   let count = currentCount;
+  btn.addEventListener('click', () => onKeepClick(btn, counterEl, bannerEl, slug, decayFactor, lifespan, { count: () => count, setCount: (n) => { count = n; } }));
+}
 
-  btn.addEventListener('click', () => {
-    if (btn.classList.contains('kept')) return;
+/** Handle a single KeepButton click — optimistic update + API call. */
+function onKeepClick(
+  btn: HTMLButtonElement,
+  counterEl: HTMLElement,
+  bannerEl: HTMLElement,
+  slug: string,
+  decayFactor: number,
+  lifespan: number,
+  counter: { count: () => number; setCount: (n: number) => void },
+): void {
+  if (btn.classList.contains('kept')) return;
+  const prev = counter.count();
+  counter.setCount(prev + 1);
+  animateCount(counterEl, prev, prev + 1);
+  markKept(btn);
+  setButtonCount(btn, prev + 1);
+  postRevive(slug)
+    .then(data => applyReviveResult(data, btn, counterEl, bannerEl, slug, decayFactor, lifespan, counter))
+    .catch(() => rollback(btn, counterEl, counter.count() - 1, counter));
+}
 
-    // Optimistic update
-    const optimistic = count + 1;
-    animateCount(counterEl, count, optimistic);
-    count = optimistic;
-    markKept(btn);
-    setButtonCount(btn, count);
+/** POST to /api/revive; resolve to data or rejection signal. */
+async function postRevive(slug: string): Promise<RevivalResult | null> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const sid = getSessionId();
+  if (sid) headers['x-session-id'] = sid;
+  const r = await fetch('/api/revive', { method: 'POST', keepalive: true, headers, body: JSON.stringify({ slug }) });
+  if (!r.ok && r.status !== 429) return null;
+  return r.json() as Promise<RevivalResult>;
+}
 
-    const sessionId = getSessionId();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (sessionId) headers['x-session-id'] = sessionId;
+/** Reconcile server response with optimistic state. */
+function applyReviveResult(
+  data: RevivalResult | null,
+  btn: HTMLButtonElement,
+  counterEl: HTMLElement,
+  bannerEl: HTMLElement,
+  slug: string,
+  decayFactor: number,
+  lifespan: number,
+  counter: { count: () => number; setCount: (n: number) => void },
+): void {
+  if (!data) { rollback(btn, counterEl, counter.count() - 1, counter); return; }
+  if (data.alreadyRevived) { markKept(btn); return; } // already kept this tab — stay locked
+  if (!data.ok) { rollback(btn, counterEl, counter.count() - 1, counter); return; }
+  if (data.count !== counter.count()) { animateCount(counterEl, counter.count(), data.count); counter.setCount(data.count); }
+  setButtonCount(btn, counter.count());
+  flashDaysBanner(bannerEl, daysGained(decayFactor, data.decayAfterRevival, lifespan));
+  markSessionRevived(slug);
+  dispatchRevivalConfirmed(data);
+}
 
-    fetch('/api/revive', {
-      method: 'POST',
-      keepalive: true,
-      headers,
-      body: JSON.stringify({ slug }),
-    })
-      .then(r => {
-        if (r.status === 429) { rollback(btn, counterEl, count - 1); count--; return null; }
-        return r.ok ? (r.json() as Promise<RevivalResult>) : null;
-      })
-      .then(data => {
-        if (!data) return;
-        // Reconcile with server truth
-        if (data.count !== count) { animateCount(counterEl, count, data.count); count = data.count; }
-        flashDaysBanner(bannerEl, daysGained(decayFactor, data.decayAfterRevival, lifespan));
-        setButtonCount(btn, count);
-      })
-      .catch(() => { rollback(btn, counterEl, count - 1); count--; });
-  });
+/** Stamp sessionStorage so the button shows "kept" on next page load within this tab. */
+function markSessionRevived(slug: string): void {
+  try { sessionStorage.setItem('revived:' + slug, '1'); } catch { /* storage blocked */ }
+}
+
+/** Dispatch a DOM event so revival-moment.ts can fire its visual choreography. */
+function dispatchRevivalConfirmed(data: RevivalResult): void {
+  document.dispatchEvent(new CustomEvent('revival:confirmed', { detail: data }));
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +231,12 @@ function markKept(btn: HTMLButtonElement): void {
   if (icon) icon.textContent = '✓';
 }
 
-function rollback(btn: HTMLButtonElement, counterEl: HTMLElement, prevCount: number): void {
+function rollback(
+  btn: HTMLButtonElement,
+  counterEl: HTMLElement,
+  prevCount: number,
+  counter: { setCount: (n: number) => void },
+): void {
   btn.classList.remove('kept');
   const label = btn.querySelector('.keep-label');
   if (label) label.textContent = 'Keep Alive';
@@ -174,6 +244,7 @@ function rollback(btn: HTMLButtonElement, counterEl: HTMLElement, prevCount: num
   if (icon) icon.textContent = '♥';
   animateCount(counterEl, prevCount + 1, prevCount);
   setButtonCount(btn, prevCount);
+  counter.setCount(prevCount);
 }
 
 /** Sync the inline count badge inside the KeepButton (e.g. "Keep Alive · 14"). */
@@ -189,24 +260,29 @@ function setButtonCount(btn: HTMLButtonElement, count: number): void {
 // ---------------------------------------------------------------------------
 
 export function initRevivalCounter(config: RevivalCounterConfig): void {
-  const root = document.querySelector<HTMLElement>('.revival-counter-root');
   const counterEl = document.querySelector<HTMLElement>('[data-revival-count-display]');
   const bannerEl = document.querySelector<HTMLElement>('.days-banner');
   const btn = document.querySelector<HTMLButtonElement>('.keep-btn[data-keep-slug]');
 
-  if (!root || !counterEl || !bannerEl || !btn) return;
+  if (!counterEl || !bannerEl || !btn) return;
 
   let count = config.initialCount;
   const lifespan = config.lifespan ?? 365;
 
-  // Wire the button
+  // Pre-mark kept if this tab already revived this post (survives page reloads)
+  if (isSessionRevived(config.slug)) markKept(btn);
+
   wireKeepButton(btn, counterEl, bannerEl, config.slug, count, config.decayFactor, lifespan);
 
-  // Subscribe to live updates from other readers
   subscribeHeartbeat(config.slug, (newCount) => {
     if (newCount <= count) return; // ignore stale
     animateCount(counterEl, count, newCount);
     count = newCount;
     setButtonCount(btn, count);
   });
+}
+
+/** True if this tab has already revived the given slug. */
+function isSessionRevived(slug: string): boolean {
+  try { return sessionStorage.getItem('revived:' + slug) === '1'; } catch { return false; }
 }

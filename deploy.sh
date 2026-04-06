@@ -4,33 +4,38 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v26 — RevivalCounter + KeepButton Redesign (2026-04-06)
+# Architecture v27 — KeepButton-Only Revival + Session Idempotency + SSE Reconnect (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — RevivalCounter + KeepButton Redesign):
-#   RevivalCounter.astro — NEW: Live Collective Memory Display placed at the
-#     natural end-of-article action zone; SSR-injects initialCount (no "0"
-#     flash); client subscribes to /api/heartbeat SSE and animates count via
-#     odometer; shows "+N days" banner after own revival.
-#   revival-counter.ts — NEW: client lib for RevivalCounter; animateCount()
-#     (RAF odometer, ease-out cubic, 600 ms); flashDaysBanner() (4s banner);
-#     subscribeHeartbeat() (SSE /api/heartbeat, slug-filtered);
-#     wireKeepButton() (optimistic update + 429 rollback); initRevivalCounter()
-#     bootstrap; zero new npm deps.
-#   KeepButton.astro — REDESIGNED: petition-style; new props count/urgency/
-#     conviction; inline count badge ("Keep Alive · N"); critical urgency adds
-#     pulsing glow ring (CSS animation); still-true conviction adds gold ring;
-#     min-height 44 px touch target; delegated feed-card handler via inline
-#     script; post-page button wired exclusively by initRevivalCounter().
-#   DecayCard.astro — KeepButton now receives count/urgency/conviction props
-#     for feed card urgency ring and inline count badge.
-#   blog/[slug].astro — revival footer (RevivalCounter + KeepButton) added
-#     below article body; decayFactor() imported from decay-engine;
-#     latestConviction computed from convictions array for still-true ring.
-#   variants.ts — DELETED: variants system fully removed; no client code
-#     references variant feature any more.
+# Sprint (latest — KeepButton-Only Revival + Session Idempotency + SSE Reconnect):
+#   revival-engine.ts — SIMPLIFIED: hover-dwell and touch press-and-hold
+#     removed entirely; KeepButton (revival-counter.ts) is now the SOLE revival
+#     trigger; feed-card module retains SSE sympathetic bloom + graveyard
+#     resurrect only; initDesktop/initTouch/initKeyboard deleted.
+#   revival-moment.ts — EVENT-DRIVEN: replaced hover/touch/keyboard handlers
+#     with document.addEventListener('revival:confirmed') dispatched by
+#     wireKeepButton; anticipation arc SVG removed; script ~40% smaller.
+#   revival-counter.ts — HARDENED: SSE auto-reconnect with exponential backoff
+#     (2 s initial → 32 s cap); session idempotency — markSessionRevived() stamps
+#     sessionStorage, isSessionRevived() pre-marks button on page load; rollback()
+#     now accepts counter ref; postRevive() + applyReviveResult() extracted;
+#     dispatchRevivalConfirmed() bridges counter → moment for visual choreography.
+#   heartbeat.ts — RESILIENT: Last-Event-ID replay on reconnect; monotonic
+#     event IDs in _eventLog (200-entry ring buffer); eventsAfter() helper;
+#     sseEventFrame() embeds id: field; register() accepts lastEventId param.
+#   collectiveMemory.ts — PERMANENT LOCK: canReviveBySession() changed from
+#     time-window rate-limit to permanent per-tab lock (SELECT existence only,
+#     no last_at comparison); one revival per tab per post forever.
+#   sessionToken.ts — TAB TOKEN: tab-scoped session-token written to
+#     sessionStorage on first load (crypto.randomUUID or fallback); sent as
+#     X-Session-Id header for per-tab revival idempotency.
+#   revive.ts (API) — IDEMPOTENCY RESPONSE: sessionConflict() returns 429 with
+#     { ok: false, alreadyRevived: true } so client can distinguish "already
+#     kept this tab" from generic rate-limit rollback.
+#   heartbeat.ts (API) — RECONNECT SUPPORT: parseLastEventId() reads
+#     Last-Event-ID header; passed to register() for missed-event replay.
 #   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,

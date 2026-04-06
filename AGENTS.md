@@ -4,17 +4,14 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — decay engine, death-clock, endangered, epitaph engine, graveyard ledger, mood, entomb, collective memory, revival history, presence, revival-counter
-- `src/components/` — `DecayCard`, `EndangeredCard`, `DeathClock`, `GhostEchoes`, `ConvictionPanel`, `TombstoneCard`, `GraveyardLedger`, `RevivalCounter`, `KeepButton`
-- `src/pages/api/` — SSE + JSON endpoints (death-clock, ghost-echoes, graveyard-stats, reading-pulse, revive, heartbeat)
+- `src/lib/` — core: decay-engine, death-clock, collective-memory, revival-engine, revival-counter, revival-moment, heartbeat, session-token
+- `src/components/` — `DecayCard`, `DeathClock`, `RevivalCounter`, `KeepButton`, `GhostEchoes`, `GraveyardLedger`
+- `src/pages/api/` — SSE + JSON endpoints: `heartbeat`, `revive`, `graveyard-stats`, `reading-pulse`, `ghost-echoes`, `death-clock`
 - `src/content/blog/` — Markdown posts (frontmatter: `lifespan` days, `convictions`, `mood`, `echo`)
 
 ## Core Feature
 
-**Temporal Decay + Collective Memory** — posts visually age and die; reader attention revives them.
-DeathClock SVG ring counts down each post's lifespan. Reader revivals slow the decay and add days back.
-`RevivalCounter` shows live collective count with odometer animation + days-gained banner (SSE-synced).
-Dead posts land at `/graveyard`. Author conviction modulates decay — `still-true` slows it, `wrong`/`abandoned` accelerates it.
+**Temporal Decay + Collective Memory** — posts age and die; readers revive them via `KeepButton` (sole revival signal). DeathClock SVG ring counts down lifespan. Conviction modulates decay rate. Dead posts land at `/graveyard`.
 
 ## WIP
 

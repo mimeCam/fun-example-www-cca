@@ -39,14 +39,32 @@ const pending = new Map<string, { event: HeartbeatEvent; timer: ReturnType<typeo
 const DEBOUNCE_MS = 3_000;
 const KEEPALIVE_MS = 30_000;
 const STALE_SWEEP_MS = 60_000;
+const EVENT_LOG_LIMIT = 200;
 
-let nextId = 0;
+let _nextConnId = 0;
+let _nextEventId = 0;
 let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
 let sweepTimer: ReturnType<typeof setInterval> | null = null;
 
-/** Format an SSE data frame (revival event). */
-function sseFrame(event: HeartbeatEvent): Uint8Array {
-  const line = `event: revival\ndata: ${JSON.stringify(event)}\n\n`;
+/** Chronological log of emitted events — drives Last-Event-ID replay on reconnect. */
+const _eventLog: Array<{ id: number; event: HeartbeatEvent }> = [];
+
+/** Assign an event ID, append to log, evict oldest beyond limit. */
+function logEvent(event: HeartbeatEvent): number {
+  const id = ++_nextEventId;
+  _eventLog.push({ id, event });
+  if (_eventLog.length > EVENT_LOG_LIMIT) _eventLog.shift();
+  return id;
+}
+
+/** All events logged after the given ID (for reconnect catch-up). */
+export function eventsAfter(lastId: number): Array<{ id: number; event: HeartbeatEvent }> {
+  return _eventLog.filter(e => e.id > lastId);
+}
+
+/** Format an SSE revival frame with a monotonic id: field. */
+function sseEventFrame(id: number, event: HeartbeatEvent): Uint8Array {
+  const line = `id: ${id}\nevent: revival\ndata: ${JSON.stringify(event)}\n\n`;
   return new TextEncoder().encode(line);
 }
 
@@ -72,11 +90,12 @@ function flush(slug: string): void {
   const entry = pending.get(slug);
   if (!entry) return;
   pending.delete(slug);
-  const bytes = sseFrame(entry.event);
+  const eventId = logEvent(entry.event);
+  const bytes = sseEventFrame(eventId, entry.event);
   const isPhantom = entry.event.phantom === true;
-  connections.forEach((meta, id) => {
+  connections.forEach((meta, connId) => {
     if (isPhantom && meta.quiet) return;
-    safeSend(id, meta, bytes);
+    safeSend(connId, meta, bytes);
   });
 }
 
@@ -116,14 +135,27 @@ function sweepStale(): void {
 // ---------------------------------------------------------------------------
 
 /** Register a new SSE connection. Quiet connections skip phantom events. */
-export function register(quiet = false): { id: string; start: (ctrl: Controller) => void; cleanup: () => void } {
-  const id = `hb-${++nextId}`;
+export function register(
+  quiet = false,
+  lastEventId: number | null = null,
+): { id: string; start: (ctrl: Controller) => void; cleanup: () => void } {
+  const id = `hb-${++_nextConnId}`;
   ensureTimers();
   return {
     id,
-    start(ctrl: Controller) { connections.set(id, { ctrl, quiet }); },
+    start(ctrl: Controller) {
+      connections.set(id, { ctrl, quiet });
+      if (lastEventId !== null) replaySince(ctrl, lastEventId);
+    },
     cleanup() { connections.delete(id); maybeStopTimers(); },
   };
+}
+
+/** Send all logged events after lastEventId to a freshly reconnected client. */
+function replaySince(ctrl: Controller, lastEventId: number): void {
+  for (const { id, event } of eventsAfter(lastEventId)) {
+    try { ctrl.enqueue(sseEventFrame(id, event)); } catch { break; }
+  }
 }
 
 /** Broadcast a revival event (debounced per slug). */

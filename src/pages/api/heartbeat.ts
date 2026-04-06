@@ -27,7 +27,7 @@ function sseHeaders(): HeadersInit {
 function createStream(reg: ReturnType<typeof register>): ReadableStream<Uint8Array> {
   return new ReadableStream<Uint8Array>({
     start(controller) {
-      reg.start(controller);
+      reg.start(controller); // replay missed events (if lastEventId was provided)
       sendWelcome(controller);
       sendPresence(controller);
     },
@@ -35,6 +35,14 @@ function createStream(reg: ReturnType<typeof register>): ReadableStream<Uint8Arr
       reg.cleanup();
     },
   });
+}
+
+/** Parse Last-Event-ID header to a number, or null if absent/invalid. */
+function parseLastEventId(request: Request): number | null {
+  const raw = request.headers.get('last-event-id');
+  if (!raw) return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
 }
 
 /** Send an initial comment so the client knows the stream is alive. */
@@ -68,7 +76,8 @@ function isQuietConnection(url: URL): boolean {
 export const GET: APIRoute = ({ request }) => {
   const url = new URL(request.url);
   const quiet = isQuietConnection(url);
-  const reg = register(quiet);
+  const lastEventId = parseLastEventId(request);
+  const reg = register(quiet, lastEventId);
   const stream = createStream(reg);
   return new Response(stream, { headers: sseHeaders() });
 };

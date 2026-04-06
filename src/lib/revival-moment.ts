@@ -18,12 +18,8 @@
 // Config
 // ---------------------------------------------------------------------------
 
-const DWELL_MS = 800;
-const TOUCH_MS = 600;
-const TOUCH_DEADZONE = 10;
 const BADGE_VISIBLE_MS = 5000;
 const LS_PREFIX = 'rm:'; // localStorage key prefix — 7-day TTL gate
-const ARC_CIRCUMFERENCE = 301.6; // 2π × r=48 in SVG viewBox 100×100
 
 // ---------------------------------------------------------------------------
 // Decay tier thresholds (from decay-engine.ts constants)
@@ -94,14 +90,13 @@ export function stageStyleString(factor: number): string {
 
 export function revivalMomentScript(slug: string): string {
   return `(function(){
-  var DWELL=${DWELL_MS},TOUCH=${TOUCH_MS},DEAD=${TOUCH_DEADZONE},BADGE_MS=${BADGE_VISIBLE_MS};
-  var CIRC=${ARC_CIRCUMFERENCE};
+  var BADGE_MS=${BADGE_VISIBLE_MS};
   var SLUG=${JSON.stringify(slug)};
   var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var stage=document.querySelector('.revival-stage');
   if(!stage)return;
 
-  /* Phase 2: localStorage 7-day TTL gate */
+  /* 7-day localStorage gate — don't replay the animation if revived recently */
   function fired(){
     try{var s=localStorage.getItem('${LS_PREFIX}'+SLUG);
       return s?Date.now()-JSON.parse(s).ts<604800000:false}catch(e){return false}
@@ -109,49 +104,8 @@ export function revivalMomentScript(slug: string): string {
   function markFired(){
     try{localStorage.setItem('${LS_PREFIX}'+SLUG,JSON.stringify({ts:Date.now()}))}catch(e){}
   }
-  function sessionId(){
-    try{return sessionStorage.getItem('session-token')||null}catch(e){return null}
-  }
 
-  /* API call */
-  function reviveAPI(cb){
-    var h={'Content-Type':'application/json'};
-    var sid=sessionId();if(sid)h['x-session-id']=sid;
-    fetch('/api/revive',{method:'POST',keepalive:true,
-      headers:h,body:JSON.stringify({slug:SLUG})})
-    .then(function(r){return r.ok?r.json():null})
-    .then(function(d){if(d&&d.ok){markFired();if(cb)cb(d)}})
-    .catch(function(){});
-  }
-
-  /* Phase 1: Anticipation arc — SVG stroke-dashoffset fills over DWELL_MS */
-  var arcEl=null,arcStart=0,arcRaf=0;
-  function createArc(){
-    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('class','anticipation-arc');svg.setAttribute('viewBox','0 0 100 100');
-    svg.setAttribute('aria-hidden','true');
-    var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    c.setAttribute('cx','50');c.setAttribute('cy','50');c.setAttribute('r','48');
-    c.setAttribute('fill','none');c.style.strokeDasharray=String(CIRC);
-    c.style.strokeDashoffset=String(CIRC);svg.appendChild(c);
-    stage.appendChild(svg);return {svg:svg,circle:c};
-  }
-  function tickArc(arc,ts){
-    var p=Math.min(1,(ts-arcStart)/DWELL);
-    arc.circle.style.strokeDashoffset=String(CIRC*(1-p));
-    if(p<1)arcRaf=requestAnimationFrame(function(t){tickArc(arc,t)});
-  }
-  function startArc(){
-    if(rm||arcEl)return;
-    arcEl=createArc();arcStart=performance.now();
-    arcRaf=requestAnimationFrame(function(t){tickArc(arcEl,t)});
-  }
-  function cancelArc(){
-    if(arcRaf){cancelAnimationFrame(arcRaf);arcRaf=0}
-    if(arcEl){arcEl.svg.remove();arcEl=null}
-  }
-
-  /* Phase 3a: WAAPI dissolve — scale lift + opacity transition */
+  /* WAAPI dissolve — scale lift + opacity pop */
   function doRevival(){
     stage.classList.add('reviving');
     if(stage.animate){
@@ -164,7 +118,7 @@ export function revivalMomentScript(slug: string): string {
     setTimeout(function(){stage.classList.remove('reviving')},1200);
   }
 
-  /* Phase 3b: chromatic aberration flash on h1 at t=200ms (signature moment) */
+  /* Chromatic aberration flash on h1 at t=200ms (signature moment) */
   function chromaticFlash(){
     var h=stage.querySelector('h1');
     if(!h)return;
@@ -172,7 +126,7 @@ export function revivalMomentScript(slug: string): string {
     setTimeout(function(){h.classList.remove('chroma-flash')},600);
   }
 
-  /* Phase 4: Witness badge — narrative with decay% + monthly reader count */
+  /* Witness badge — narrative with decay% + monthly reader count */
   function showWitnessBadge(d){
     var b=document.querySelector('.revival-badge');if(!b)return;
     var pct=d.decayPct||0,monthly=d.monthlyCount||d.count||1;
@@ -183,69 +137,30 @@ export function revivalMomentScript(slug: string): string {
     setTimeout(function(){b.classList.remove('badge--visible')},BADGE_MS);
   }
 
-  /* Haptic — two-tap pulse (more expressive than single tap) */
+  /* Haptic — two-tap pulse */
   function haptic(){
     if(rm)return;
     try{if(navigator.vibrate)navigator.vibrate([10,50,10])}catch(e){}
   }
 
-  /* A11y */
+  /* Screen-reader announcement */
   function announce(d){
     var el=document.querySelector('.revival-announce');
     var monthly=d.monthlyCount||d.count||1;
     if(el)el.textContent='Post revived. '+monthly+' readers this month have kept it alive.';
   }
 
-  /* Main trigger: phases 3+4 fire after API confirms */
-  var dwellTimer=null;
-  function triggerRevival(){
+  /* revival:confirmed — dispatched by wireKeepButton in revival-counter.ts */
+  document.addEventListener('revival:confirmed',function(e){
     if(fired())return;
-    cancelArc();
-    reviveAPI(function(d){
-      doRevival();
-      if(!rm)setTimeout(function(){chromaticFlash()},200);
-      showWitnessBadge(d);haptic();announce(d);
-    });
-  }
-
-  /* Desktop: hover-dwell triggers Phase 1 arc */
-  stage.addEventListener('mouseenter',function(){
-    if(fired())return;
-    startArc();dwellTimer=setTimeout(triggerRevival,DWELL);
-  });
-  stage.addEventListener('mouseleave',function(){
-    cancelArc();if(dwellTimer){clearTimeout(dwellTimer);dwellTimer=null}
+    var d=e.detail||{};
+    markFired();
+    doRevival();
+    if(!rm)setTimeout(function(){chromaticFlash()},200);
+    showWitnessBadge(d);haptic();announce(d);
   });
 
-  /* Touch: press-and-hold */
-  var touchTimer=null,startX=0,startY=0;
-  stage.addEventListener('touchstart',function(e){
-    if(fired())return;
-    var t=e.touches[0];startX=t.clientX;startY=t.clientY;
-    touchTimer=setTimeout(triggerRevival,TOUCH);
-  },{passive:true});
-  stage.addEventListener('touchmove',function(e){
-    if(!touchTimer)return;
-    var t=e.touches[0],dx=t.clientX-startX,dy=t.clientY-startY;
-    if(Math.sqrt(dx*dx+dy*dy)>DEAD)clearTouch();
-  },{passive:true});
-  stage.addEventListener('touchend',clearTouch,{passive:true});
-  stage.addEventListener('touchcancel',clearTouch,{passive:true});
-  function clearTouch(){if(touchTimer){clearTimeout(touchTimer);touchTimer=null}}
-
-  /* Keyboard: Space/Enter hold */
-  var keyTimer=null;
-  document.addEventListener('keydown',function(e){
-    if(e.repeat||fired())return;
-    if(e.key!==' '&&e.key!=='Enter')return;
-    if(!stage.contains(document.activeElement))return;
-    e.preventDefault();keyTimer=setTimeout(triggerRevival,TOUCH);
-  });
-  document.addEventListener('keyup',function(e){
-    if(e.key===' '||e.key==='Enter'){if(keyTimer){clearTimeout(keyTimer);keyTimer=null}}
-  });
-
-  /* Phase 5: SSE ripple — sympathetic bloom from other readers */
+  /* SSE ripple — sympathetic bloom when another reader revives this post */
   function initHeartbeat(){
     if(typeof EventSource==='undefined')return;
     var es;
@@ -293,20 +208,22 @@ export function _testRevivalMoment(): void {
 
   // Client script
   const script = revivalMomentScript('test-slug');
-  console.assert(script.includes('mouseenter'), 'desktop dwell');
-  console.assert(script.includes('touchstart'), 'touch handler');
-  console.assert(script.includes('keydown'), 'keyboard');
-  console.assert(script.includes('/api/revive'), 'api call');
+
+  // Hover-dwell/touch/keyboard must be absent — KeepButton is the sole trigger
+  console.assert(!script.includes('mouseenter'), 'no hover-dwell');
+  console.assert(!script.includes('touchstart'), 'no touch press-and-hold');
+  console.assert(!script.includes('keydown'), 'no keyboard hold');
+  console.assert(!script.includes('/api/revive'), 'no direct API call');
+
+  // Visual effects still present
+  console.assert(script.includes('revival:confirmed'), 'event-driven trigger');
   console.assert(script.includes('revival-badge'), 'badge');
   console.assert(script.includes('prefers-reduced-motion'), 'a11y');
-  console.assert(script.includes('EventSource'), 'heartbeat');
-  console.assert(script.includes('sympathetic'), 'sympathetic');
+  console.assert(script.includes('EventSource'), 'heartbeat SSE');
+  console.assert(script.includes('sympathetic'), 'sympathetic bloom');
   console.assert(script.includes('navigator.vibrate'), 'haptic');
-  // Phase upgrades
   console.assert(script.includes('localStorage'), 'localStorage 7-day gate');
   console.assert(script.includes('604800000'), '7-day ms constant');
-  console.assert(script.includes('anticipation-arc'), 'SVG anticipation arc');
-  console.assert(script.includes('strokeDashoffset'), 'arc animation');
   console.assert(script.includes('chroma-flash'), 'chromatic aberration');
   console.assert(script.includes('decayPct'), 'witness badge decayPct');
   console.assert(script.includes('monthlyCount'), 'witness badge monthlyCount');

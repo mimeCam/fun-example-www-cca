@@ -72,6 +72,11 @@ export function sessionTokenScript(): string {
       localStorage.setItem(k,s);
     }
     window.__sessionId=s;
+    /* Tab-scoped token for per-tab revival idempotency (X-Session-Id header). */
+    if(!sessionStorage.getItem('session-token')){
+      var t=(typeof crypto.randomUUID==='function')?crypto.randomUUID():'t-'+Math.random().toString(36).slice(2);
+      sessionStorage.setItem('session-token',t);
+    }
   }catch(e){window.__sessionId='s-'+Math.random().toString(36).slice(2);}
 })();`;
 }

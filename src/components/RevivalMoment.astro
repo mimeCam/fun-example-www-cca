@@ -3,9 +3,9 @@
 // Drop-in component for /blog/[slug] — wraps article content in the revival
 // stage and injects the interaction script.
 //
-// The decay IS the hint. The revival IS the onboarding.
+// The decay IS the hint. The KeepButton IS the revival.
 // No tooltips. No guided tours. No explanation text.
-// A visitor sees degraded content, hovers/touches, and witnesses revival.
+// A visitor sees degraded content, clicks Keep Alive, and witnesses revival.
 //
 // Replaces: FirstVisitHint, GuidedTouch, DiscoveryWhisper, FirstBreath
 //           (4 onboarding components → 0 needed)
@@ -46,7 +46,7 @@ const script = revivalMomentScript(slug);
   style={stageStyle}
   tabindex="0"
   role="region"
-  aria-label="Blog post content — hover or hold to revive"
+  aria-label="Blog post content"
 >
   <!-- Bloom ring: expands on revival -->
   <div class="revival-ring" aria-hidden="true"></div>

@@ -77,8 +77,9 @@ export const POST: APIRoute = async ({ request }) => {
   const guard = checkRevival(proof, fp, ip, slug);
   if (!guard.allowed) return tooManyRequests(guard.reason);
 
-  // Legacy per-slug rate limit still applies
-  if (!checkRateLimit(sessionId, ip, slug)) return tooManyRequests();
+  // Session idempotency: one revival per tab per post (permanent lock).
+  // Returns a distinct payload so the client can show "already kept" vs rollback.
+  if (!checkRateLimit(sessionId, ip, slug)) return sessionConflict();
 
   const count = incrementRevival(slug);
   stampRateLimit(sessionId, ip, slug);
@@ -116,8 +117,15 @@ function jsonOk(data: Record<string, unknown>): Response {
   return new Response(JSON.stringify(data), { status: 200, headers });
 }
 
+/** Generic guard rejection (velocity, fingerprint cap, etc.). */
 function tooManyRequests(reason?: string): Response {
   const body = reason ? JSON.stringify({ error: reason }) : null;
   const headers = reason ? { 'Content-Type': 'application/json' } : {};
   return new Response(body, { status: 429, headers });
+}
+
+/** Session-scoped idempotency conflict: this tab already revived this post. */
+function sessionConflict(): Response {
+  const body = JSON.stringify({ ok: false, alreadyRevived: true });
+  return new Response(body, { status: 429, headers: { 'Content-Type': 'application/json' } });
 }

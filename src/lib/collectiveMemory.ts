@@ -232,14 +232,17 @@ export function recordRevival(ip: string, slug: string): void {
 // Session-based rate limiting (preferred over IP when session ID is known)
 // ---------------------------------------------------------------------------
 
-/** True if this session+slug combo hasn't fired within the rate window. */
+/**
+ * True if this session+slug has NEVER been revived.
+ * One revival per tab per post — no time window, permanent lock.
+ * (Tab = sessionStorage session, renewed on each new browser tab.)
+ */
 export function canReviveBySession(sessionId: string, slug: string): boolean {
   const key = `${sessionId}:${slug}`;
   const row = db()
-    .prepare('SELECT last_at FROM rate_limit_session WHERE session_slug = ?')
-    .get(key) as { last_at: number } | undefined;
-  if (!row) return true;
-  return Date.now() - row.last_at >= RATE_WINDOW_MS;
+    .prepare('SELECT session_slug FROM rate_limit_session WHERE session_slug = ?')
+    .get(key);
+  return !row;
 }
 
 /** Stamp the session rate-limit record for this session+slug. */
