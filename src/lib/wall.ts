@@ -1,8 +1,8 @@
 // src/lib/wall.ts
-// Shared utilities for the /wall page.
-// Each wall entry decays independently: glowing → active → fading → fossil.
+// Shared utilities for wall/murmurs data (folded into homepage via Murmurs).
+// Each wall entry decays independently: glowing -> active -> fading -> fossil.
 // Fossils never disappear — they compress into inline whispers.
-// Reuses daysSince() from now.ts. Zero side-effects, zero dependencies.
+// Reuses daysSince() from temporal.ts. Zero side-effects, zero dependencies.
 //
 // TODO: add optional `link` field to WallEntry once external references ship
 // TODO: wire _testWallLib() into a build sanity step

@@ -1,14 +1,24 @@
 ---
 // src/components/Murmurs.astro
-// Micro-thoughts folded from /wall into the homepage field.
-// Shows only recent (non-fossil) entries as compact inline murmurs.
-// Dashed border, lower opacity — these decay too.
+// Read-only micro-thoughts from the wall, folded into the homepage.
+// Recent entries rendered inline; fossils collapsed behind a divider.
+// No form, no submission — CLI only (node cli/whisper.mjs).
 //
-// Credits: Tanya (UX spec §3 — murmurs zone)
+// Credits: Tanya (UX spec §3 — murmurs zone), Mike (wall fold plan)
 
 import { partitionEntries } from '../lib/wall';
-import type { WallEntry } from '../lib/wall';
+import type { WallEntry, ComputedWallEntry } from '../lib/wall';
 import wallRaw from '../data/wall.json';
+
+const MAX_RECENT = 5;
+const MAX_FOSSILS = 5;
+
+const entries = wallRaw as WallEntry[];
+const { active, fossils } = partitionEntries(entries);
+const recentVisible = active.slice(0, MAX_RECENT);
+const fossilVisible = fossils.slice(0, MAX_FOSSILS);
+const hasMore = active.length > MAX_RECENT;
+const hiddenFossils = Math.max(0, fossils.length - MAX_FOSSILS);
 
 /** Human-readable age label from day count. */
 function formatAge(days: number): string {
@@ -17,29 +27,51 @@ function formatAge(days: number): string {
   return `${Math.floor(days)}d`;
 }
 
-const entries = wallRaw as WallEntry[];
-const { active } = partitionEntries(entries);
-const MAX_MURMURS = 5;
-const visible = active.slice(0, MAX_MURMURS);
-const hasMore = active.length > MAX_MURMURS;
+/** CSS-safe decay string. */
+function cssDecay(m: ComputedWallEntry): string {
+  return m.decay.toFixed(3);
+}
 ---
 
-{visible.length > 0 && (
-  <section class="murmurs-zone" aria-label="Recent murmurs">
-    {visible.map(m => (
-      <div
-        class="murmur"
-        style={`--decay: ${m.decay.toFixed(3)}`}
-      >
-        <span class="murmur-text">{m.entry.text}</span>
-        <span class="murmur-age">{formatAge(m.days)}</span>
+{(recentVisible.length > 0 || fossilVisible.length > 0) && (
+  <section class="murmurs-zone" aria-label="Murmurs">
+
+    {recentVisible.length > 0 && (
+      <div class="murmurs-recent">
+        {recentVisible.map(m => (
+          <div
+            class="murmur"
+            style={`--decay: ${cssDecay(m)}`}
+          >
+            <span class="murmur-text">{m.entry.text}</span>
+            <span class="murmur-age">{formatAge(m.days)}</span>
+          </div>
+        ))}
+        {hasMore && (
+          <span class="murmurs-more">
+            + {active.length - MAX_RECENT} older murmurs fading
+          </span>
+        )}
       </div>
-    ))}
-    {hasMore && (
-      <span class="murmurs-more">
-        + {active.length - MAX_MURMURS} older murmurs fading
-      </span>
     )}
+
+    {fossilVisible.length > 0 && (
+      <div class="murmurs-fossils">
+        <span class="murmurs-divider" aria-hidden="true">older...</span>
+        {fossilVisible.map(f => (
+          <div class="murmur murmur--fossil">
+            <span class="murmur-text">{f.entry.text}</span>
+            <span class="murmur-age">{formatAge(f.days)}</span>
+          </div>
+        ))}
+        {hiddenFossils > 0 && (
+          <span class="murmurs-more">
+            + {hiddenFossils} more buried deeper
+          </span>
+        )}
+      </div>
+    )}
+
   </section>
 )}
 
@@ -55,12 +87,23 @@ const hasMore = active.length > MAX_MURMURS;
     gap: 0.6rem;
   }
 
+  .murmurs-recent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
   .murmur {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 1rem;
     opacity: calc(0.35 + 0.45 * (1 - var(--decay)));
+  }
+
+  .murmur--fossil {
+    opacity: 0.2;
+    font-size: 0.75rem;
   }
 
   .murmur-text {
@@ -74,11 +117,32 @@ const hasMore = active.length > MAX_MURMURS;
     white-space: nowrap;
   }
 
+  .murmur--fossil .murmur-text {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
   .murmur-age {
     font-size: 0.68rem;
     color: rgba(255, 255, 255, 0.35);
     white-space: nowrap;
     flex-shrink: 0;
+  }
+
+  .murmurs-divider {
+    display: block;
+    text-align: center;
+    font-size: 0.62rem;
+    font-style: italic;
+    opacity: 0.2;
+    margin: 0.4rem 0 0.2rem;
+    letter-spacing: 0.06em;
+  }
+
+  .murmurs-fossils {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
   .murmurs-more {

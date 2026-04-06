@@ -1,36 +1,87 @@
 ---
 // src/components/NowLine.astro
-// Pinned "now" status line — a single sentence at the top of the field.
-// Not a card, not a page — just context: "here's where the author's head is at."
-// Reads from now.json's rightNow field. Subtle, 0.55 opacity, no border.
+// Self-contained "now" zone — hero status + season items, decay styled.
+// Reads from now.json via partitionNow(). No separate /now page needed.
+// Hero always visible. Season items: show up to 3, collapse rest.
 //
-// Credits: Tanya (UX spec §2 — fold /now into homepage)
+// Credits: Tanya (UX spec §2), Mike (architecture plan — NowLine expansion)
 
+import { partitionNow, emptyHeroQuip } from '../lib/now';
+import type { NowTiered, ComputedNowItem } from '../lib/now';
 import nowData from '../data/now.json';
 
-const { rightNow } = nowData;
-const hasNow = rightNow && rightNow.text;
+const data = nowData as NowTiered;
+const { hero, season } = partitionNow(data);
+const hasHero = hero.length > 0;
+const heroItem = hasHero ? hero[0] : null;
+const INLINE_MAX = 3;
+const visibleSeason = season.slice(0, INLINE_MAX);
+const collapsedCount = Math.max(0, season.length - INLINE_MAX);
+
+/** Format decay to CSS-safe string. */
+function cssDecay(item: ComputedNowItem): string {
+  return item.decay.toFixed(3);
+}
 ---
 
-{hasNow && (
-  <div class="now-line" aria-label="What I'm doing now">
-    <span class="now-prefix">Now:</span>
-    <span class="now-text">{rightNow.text}</span>
-    {rightNow.thinking && (
-      <span class="now-thinking">{rightNow.thinking}</span>
-    )}
-  </div>
-)}
+<div class="now-zone" aria-label="What I'm doing now">
+  {hasHero && heroItem ? (
+    <div class="now-hero" style={`--decay: ${cssDecay(heroItem)}`}>
+      <span class="now-prefix">Now:</span>
+      <span class="now-emoji" aria-hidden="true">{heroItem.item.emoji}</span>
+      <span class="now-text">{heroItem.item.text}</span>
+      {heroItem.item.thinking && (
+        <span class="now-thinking">{heroItem.item.thinking}</span>
+      )}
+      {data.location && (
+        <span class="now-location">in {data.location}</span>
+      )}
+    </div>
+  ) : (
+    <div class="now-hero now-hero--empty">
+      <span class="now-prefix">Now:</span>
+      <span class="now-text now-text--empty">{emptyHeroQuip()}</span>
+    </div>
+  )}
+
+  {visibleSeason.length > 0 && (
+    <ul class="now-season" aria-label="This season">
+      {visibleSeason.map(s => (
+        <li
+          class="now-season-item"
+          style={`--decay: ${cssDecay(s)}`}
+        >
+          <span aria-hidden="true">{s.item.emoji}</span>
+          <span>{s.item.text}</span>
+        </li>
+      ))}
+      {collapsedCount > 0 && (
+        <li class="now-season-more">
+          + {collapsedCount} more things this season
+        </li>
+      )}
+    </ul>
+  )}
+</div>
 
 <style>
-  .now-line {
+  .now-zone {
     max-width: 40rem;
     margin: 0 auto;
-    padding: 0.75rem 0;
-    opacity: 0.55;
+    padding: 0.75rem 0 0;
+  }
+
+  /* ── Hero line ── */
+
+  .now-hero {
+    --alive: calc(1 - var(--decay, 0));
+    opacity: calc(0.45 + 0.45 * var(--alive));
     font-size: 0.88rem;
     line-height: 1.5;
+    transition: opacity 300ms ease;
   }
+
+  .now-hero--empty { opacity: 0.35; }
 
   .now-prefix {
     font-weight: 600;
@@ -38,8 +89,17 @@ const hasNow = rightNow && rightNow.text;
     color: rgba(255, 255, 255, 0.7);
   }
 
+  .now-emoji {
+    margin-right: 0.2rem;
+  }
+
   .now-text {
     color: rgba(255, 255, 255, 0.65);
+  }
+
+  .now-text--empty {
+    font-style: italic;
+    opacity: 0.6;
   }
 
   .now-thinking {
@@ -49,5 +109,44 @@ const hasNow = rightNow && rightNow.text;
     font-style: italic;
     font-size: 0.82rem;
     color: rgba(255, 255, 255, 0.45);
+  }
+
+  .now-location {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0.4;
+    font-style: italic;
+  }
+
+  /* ── Season items ── */
+
+  .now-season {
+    list-style: none;
+    padding: 0;
+    margin: 0.6rem 0 0 2.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .now-season-item {
+    --alive: calc(1 - var(--decay, 0));
+    font-size: 0.8rem;
+    opacity: calc(0.3 + 0.4 * var(--alive));
+    color: rgba(255, 255, 255, 0.55);
+    display: flex;
+    gap: 0.35rem;
+    align-items: baseline;
+  }
+
+  .now-season-more {
+    font-size: 0.68rem;
+    font-style: italic;
+    opacity: 0.25;
+    margin-top: 0.1rem;
+  }
+
+  @media (max-width: 640px) {
+    .now-season { margin-left: 1.2rem; }
   }
 </style>

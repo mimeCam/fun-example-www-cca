@@ -35,9 +35,8 @@ COPY --from=builder /app/node_modules ./node_modules
 # Blog markdown needed at runtime for content collection queries
 COPY --from=builder /app/src/content/blog/ ./src/content/blog/
 
-# Ensure data directories exist for whisper queue and collective memory DB.
+# Ensure data directories exist for collective memory DB and server data.
 RUN mkdir -p /app/dist/server/data \
- && echo '[]' > /app/dist/server/data/wall-pending.json \
  && mkdir -p /app/data
 
 # Mark data dirs as volume mount-points for persistence across deploys

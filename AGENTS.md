@@ -17,8 +17,5 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Fold /now page fully (NowLine reads `rightNow` only; full /now page still exists)
-- Fold /wall page fully (Murmurs shows recent entries; full /wall still exists with form)
-- Remove /now/before page
 - Rewrite `mood.ts` (strip cycling/blending — warm-only locked)
 - Physical device QA (Pixel 6a, Galaxy A14, iPhone 13, SSE on 3G)

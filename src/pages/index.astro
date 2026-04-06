@@ -1,7 +1,7 @@
 ---
 // src/pages/index.astro
-// Homepage "The Field" — the only place that matters.
-// Pinned "now" status line → decay cards in time bands → murmurs → graveyard link.
+// Homepage "The Field" — the single screen. Everything lives here.
+// NowLine (hero + season) → decay cards in time bands → murmurs (wall fold) → graveyard link.
 // Shadow depth is the primary age signal. Hover revives any card.
 //
 // First-Visit Clarity Engine: strip visual noise, amplify decay contrast,
@@ -9,7 +9,7 @@
 //
 // TODO: add pagination once post count grows beyond ~20
 //
-// Credits: Tanya (UX spec §3 — The Field layout)
+// Credits: Tanya (UX spec §3 — The Field layout), Mike (consolidation plan)
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';

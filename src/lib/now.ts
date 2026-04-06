@@ -1,5 +1,5 @@
 // src/lib/now.ts
-// Shared utilities for the /now page.
+// Shared utilities for now data (folded into homepage via NowLine).
 // Reads the hand-edited now.json, computes staleness from the update date,
 // and returns display-ready data. Zero side-effects, zero dependencies.
 //
@@ -18,20 +18,6 @@ export const daysSince = _daysSince;
 // Types
 // ---------------------------------------------------------------------------
 
-export interface NowEntry {
-  emoji: string;
-  text: string;
-}
-
-/** Legacy flat shape — kept for type compat. */
-export interface NowData {
-  mood: MoodId;
-  updated: string;
-  doing: NowEntry[];
-  thinking: string;
-  location?: string;
-}
-
 /** A single item in the three-tier now structure. */
 export interface NowItem {
   emoji: string;
@@ -40,26 +26,17 @@ export interface NowItem {
   thinking?: string;     // only rightNow uses this
 }
 
-/** An archived item — residue that crossed the PURGE threshold. */
-export interface ArchiveItem {
-  emoji: string;
-  text: string;
-  updated: string;          // ISO date — when originally active
-  changed_mind?: string;    // optional retrospective note
-}
-
 /** Three-tier data shape stored in now.json. */
 export interface NowTiered {
   mood: MoodId;
   rightNow: NowItem;
   season: NowItem[];
   residue: NowItem[];
-  archive?: ArchiveItem[];  // fourth tier — memory
   location?: string;
 }
 
 /** Tier label for each now item after partition logic runs. */
-export type NowTier = 'hero' | 'season' | 'residue' | 'archive' | 'empty';
+export type NowTier = 'hero' | 'season' | 'residue' | 'empty';
 
 /** A computed now item ready for rendering. */
 export interface ComputedNowItem {
@@ -188,43 +165,6 @@ export function partitionNow(data: NowTiered, now = new Date()) {
 }
 
 // ---------------------------------------------------------------------------
-// Archive (fourth tier) — geological memory eras
-// ---------------------------------------------------------------------------
-
-export type ArchiveEra = 'recent' | 'distant' | 'fossil';
-
-const ERA_DISTANT_DAYS = 365;
-const ERA_FOSSIL_DAYS  = 730;
-
-/** Classify an archive item into a geological era by age. */
-export function archiveEra(updated: string, now = new Date()): ArchiveEra {
-  const d = daysSince(updated, now);
-  if (d < ERA_DISTANT_DAYS) return 'recent';
-  if (d < ERA_FOSSIL_DAYS)  return 'distant';
-  return 'fossil';
-}
-
-/** Opacity for each era — memory fades but never fully vanishes. */
-export function archiveOpacity(era: ArchiveEra): number {
-  const map: Record<ArchiveEra, number> = {
-    recent: 0.55, distant: 0.35, fossil: 0.2,
-  };
-  return map[era];
-}
-
-/** Partition archive items into eras, sorted newest-first. */
-export function partitionArchive(items: ArchiveItem[], now = new Date()) {
-  const sorted = [...items].sort(
-    (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime(),
-  );
-  return sorted.map(item => ({
-    item,
-    era: archiveEra(item.updated, now),
-    opacity: archiveOpacity(archiveEra(item.updated, now)),
-  }));
-}
-
-// ---------------------------------------------------------------------------
 // Isolated-run sanity check (see openloop/inplace-testing-howto.md)
 // ---------------------------------------------------------------------------
 
@@ -279,18 +219,5 @@ export function _testNowLib(): void {
   const pa = partitionNow(ancient, new Date('2026-04-04'));
   console.assert(pa.residue.length === 0, 'ancient residue should purge');
 
-  // --- Archive era tests ---
-  const refDate = new Date('2026-04-04');
-  console.assert(archiveEra('2026-01-01', refDate) === 'recent', 'recent era');
-  console.assert(archiveEra('2025-01-01', refDate) === 'distant', 'distant era');
-  console.assert(archiveEra('2023-01-01', refDate) === 'fossil', 'fossil era');
-  console.assert(archiveOpacity('recent') > archiveOpacity('fossil'), 'opacity ordering');
-
-  const archived = partitionArchive([
-    { emoji: '📝', text: 'old', updated: '2025-01-01' },
-    { emoji: '🔥', text: 'newer', updated: '2026-01-01' },
-  ], refDate);
-  console.assert(archived[0].item.text === 'newer', 'archive sorted newest-first');
-
-  console.log('[now] lib OK — staleness, quips, decay, partitions, archive verified');
+  console.log('[now] lib OK — staleness, quips, decay, partitions verified');
 }

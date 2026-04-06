@@ -1,13 +1,11 @@
 // src/lib/nav.ts
 // Shared navigation helpers — framework-agnostic, SSR-safe.
+// Post-consolidation: /now and /wall folded into homepage.
 
-/** Canonical page IDs for the 6-page sitemap. */
-export type PageId = 'home' | 'now' | 'wall' | 'blog'
-  | 'graveyard' | 'unknown';
+/** Canonical page IDs for the sitemap. */
+export type PageId = 'home' | 'blog' | 'graveyard' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
-  ['/now', 'now'],
-  ['/wall', 'wall'],
   ['/blog', 'blog'],
   ['/graveyard', 'graveyard'],
 ];
@@ -27,12 +25,13 @@ export function getActivePage(pathname: string): PageId {
 // ---------------------------------------------------------------------------
 
 export function _testNav(): void {
-  console.assert(getActivePage('/') === 'home', 'root → home');
-  console.assert(getActivePage('/now') === 'now', '/now');
-  console.assert(getActivePage('/now/') === 'now', '/now/');
-  console.assert(getActivePage('/wall?q=1') === 'wall', 'query');
-  console.assert(getActivePage('/wall#top') === 'wall', 'hash');
+  console.assert(getActivePage('/') === 'home', 'root -> home');
   console.assert(getActivePage('/blog/hello') === 'blog', 'blog slug');
+  console.assert(getActivePage('/graveyard') === 'graveyard', 'graveyard');
+  console.assert(getActivePage('/now') === 'unknown', '/now removed');
+  console.assert(getActivePage('/wall') === 'unknown', '/wall removed');
   console.assert(getActivePage('/xyz') === 'unknown', 'unknown');
+  console.assert(getActivePage('/blog?q=1') === 'blog', 'query');
+  console.assert(getActivePage('/graveyard#top') === 'graveyard', 'hash');
   console.log('[nav] OK — getActivePage verified');
 }
