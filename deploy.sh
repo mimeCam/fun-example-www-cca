@@ -4,26 +4,28 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v10 — Unified Presence (2026-04-06)
+# Architecture v11 — The Field (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Unified Presence Engine):
-#   Merged presence-client.ts + presence-engine.ts → presence-unified.ts.
-#   Single EventSource singleton (window.__presenceES), cold-start fallback
-#   ("last tended X ago"), exponential backoff reconnect, Last-Event-Id replay
-#   buffer (10 events/slug), mobile stale timeout (60s→120s via Sec-CH-UA-Mobile),
-#   card+band ripple on foreign revival, breathing tempo by reader count.
-#   presence-hub.ts: replay ring buffer, mobile-aware stale reaping.
-#   API /api/presence: lastActivity from collectiveMemory, mobile detection.
+# Sprint (latest — The Field redesign):
+#   Homepage redesigned as "The Field": NowLine (pinned status from now.json)
+#   + decay cards in time bands + Murmurs (wall micro-thoughts) + graveyard link.
+#   SiteNav simplified: site name (left) + presence indicator (right), no nav links.
+#   Presence indicator moved from standalone PresenceBand into SiteNav.
+#   CSS consolidated: 7 files → 3 (decay.css, revival.css, ambient.css).
+#   Deleted: bloom.css, decay-extremes.css, first-visit.css, presence.css,
+#   revival-moment.css. Camera shake replaced with gentle scale lift.
+#   Mood locked to warm palette.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),
 #           dynamic OG image generation (satori + resvg),
 #           Consequential Decay / Graveyard (entomb + resurrect),
-#           Revival Moment (bloom ring, badge),
+#           Revival animations (bloom ring, scale lift, badge),
 #           Revival Guard anti-gaming (fingerprint, velocity),
+#           NowLine (pinned author status), Murmurs (wall whispers),
 #           Wall (community whisper board),
 #           Grain overlay (CSS noise texture via --decay-grain).
 

@@ -1,13 +1,18 @@
 /* src/styles/decay.css
- * Decay visual system — driven by CSS custom properties from decay.ts.
+ * Consolidated decay visual system — cards + blog article extremes.
+ * Merged: decay.css + decay-extremes.css (Tanya §12 CSS consolidation)
  *
  * Four decay signals: opacity, blur, saturation, shadow + grain overlay.
  * Fresh posts cast generous accent-tinted shadows. Fossils cast none.
  * Hover "revival" uses a springy bezier — cards physically lift off the page.
  *
- * First-Visit Clarity Engine: widened contrast ranges so a 2-day-old post
+ * First-Visit Clarity: widened contrast ranges so a 2-day-old post
  * at 0.85 decay looks noticeably different from a fresh one at 1.0.
  */
+
+/* ═══════════════════════════════════════════════════════════════════
+ * DECAY CARDS (homepage + graveyard)
+ * ═══════════════════════════════════════════════════════════════════ */
 
 .decay-card {
   opacity: var(--decay-opacity, 1);
@@ -16,7 +21,7 @@
     saturate(var(--decay-saturation, 1));
   box-shadow:
     0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
-    rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.22)),
+    rgba(var(--mood-accent-rgb, 212,149,106), var(--decay-shadow-alpha, 0.22)),
     0 2px 8px rgba(0, 0, 0, 0.12);
   transition:
     opacity 0.5s ease,
@@ -28,7 +33,7 @@
   will-change: transform, box-shadow;
 }
 
-/* Aging grain overlay — noise texture via CSS gradient.
+/* Aging grain overlay — noise texture via SVG.
  * Opacity driven by --decay-grain custom property. */
 .decay-card::after {
   content: '';
@@ -45,17 +50,16 @@
 }
 
 /* Revival: hover (desktop) + long-press class (mobile).
- * Two-phase: opacity/blur snap fast, shadow/transform spring slower.
- * The delay between phases is what makes it feel alive, not toggled. */
+ * Two-phase: opacity/blur snap fast, shadow/transform spring slower. */
 .decay-card:hover,
 .decay-card:focus-within,
 .decay-card.revived {
   opacity: 1;
   filter: blur(0px) saturate(1);
   box-shadow:
-    0 12px 40px rgba(var(--mood-accent-rgb, 120,120,120), 0.28),
+    0 12px 40px rgba(var(--mood-accent-rgb, 212,149,106), 0.28),
     0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.15);
+  border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
   transform: translateY(-3px);
   transition:
     opacity 0.35s ease-out,
@@ -71,29 +75,65 @@
   opacity: 0;
 }
 
-/* Freshness tag — screen-reader friendly, visually subtle */
+/* Freshness tag */
 .decay-freshness {
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   opacity: 0.55;
   padding: 0.15rem 0.5rem;
-  border-radius: 8px;
+  border-radius: 6px;
   backdrop-filter: blur(6px);
   background: rgba(255, 255, 255, 0.04);
 }
 
-/* ---------------------------------------------------------------------------
- * First-Visit Quiet Mode — amplified decay contrast for new visitors.
- * .fvh-quiet is toggled on <main> by quietModeScript() when fvh_visits < 3.
- * Wider opacity range (0.3–1.0) so decay is visible within 2 seconds.
- * ---------------------------------------------------------------------------*/
-
+/* First-Visit Quiet Mode — amplified decay contrast */
 .fvh-quiet .decay-card {
   --decay-opacity-floor: 0.30;
 }
 
-/* Reduced motion: skip transform animations, keep state changes */
+/* ═══════════════════════════════════════════════════════════════════
+ * BLOG ARTICLE EXTREMES (post detail pages)
+ * Unmistakable decay on .revival-stage wrapper
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.revival-stage {
+  position: relative;
+  transition:
+    opacity 0.6s ease,
+    filter 0.8s ease;
+}
+
+/* Grain overlay on article wrapper */
+.revival-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: var(--stage-grain, 0);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+  mix-blend-mode: overlay;
+  z-index: 1;
+  transition: opacity 0.6s ease;
+}
+
+/* Cursor affordance: decayed text invites interaction */
+.revival-stage[data-decay-tier="dying"],
+.revival-stage[data-decay-tier="ancient"] {
+  cursor: pointer;
+}
+
+.revival-stage[data-decay-tier="fresh"],
+.revival-stage[data-decay-tier="fading"] {
+  cursor: default;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * REDUCED MOTION
+ * ═══════════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
   .decay-card {
     transition: none;
@@ -103,6 +143,12 @@
   .decay-card:focus-within,
   .decay-card.revived {
     transform: none;
+    transition: none;
+  }
+  .revival-stage {
+    transition: none;
+  }
+  .revival-stage::after {
     transition: none;
   }
 }

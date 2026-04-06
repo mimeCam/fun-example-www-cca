@@ -17,7 +17,7 @@ import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import { variantScript } from '../../lib/variants';
 import RevivalMoment from '../../components/RevivalMoment.astro';
-import PresenceBand from '../../components/PresenceBand.astro';
+// PresenceBand removed — presence indicator now lives in SiteNav (Tanya §2)
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -56,7 +56,6 @@ const vScript = hasVariants ? variantScript() : '';
       {hasVariants && <script set:html={vScript} />}
     </RevivalMoment>
 
-    <PresenceBand />
   </main>
 
   <PostNav nav={nav} />

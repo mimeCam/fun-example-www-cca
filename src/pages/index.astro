@@ -1,26 +1,26 @@
 ---
 // src/pages/index.astro
-// Homepage "Decay Field" — posts grouped into time bands.
-// Three bands: Now (<=30d, full glow), Recent (1-6mo, partially decayed),
-// Archive (6+mo, ghost previews). Shadow depth is the primary age signal.
-// Hover revives any card.
+// Homepage "The Field" — the only place that matters.
+// Pinned "now" status line → decay cards in time bands → murmurs → graveyard link.
+// Shadow depth is the primary age signal. Hover revives any card.
 //
 // First-Visit Clarity Engine: strip visual noise, amplify decay contrast,
 // deliver one onboarding microinteraction in under 5 seconds.
 //
 // TODO: add pagination once post count grows beyond ~20
+//
+// Credits: Tanya (UX spec §3 — The Field layout)
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
 import FirstVisitHint from '../components/FirstVisitHint.astro';
-import PresenceBand from '../components/PresenceBand.astro';
+import NowLine from '../components/NowLine.astro';
+import Murmurs from '../components/Murmurs.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
-// Removed: DiscoveryWhisper — adds cognitive load on first visit
-// Removed: GuidedTouch — replaced by simpler FirstVisitHint
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -33,6 +33,8 @@ const allEntombed = displayPosts.every(p => p.entombed);
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
   <main class="feed">
+
+    <NowLine />
 
     {allEntombed && (
       <div class="empty-state">
@@ -68,21 +70,22 @@ const allEntombed = displayPosts.every(p => p.entombed);
       </section>
     )}
 
+    <Murmurs />
+
     {entombedCount > 0 && !allEntombed && (
       <a href="/graveyard" class="graveyard-link">
-        {entombedCount} {entombedCount === 1 ? 'post' : 'posts'} lost to time
+        {entombedCount} {entombedCount === 1 ? 'post' : 'posts'} lost to time &rarr;
       </a>
     )}
 
-    <PresenceBand compact scope="global" />
     <FirstVisitHint />
   </main>
 </BaseLayout>
 
 <style>
   .feed {
-    padding: 2.5rem 1rem 3rem;
-    max-width: 44rem;
+    padding: 1.5rem 1.5rem 3rem;
+    max-width: 40rem;
     margin: 0 auto;
   }
 
@@ -112,19 +115,23 @@ const allEntombed = displayPosts.every(p => p.entombed);
     font-style: italic;
   }
 
+  /* Graveyard link — subtle footer, not a nav item (Tanya §2) */
   .graveyard-link {
     display: block;
     text-align: center;
     font-size: 0.7rem;
     letter-spacing: 0.05em;
-    font-style: italic;
     opacity: 0.3;
-    color: inherit;
+    color: rgba(255, 255, 255, 0.30);
     text-decoration: none;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
     transition: opacity 200ms ease;
   }
-  .graveyard-link:hover { opacity: 0.55; }
+  .graveyard-link:hover {
+    opacity: 0.55;
+    color: rgba(255, 255, 255, 0.55);
+  }
 
   .empty-state {
     text-align: center;
@@ -146,4 +153,8 @@ const allEntombed = displayPosts.every(p => p.entombed);
     transition: opacity 200ms ease;
   }
   .graveyard-cta:hover { opacity: 1; }
+
+  @media (max-width: 640px) {
+    .feed { padding: 1.25rem 1rem 3rem; }
+  }
 </style>

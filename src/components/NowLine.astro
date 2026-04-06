@@ -1,0 +1,53 @@
+---
+// src/components/NowLine.astro
+// Pinned "now" status line — a single sentence at the top of the field.
+// Not a card, not a page — just context: "here's where the author's head is at."
+// Reads from now.json's rightNow field. Subtle, 0.55 opacity, no border.
+//
+// Credits: Tanya (UX spec §2 — fold /now into homepage)
+
+import nowData from '../data/now.json';
+
+const { rightNow } = nowData;
+const hasNow = rightNow && rightNow.text;
+---
+
+{hasNow && (
+  <div class="now-line" aria-label="What I'm doing now">
+    <span class="now-prefix">Now:</span>
+    <span class="now-text">{rightNow.text}</span>
+    {rightNow.thinking && (
+      <span class="now-thinking">{rightNow.thinking}</span>
+    )}
+  </div>
+)}
+
+<style>
+  .now-line {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 0.75rem 0;
+    opacity: 0.55;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .now-prefix {
+    font-weight: 600;
+    margin-right: 0.35rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .now-text {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .now-thinking {
+    display: block;
+    margin-top: 0.15rem;
+    margin-left: 2.4rem;
+    font-style: italic;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.45);
+  }
+</style>

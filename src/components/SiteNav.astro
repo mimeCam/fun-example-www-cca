@@ -1,30 +1,40 @@
 ---
 // src/components/SiteNav.astro
-// Minimal sticky nav — three words + mood dot in frosted glass.
-// Highlights current page via Astro.url pathname matching.
-// Zero JS. Consistent with glassmorphism language.
+// Minimal sticky nav — site name (left) + presence indicator (right).
+// No links. The field speaks for itself. URL bar is sufficient navigation.
+// Erosion bar retained on blog post detail pages only.
+//
+// Presence elements use the same IDs as the old PresenceBand so
+// presence-unified.ts hydrates them automatically. Scope is set
+// based on pageId: blog→"slug", everything else→"global".
+//
+// Credits: Tanya (UX spec §2, §8), Elon (strip nav links)
 
-import { getActivePage, type PageId } from '../lib/nav';
+import { getActivePage } from '../lib/nav';
 
 const path = Astro.url.pathname;
 const pageId = getActivePage(path);
 const isBlogPost = pageId === 'blog';
-
-const links: { label: string; href: string; id: PageId }[] = [
-  { label: 'field',     href: '/',          id: 'home'      },
-  { label: 'graveyard', href: '/graveyard', id: 'graveyard' },
-  { label: 'now',       href: '/now',       id: 'now'       },
-];
+const presenceScope = isBlogPost ? 'slug' : 'global';
 ---
 
-<nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site navigation">
-  {links.map(l => (
-    <a href={l.href}
-       class:list={['nav-link', { active: pageId === l.id }]}
-       aria-current={pageId === l.id ? 'page' : undefined}>
-      {l.label}
-    </a>
-  ))}
+<nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site">
+  <a href="/" class="site-name">octopoid</a>
+
+  <div
+    class="presence-indicator"
+    id="presence-band"
+    data-scope={presenceScope}
+    aria-live="polite"
+    aria-atomic="true"
+    role="status"
+  >
+    <span class="presence-dot" id="presence-dot" aria-hidden="true" style="display:none"></span>
+    <span class="presence-text" id="presence-text"></span>
+    <span class="presence-count" id="presence-count" aria-hidden="true">0</span>
+    <span class="presence-fallback" id="presence-fallback" style="display:none"></span>
+  </div>
+
   {isBlogPost && <div class="erosion-bar" aria-hidden="true" />}
 </nav>
 
@@ -34,33 +44,75 @@ const links: { label: string; href: string; id: PageId }[] = [
     top: 0;
     z-index: 10;
     display: flex;
-    justify-content: center;
-    gap: 2rem;
-    height: 48px;
+    justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.04);
+    height: 48px;
+    padding: 0 1.5rem;
+    background: rgba(12, 12, 14, 0.75);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(var(--mood-accent-rgb, 0,0,0), 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
-  .nav-link {
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    text-transform: lowercase;
+  .site-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.88);
     text-decoration: none;
-    color: inherit;
-    opacity: 0.55;
     transition: opacity 120ms ease;
   }
 
-  .nav-link:hover { opacity: 0.85; }
-
-  .nav-link.active {
-    opacity: 1;
-    border-bottom: 1px solid var(--mood-accent, currentColor);
+  .site-name:hover {
+    opacity: 0.7;
   }
 
-  /* Erosion bar — replaces border-bottom on blog posts */
+  /* ── Presence indicator (right side) ── */
+
+  .presence-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .presence-indicator.presence-active {
+    opacity: 1;
+  }
+
+  .presence-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--mood-accent, #D4956A);
+    animation: nav-breathe 3.5s ease-in-out infinite;
+  }
+
+  .presence-text {
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .presence-count {
+    display: none;
+  }
+
+  .presence-fallback {
+    font-size: 0.63rem;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.35);
+    font-style: italic;
+  }
+
+  @keyframes nav-breathe {
+    0%, 100% { opacity: 0.4; transform: scale(0.6); }
+    50% { opacity: 0.8; transform: scale(1.0); }
+  }
+
+  /* ── Erosion bar (blog posts only) ── */
+
   .site-nav.has-erosion {
     border-bottom: none;
     position: relative;
@@ -73,20 +125,17 @@ const links: { label: string; href: string; id: PageId }[] = [
     width: 100%;
     height: 2px;
     border-radius: 0 0 2px 2px;
-    /* Mood-tinted gradient — bar mirrors the ambient palette */
     background: linear-gradient(
       90deg,
-      var(--mood-from, rgba(var(--mood-accent-rgb, 0,0,0), 0.18)),
-      var(--mood-to,   rgba(var(--mood-accent-rgb, 0,0,0), 0.18))
+      rgba(var(--mood-accent-rgb, 212,149,106), 0.18),
+      rgba(var(--mood-accent-rgb, 212,149,106), 0.18)
     );
-    box-shadow: 0 1px 6px rgba(var(--mood-accent-rgb, 0,0,0), 0.10);
+    box-shadow: 0 1px 6px rgba(var(--mood-accent-rgb, 212,149,106), 0.10);
     transform-origin: left;
     transform: scaleX(var(--erosion-progress, 1));
-    /* Quiet exhale: fade smoothly to 0 in the final 5% */
-    --ep: var(--erosion-progress, 1);
     opacity: calc(
-      (0.3 + 0.7 * var(--ep)) *
-      clamp(0, var(--ep) / 0.05, 1)
+      (0.3 + 0.7 * var(--erosion-progress, 1)) *
+      clamp(0, var(--erosion-progress, 1) / 0.05, 1)
     );
     mask-image: linear-gradient(to right, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
@@ -94,7 +143,15 @@ const links: { label: string; href: string; id: PageId }[] = [
     pointer-events: none;
   }
 
+  /* ── Responsive ── */
+
+  @media (max-width: 640px) {
+    .site-nav { padding: 0 1rem; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .presence-dot { animation: none; opacity: 0.6; }
+    .presence-indicator { transition: none; }
     .erosion-bar { transition: none; }
   }
 </style>

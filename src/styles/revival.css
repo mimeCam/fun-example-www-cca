@@ -1,21 +1,23 @@
 /* src/styles/revival.css
- * Revival feedback animations — the visible half of collective memory.
+ * Consolidated revival visual system — card feedback + bloom + article revival.
+ * Merged: revival.css + bloom.css + revival-moment.css (Tanya §12 CSS consolidation)
  *
- * .just-revived: warm glow pulse when a keep succeeds.
- * Badge fade-in after pulse. Keep button micro-interaction.
- * All animations respect prefers-reduced-motion.
+ * Card revival: pulse + badge + warm halo
+ * Bloom: ignite → burst → afterglow → settle (particles, ring, flash)
+ * Article revival: hover hint → reviving → alive → badge
+ * Camera shake replaced with gentle scale(1.003) lift (Tanya §4, §9)
  */
 
-/* ---------------------------------------------------------------------------
- * Revival pulse: card glows warm after successful keep
- * ------------------------------------------------------------------------- */
+/* ═════════════════���═════════════════════════════════════════════════
+ * CARD REVIVAL — pulse, badge, warm halo, footer
+ * ═════════════��═══════════════════════════════════��═════════════════ */
 
 @keyframes revival-pulse {
-  0%   { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 120,120,120), 0.35); }
-  50%  { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 120,120,120), 0.25),
-                     0 0 24px rgba(var(--mood-accent-rgb, 120,120,120), 0.08); }
+  0%   { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 212,149,106), 0.35); }
+  50%  { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 212,149,106), 0.25),
+                     0 0 24px rgba(var(--mood-accent-rgb, 212,149,106), 0.08); }
   100% { box-shadow: 0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
-                     rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.18)); }
+                     rgba(var(--mood-accent-rgb, 212,149,106), var(--decay-shadow-alpha, 0.18)); }
 }
 
 .decay-card.just-revived {
@@ -23,7 +25,6 @@
   transform: translateY(-3px);
 }
 
-/* Badge counter fades in after the pulse */
 .decay-card.just-revived [data-revival-badge] {
   animation: badge-fadein 300ms ease-out 300ms both;
 }
@@ -33,18 +34,12 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------------------------------------------------------------------------
- * Warm halo: recently-revived cards (revival bonus > 0.15)
- * ------------------------------------------------------------------------- */
-
+/* Warm halo: recently-revived cards */
 .decay-card[data-revival-warm="true"] {
-  border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+  border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
 }
 
-/* ---------------------------------------------------------------------------
- * Card footer: badge + freshness + keep on one line
- * ------------------------------------------------------------------------- */
-
+/* Card footer layout */
 .card-footer {
   display: flex;
   align-items: center;
@@ -53,32 +48,375 @@
   margin-top: 0.5rem;
 }
 
-.card-footer .decay-freshness {
-  margin: 0;
+.card-footer .decay-freshness { margin: 0; }
+.card-footer .footer-dot { font-size: 0.6rem; opacity: 0.3; }
+.card-footer .keep-btn { margin-left: auto; }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * BLOOM — dramatic multi-phase visual feedback
+ * ═══════════════════════════════════════════════════���═══════════════ */
+
+.decay-card.blooming {
+  pointer-events: none;
+  z-index: 2;
 }
 
-.card-footer .footer-dot {
-  font-size: 0.6rem;
-  opacity: 0.3;
+/* Bloom ring */
+.bloom-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  z-index: -1;
 }
 
-.card-footer .keep-btn {
-  margin-left: auto;
+.decay-card.blooming .bloom-ring {
+  animation: bloom-ring 800ms ease-out forwards;
 }
 
-/* ---------------------------------------------------------------------------
- * Reduced motion: instant state changes, no keyframes
- * ------------------------------------------------------------------------- */
+@keyframes bloom-ring {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0.25);
+  }
+  40% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 20px rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  }
+}
+
+/* Bloom flash */
+.bloom-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(var(--mood-accent-rgb, 212,149,106), 0.08) 0%,
+    transparent 70%
+  );
+  z-index: 1;
+}
+
+.decay-card.blooming .bloom-flash {
+  animation: bloom-flash 400ms ease-out forwards;
+}
+
+@keyframes bloom-flash {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Bloom particles */
+.bloom-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 3;
+}
+
+.bloom-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(var(--mood-accent-rgb, 212,149,106), 0.5);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.decay-card.blooming .bloom-particle {
+  animation: bloom-burst 700ms ease-out forwards;
+  animation-delay: var(--particle-delay, 0ms);
+}
+
+@keyframes bloom-burst {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  30% { opacity: 0.7; }
+  100% {
+    opacity: 0;
+    transform:
+      translate(
+        calc(-50% + var(--particle-x, 40px)),
+        calc(-50% + var(--particle-y, -40px))
+      )
+      scale(0.3);
+  }
+}
+
+/* Mobile: cap particles */
+@media (max-width: 640px) {
+  .bloom-particle:nth-child(n+5) { display: none; }
+}
+
+/* Bloom lift */
+.decay-card.bloom-lift {
+  transform: translateY(-4px);
+  transition: transform 120ms ease-out;
+}
+
+/* Bloom afterglow — 900ms emotional anchor */
+.decay-card.bloom-afterglow {
+  box-shadow:
+    0 4px 20px rgba(var(--mood-accent-rgb, 212,149,106), 0.18),
+    0 0 0 1px rgba(var(--mood-accent-rgb, 212,149,106), 0.10);
+  transition: box-shadow 300ms ease-out;
+}
+
+/* Bloom settle — spring physics */
+.decay-card.bloom-settle {
+  transition:
+    transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Progressive enhancement: true spring via linear() */
+@supports (transition-timing-function: linear(0, 1)) {
+  .decay-card.bloom-settle {
+    --spring: linear(
+      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%,
+      0.938 16.7%, 1.017, 1.077, 1.121 24%, 1.149 26.2%,
+      1.159, 1.151 32%, 1.017 45.9%, 0.991, 0.977 55%,
+      0.975 58%, 0.997 69.2%, 1.003 76.3%, 1
+    );
+    transition:
+      transform 1.2s var(--spring),
+      box-shadow 1.2s var(--spring),
+      opacity 1.2s var(--spring),
+      filter 1.2s var(--spring);
+  }
+}
+
+/* Sympathetic bloom — half-intensity cascade */
+.decay-card.sympathetic .bloom-ring {
+  animation: sympathetic-ring var(--sympathetic-duration, 1000ms) ease-out forwards;
+}
+
+.decay-card.sympathetic .bloom-particle {
+  animation: none;
+  display: none;
+}
+
+.decay-card.sympathetic.bloom-lift {
+  transform: translateY(var(--sympathetic-lift-y, -1.5px));
+}
+
+@keyframes sympathetic-ring {
+  0% {
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  }
+  25% {
+    opacity: calc(var(--bloom-intensity, 0.5) * 1);
+    box-shadow:
+      0 0 0 6px rgba(var(--mood-accent-rgb, 212,149,106),
+      var(--sympathetic-ring-alpha, 0.10));
+  }
+  100% {
+    opacity: 0;
+    box-shadow:
+      0 0 0 var(--sympathetic-ring-spread, 14px)
+      rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  }
+}
+
+/* ═════════════════════════���═════════════════════════════════════════
+ * ARTICLE REVIVAL MOMENT (blog post detail)
+ * ══════════════════════════════════════════════��════════════════════ */
+
+/* Micro-feedback: hover hint BEFORE dwell threshold */
+.revival-stage:hover {
+  --stage-grain: 0 !important;
+  filter:
+    blur(calc(var(--decay-blur, 0px) * 0.6))
+    saturate(calc(var(--decay-saturation, 1) + 0.15));
+  opacity: calc(var(--decay-opacity, 1) + 0.1);
+}
+
+/* Reviving: CSS vars snap to alive values */
+.revival-stage.reviving {
+  --decay-opacity: 1;
+  --decay-blur: 0px;
+  --decay-saturation: 1;
+  --stage-grain: 0;
+  opacity: 1;
+  filter: blur(0px) saturate(1);
+  transition:
+    opacity 0.4s ease-out,
+    filter 0.6s ease-out;
+}
+
+/* Revival ring on article wrapper */
+.revival-ring {
+  position: absolute;
+  inset: -4px;
+  pointer-events: none;
+  border-radius: var(--radius, 12px);
+  opacity: 0;
+  box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  z-index: 2;
+}
+
+.revival-stage.reviving .revival-ring {
+  animation: revival-ring-expand 800ms ease-out forwards;
+}
+
+@keyframes revival-ring-expand {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0.3);
+  }
+  40% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 12px rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 28px rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  }
+}
+
+@supports (animation-timing-function: linear(0, 1)) {
+  .revival-stage.reviving .revival-ring {
+    animation-timing-function: linear(
+      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%,
+      0.938 16.7%, 1.017, 1.077, 1.121 24%, 1.149 26.2%,
+      1.159, 1.151 32%, 1.017 45.9%, 0.991, 0.977 55%,
+      0.975 58%, 0.997 69.2%, 1.003 76.3%, 1
+    );
+  }
+}
+
+/* Gentle scale lift — replaces camera shake (Tanya §4, §9)
+ * "The bloom should feel like a breath, not an explosion." */
+.revival-stage.reviving {
+  animation: revival-lift 800ms ease-out;
+}
+
+@keyframes revival-lift {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.003); }
+  100% { transform: scale(1); }
+}
+
+/* Revival badge — "kept alive" toast */
+.revival-badge {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  background: rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
+  color: var(--mood-accent, #D4956A);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.revival-badge.badge--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+/* Sympathetic glow: co-presence signal on article */
+.revival-stage.sympathetic {
+  animation: sympathetic-article-glow 1200ms ease-out;
+}
+
+@keyframes sympathetic-article-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0); }
+  30%  { box-shadow: 0 0 20px 4px rgba(var(--mood-accent-rgb, 212,149,106), 0.08); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0); }
+}
+
+/* Aria live region for screen readers */
+.revival-announce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* ═════════════════════��═════════════════════════════════════════════
+ * REDUCED MOTION
+ * ═══════════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
+  /* Card revival */
   .decay-card.just-revived {
     animation: none;
-    box-shadow:
-      0 8px 32px rgba(var(--mood-accent-rgb, 120,120,120), 0.22);
+    box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 212,149,106), 0.22);
   }
-
   .decay-card.just-revived [data-revival-badge] {
     animation: none;
     opacity: 1;
+  }
+
+  /* Bloom */
+  .decay-card.blooming { pointer-events: auto; }
+  .decay-card.blooming .bloom-ring,
+  .decay-card.blooming .bloom-flash,
+  .decay-card.blooming .bloom-particle {
+    animation: none;
+    display: none;
+  }
+  .decay-card.bloom-settle,
+  .decay-card.bloom-afterglow,
+  .decay-card.bloom-lift {
+    transition: none;
+    transform: none;
+  }
+  .decay-card.sympathetic {
+    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.20);
+    transition: border-color 400ms ease;
+  }
+  .decay-card.sympathetic .bloom-ring {
+    animation: none;
+    display: none;
+  }
+
+  /* Article revival */
+  .revival-stage:hover { filter: none; }
+  .revival-stage.reviving {
+    animation: none;
+    transition: opacity 0.3s ease;
+  }
+  .revival-stage.reviving .revival-ring {
+    animation: none;
+    display: none;
+  }
+  .revival-stage.sympathetic {
+    animation: none;
+    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
+  }
+  .revival-badge {
+    transition: opacity 0.2s ease;
+    transform: translateX(-50%) translateY(0);
   }
 }

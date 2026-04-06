@@ -80,7 +80,7 @@ export function presenceUnifiedScript(): string {
   }
 
   function globalLabel(n){
-    if(n>=2) return n+' readers tending the garden';
+    if(n>=2) return n+' readers tending the field';
     if(n===1) return 'you are the only one here';
     return 'listening\\u2026';
   }
@@ -248,7 +248,7 @@ export function _testPresenceUnified(): void {
     ['prefers-reduced-motion', 'a11y'],
     ["'presence'", 'listens presence event'],
     ["'revival'", 'listens revival event'],
-    ['tending the garden', 'global label plural'],
+    ['tending the field', 'global label plural'],
     ['you are the only one here', 'global label solo'],
     ['__presenceES', 'singleton EventSource'],
     ['lastEventId', 'Last-Event-Id support'],

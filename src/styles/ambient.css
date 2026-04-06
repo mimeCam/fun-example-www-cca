@@ -1,0 +1,141 @@
+/* src/styles/ambient.css
+ * Consolidated ambient visual system — presence breathing + first-visit UX.
+ * Merged: presence.css + first-visit.css (Tanya §12 CSS consolidation)
+ *
+ * 3 files. 3 concerns. Clean:
+ *   decay.css   → all decay-related visual rules
+ *   revival.css → all revival + bloom visual rules
+ *   ambient.css → presence breathing, first-visit choreography
+ */
+
+/* ═══════════════════════════════════════════════════════════════════
+ * PRESENCE — breathing dot, count flip, revival ripple
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Presence container — tempo driven by JS via --presence-tempo */
+#presence-band {
+  --presence-tempo: 3s;
+}
+
+/* Breathing dot */
+.presence-dot {
+  animation: presence-breathe var(--presence-tempo) ease-in-out infinite;
+}
+
+@keyframes presence-breathe {
+  0%, 100% { opacity: 0.4; transform: scale(0.6); }
+  50% { opacity: 0.8; transform: scale(1.0); }
+}
+
+/* Count FLIP transition */
+.presence-count.count-flip {
+  animation: count-flip 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes count-flip {
+  0% { transform: translateY(4px); opacity: 0.3; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Revival ripple on presence band */
+#presence-band.presence-ripple {
+  animation: presence-ripple-pulse 800ms ease-out forwards;
+}
+
+@keyframes presence-ripple-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0.20);
+  }
+  40% {
+    box-shadow: 0 0 0 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.08);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * FIRST-VISIT CLARITY — visual overrides for new visitors
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Quiet mode — wider opacity range (0.3–1.0 vs 0.5–1.0) */
+.fvh-quiet .decay-card {
+  --decay-opacity: max(0.30, calc(1 - var(--decay-factor, 0) * 0.70));
+  filter:
+    blur(calc(var(--decay-factor, 0) * 2px))
+    saturate(calc(1 - var(--decay-factor, 0) * 0.55));
+}
+
+/* Suppress shimmer for new visitors */
+.fvh-quiet .shimmer-overlay {
+  display: none;
+}
+
+/* Sharpen shadow steps — flat cards look truly flat */
+.fvh-quiet .decay-card {
+  box-shadow:
+    0 calc((1 - var(--decay-factor, 0)) * 8px)
+      calc((1 - var(--decay-factor, 0)) * 24px)
+    rgba(var(--mood-accent-rgb, 212,149,106),
+         calc((1 - var(--decay-factor, 0)) * 0.22)),
+    0 1px 4px rgba(0, 0, 0, 0.10);
+}
+
+/* Demo glow — CSS-only visual hint on most-decayed card. Not a real revival. */
+.fvh-demo-glow {
+  animation: demo-glow 2s ease-in-out forwards;
+}
+
+@keyframes demo-glow {
+  0% {
+    box-shadow:
+      0 2px 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.06),
+      0 1px 3px rgba(0, 0, 0, 0.10);
+  }
+  40% {
+    box-shadow:
+      0 6px 20px rgba(var(--mood-accent-rgb, 212,149,106), 0.20),
+      0 3px 10px rgba(0, 0, 0, 0.12);
+    opacity: 0.85;
+    filter: blur(0.3px) saturate(0.85);
+  }
+  100% {
+    box-shadow:
+      0 2px 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.06),
+      0 1px 3px rgba(0, 0, 0, 0.10);
+  }
+}
+
+.fvh-demo-done {
+  animation: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * REDUCED MOTION
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .presence-dot {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .presence-count.count-flip {
+    animation: none;
+  }
+
+  #presence-band.presence-ripple {
+    animation: none;
+    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
+  }
+
+  .fvh-demo-glow {
+    animation: demo-glow-reduced 1.5s ease-in-out forwards;
+  }
+
+  @keyframes demo-glow-reduced {
+    0%   { opacity: var(--decay-opacity, 0.4); }
+    40%  { opacity: 0.8; }
+    100% { opacity: var(--decay-opacity, 0.4); }
+  }
+}

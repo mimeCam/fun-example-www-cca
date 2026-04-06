@@ -12,14 +12,11 @@ import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import SiteNav from '../components/SiteNav.astro';
+// 3 consolidated CSS files (Tanya §12): decay, revival, ambient
 import '../styles/global.css';
 import '../styles/decay.css';
 import '../styles/revival.css';
-import '../styles/bloom.css';
-import '../styles/presence.css';
-import '../styles/first-visit.css';
-import '../styles/decay-extremes.css';
-import '../styles/revival-moment.css';
+import '../styles/ambient.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const sessionScript = sessionTokenScript();

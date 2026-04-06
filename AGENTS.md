@@ -8,7 +8,7 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 - `src/components/` — Astro components
 - `src/pages/` — routes and API endpoints
 - `src/content/blog/` — blog posts (Markdown)
-- `src/styles/` — global and feature CSS
+- `src/styles/` — consolidated CSS (`decay.css`, `revival.css`, `ambient.css`)
 - `src/data/` — runtime configs
 
 ## Core Feature
@@ -17,6 +17,8 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Rewrite `mood.ts` (strip cycling/blending/adaptive)
-- Unified `onboarding.ts` (merge remaining onboarding mechanisms)
+- Fold /now page fully (NowLine reads `rightNow` only; full /now page still exists)
+- Fold /wall page fully (Murmurs shows recent entries; full /wall still exists with form)
+- Remove /now/before page
+- Rewrite `mood.ts` (strip cycling/blending — warm-only locked)
 - Physical device QA (Pixel 6a, Galaxy A14, iPhone 13, SSE on 3G)

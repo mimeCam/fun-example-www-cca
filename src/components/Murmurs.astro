@@ -1,0 +1,96 @@
+---
+// src/components/Murmurs.astro
+// Micro-thoughts folded from /wall into the homepage field.
+// Shows only recent (non-fossil) entries as compact inline murmurs.
+// Dashed border, lower opacity — these decay too.
+//
+// Credits: Tanya (UX spec §3 — murmurs zone)
+
+import { partitionEntries } from '../lib/wall';
+import type { WallEntry } from '../lib/wall';
+import wallRaw from '../data/wall.json';
+
+/** Human-readable age label from day count. */
+function formatAge(days: number): string {
+  if (days < 1) return 'today';
+  if (days === 1) return '1d';
+  return `${Math.floor(days)}d`;
+}
+
+const entries = wallRaw as WallEntry[];
+const { active } = partitionEntries(entries);
+const MAX_MURMURS = 5;
+const visible = active.slice(0, MAX_MURMURS);
+const hasMore = active.length > MAX_MURMURS;
+---
+
+{visible.length > 0 && (
+  <section class="murmurs-zone" aria-label="Recent murmurs">
+    {visible.map(m => (
+      <div
+        class="murmur"
+        style={`--decay: ${m.decay.toFixed(3)}`}
+      >
+        <span class="murmur-text">{m.entry.text}</span>
+        <span class="murmur-age">{formatAge(m.days)}</span>
+      </div>
+    ))}
+    {hasMore && (
+      <span class="murmurs-more">
+        + {active.length - MAX_MURMURS} older murmurs fading
+      </span>
+    )}
+  </section>
+)}
+
+<style>
+  .murmurs-zone {
+    max-width: 40rem;
+    margin: 2rem auto 0;
+    padding: 1rem 1.25rem;
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius, 12px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .murmur {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    opacity: calc(0.35 + 0.45 * (1 - var(--decay)));
+  }
+
+  .murmur-text {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.65);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .murmur-age {
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .murmurs-more {
+    display: block;
+    text-align: center;
+    font-size: 0.65rem;
+    font-style: italic;
+    opacity: 0.3;
+    margin-top: 0.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .murmurs-zone { padding: 0.75rem 1rem; }
+  }
+</style>
