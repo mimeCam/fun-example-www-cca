@@ -34,6 +34,7 @@ import { bloomGuardrailsScript } from '../lib/bloomGuardrails';
 import { bloomHapticsScript } from '../lib/bloomHaptics';
 import { bloomA11yScript } from '../lib/bloomA11y';
 import { cascadeMobileScript } from '../lib/cascadeMobile';
+import { firstEchoClientScript } from '../lib/firstEchoClient';
 // revivalToast removed — merged into rewardWhisper
 import { bloomOnArrivalScript } from '../lib/bloomOnArrival';
 import { radialRingScript } from '../lib/radialRing';
@@ -64,6 +65,7 @@ import '../styles/radial-ring.css';
 import '../styles/ring.css';
 import '../styles/first-breath.css';
 import '../styles/guided-touch.css';
+import '../styles/echo.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const sessionScript = sessionTokenScript();
@@ -90,6 +92,7 @@ const hapticsJs = bloomHapticsScript();
 const a11yJs = bloomA11yScript();
 const cascadeMobileJs = cascadeMobileScript();
 const sympatheticScript = sympatheticBloomScript();
+const firstEchoJs = firstEchoClientScript();
 // toastScript removed — merged into rewardWhisper
 const arrivalScript = bloomOnArrivalScript();
 const radialRingJs  = radialRingScript();
@@ -140,6 +143,7 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <script set:html={heartbeatPulseJs} />
     <script set:html={sympatheticScript} />
     <script set:html={cascadeMobileJs} />
+    <script set:html={firstEchoJs} />
     <!-- revivalToast removed — merged into rewardWhisper -->
     <script set:html={arrivalScript} />
     <script set:html={radialRingJs} />

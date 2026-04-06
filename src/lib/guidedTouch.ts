@@ -309,6 +309,11 @@ function guidedTouchIIFE(): void {
     clearTimers();
     detachShortCircuit();
     ['gt-spotlight', 'gt-cursor', 'gt-whisper', 'gt-sr'].forEach(rmEl);
+    emitDoneEvent();
+  }
+
+  function emitDoneEvent(): void {
+    document.dispatchEvent(new CustomEvent('guidedtouch:done'));
   }
 
   function clearTimers(): void {

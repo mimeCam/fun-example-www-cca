@@ -70,7 +70,18 @@
 #             hourly velocity governor; visitor trust scoring (age + visit
 #             frequency); SQLite tables auto-migrated: visitor_trust,
 #             velocity_log, daily_counts; stale-challenge auto-refresh on
-#             client; uses Node built-in crypto — zero new dependencies).
+#             client; uses Node built-in crypto — zero new dependencies),
+#           First Revival Echo (echoTarget.ts + firstEcho.ts + firstEchoClient.ts +
+#             /api/echo-hint endpoint + echo.css — when a first-time visitor
+#             completes their first revival after Guided Touch, schedules a
+#             phantom heartbeat on a constellation-linked post 3–8s later;
+#             weighted target selection via constellation strength × decay factor;
+#             one-shot per session (server Set gate + localStorage client gate);
+#             skips when real visitors are connected; client waits for
+#             guidedtouch:done event before arming; whisper UI bottom-center
+#             with opacity transition + ARIA live region; reduced-motion safe;
+#             guidedTouch.ts now emits CustomEvent('guidedtouch:done') on cleanup;
+#             zero new dependencies, plugs into heartbeat + collectiveMemory).
 
 set -euo pipefail
 
