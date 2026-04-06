@@ -12,6 +12,15 @@ constellation:
     strength: 0.8
   - slug: "the-decay-theory"
     strength: 0.6
+convictions:
+  - belief: "Starting honest is more important than starting polished."
+    verdict: still-true
+  - belief: "Personal blogs should have a clear editorial voice from day one."
+    verdict: evolved
+    note: "Still true — but 'clear' matters less than 'consistent'. Voice emerges, not designed."
+  - belief: "Nobody reads first posts."
+    verdict: wrong
+    note: "People do read them. They read them specifically to calibrate trust."
 ---
 
 This is the first post on this blog.

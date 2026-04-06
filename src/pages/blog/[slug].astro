@@ -18,6 +18,7 @@ import { formatPubDate } from '../../lib/dates';
 import { variantScript } from '../../lib/variants';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import ReadingPulse from '../../components/ReadingPulse.astro';
+import ConvictionPanel from '../../components/ConvictionPanel.astro';
 // PresenceBand removed — presence indicator now lives in SiteNav (Tanya §2)
 
 export async function getStaticPaths() {
@@ -36,10 +37,21 @@ const pubDate = formatPubDate(post.data.pubDate);
 
 const hasVariants = post.data.variants === true;
 const vScript = hasVariants ? variantScript() : '';
+const convictions = post.data.convictions ?? [];
+const hasConvictions = convictions.length > 0;
 ---
 
 <BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={post.data.pubDate.toISOString()} ogSlug={post.slug}>
   <main class="post-detail">
+    <nav class="post-nav-row" aria-label="Post navigation">
+      <a href="/" class="back-link">← back to field</a>
+      {hasConvictions && (
+        <a href="#convictions" class="beliefs-link" aria-label="View author belief audit">
+          [⚖ beliefs]
+        </a>
+      )}
+    </nav>
+
     <header class="post-header">
       <time datetime={post.data.pubDate.toISOString()}>{pubDate}</time>
       <h1>{post.data.title}</h1>
@@ -56,6 +68,8 @@ const vScript = hasVariants ? variantScript() : '';
 
       {hasVariants && <script set:html={vScript} />}
     </RevivalMoment>
+
+    {hasConvictions && <ConvictionPanel convictions={convictions} />}
 
   </main>
 
@@ -97,6 +111,26 @@ const vScript = hasVariants ? variantScript() : '';
     margin: 0 auto;
     padding: 3rem 1.5rem 6rem;
   }
+
+  /* Back-link nav row — Tanya §3: "← back to field" + "[⚖ beliefs]" */
+  .post-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .back-link,
+  .beliefs-link {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 180ms ease;
+  }
+  .back-link:hover,
+  .beliefs-link:hover { color: rgba(255, 255, 255, 0.7); }
+  .beliefs-link { margin-left: auto; }
+
   .post-header {
     margin-bottom: 2.5rem;
   }

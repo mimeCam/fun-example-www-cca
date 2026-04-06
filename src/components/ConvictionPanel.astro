@@ -1,0 +1,164 @@
+---
+// src/components/ConvictionPanel.astro
+// Author accountability panel — inline collapsible beliefs audit.
+// P0 per Tanya §5: "The author holds themselves accountable in public."
+//
+// Max 5 beliefs per post. Verdict tokens signal current stance:
+//   ✓  still-true   — holds up
+//   ✗  wrong        — author recants
+//   ↗  evolved      — still directionally right, but the detail changed
+//   ?  unaudited    — not yet revisited
+//
+// Uses <details>/<summary> — native collapse, zero JS required.
+// Credits: Tanya (UX spec §5), Elon (P0 escalation)
+
+interface Conviction {
+  belief: string;
+  verdict: 'still-true' | 'wrong' | 'evolved' | 'unaudited';
+  note?: string;
+}
+
+interface Props {
+  convictions: Conviction[];
+}
+
+const { convictions } = Astro.props;
+if (!convictions?.length) return;
+
+const TOKENS: Record<Conviction['verdict'], string> = {
+  'still-true': '✓',
+  'wrong':      '✗',
+  'evolved':    '↗',
+  'unaudited':  '?',
+};
+
+const LABELS: Record<Conviction['verdict'], string> = {
+  'still-true': 'still true',
+  'wrong':      'wrong',
+  'evolved':    'evolved',
+  'unaudited':  'unaudited',
+};
+---
+
+<details class="conviction-panel" id="convictions">
+  <summary class="conviction-toggle" aria-label="Toggle belief audit panel">
+    <span class="toggle-icon" aria-hidden="true">⚖</span>
+    <span class="toggle-label">beliefs</span>
+    <span class="toggle-count" aria-hidden="true">{convictions.length}</span>
+  </summary>
+
+  <ol class="conviction-list">
+    {convictions.map((c) => (
+      <li class={`conviction-item conviction--${c.verdict}`}>
+        <span
+          class="conviction-token"
+          aria-label={LABELS[c.verdict]}
+          title={LABELS[c.verdict]}
+        >
+          {TOKENS[c.verdict]}
+        </span>
+        <span class="conviction-belief">{c.belief}</span>
+        {c.note && (
+          <span class="conviction-note">{c.note}</span>
+        )}
+      </li>
+    ))}
+  </ol>
+</details>
+
+<style>
+  .conviction-panel {
+    margin: 2rem 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 1rem;
+  }
+
+  /* Remove default marker; we style our own */
+  .conviction-panel summary { list-style: none; }
+  .conviction-panel summary::-webkit-details-marker { display: none; }
+
+  .conviction-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.35);
+    user-select: none;
+    transition: color 200ms ease;
+    width: fit-content;
+  }
+
+  .conviction-toggle:hover { color: rgba(255, 255, 255, 0.6); }
+
+  .toggle-icon { font-size: 0.85rem; }
+  .toggle-label { text-transform: uppercase; }
+  .toggle-count {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+    padding: 0 0.3em;
+    font-size: 0.7rem;
+    opacity: 0.7;
+  }
+
+  .conviction-list {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    animation: panel-open 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes panel-open {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .conviction-item {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    gap: 0.5rem 0.5rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .conviction-token {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding-top: 0.1em;
+    text-align: center;
+  }
+
+  /* Verdict-specific token colours */
+  .conviction--still-true .conviction-token { color: rgba(100, 200, 120, 0.8); }
+  .conviction--wrong      .conviction-token { color: rgba(220, 90,  90,  0.8); }
+  .conviction--evolved    .conviction-token { color: var(--mood-accent, #D4956A); }
+  .conviction--unaudited  .conviction-token { color: rgba(255, 255, 255, 0.3); }
+
+  .conviction-belief {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  /* Wrong beliefs: strike-through */
+  .conviction--wrong .conviction-belief {
+    text-decoration: line-through;
+    text-decoration-color: rgba(220, 90, 90, 0.5);
+    opacity: 0.6;
+  }
+
+  /* Note: muted follow-up on second grid row */
+  .conviction-note {
+    grid-column: 2;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+    margin-top: -0.25rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .conviction-list { animation: none; }
+  }
+</style>

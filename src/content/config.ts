@@ -6,6 +6,9 @@
 
 import { defineCollection, z } from 'astro:content';
 
+/** Verdict tokens for a conviction belief statement (Tanya §5 — ConvictionPanel). */
+const verdictEnum = z.enum(['still-true', 'wrong', 'evolved', 'unaudited']);
+
 const blog = defineCollection({
   type: 'content',
   schema: z.object({
@@ -27,6 +30,13 @@ const blog = defineCollection({
     constellationName: z.string().optional(),     // group name, e.g. "first light"
     starName: z.string().optional(),              // display label in star field
     magnitude: z.number().min(1).max(5).default(3).optional(), // visual weight
+    // --- Author conviction notes (P0 — Tanya §5) ---
+    // Max 5 beliefs. Verdict = author's current stance. Anti-bloat: keep it honest.
+    convictions: z.array(z.object({
+      belief: z.string(),
+      verdict: verdictEnum.default('unaudited'),
+      note: z.string().optional(),   // brief update — why it changed
+    })).max(5).optional(),
   }),
 });
 
