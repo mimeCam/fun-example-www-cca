@@ -64,7 +64,7 @@ const conviction = post.conviction ?? null;
       <RevivalBadge count={post.revivalCount} />
       <RisenBadge visible={post.recentlyRisen} />
     </div>
-    <KeepButton slug={post.slug} />
+    <KeepButton slug={post.slug} count={post.revivalCount} urgency={urgency} conviction={conviction} />
   </div>
 </article>
 

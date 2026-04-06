@@ -1,23 +1,39 @@
 ---
 // src/components/KeepButton.astro
-// Explicit "keep alive" revival button for DecayCards.
-// Fires POST /api/revive, shows warm pulse, swaps label to "kept".
-// Session-gated: one keep per slug per session via sessionStorage.
+// Redesigned "Keep Alive" revival button — per Tanya §4.1.
+// Feels like signing a petition, not clicking a like button.
 //
-// Props: slug — the blog post slug for the revival API call.
+// Props:
+//   slug        — post slug for /api/revive
+//   count       — current revival count (0 = hide number, >0 = show inline)
+//   urgency     — 'critical' triggers pulsing glow ring
+//   conviction  — 'still-true' triggers subtle gold ring
+//
+// Client wiring: handled by RevivalCounter via wireKeepButton() when on
+// a post detail page. On feed cards, client script in BaseLayout handles it.
 
-interface Props { slug: string; }
+interface Props {
+  slug: string;
+  count?: number;
+  urgency?: 'critical' | 'dying' | 'fading' | 'alive' | string;
+  conviction?: string | null;
+}
 
-const { slug } = Astro.props;
+const { slug, count = 0, urgency, conviction } = Astro.props;
+const isCritical = urgency === 'critical';
+const isStillTrue = conviction === 'still-true';
 ---
 
 <button
-  class="keep-btn"
+  class:list={['keep-btn', isCritical && 'keep-btn--critical', isStillTrue && 'keep-btn--still-true']}
   data-keep-slug={slug}
   aria-label="Keep this post alive"
+  type="button"
 >
-  <span class="keep-icon">&hearts;</span>
-  <span class="keep-label">keep</span>
+  <span class="keep-icon">&#9829;</span>
+  <span class="keep-label">Keep Alive</span>
+  {count > 0 && <span class="keep-count"> &middot; {count}</span>}
+  {count === 0 && <span class="keep-count keep-count--hidden"></span>}
 </button>
 
 <style>
@@ -25,43 +41,145 @@ const { slug } = Astro.props;
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.2rem 0.6rem;
-    font-size: 0.65rem;
+    min-height: 44px;
+    padding: 0.4rem 1.25rem;
+    font-size: 0.75rem;
     font-family: inherit;
-    letter-spacing: 0.03em;
-    color: rgba(var(--mood-accent-rgb, 120,120,120), 0.55);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.1);
+    letter-spacing: 0.04em;
+    color: rgba(var(--mood-accent-rgb, 120,120,120), 0.80);
+    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+    border: 1.5px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
     border-radius: 999px;
     cursor: pointer;
     transition:
-      border-color 150ms ease,
-      background 300ms ease,
-      opacity 800ms ease-out,
-      transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      border-color 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 200ms ease,
+      transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity 600ms ease-out;
   }
 
   .keep-btn:hover {
-    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
-    box-shadow: 0 2px 8px rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+    background: rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.14);
+    border-color: rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.45);
+    box-shadow: 0 0 16px rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.18);
+    transform: scale(1.03);
   }
 
   .keep-btn:active {
-    transform: scale(0.96);
+    transform: scale(0.97);
   }
 
+  /* Kept state — status, not disabled */
   .keep-btn.kept {
-    opacity: 0.35;
+    opacity: 0.55;
     cursor: default;
     pointer-events: none;
-    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
+    border: 1.5px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
   }
 
-  .keep-btn.pulsing {
-    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
-    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.2);
-    transform: scale(1.02);
+  /* Critical urgency — pulsing ring */
+  .keep-btn--critical {
+    border-color: rgba(255, 80, 40, 0.40);
+    animation: pulse-ring 2s ease-in-out infinite;
   }
 
-  .keep-icon { font-size: 0.72rem; }
+  /* still-true conviction — faint gold ring */
+  .keep-btn--still-true {
+    box-shadow: 0 0 8px rgba(200, 160, 60, 0.18);
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 80, 40, 0.0); }
+    50%       { box-shadow: 0 0 0 4px rgba(255, 80, 40, 0.18); }
+  }
+
+  .keep-icon { font-size: 0.85rem; }
+
+  .keep-count {
+    font-size: 0.72rem;
+    opacity: 0.70;
+    transition: opacity 200ms ease;
+  }
+
+  .keep-count--hidden { display: none; }
 </style>
+
+<script>
+  // Delegated handler for all KeepButtons on the page.
+  // On post pages, RevivalCounter.astro's initRevivalCounter() takes over the
+  // post-footer button (with counter + days banner). This handler covers feed
+  // cards and the DeathClockBanner button — anywhere with no RevivalCounter root.
+  (function wireKeepButtons() {
+    function getSessionId(): string | null {
+      try { return sessionStorage.getItem('session-token'); } catch { return null; }
+    }
+
+    function markKept(btn: HTMLButtonElement): void {
+      btn.classList.add('kept');
+      const label = btn.querySelector('.keep-label');
+      if (label) label.textContent = 'Keeping this';
+      const icon = btn.querySelector('.keep-icon');
+      if (icon) icon.textContent = '✓';
+    }
+
+    function updateCount(btn: HTMLButtonElement, count: number): void {
+      const span = btn.querySelector('.keep-count');
+      if (!span) return;
+      if (count > 0) { span.textContent = ` · ${count}`; span.classList.remove('keep-count--hidden'); }
+      else { span.classList.add('keep-count--hidden'); }
+    }
+
+    function rollback(btn: HTMLButtonElement, prevCount: number): void {
+      btn.classList.remove('kept');
+      const label = btn.querySelector('.keep-label');
+      if (label) label.textContent = 'Keep Alive';
+      const icon = btn.querySelector('.keep-icon');
+      if (icon) icon.textContent = '♥';
+      updateCount(btn, prevCount);
+    }
+
+    function handleClick(btn: HTMLButtonElement): void {
+      // Skip if RevivalCounter has already wired this button (post detail page)
+      if (btn.dataset.wired) return;
+      if (btn.classList.contains('kept')) return;
+      const slug = btn.dataset.keepSlug;
+      if (!slug) return;
+
+      // Optimistic update
+      const countSpan = btn.querySelector('.keep-count');
+      const prevCount = parseInt(countSpan?.textContent?.replace(/\D/g, '') ?? '0', 10) || 0;
+      markKept(btn);
+      updateCount(btn, prevCount + 1);
+
+      const sessionId = getSessionId();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (sessionId) headers['x-session-id'] = sessionId;
+
+      fetch('/api/revive', {
+        method: 'POST',
+        keepalive: true,
+        headers,
+        body: JSON.stringify({ slug }),
+      })
+        .then(r => {
+          if (r.status === 429) { rollback(btn, prevCount); return null; }
+          return r.ok ? r.json() : null;
+        })
+        .then((data: { ok: boolean; count: number } | null) => {
+          if (!data) return;
+          updateCount(btn, data.count);
+        })
+        .catch(() => rollback(btn, prevCount));
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = (e.target as Element).closest<HTMLButtonElement>('.keep-btn[data-keep-slug]');
+      if (!btn) return;
+      // If RevivalCounter owns this button, skip — it has its own handler
+      if (btn.closest('.revival-footer')) return;
+      handleClick(btn);
+    });
+  })();
+</script>

@@ -16,12 +16,15 @@ import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import RevivalMoment from '../../components/RevivalMoment.astro';
+import RevivalCounter from '../../components/RevivalCounter.astro';
+import KeepButton from '../../components/KeepButton.astro';
 import ReadingPulse from '../../components/ReadingPulse.astro';
 import ConvictionPanel from '../../components/ConvictionPanel.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
 import DeathClockBanner from '../../components/DeathClockBanner.astro';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
 import { daysUntilEntombment, clockUrgency, CLOCK_MAX_DAYS } from '../../lib/death-clock';
+import { decayFactor } from '../../lib/decay-engine';
 // PresenceBand removed — presence indicator now lives in SiteNav (Tanya §2)
 
 export async function getStaticPaths() {
@@ -49,6 +52,8 @@ const daysRemaining  = daysUntilEntombment(
 );
 const postUrgency   = clockUrgency(daysRemaining);
 const showBanner    = postUrgency === 'critical' || postUrgency === 'dying';
+const postDecay     = decayFactor(post.data.pubDate.toISOString(), post.data.lifespan ?? 365, new Date(), revivalCount);
+const latestConviction = convictions.length > 0 ? convictions[convictions.length - 1].verdict : null;
 
 function safeRevivalCount(slug: string): number {
   try { return getRevivalCount(slug); } catch { return 0; }
@@ -80,6 +85,22 @@ function safeReadingSeconds(slug: string): number {
         <Content />
       </article>
     </RevivalMoment>
+
+    <!-- Revival footer: the natural "end of article" moment to act -->
+    <div class="revival-footer">
+      <RevivalCounter
+        slug={post.slug}
+        initialCount={revivalCount}
+        decayFactor={postDecay}
+        lifespan={post.data.lifespan ?? 365}
+      />
+      <KeepButton
+        slug={post.slug}
+        count={revivalCount}
+        urgency={postUrgency}
+        conviction={latestConviction}
+      />
+    </div>
 
     <GhostEchoes slug={post.slug} />
 
@@ -226,6 +247,17 @@ function safeReadingSeconds(slug: string): number {
     border-radius: var(--radius, 12px);
     margin: 1.5em 0;
   }
+  /* Revival footer — end-of-article action zone */
+  .revival-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin: 3rem 0 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
   /* Variant blocks: hidden by default, revealed by inline script */
   .post-body :global(.variant) {
     display: none;

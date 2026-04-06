@@ -4,32 +4,33 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v25 — EndangeredCard DeathClock Ring (2026-04-06)
+# Architecture v26 — RevivalCounter + KeepButton Redesign (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — EndangeredCard DeathClock Ring):
-#   EndangeredCard.astro — text countdown replaced by DeathClock SVG ring
-#     (compact mode, left-aligned); flex-row layout (ring left, content right);
-#     aria-label now uses post.daysRemaining integer for screen readers;
-#     countdownLabel import removed.
-#   postMeta.ts — PostDisplayData gains maxDays (from lifespan frontmatter,
-#     default 365), daysRemaining (days until entombment), and clockUrgency
-#     (ClockUrgency 6-tier); resolveMaxDays() now reads per-post lifespan field;
-#     daysUntilEntomb() call passes maxDays for accurate per-post physics.
-#   content/config.ts — variants boolean field replaced with lifespan number
-#     field (positive, optional; post lifespan in days).
-#   endangered.ts — client IIFE simplified: daysLeft() + label() helpers
-#     removed (ring is SSR-rendered, no client text to update); MAX_DAYS
-#     constant removed from IIFE; refreshCards() + updateCard() no longer
-#     touch .endangered-countdown elements.
-#   endangered.css — .endangered-card-inner (flex-row) + .endangered-card-body
-#     (flex:1, min-width:0) added for ring+content layout; COUNTDOWN GATE
-#     block removed (no countdown element in DOM).
-#   blog/[slug].astro — variantScript() import + hasVariants logic removed;
-#     data-pub-date attribute on article element removed.
-#   hello-world.md — variants: true frontmatter field removed.
+# Sprint (latest — RevivalCounter + KeepButton Redesign):
+#   RevivalCounter.astro — NEW: Live Collective Memory Display placed at the
+#     natural end-of-article action zone; SSR-injects initialCount (no "0"
+#     flash); client subscribes to /api/heartbeat SSE and animates count via
+#     odometer; shows "+N days" banner after own revival.
+#   revival-counter.ts — NEW: client lib for RevivalCounter; animateCount()
+#     (RAF odometer, ease-out cubic, 600 ms); flashDaysBanner() (4s banner);
+#     subscribeHeartbeat() (SSE /api/heartbeat, slug-filtered);
+#     wireKeepButton() (optimistic update + 429 rollback); initRevivalCounter()
+#     bootstrap; zero new npm deps.
+#   KeepButton.astro — REDESIGNED: petition-style; new props count/urgency/
+#     conviction; inline count badge ("Keep Alive · N"); critical urgency adds
+#     pulsing glow ring (CSS animation); still-true conviction adds gold ring;
+#     min-height 44 px touch target; delegated feed-card handler via inline
+#     script; post-page button wired exclusively by initRevivalCounter().
+#   DecayCard.astro — KeepButton now receives count/urgency/conviction props
+#     for feed card urgency ring and inline count badge.
+#   blog/[slug].astro — revival footer (RevivalCounter + KeepButton) added
+#     below article body; decayFactor() imported from decay-engine;
+#     latestConviction computed from convictions array for still-true ring.
+#   variants.ts — DELETED: variants system fully removed; no client code
+#     references variant feature any more.
 #   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
