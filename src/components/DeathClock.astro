@@ -13,25 +13,28 @@ import {
   deathClockA11yLabel,
   clockStyleString,
 } from '../lib/death-clock';
+import type { ConvictionVerdict } from '../lib/decay-engine';
 
 interface Props {
   daysRemaining: number;
   urgency: ClockUrgency;
   compact?: boolean;
+  conviction?: ConvictionVerdict | null;
 }
 
-const { daysRemaining, urgency, compact = false } = Astro.props;
+const { daysRemaining, urgency, compact = false, conviction = null } = Astro.props;
 
 const dayDisplay  = deathClockDayDisplay(daysRemaining, urgency);
 const unitDisplay = deathClockUnitDisplay(daysRemaining);
 const a11yLabel   = deathClockA11yLabel(daysRemaining);
-const inlineStyle = clockStyleString(urgency, daysRemaining);
+const inlineStyle = clockStyleString(urgency, daysRemaining, conviction);
 ---
 
 <div
   class:list={['death-clock', compact && 'death-clock--compact']}
   data-urgency={urgency}
   data-days-remaining={daysRemaining}
+  data-conviction={conviction ?? undefined}
   style={inlineStyle}
   aria-label={a11yLabel}
   title={a11yLabel}
@@ -99,7 +102,10 @@ const inlineStyle = clockStyleString(urgency, daysRemaining);
     stroke-dashoffset: var(--clock-dashoffset, 0);
     transform-origin: 32px 32px;
     transform: rotate(-90deg);
-    transition: stroke-dashoffset 600ms ease, stroke 300ms ease;
+    transition: stroke-dashoffset 600ms ease, stroke 300ms ease, filter 300ms ease;
+    /* Conviction tint: subtle outer glow reflecting author belief state.
+       transparent = no glow (unaudited / no convictions). */
+    filter: drop-shadow(0 0 4px var(--clock-conviction-tint, transparent));
   }
 
   .death-clock__label {

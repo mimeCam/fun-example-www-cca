@@ -4,29 +4,35 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v23 — Graveyard Ledger / Epitaph Engine (2026-04-06)
+# Architecture v24 — Conviction Physics (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Graveyard Ledger):
-#   epitaph-engine.ts (new) — deterministic narrative epitaphs for entombed
-#     posts; djb2(slug) % 3 variant selector → same input = same text every
-#     SSR render; 4-tier classification: legendary / contested / quiet /
-#     forgotten; pure functions, zero state, zero DB.
-#   graveyard-ledger.ts (new) — shapes PostDisplayData into LedgerEntry
-#     records; getEntombedLedger() paginated view; getGraveyardSummary()
-#     aggregates: longestSurvivor, mostContested, totalForeverLost,
-#     avgSurvivalDays, totalReaderMinutes; pure functions only.
-#   GraveyardLedger.astro (new) — Hall of Records hero section at top of
-#     /graveyard; 3-panel grid (longest survivor, most contested, forever
-#     lost); zero client-side JS; --color-grave-* OKLCH token themed.
-#   api/graveyard-stats.ts — extended response: longestSurvivorDays,
-#     mostContestedRevivals, avgSurvivalDays via getGraveyardSummary().
-#   graveyard.astro — integrates GraveyardLedger above tombstone list;
-#     dynamic <title> & <meta description> using live entombed count.
-#   decay-engine.ts — MAX_DAYS_DEFAULT aligned to 365 (matches death-clock.ts
-#     CLOCK_MAX_DAYS); new decayMaxDaysMetaTag() export (SSR meta tag).
+# Sprint (latest — Conviction Physics):
+#   decay-engine.ts — ConvictionVerdict type ('still-true' | 'evolved' |
+#     'unaudited' | 'wrong' | 'abandoned'); CONVICTION_MULTIPLIER map
+#     (0.7×–1.4×); convictionMultiplier() pure fn; dominantConviction()
+#     worst-case-wins reducer; decayFactor() + daysToEntombment() accept
+#     optional conviction param (null → 1.0× baseline, backwards-compatible);
+#     client-side IIFE updated with inline CM map + data-conviction read;
+#     'abandoned' token added alongside 'wrong' (matched penalty: 1.4×).
+#   death-clock.ts — CONVICTION_TINT map (per-verdict HSL ambient glow);
+#     convictionTintColor() helper; clockCSSVars() + clockStyleString() +
+#     daysUntilEntombment() all accept optional conviction param;
+#     --clock-conviction-tint CSS var emitted for drop-shadow filter.
+#   postMeta.ts — postConviction() extracts dominant verdict from frontmatter;
+#     PostDisplayData gains conviction field (ConvictionVerdict | null);
+#     decayFactor() call now passes conviction for accurate server-side physics.
+#   content/config.ts — verdictEnum extended with 'abandoned' token.
+#   DeathClock.astro — optional conviction prop; passes through to
+#     clockStyleString(); data-conviction attribute on root element;
+#     SVG ring gets drop-shadow(0 0 4px var(--clock-conviction-tint)) filter.
+#   DecayCard.astro — reads post.conviction, forwards it to DeathClock;
+#     data-conviction attribute on article element.
+#   api/death-clock.ts — extracts conviction from post frontmatter via
+#     dominantConviction(); passes to buildClockData(); response JSON
+#     includes conviction field for client consumers.
 #   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
@@ -51,7 +57,9 @@
 #           Murmurs (wall whispers on homepage, CLI-only submission),
 #           Grain overlay (CSS noise texture via --decay-grain),
 #           Graveyard Ledger / Epitaph Engine (Hall of Records, deterministic
-#           narrative epitaphs, 4-tier survival classification, summary stats).
+#           narrative epitaphs, 4-tier survival classification, summary stats),
+#           Conviction Physics (author verdict modulates decay speed: 0.7×–1.4×;
+#           dominant verdict wins; ambient tint glow on SVG death-clock ring).
 
 set -euo pipefail
 

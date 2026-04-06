@@ -27,6 +27,8 @@ const formattedDate = formatPubDate(post.pubDate);
 // endangeredDaysLeft covers all posts (0 = entombed, >0 = days remaining)
 const daysRemaining = post.endangeredDaysLeft;
 const urgency = clockUrgency(daysRemaining);
+// conviction is null when no beliefs declared — maps to transparent tint
+const conviction = post.conviction ?? null;
 ---
 
 <article
@@ -40,6 +42,7 @@ const urgency = clockUrgency(daysRemaining);
   data-revival-warm={post.revivalWarm ? 'true' : undefined}
   data-days-remaining={daysRemaining}
   data-clock-urgency={urgency}
+  data-conviction={conviction ?? undefined}
   data-fvh-quiet
   tabindex="0"
   aria-label={`${post.title} — hold Space or Enter to revive`}
@@ -52,7 +55,7 @@ const urgency = clockUrgency(daysRemaining);
   <PostBadge readingTime={post.readingTime} badge={post.badge} />
   {post.description && <p class="post-excerpt">{post.description}</p>}
   <div class="card-footer">
-    <DeathClock daysRemaining={daysRemaining} urgency={urgency} compact={true} />
+    <DeathClock daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} />
     <div class="card-footer-meta">
       <span class="decay-freshness" aria-label={`Freshness: ${post.freshness}`}>
         {post.freshness}

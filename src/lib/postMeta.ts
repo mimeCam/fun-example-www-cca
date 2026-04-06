@@ -8,8 +8,8 @@
 import type { CollectionEntry } from 'astro:content';
 import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
-import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './decay-engine';
-import type { FreshnessTag } from './decay-engine';
+import { decayFactor, freshnessTag, decayStyleString, revivalBonus, dominantConviction } from './decay-engine';
+import type { FreshnessTag, ConvictionVerdict } from './decay-engine';
 import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost } from './collectiveMemory';
 import { isEntombed, isRecentlyRisen } from './entomb';
 import { isEndangered, urgencyLevel, daysUntilEntomb } from './endangered';
@@ -70,11 +70,18 @@ export interface PostDisplayData extends PostMeta {
   endangeredDaysLeft: number;
   risenAt: Date | null;
   recentlyRisen: boolean;
+  conviction: ConvictionVerdict | null;  // dominant verdict; null when no convictions declared
 }
 
 /** Max decay window in days. Hardcoded — adaptive config removed. */
 function resolveMaxDays(): number {
   return 365;
+}
+
+/** Extracts dominant conviction verdict from a blog post's frontmatter. */
+function postConviction(post: CollectionEntry<'blog'>): ConvictionVerdict | null {
+  const verdicts = (post.data.convictions ?? []).map(c => c.verdict as ConvictionVerdict);
+  return dominantConviction(verdicts);
 }
 
 /** Bundles metadata + decay visuals for a single post. */
@@ -88,7 +95,8 @@ export function getPostDisplayData(
 ): PostDisplayData {
   const meta = extractMeta(post);
   const maxDays = resolveMaxDays();
-  const factor = decayFactor(meta.pubDateISO, maxDays, now, revivals, readingSeconds);
+  const conviction = postConviction(post);
+  const factor = decayFactor(meta.pubDateISO, maxDays, now, revivals, readingSeconds, conviction);
   const warm = revivalBonus(revivals) > 0.15;
   const lastRevivalDays = lastRevivalDaysAgo(risenAt, now);
   const entombed = isEntombed(factor, lastRevivalDays);
@@ -108,6 +116,7 @@ export function getPostDisplayData(
     endangeredDaysLeft: daysUntilEntomb(factor),
     risenAt,
     recentlyRisen: isRecentlyRisen(risenAt, now),
+    conviction,
   };
 }
 

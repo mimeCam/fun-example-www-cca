@@ -15,6 +15,43 @@
 import { daysSince } from './temporal';
 
 // ---------------------------------------------------------------------------
+// Conviction — author stance modulates physics of decay
+// ---------------------------------------------------------------------------
+
+/** All valid verdict tokens (matches content/config.ts verdictEnum + 'abandoned'). */
+export type ConvictionVerdict =
+  | 'still-true' | 'evolved' | 'unaudited' | 'wrong' | 'abandoned';
+
+/** Worst-case verdict wins: wrong/abandoned > unaudited > evolved > still-true. */
+const VERDICT_PRIORITY: ConvictionVerdict[] =
+  ['wrong', 'abandoned', 'unaudited', 'evolved', 'still-true'];
+
+/** Multiplier applied to raw time component. >1 accelerates decay, <1 slows it. */
+const CONVICTION_MULTIPLIER: Record<ConvictionVerdict, number> = {
+  'still-true': 0.7,   // author doubles down — time slows
+  'evolved':    0.9,   // belief refined — slight resistance
+  'unaudited':  1.0,   // baseline — author hasn't checked
+  'wrong':      1.4,   // author recants — accelerated
+  'abandoned':  1.4,   // author walked away — accelerated
+};
+
+/** Decay speed multiplier for a conviction verdict. Null → 1.0 (baseline). */
+export function convictionMultiplier(v: ConvictionVerdict | null): number {
+  return v ? CONVICTION_MULTIPLIER[v] : 1.0;
+}
+
+/**
+ * Worst-case verdict from an array — wrong beats still-true even 1 of 5.
+ * Returns null for empty arrays (no convictions declared).
+ */
+export function dominantConviction(
+  verdicts: ConvictionVerdict[],
+): ConvictionVerdict | null {
+  if (!verdicts.length) return null;
+  return VERDICT_PRIORITY.find(v => verdicts.includes(v)) ?? null;
+}
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
@@ -53,16 +90,22 @@ export function readingBonus(readingSeconds: number): number {
   return Math.min(0.15, Math.log(readingSeconds / 30 + 1) * 0.04);
 }
 
-/** Continuous decay: 0.0 (just published) → 1.0 (ancient). */
+/**
+ * Continuous decay: 0.0 (just published) → 1.0 (ancient).
+ * conviction is optional — null = 1.0× (backwards-compatible).
+ * Multiplier applied to raw time only; reader bonuses are unaffected.
+ */
 export function decayFactor(
   pubDate: string,
   maxDays = MAX_DAYS_DEFAULT,
   now = new Date(),
   revivalCount = 0,
   readingSeconds = 0,
+  conviction: ConvictionVerdict | null = null,
 ): number {
   const raw = Math.min(1, daysSince(pubDate, now) / maxDays);
-  return Math.max(0, raw - revivalBonus(revivalCount) - readingBonus(readingSeconds));
+  const adjusted = raw * convictionMultiplier(conviction);
+  return Math.max(0, adjusted - revivalBonus(revivalCount) - readingBonus(readingSeconds));
 }
 
 /** Compute decay with a known revival count (for post-revival API calls). */
@@ -229,8 +272,9 @@ export function daysToEntombment(
   readingSeconds = 0,
   maxDays = MAX_DAYS_DEFAULT,
   now = new Date(),
+  conviction: ConvictionVerdict | null = null,
 ): number {
-  const factor = decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds);
+  const factor = decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds, conviction);
   const remaining = ENTOMB_THRESHOLD - factor;
   if (remaining <= 0) return 0;
   return Math.max(1, Math.ceil(remaining * maxDays));
@@ -247,15 +291,17 @@ export function decayEngineClientScript(): string {
   var mm=document.querySelector('meta[name="decay-max-days"]');
   var M=mm?+mm.content||${MAX_DAYS_DEFAULT}:${MAX_DAYS_DEFAULT};
   var paused=false,lastTick=0;
+  var CM={'still-true':.7,'evolved':.9,'unaudited':1,'wrong':1.4,'abandoned':1.4};
 
   function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
   function rdg(s){return Math.min(.15,Math.log(s/30+1)*.04)}
-  function df(p,n,r,s){return Math.max(0,Math.min(1,(n-p)/DAY/M)-rb(r)-rdg(s))}
+  function df(p,n,r,s,cv){var m=CM[cv]||1;return Math.max(0,Math.min(1,(n-p)/DAY/M)*m-rb(r)-rdg(s))}
   function patch(el,n){
     if(el.hasAttribute('data-bloom-lock'))return;
     var r=+(el.dataset.revivalCount||'0');
     var s=+(el.dataset.readingSeconds||'0');
-    var f=df(new Date(el.dataset.pubDate).getTime(),n,r,s);
+    var cv=el.dataset.conviction||'unaudited';
+    var f=df(new Date(el.dataset.pubDate).getTime(),n,r,s,cv);
     el.style.setProperty('--decay-opacity',Math.max(.35,1-f*.65));
     el.style.setProperty('--decay-blur',(f*1.5).toFixed(2)+'px');
     el.style.setProperty('--decay-saturation',(1-f*.4).toFixed(2));
@@ -388,6 +434,35 @@ export function _testDecayEngine(): void {
   const script = decayEngineClientScript();
   console.assert(script.includes('choreo-pending'), 'has choreography');
   console.assert(script.includes('requestAnimationFrame'), 'has RAF loop');
+  console.assert(script.includes('data-conviction'), 'IIFE reads data-conviction');
+  console.assert(script.includes("'still-true':.7"), 'IIFE has conviction map');
+
+  // Conviction multiplier
+  console.assert(convictionMultiplier(null) === 1.0, 'null → baseline 1.0');
+  console.assert(convictionMultiplier('still-true') === 0.7, 'still-true → 0.7');
+  console.assert(convictionMultiplier('wrong') === 1.4, 'wrong → 1.4');
+  console.assert(convictionMultiplier('abandoned') === 1.4, 'abandoned → 1.4');
+
+  // dominantConviction — worst-case wins
+  console.assert(dominantConviction([]) === null, 'empty → null');
+  console.assert(dominantConviction(['still-true', 'wrong']) === 'wrong', 'wrong beats still-true');
+  console.assert(dominantConviction(['evolved', 'still-true']) === 'evolved', 'evolved beats still-true');
+  console.assert(dominantConviction(['abandoned', 'wrong']) === 'wrong', 'wrong beats abandoned');
+  console.assert(dominantConviction(['still-true']) === 'still-true', 'single still-true');
+
+  // Conviction modulates decay — same post, same date
+  const baseDate = '2026-01-01';
+  const testNow = new Date('2026-04-06');
+  const fWrong     = decayFactor(baseDate, 365, testNow, 0, 0, 'wrong');
+  const fStillTrue = decayFactor(baseDate, 365, testNow, 0, 0, 'still-true');
+  const fNull      = decayFactor(baseDate, 365, testNow, 0, 0, null);
+  console.assert(fWrong > fNull, 'wrong decays faster than baseline');
+  console.assert(fStillTrue < fNull, 'still-true decays slower than baseline');
+  console.assert(fWrong > fStillTrue, 'wrong decays faster than still-true');
+
+  // Backwards compat: decayFactorWithCount still works (conviction defaults to null)
+  const wc2 = decayFactorWithCount('2026-01-01', 0, 365, testNow);
+  console.assert(wc2 === fNull, 'withCount matches null-conviction baseline');
 
   console.log('[decay-engine] OK — all checks passed');
 }

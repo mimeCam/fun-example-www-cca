@@ -6,8 +6,11 @@
 
 import { defineCollection, z } from 'astro:content';
 
-/** Verdict tokens for a conviction belief statement (Tanya §5 — ConvictionPanel). */
-const verdictEnum = z.enum(['still-true', 'wrong', 'evolved', 'unaudited']);
+/**
+ * Verdict tokens for a conviction belief statement (Tanya §5 — ConvictionPanel).
+ * 'abandoned' added alongside ConvictionVerdict type in decay-engine.ts — Mike §4.1
+ */
+const verdictEnum = z.enum(['still-true', 'wrong', 'evolved', 'unaudited', 'abandoned']);
 
 const blog = defineCollection({
   type: 'content',

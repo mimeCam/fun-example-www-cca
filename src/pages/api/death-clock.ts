@@ -8,7 +8,8 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
-import { decayFactor } from '../../lib/decay-engine';
+import { decayFactor, dominantConviction } from '../../lib/decay-engine';
+import type { ConvictionVerdict } from '../../lib/decay-engine';
 import {
   daysUntilEntombment, clockUrgency, deathClockLabel,
   deathClockA11yLabel, CLOCK_MAX_DAYS,
@@ -25,7 +26,9 @@ export const GET: APIRoute = async ({ url }) => {
 async function clockResponse(slug: string): Promise<Response> {
   const post = await findPost(slug);
   if (!post) return new Response('not found', { status: 404 });
-  return buildClockData(slug, post.data.pubDate.toISOString());
+  const verdicts = (post.data.convictions ?? []).map(c => c.verdict as ConvictionVerdict);
+  const conviction = dominantConviction(verdicts);
+  return buildClockData(slug, post.data.pubDate.toISOString(), conviction);
 }
 
 async function findPost(slug: string) {
@@ -33,16 +36,21 @@ async function findPost(slug: string) {
   return posts.find(p => p.slug === slug) ?? null;
 }
 
-function buildClockData(slug: string, pubDateISO: string): Response {
+function buildClockData(
+  slug: string,
+  pubDateISO: string,
+  conviction: ConvictionVerdict | null,
+): Response {
   const revivalCount   = safeRead(() => getRevivalCount(slug),   0);
   const readingSeconds = safeRead(() => getReadingSeconds(slug), 0);
   const now = new Date();
-  const factor        = decayFactor(pubDateISO, CLOCK_MAX_DAYS, now, revivalCount, readingSeconds);
-  const daysRemaining = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS, now);
+  const factor        = decayFactor(pubDateISO, CLOCK_MAX_DAYS, now, revivalCount, readingSeconds, conviction);
+  const daysRemaining = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS, now, conviction);
   const urgency       = clockUrgency(daysRemaining);
   const body = JSON.stringify({
     slug, daysRemaining, urgencyLevel: urgency,
     decayFactor: +factor.toFixed(4),
+    conviction,
     label:    deathClockLabel(daysRemaining, urgency),
     a11yLabel: deathClockA11yLabel(daysRemaining),
   });

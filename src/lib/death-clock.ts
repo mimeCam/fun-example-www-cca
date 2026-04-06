@@ -7,6 +7,7 @@
 //          Tanya (UX §6 — visible countdown converts cold-start into tension)
 
 import { decayFactor, ENTOMB_THRESHOLD } from './decay-engine';
+import type { ConvictionVerdict } from './decay-engine';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,15 +23,19 @@ export const CLOCK_MAX_DAYS = 365;
 // Core countdown math
 // ---------------------------------------------------------------------------
 
-/** Days until decay hits ENTOMB_THRESHOLD. Returns 0 when already entombed. */
+/**
+ * Days until decay hits ENTOMB_THRESHOLD. Returns 0 when already entombed.
+ * conviction is optional — null = 1.0× (backwards-compatible).
+ */
 export function daysUntilEntombment(
   pubDate: string,
   revivalCount: number,
   readingSeconds: number,
   maxDays = CLOCK_MAX_DAYS,
   now = new Date(),
+  conviction: ConvictionVerdict | null = null,
 ): number {
-  const factor = decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds);
+  const factor = decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds, conviction);
   const remaining = ENTOMB_THRESHOLD - factor;
   if (remaining <= 0) return 0;
   return Math.max(1, Math.ceil(remaining * maxDays));
@@ -92,6 +97,20 @@ const URGENCY_HUE: Record<ClockUrgency, number> = {
   endangered: 45, critical: 20,  dying: 4,
 };
 
+/** Ambient conviction tint — author will dimension, separate from urgency (time). */
+const CONVICTION_TINT: Record<ConvictionVerdict, string> = {
+  'still-true': 'hsl(38 65% 60%)',   // warm amber — held belief
+  'evolved':    'hsl(200 50% 65%)',  // slate teal — directional growth
+  'unaudited':  'transparent',        // neutral silence
+  'wrong':      'hsl(232 55% 65%)',  // cold indigo — intellectual cold front
+  'abandoned':  'hsl(232 55% 65%)',  // cold blue — walked away
+};
+
+/** CSS color for the conviction tint overlay. Null → transparent. */
+function convictionTintColor(conviction: ConvictionVerdict | null): string {
+  return conviction ? CONVICTION_TINT[conviction] : 'transparent';
+}
+
 const URGENCY_PULSE: Record<ClockUrgency, string> = {
   immortal: '0s', thriving: '8s',  aging: '6s',
   endangered: '4s', critical: '2s', dying: '0.8s',
@@ -109,23 +128,39 @@ export function clockDashoffset(daysRemaining: number, maxDays = CLOCK_MAX_DAYS)
 }
 
 export interface ClockCSSVars {
-  '--clock-urgency-hue': string;
-  '--clock-pulse-speed': string;
-  '--clock-dashoffset':  string;
+  '--clock-urgency-hue':     string;
+  '--clock-pulse-speed':     string;
+  '--clock-dashoffset':      string;
+  '--clock-conviction-tint': string;  // author will dimension — color, not urgency hue
 }
 
-/** CSS custom properties for inline style binding. */
-export function clockCSSVars(urgency: ClockUrgency, daysRemaining: number): ClockCSSVars {
+/**
+ * CSS custom properties for inline style binding.
+ * conviction is optional — null → transparent tint (backwards-compatible).
+ */
+export function clockCSSVars(
+  urgency: ClockUrgency,
+  daysRemaining: number,
+  conviction: ConvictionVerdict | null = null,
+): ClockCSSVars {
   return {
-    '--clock-urgency-hue': String(URGENCY_HUE[urgency]),
-    '--clock-pulse-speed': URGENCY_PULSE[urgency],
-    '--clock-dashoffset':  String(clockDashoffset(daysRemaining)),
+    '--clock-urgency-hue':     String(URGENCY_HUE[urgency]),
+    '--clock-pulse-speed':     URGENCY_PULSE[urgency],
+    '--clock-dashoffset':      String(clockDashoffset(daysRemaining)),
+    '--clock-conviction-tint': convictionTintColor(conviction),
   };
 }
 
-/** Converts clock CSS vars to an inline style string. */
-export function clockStyleString(urgency: ClockUrgency, daysRemaining: number): string {
-  const vars = clockCSSVars(urgency, daysRemaining);
+/**
+ * Converts clock CSS vars to an inline style string.
+ * conviction is optional — null → transparent tint (backwards-compatible).
+ */
+export function clockStyleString(
+  urgency: ClockUrgency,
+  daysRemaining: number,
+  conviction: ConvictionVerdict | null = null,
+): string {
+  const vars = clockCSSVars(urgency, daysRemaining, conviction);
   return Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';');
 }
 
@@ -180,6 +215,28 @@ export function _testDeathClock(): void {
 
   const style = clockStyleString('dying', 1);
   console.assert(style.includes('--clock-urgency-hue:4'), 'dying hue in style');
+  console.assert(style.includes('--clock-conviction-tint:transparent'), 'no-conviction → transparent');
+
+  // Conviction tint propagates through CSS vars
+  const varsWrong = clockCSSVars('critical', 10, 'wrong');
+  console.assert(varsWrong['--clock-conviction-tint'].includes('232'), 'wrong → cold indigo hue');
+  const varsTruth = clockCSSVars('thriving', 100, 'still-true');
+  console.assert(varsTruth['--clock-conviction-tint'].includes('38'), 'still-true → warm amber hue');
+  const varsNone = clockCSSVars('aging', 45, null);
+  console.assert(varsNone['--clock-conviction-tint'] === 'transparent', 'null → transparent');
+
+  // Conviction modulates daysUntilEntombment
+  const baseDate = '2026-01-01';
+  const testNow = new Date('2026-04-06');
+  const daysWrong = daysUntilEntombment(baseDate, 0, 0, 365, testNow, 'wrong');
+  const daysTruth = daysUntilEntombment(baseDate, 0, 0, 365, testNow, 'still-true');
+  const daysBase  = daysUntilEntombment(baseDate, 0, 0, 365, testNow, null);
+  console.assert(daysWrong < daysBase, 'wrong verdict → fewer days remaining');
+  console.assert(daysTruth > daysBase, 'still-true verdict → more days remaining');
+
+  // clockStyleString includes conviction tint
+  const styleWrong = clockStyleString('critical', 10, 'wrong');
+  console.assert(styleWrong.includes('--clock-conviction-tint'), 'style has conviction tint');
 
   console.log('[death-clock] OK — all checks passed');
 }

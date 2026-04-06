@@ -15,6 +15,7 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 **Temporal Decay + Collective Memory** — posts visually age and die; reader attention revives them.
 Death Clock ring counts down each post's lifespan. Ghost Echoes sparkline surfaces collective presence.
 Real-time presence via SSE (`src/lib/presence-unified.ts`). Dead posts entombed at `/graveyard` with epitaphs and Hall of Records.
+Author conviction modulates decay physics — `still-true` slows the clock, `wrong`/`abandoned` accelerates it.
 
 ## WIP
 
