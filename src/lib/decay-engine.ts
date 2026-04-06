@@ -210,6 +210,24 @@ export function isRecentlyRisen(
 /** Resurrection weight (heavier than a regular revival). */
 export const RESURRECT_BONUS = 3;
 
+/**
+ * Days until decay reaches ENTOMB_THRESHOLD given current revival state.
+ * Exported so death-clock.ts has a single authoritative source of this math.
+ * Returns 0 when already entombed.
+ */
+export function daysToEntombment(
+  pubDate: string,
+  revivalCount = 0,
+  readingSeconds = 0,
+  maxDays = MAX_DAYS_DEFAULT,
+  now = new Date(),
+): number {
+  const factor = decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds);
+  const remaining = ENTOMB_THRESHOLD - factor;
+  if (remaining <= 0) return 0;
+  return Math.max(1, Math.ceil(remaining * maxDays));
+}
+
 // ---------------------------------------------------------------------------
 // Client script — live-decay recomputation + first-visit choreography
 // Combined IIFE replacing live-decay.ts + decayChoreography.ts
@@ -351,6 +369,12 @@ export function _testDecayEngine(): void {
   // decayFactorWithCount wrapper
   const wc = decayFactorWithCount('2026-04-05', 5, 365, new Date('2026-04-05'));
   console.assert(wc === 0, `withCount same-day: expected 0, got ${wc}`);
+
+  // daysToEntombment
+  const dte = daysToEntombment('2026-04-05', 0, 0, 180, new Date('2026-04-05'));
+  console.assert(dte >= 150, `daysToEntombment same-day: expected ≥150, got ${dte}`);
+  const dte0 = daysToEntombment('2020-01-01', 0, 0, 180, new Date('2026-04-05'));
+  console.assert(dte0 === 0, `daysToEntombment ancient: expected 0, got ${dte0}`);
 
   // Client script
   const script = decayEngineClientScript();

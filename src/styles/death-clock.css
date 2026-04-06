@@ -1,0 +1,91 @@
+/* src/styles/death-clock.css
+ * Death Clock — CSS layer for all countdown visual states.
+ * Urgency hues, ring animation, and banner chrome.
+ * All ring visuals are pure CSS — zero JS required for initial render.
+ *
+ * Credits: Mike (architecture spec), Tanya (UX §6 — cold-start countdown)
+ */
+
+@layer death-clock {
+
+  /* Urgency hue per tier — single var drives ring color + text color */
+  .death-clock[data-urgency="immortal"]   { --clock-urgency-hue: 230; }
+  .death-clock[data-urgency="thriving"]   { --clock-urgency-hue: 220; }
+  .death-clock[data-urgency="aging"]      { --clock-urgency-hue: 160; }
+  .death-clock[data-urgency="endangered"] { --clock-urgency-hue: 45;  }
+  .death-clock[data-urgency="critical"]   { --clock-urgency-hue: 20;  }
+  .death-clock[data-urgency="dying"]      { --clock-urgency-hue: 4;   }
+
+  /* Pulse ring — critical and dying only */
+  .death-clock[data-urgency="critical"] .death-clock__ring,
+  .death-clock[data-urgency="dying"]    .death-clock__ring {
+    animation: clock-pulse var(--clock-pulse-speed, 2s) ease-in-out infinite;
+  }
+
+  /* Immortal: post just published, no pressure — muted display */
+  .death-clock[data-urgency="immortal"] .death-clock__days,
+  .death-clock[data-urgency="immortal"] .death-clock__unit {
+    opacity: 0.35;
+  }
+
+  /* Banner chrome — sticky bottom, non-modal */
+  .death-clock-banner {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    padding: 0.65rem 1.25rem;
+    background: rgba(8, 6, 4, 0.90);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+  }
+
+  .death-clock-banner--hidden {
+    display: none;
+  }
+
+  .death-clock-banner__text {
+    flex: 1;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.45;
+  }
+
+  .death-clock-banner__text strong {
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 600;
+  }
+
+  .death-clock-banner__note {
+    opacity: 0.5;
+  }
+
+  .death-clock-banner__dismiss {
+    font-size: 1.1rem;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.22);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem 0.35rem;
+    border-radius: 4px;
+    transition: color 150ms ease, background 150ms ease;
+    flex-shrink: 0;
+  }
+
+  .death-clock-banner__dismiss:hover {
+    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  @keyframes clock-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+  }
+
+}

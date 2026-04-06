@@ -4,35 +4,36 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v21 — Ghost Echoes (2026-04-06)
+# Architecture v22 — Death Clock (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Ghost Echoes):
-#   GhostEchoes.astro (new) — revival-history sparkline panel per post.
-#     SSR stub (narrative label + total) renders without JS. Client IIFE
-#     fetches /api/ghost-echoes, injects animated SVG polyline, schedules
-#     adaptive echo-pulse dot. Companion to PresenceBand: "who was here
-#     before you" (static history) vs "who is here now" (SSE, real-time).
-#   revivalHistory.ts (new) — pure functions, zero side-effects, no DB:
-#     shapeBuckets(): bins Unix-ms timestamps into N weekly buckets;
-#     bucketToSVGPoints(): normalised SVG polyline string (always fills height);
-#     narrativeLabel(): "27 readers kept this alive — last tended 4d ago";
-#     echoIntervalMs(): adaptive pulse (3s high / 6s mid / 12s dormant).
-#   api/ghost-echoes.ts (new) — GET /api/ghost-echoes?slug=<slug>;
-#     returns { buckets, lastAt, total, svgPoints, intervalMs };
-#     Cache-Control: public, max-age=60 (historical context, stale-OK).
-#   ghost-echoes.css (new) — OKLCH palette, sparkline-draw + echo-pulse
-#     @keyframes; reduced-motion: static line + no animation; backdrop-blur.
-#   collectiveMemory.ts — getRevivalTimeline(slug, windowWeeks=8): queries
-#     velocity_log for raw timestamps; getMonthlyRevivalCount already present.
-#     Bug fix: maybePruneVelocity retention 2h → 90 days (preserves 8-week
-#     sparkline window; old value silently erased all sparkline history).
-#   [slug].astro — integrates <GhostEchoes slug={slug} /> above revival CTA.
+# Sprint (latest — Death Clock):
+#   death-clock.ts (new) — pure functions, zero side-effects, zero DB:
+#     daysUntilEntombment(): days until decay hits ENTOMB_THRESHOLD;
+#     clockUrgency(): 6-tier discriminant (immortal/thriving/aging/
+#       endangered/critical/dying); clockCSSVars() / clockStyleString()
+#     for server-side CSS custom properties (hue, pulse, dashoffset).
+#   api/death-clock.ts (new) — GET /api/death-clock?slug=<slug>;
+#     returns { daysRemaining, urgencyLevel, decayFactor, label, a11yLabel };
+#     Cache-Control: public, max-age=300 (countdown changes by days).
+#   DeathClock.astro (new) — SVG ring countdown, rendered SSR, no hydration
+#     island; CSS custom properties set server-side, ring animates purely
+#     in CSS; compact={true} variant for card footers.
+#   DeathClockBanner.astro (new) — sticky bottom banner (critical/dying only);
+#     non-modal, does not interrupt reading; dismissed via sessionStorage;
+#     inline KeepButton CTA.
+#   death-clock.css (new) — @layer death-clock: urgency hues, pulse ring
+#     @keyframes, banner chrome; reduced-motion: static, no animation.
+#   decay-engine.ts — added daysToEntombment() export (authoritative math).
+#   variants.ts — ageTier() is now a shim over freshnessTag() (unified
+#     decay-factor thresholds; old magic-number thresholds retired).
+#   [slug].astro — integrates DeathClock ring + DeathClockBanner per post.
 #   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
+#           Death Clock (SVG ring countdown, 6-tier urgency, CSS-only animation),
 #           Honest Presence (per-slug + global-scope reader count via SSE),
 #           Ghost Echoes (revival sparkline — 8-week history, adaptive pulse),
 #           dynamic OG image generation (satori + resvg),

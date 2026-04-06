@@ -1,0 +1,66 @@
+---
+// src/components/DeathClockBanner.astro
+// Sticky bottom banner for critical/dying posts only.
+// Non-modal: sticky bottom, does not interrupt reading.
+// Dismissed via sessionStorage. One-action KeepButton inline.
+//
+// Caller must guard urgency === 'critical' || 'dying' before rendering.
+// Credits: Mike (architecture spec), Tanya (UX §6), Paul ("no cognitive load mid-read")
+
+import KeepButton from './KeepButton.astro';
+import type { ClockUrgency } from '../lib/death-clock';
+
+interface Props {
+  slug: string;
+  daysRemaining: number;
+  urgency: ClockUrgency;
+}
+
+const { slug, daysRemaining, urgency } = Astro.props;
+
+const hoursMode  = urgency === 'dying' && daysRemaining <= 1;
+const countdown  = hoursMode ? 'hours' : `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`;
+const sessionKey = `dc-dismissed-${slug}`;
+---
+
+<div
+  class="death-clock-banner"
+  id="death-clock-banner"
+  data-session-key={sessionKey}
+  role="status"
+  aria-live="polite"
+  aria-label={`This post has ${countdown} left`}
+>
+  <p class="death-clock-banner__text">
+    This post has <strong>{countdown}</strong> left.
+    <span class="death-clock-banner__note">Reading it just added time.</span>
+  </p>
+
+  <KeepButton slug={slug} />
+
+  <button
+    class="death-clock-banner__dismiss"
+    id="death-clock-banner-dismiss"
+    aria-label="Dismiss countdown banner"
+    type="button"
+  >×</button>
+</div>
+
+<script>
+  (function initBanner() {
+    var banner = document.getElementById('death-clock-banner');
+    if (!banner) return;
+    var key = (banner as HTMLElement).dataset.sessionKey ?? '';
+    try {
+      if (sessionStorage.getItem(key) === '1') {
+        banner.classList.add('death-clock-banner--hidden');
+        return;
+      }
+    } catch (_) {}
+    var btn = document.getElementById('death-clock-banner-dismiss');
+    if (btn) btn.addEventListener('click', function dismissBanner() {
+      banner!.classList.add('death-clock-banner--hidden');
+      try { sessionStorage.setItem(key, '1'); } catch (_) {}
+    });
+  })();
+</script>

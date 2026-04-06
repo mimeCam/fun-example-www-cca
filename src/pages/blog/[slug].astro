@@ -20,6 +20,9 @@ import RevivalMoment from '../../components/RevivalMoment.astro';
 import ReadingPulse from '../../components/ReadingPulse.astro';
 import ConvictionPanel from '../../components/ConvictionPanel.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
+import DeathClockBanner from '../../components/DeathClockBanner.astro';
+import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
+import { daysUntilEntombment, clockUrgency, CLOCK_MAX_DAYS } from '../../lib/death-clock';
 // PresenceBand removed — presence indicator now lives in SiteNav (Tanya §2)
 
 export async function getStaticPaths() {
@@ -40,6 +43,22 @@ const hasVariants = post.data.variants === true;
 const vScript = hasVariants ? variantScript() : '';
 const convictions = post.data.convictions ?? [];
 const hasConvictions = convictions.length > 0;
+
+// Death Clock — prerendered at build time; accurate to within a day (sufficient for the banner).
+const revivalCount   = safeRevivalCount(post.slug);
+const readingSeconds = safeReadingSeconds(post.slug);
+const daysRemaining  = daysUntilEntombment(
+  post.data.pubDate.toISOString(), revivalCount, readingSeconds, CLOCK_MAX_DAYS,
+);
+const postUrgency   = clockUrgency(daysRemaining);
+const showBanner    = postUrgency === 'critical' || postUrgency === 'dying';
+
+function safeRevivalCount(slug: string): number {
+  try { return getRevivalCount(slug); } catch { return 0; }
+}
+function safeReadingSeconds(slug: string): number {
+  try { return getReadingSeconds(slug); } catch { return 0; }
+}
 ---
 
 <BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={post.data.pubDate.toISOString()} ogSlug={post.slug}>
@@ -75,6 +94,10 @@ const hasConvictions = convictions.length > 0;
     {hasConvictions && <ConvictionPanel convictions={convictions} />}
 
   </main>
+
+  {showBanner && (
+    <DeathClockBanner slug={post.slug} daysRemaining={daysRemaining} urgency={postUrgency} />
+  )}
 
   <ReadingPulse slug={post.slug} />
 

@@ -1,10 +1,14 @@
 // src/lib/variants.ts
-// TODO: consolidate into decay-engine client script (Mike's freeze-sprawl directive).
-// Active import in blog/[slug].astro — do NOT delete.
-//
 // Seasonal Post Variants — makes blog content shift based on time of day
 // and post age. Pure functions + inline script generator.
 // No external dependencies. Graceful no-JS fallback (variants stay hidden).
+//
+// TODO: Absorb variantScript() IIFE into decayEngineClientScript() in decay-engine.ts.
+// See Mike's freeze-sprawl directive. ageTier() is already a shim — remove once
+// blog/[slug].astro is updated to use freshnessTag() from decay-engine directly.
+// Active import in blog/[slug].astro — do NOT delete until then.
+
+import { freshnessTag } from './decay-engine';
 
 // ---------------------------------------------------------------------------
 // Time-of-day phases: [startHour, endHour, label]
@@ -47,15 +51,26 @@ function hourToWitness(h: number): WitnessState {
 }
 
 // ---------------------------------------------------------------------------
-// Age tier resolution
+// Age tier resolution — shim over decay-engine freshnessTag()
+// Single source of truth: decay-engine.ts. ageTier() kept for compatibility.
 // ---------------------------------------------------------------------------
 
 type AgeTier = 'fresh' | 'aged' | 'fossil';
 
-/** Buckets days-since-publish into fresh / aged / fossil. */
+/**
+ * Buckets days-since-publish into fresh / aged / fossil.
+ * Shim over freshnessTag() — converts decay-factor tags to unified tier names.
+ * Thresholds now align with freshnessTag() (decay-factor based, maxDays=365):
+ *   fresh  → < 73 days  (factor < 0.2)
+ *   aged   → 73–292 days (factor 0.2–0.8)
+ *   fossil → > 292 days  (factor >= 0.8)
+ * Do not add new callers: use freshnessTag() from decay-engine directly.
+ */
 export function ageTier(days: number): AgeTier {
-  if (days >= 180) return 'fossil';
-  if (days >= 30) return 'aged';
+  const factor = Math.min(1, days / 365);
+  const tag = freshnessTag(factor);
+  if (tag === 'fossil') return 'fossil';
+  if (tag === 'aged' || tag === 'settling') return 'aged';
   return 'fresh';
 }
 
@@ -83,7 +98,8 @@ export function variantScript(): string {
     `  var witness=sm?sm[2]:'moon';`,
     `  var pub=new Date(a.dataset.pubDate).getTime();`,
     `  var days=Math.max(0,Math.floor((Date.now()-pub)/864e5));`,
-    `  var tier=days>=180?'fossil':days>=30?'aged':'fresh';`,
+    `  var f=Math.min(1,days/365);`,
+    `  var tier=f>=0.8?'fossil':f>=0.2?'aged':'fresh';`,
     `  a.querySelectorAll('.variant').forEach(function(el){`,
     `    var w=el.dataset.when||'';`,
     `    var on=(w===phase||w===witness||w===tier);`,
@@ -100,10 +116,13 @@ export function variantScript(): string {
 export function _testVariants(): void {
   console.assert(hourToPhase(2) === 'night', 'hour 2 = night');
   console.assert(hourToWitness(2) === 'asleep', 'hour 2 = asleep');
-  console.assert(ageTier(100) === 'aged', '100 days = aged');
-  console.assert(ageTier(0) === 'fresh', '0 days = fresh');
-  console.assert(ageTier(180) === 'fossil', '180 days = fossil');
+  // ageTier thresholds now match freshnessTag() (decay-factor based, maxDays=365)
+  console.assert(ageTier(100) === 'aged',   '100 days = aged');
+  console.assert(ageTier(0)   === 'fresh',  '0 days = fresh');
+  console.assert(ageTier(300) === 'fossil', '300 days = fossil (factor ≥ 0.8 at 292d)');
+  console.assert(ageTier(180) === 'aged',   '180 days = aged (unified thresholds)');
   const s = variantScript();
   console.assert(s.includes('data-active'), 'script toggles data-active');
+  console.assert(s.includes('f>=0.8'), 'script uses decay-factor thresholds');
   console.log('[variants] OK');
 }
