@@ -10,6 +10,7 @@ import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 
 const RATE_WINDOW_MS = 30_000;
+const READING_RATE_MS = 25_000; // Accept a pulse every 25s (client fires every 30s)
 
 // ---------------------------------------------------------------------------
 // Lazy DB singleton
@@ -49,6 +50,22 @@ function initTables(d: Database.Database): void {
   `);
   migrateRisenAt(d);
   migrateGuardTables(d);
+  migrateReadingSessions(d);
+}
+
+/**
+ * Add reading_seconds column + rate_limit_reading table (safe to run repeatedly).
+ * reading_seconds accumulates passive reading time per slug.
+ */
+function migrateReadingSessions(d: Database.Database): void {
+  const cols = d.prepare("PRAGMA table_info('revivals')").all() as Array<{ name: string }>;
+  if (!cols.some(c => c.name === 'reading_seconds')) {
+    d.exec("ALTER TABLE revivals ADD COLUMN reading_seconds INTEGER DEFAULT 0");
+  }
+  d.exec(`CREATE TABLE IF NOT EXISTS rate_limit_reading (
+    session_slug TEXT PRIMARY KEY,
+    last_at      INTEGER NOT NULL
+  );`);
 }
 
 /** Add risen_at column if missing (safe to run repeatedly). */
@@ -208,6 +225,59 @@ export function pruneRateLimits(): void {
   const cutoff = Date.now() - 3_600_000;
   db().prepare('DELETE FROM rate_limit WHERE last_at < ?').run(cutoff);
   db().prepare('DELETE FROM rate_limit_session WHERE last_at < ?').run(cutoff);
+  db().prepare('DELETE FROM rate_limit_reading WHERE last_at < ?').run(cutoff);
+}
+
+// ---------------------------------------------------------------------------
+// Reading seconds — passive reading time accumulation
+// ---------------------------------------------------------------------------
+
+/** Total accumulated reading seconds for a single slug. */
+export function getReadingSeconds(slug: string): number {
+  const row = db()
+    .prepare('SELECT reading_seconds FROM revivals WHERE slug = ?')
+    .get(slug) as { reading_seconds: number } | undefined;
+  return row?.reading_seconds ?? 0;
+}
+
+/** Batch-read all reading_seconds (one query for homepage). */
+export function getAllReadingSeconds(): Map<string, number> {
+  const rows = db()
+    .prepare('SELECT slug, reading_seconds FROM revivals WHERE reading_seconds > 0')
+    .all() as Array<{ slug: string; reading_seconds: number }>;
+  const map = new Map<string, number>();
+  for (const r of rows) map.set(r.slug, r.reading_seconds);
+  return map;
+}
+
+/** Add seconds to the running total for a slug. Returns the new total. */
+export function addReadingSeconds(slug: string, seconds: number): number {
+  const stmt = db().prepare(`
+    INSERT INTO revivals (slug, reading_seconds) VALUES (?, ?)
+    ON CONFLICT(slug) DO UPDATE SET reading_seconds = COALESCE(reading_seconds, 0) + ?
+    RETURNING reading_seconds
+  `);
+  const row = stmt.get(slug, seconds, seconds) as { reading_seconds: number } | undefined;
+  return row?.reading_seconds ?? seconds;
+}
+
+/** True if this session+slug has not pulsed within the rate window. */
+export function canPulse(sessionId: string, slug: string): boolean {
+  const key = `${sessionId}:${slug}`;
+  const row = db()
+    .prepare('SELECT last_at FROM rate_limit_reading WHERE session_slug = ?')
+    .get(key) as { last_at: number } | undefined;
+  if (!row) return true;
+  return Date.now() - row.last_at >= READING_RATE_MS;
+}
+
+/** Stamp the reading rate-limit record for this session+slug. */
+export function recordPulse(sessionId: string, slug: string): void {
+  const key = `${sessionId}:${slug}`;
+  db().prepare(`
+    INSERT INTO rate_limit_reading (session_slug, last_at) VALUES (?, ?)
+    ON CONFLICT(session_slug) DO UPDATE SET last_at = ?
+  `).run(key, Date.now(), Date.now());
 }
 
 // ---------------------------------------------------------------------------

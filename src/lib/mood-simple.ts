@@ -65,7 +65,6 @@ export function isSimpleMood(value: unknown): value is SimpleMoodId {
 }
 
 // TODO: map old article moods (contemplative, etc.) → closest simple mood
-// TODO: wire into BaseLayout to replace the old mood system
 
 // ---------------------------------------------------------------------------
 // Sanity check

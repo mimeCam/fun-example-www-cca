@@ -35,15 +35,26 @@ export function revivalBonus(count: number): number {
   return Math.min(0.3, Math.log(count + 1) * 0.05);
 }
 
+/**
+ * Reading bonus: logarithmic, capped at 0.08.
+ * Weaker than revival (0.30) — rewards presence, not gaming.
+ * Every ~30s of reading is one unit. Curve saturates around 4 minutes.
+ * Credits: Mike (architecture spec)
+ */
+export function readingBonus(readingSeconds: number): number {
+  return Math.min(0.08, Math.log(readingSeconds / 30 + 1) * 0.04);
+}
+
 /** Continuous decay: 0.0 (just published) → 1.0 (ancient). */
 export function decayFactor(
   pubDate: string,
   maxDays = MAX_DAYS_DEFAULT,
   now = new Date(),
   revivalCount = 0,
+  readingSeconds = 0,
 ): number {
   const raw = Math.min(1, daysSince(pubDate, now) / maxDays);
-  return Math.max(0, raw - revivalBonus(revivalCount));
+  return Math.max(0, raw - revivalBonus(revivalCount) - readingBonus(readingSeconds));
 }
 
 /** Compute decay with a known revival count (for post-revival API calls). */
@@ -52,8 +63,9 @@ export function decayFactorWithCount(
   revivalCount: number,
   maxDays = MAX_DAYS_DEFAULT,
   now = new Date(),
+  readingSeconds = 0,
 ): number {
-  return decayFactor(pubDate, maxDays, now, revivalCount);
+  return decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds);
 }
 
 // ---------------------------------------------------------------------------
@@ -211,11 +223,13 @@ export function decayEngineClientScript(): string {
   var paused=false,lastTick=0;
 
   function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
-  function df(p,n,r){return Math.max(0,Math.min(1,(n-p)/DAY/M)-rb(r))}
+  function rdg(s){return Math.min(.08,Math.log(s/30+1)*.04)}
+  function df(p,n,r,s){return Math.max(0,Math.min(1,(n-p)/DAY/M)-rb(r)-rdg(s))}
   function patch(el,n){
     if(el.hasAttribute('data-bloom-lock'))return;
     var r=+(el.dataset.revivalCount||'0');
-    var f=df(new Date(el.dataset.pubDate).getTime(),n,r);
+    var s=+(el.dataset.readingSeconds||'0');
+    var f=df(new Date(el.dataset.pubDate).getTime(),n,r,s);
     el.style.setProperty('--decay-opacity',Math.max(.35,1-f*.65));
     el.style.setProperty('--decay-blur',(f*1.5).toFixed(2)+'px');
     el.style.setProperty('--decay-saturation',(1-f*.4).toFixed(2));
@@ -313,6 +327,12 @@ export function _testDecayEngine(): void {
   // Revival bonus
   console.assert(revivalBonus(0) === 0, 'zero revivals');
   console.assert(revivalBonus(9999) === 0.3, 'capped');
+
+  // Reading bonus
+  console.assert(readingBonus(0) === 0, 'zero reading seconds');
+  console.assert(readingBonus(999999) === 0.08, 'reading capped at 0.08');
+  console.assert(readingBonus(30) > 0, 'one interval has bonus');
+  console.assert(readingBonus(30) < 0.08, 'one interval below cap');
 
   // CSS vars
   const css = decayCSSVars(0.5);

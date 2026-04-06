@@ -21,8 +21,6 @@ import Murmurs from '../components/Murmurs.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
 import { endangeredClientScript } from '../lib/endangered';
-import { timeTravelScript } from '../lib/timeTravel';
-import { timeTravelBandsScript } from '../lib/timeTravelBands';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -33,8 +31,6 @@ const allEntombed = displayPosts.every(p => p.entombed);
 ---
 
 <BaseLayout title="Persona Blog">
-  <script set:html={timeTravelScript()} />
-  <script set:html={timeTravelBandsScript()} />
   <script set:html={endangeredClientScript()} />
   <main class="feed">
 

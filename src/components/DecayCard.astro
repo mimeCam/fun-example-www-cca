@@ -31,6 +31,7 @@ const formattedDate = formatPubDate(post.pubDate);
   data-pub-date={post.pubDateISO}
   data-decay-factor={post.decay.toFixed(4)}
   data-revival-count={post.revivalCount}
+  data-reading-seconds={post.readingSeconds > 0 ? post.readingSeconds : undefined}
   data-revival-warm={post.revivalWarm ? 'true' : undefined}
   data-fvh-quiet
   tabindex="0"

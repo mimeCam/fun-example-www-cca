@@ -5,7 +5,6 @@
 // picks it up automatically.
 //
 // TODO: wire _testMoodRegistry() into a build script or CI step
-// TODO: add Spotify track metadata fields to MoodDefinition once API is scoped
 
 export type MoodId = 'lo-fi' | 'focus' | 'hyperpop' | 'jazz' | 'default';
 export type Temperature = 'warm' | 'cool' | 'neutral';

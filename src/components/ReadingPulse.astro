@@ -1,0 +1,69 @@
+---
+// src/components/ReadingPulse.astro
+// Passive reading-time tracker — injects the heartbeat IIFE for a single post.
+//
+// Renders a subtle ambient indicator that the reading is being counted.
+// The dot is invisible until JS confirms the first pulse was accepted,
+// then fades in briefly as a quiet acknowledgement.
+//
+// Usage: <ReadingPulse slug={post.slug} />
+// Place after <RevivalMoment> so the heartbeat starts after content is painted.
+//
+// Credits: Mike (architecture spec), Tanya (ambient indicator UX)
+
+import { readingHeartbeatScript } from '../lib/reading-heartbeat';
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+const script = readingHeartbeatScript(slug);
+---
+
+<!-- Reading pulse: ambient indicator + heartbeat IIFE -->
+<div
+  class="reading-pulse"
+  id="reading-pulse"
+  aria-hidden="true"
+  title="Your reading is keeping this post alive"
+>
+  <span class="pulse-dot"></span>
+</div>
+
+<script set:html={script} />
+
+<style>
+  .reading-pulse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 3rem;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+    pointer-events: none;
+  }
+
+  /* JS adds .pulse-active after first accepted heartbeat */
+  .reading-pulse.pulse-active {
+    opacity: 1;
+  }
+
+  .pulse-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--mood-accent, #D4956A);
+    animation: reading-breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes reading-breathe {
+    0%, 100% { opacity: 0.15; transform: scale(0.7); }
+    50%       { opacity: 0.45; transform: scale(1.0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-dot { animation: none; opacity: 0.3; }
+    .reading-pulse { transition: none; }
+  }
+</style>

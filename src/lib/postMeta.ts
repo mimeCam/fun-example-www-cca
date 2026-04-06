@@ -10,7 +10,7 @@ import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
 import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './decay-engine';
 import type { FreshnessTag } from './decay-engine';
-import { getRevivalCounts, getRisenTimestamps } from './collectiveMemory';
+import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds } from './collectiveMemory';
 import { isEntombed, isRecentlyRisen } from './entomb';
 import { isEndangered, urgencyLevel, daysUntilEntomb } from './endangered';
 import type { UrgencyLevel } from './endangered';
@@ -62,6 +62,7 @@ export interface PostDisplayData extends PostMeta {
   decayStyle: string;
   revivalCount: number;
   revivalWarm: boolean;
+  readingSeconds: number;
   entombed: boolean;
   endangered: boolean;
   endangeredUrgency: UrgencyLevel;
@@ -81,10 +82,11 @@ export function getPostDisplayData(
   now = new Date(),
   revivals = 0,
   risenAt: Date | null = null,
+  readingSeconds = 0,
 ): PostDisplayData {
   const meta = extractMeta(post);
   const maxDays = resolveMaxDays();
-  const factor = decayFactor(meta.pubDateISO, maxDays, now, revivals);
+  const factor = decayFactor(meta.pubDateISO, maxDays, now, revivals, readingSeconds);
   const warm = revivalBonus(revivals) > 0.15;
   const lastRevivalDays = lastRevivalDaysAgo(risenAt, now);
   const entombed = isEntombed(factor, lastRevivalDays);
@@ -96,6 +98,7 @@ export function getPostDisplayData(
     decayStyle: decayStyleString(factor),
     revivalCount: revivals,
     revivalWarm: warm,
+    readingSeconds,
     entombed,
     endangered,
     endangeredUrgency: urgencyLevel(factor),
@@ -112,16 +115,22 @@ function lastRevivalDaysAgo(risenAt: Date | null, now: Date): number {
   return Math.max(0, Math.floor(ms / 86_400_000));
 }
 
-/** Display data for all posts, sorted newest-first. Single DB query. */
+/** Display data for all posts, sorted newest-first. Single DB query per table. */
 export function allPostDisplayData(
   posts: CollectionEntry<'blog'>[],
   now = new Date(),
 ): PostDisplayData[] {
   const counts = safeRevivalCounts();
   const risen = safeRisenTimestamps();
+  const reading = safeReadingSeconds();
   const sorted = [...posts].sort(byNewest);
   return sorted.map(p =>
-    getPostDisplayData(p, now, counts.get(p.slug) ?? 0, risen.get(p.slug) ?? null),
+    getPostDisplayData(
+      p, now,
+      counts.get(p.slug) ?? 0,
+      risen.get(p.slug) ?? null,
+      reading.get(p.slug) ?? 0,
+    ),
   );
 }
 
@@ -134,6 +143,12 @@ function safeRevivalCounts(): Map<string, number> {
 /** Graceful fallback for risen timestamps. */
 function safeRisenTimestamps(): Map<string, Date> {
   try { return getRisenTimestamps(); }
+  catch { return new Map(); }
+}
+
+/** Graceful fallback for reading seconds. */
+function safeReadingSeconds(): Map<string, number> {
+  try { return getAllReadingSeconds(); }
   catch { return new Map(); }
 }
 

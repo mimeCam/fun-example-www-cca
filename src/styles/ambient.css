@@ -111,6 +111,39 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+ * READING PULSE — passive reading-time ambient indicator
+ * Shown at the bottom of blog post detail pages.
+ * Invisible until JS confirms the first heartbeat was accepted.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+#reading-pulse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3rem;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  pointer-events: none;
+}
+
+#reading-pulse.pulse-active {
+  opacity: 1;
+}
+
+.pulse-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--mood-accent, #D4956A);
+  animation: reading-breathe 4s ease-in-out infinite;
+}
+
+@keyframes reading-breathe {
+  0%, 100% { opacity: 0.15; transform: scale(0.7); }
+  50%       { opacity: 0.45; transform: scale(1.0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
  * REDUCED MOTION
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -128,6 +161,10 @@
     animation: none;
     border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
   }
+
+  /* Reading pulse */
+  .pulse-dot { animation: none; opacity: 0.3; }
+  #reading-pulse { transition: none; }
 
   .fvh-demo-glow {
     animation: demo-glow-reduced 1.5s ease-in-out forwards;

@@ -4,24 +4,24 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v14 — Endangered Posts: Multi-phase Revival Dismiss (2026-04-06)
+# Architecture v15 — Passive Reading Heartbeat (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Endangered Revival Polish):
-#   Multi-phase animated card dismissal on revival: bloom flash → opacity
-#   fade → height collapse → DOM removal. Reduced-motion safe (instant
-#   removal). Debounced SSE revival handler (150 ms) coalesces rapid events.
-#   Cards update in-place (decay & pulse speed) when still endangered after
-#   revival instead of being removed. Band fades out when no cards remain.
-#   SSE revival event now carries decayAfterRevival so client can decide
-#   dismiss vs update. revive API returns decayAfterRevival in JSON response.
-#   decayFactorWithCount() helper exported from decay-engine for post-revival
-#   recalculation. SSE re-bind resilience via watchES() polling loop.
-#   Screen-reader announcements on card removal (ARIA live region).
-#   Exported animateCollapseSnippet() reusable height-collapse utility.
-#   Pure frontend feature — no new services or runtime dependencies.
+# Sprint (latest — Passive Reading Heartbeat):
+#   Client IIFE fires POST /api/reading-pulse every 30 visible seconds
+#   (Page Visibility API pauses clock on hidden tabs — no background gaming).
+#   Server accumulates reading_seconds per slug in SQLite revivals table.
+#   readingBonus() (max 0.08) slows decay: rewards genuine presence without
+#   becoming a gaming vector (weaker than revival bonus 0.30).
+#   Rate-limited to one pulse per 25s per session+slug (new rate_limit_reading
+#   table, auto-migrated). decayFactor() updated to accept readingSeconds.
+#   decayFactorWithCount() helper updated for post-revival recalculation.
+#   allPostDisplayData() now passes reading_seconds to each card on homepage.
+#   ReadingPulse.astro: ambient dot fades in after first accepted heartbeat.
+#   data-reading-seconds attribute kept on decay cards for client-side RAF.
+#   Pure SSR/SQLite feature — no new services or runtime dependencies.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),
@@ -31,6 +31,7 @@
 #           Multi-phase revival dismiss (bloom → fade → collapse, a11y),
 #           Revival animations (bloom ring, scale lift, badge),
 #           Revival Guard anti-gaming (fingerprint, velocity),
+#           Passive Reading Heartbeat (reading_seconds, readingBonus),
 #           NowLine (pinned author status on homepage),
 #           Murmurs (wall whispers on homepage, CLI-only submission),
 #           Grain overlay (CSS noise texture via --decay-grain).
