@@ -1,44 +1,45 @@
 ---
 // src/pages/index.astro
 // Homepage "Decay Field" — posts grouped into time bands.
-// Three bands: Now (≤30d, full glow), Recent (1–6mo, partially decayed),
+// Three bands: Now (<=30d, full glow), Recent (1-6mo, partially decayed),
 // Archive (6+mo, ghost previews). Shadow depth is the primary age signal.
 // Hover revives any card.
+//
+// First-Visit Clarity Engine: strip visual noise, amplify decay contrast,
+// deliver one onboarding microinteraction in under 5 seconds.
 //
 // TODO: add pagination once post count grows beyond ~20
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
-import DiscoveryWhisper from '../components/DiscoveryWhisper.astro';
+import FirstVisitHint from '../components/FirstVisitHint.astro';
+import PresenceBand from '../components/PresenceBand.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
-// decayChoreographyScript removed — now included in decayEngineClientScript (BaseLayout)
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
-import GuidedTouch from '../components/GuidedTouch.astro';
-import PresenceBand from '../components/PresenceBand.astro';
+// Removed: DiscoveryWhisper — adds cognitive load on first visit
+// Removed: GuidedTouch — replaced by simpler FirstVisitHint
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
 const bands = groupIntoBands(displayPosts);
 const entombedCount = displayPosts.filter(p => p.entombed).length;
 const allEntombed = displayPosts.every(p => p.entombed);
-
 ---
 
 <BaseLayout title="Persona Blog">
-  <!-- Choreography now in decayEngineClientScript (BaseLayout) -->
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
   <main class="feed">
-    <PresenceBand />
-    <DiscoveryWhisper />
 
     {allEntombed && (
       <div class="empty-state">
         <p>Everything has faded.</p>
-        <a href="/graveyard" class="graveyard-cta">Visit the graveyard to bring something back</a>
+        <a href="/graveyard" class="graveyard-cta">
+          Visit the graveyard to bring something back
+        </a>
       </div>
     )}
 
@@ -47,8 +48,6 @@ const allEntombed = displayPosts.every(p => p.entombed);
         {bands.now.posts.map(post => <DecayCard post={post} />)}
       </section>
     )}
-
-    <GuidedTouch />
 
     {bands.recent.posts.length > 0 && (
       <section class="band band--recent" data-band="recent" aria-label={bands.recent.hint}>
@@ -74,16 +73,23 @@ const allEntombed = displayPosts.every(p => p.entombed);
         {entombedCount} {entombedCount === 1 ? 'post' : 'posts'} lost to time
       </a>
     )}
+
+    <PresenceBand />
+    <FirstVisitHint />
   </main>
 </BaseLayout>
 
 <style>
   .feed {
-    padding: 2rem 1rem;
+    padding: 2.5rem 1rem 3rem;
     max-width: 44rem;
     margin: 0 auto;
   }
-  .band { margin-bottom: 2rem; }
+
+  /* Generous spacing between bands — spacing IS the label */
+  .band { margin-bottom: 3rem; }
+  .band + .band { margin-top: 4rem; }
+
   .band-label {
     font-size: 0.65rem;
     letter-spacing: 0.08em;
@@ -92,9 +98,12 @@ const allEntombed = displayPosts.every(p => p.entombed);
     margin: 0 0 0.75rem;
     font-weight: 400;
   }
+
   .band--archive { opacity: 0.6; }
+
   .time-traveling .band { transition: opacity 0.3s ease; }
   .time-traveling .decay-card { will-change: transform; }
+
   .archive-hint {
     text-align: center;
     font-size: 0.65rem;
@@ -127,6 +136,7 @@ const allEntombed = displayPosts.every(p => p.entombed);
     font-style: italic;
     margin: 0 0 1rem;
   }
+
   .graveyard-cta {
     font-size: 0.75rem;
     color: inherit;
@@ -136,5 +146,4 @@ const allEntombed = displayPosts.every(p => p.entombed);
     transition: opacity 200ms ease;
   }
   .graveyard-cta:hover { opacity: 1; }
-
 </style>

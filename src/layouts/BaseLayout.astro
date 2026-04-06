@@ -19,8 +19,8 @@ import { snapshotScript } from '../lib/snapshot';
 import { discoveryHintScript } from '../lib/discoveryHint';
 import { rewardWhisperScript } from '../lib/rewardWhisper';
 import { heartbeatPulseScript } from '../lib/heartbeatPulse';
-import { radialRingScript } from '../lib/radialRing';
-import { radialRingA11yScript } from '../lib/radialRingA11y';
+// Removed: radialRingScript — RadialRing component removed from layout
+// Removed: radialRingA11yScript — RadialRing component removed from layout
 import { getAdaptiveConfig } from '../lib/adaptiveDecay';
 // --- Consolidated engines (replace 15+ scattered scripts) ---
 import { decayEngineClientScript } from '../lib/decay-engine';
@@ -46,14 +46,14 @@ import { presenceEngineScript } from '../lib/presence-engine';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
-import AmbientLayer from '../components/AmbientLayer.astro';
+// Removed: AmbientLayer — replaced by single CSS radial gradient on body
+// Removed: CelestialWitness — stars clash with aging-paper metaphor
+// Removed: Hearth — poetic footer, moved to /now conceptually
+// Removed: RadialRing — competes with decay cards for attention
 import SiteNav from '../components/SiteNav.astro';
-import CelestialWitness from '../components/CelestialWitness.astro';
-import Hearth from '../components/Hearth.astro';
 import QuietFollow from '../components/QuietFollow.astro';
 import RewardWhisper from '../components/RewardWhisper.astro';
 import HeartbeatPulse from '../components/HeartbeatPulse.astro';
-import RadialRing from '../components/RadialRing.astro';
 import '../styles/global.css';
 import '../styles/decay.css';
 import '../styles/choreography.css';
@@ -81,8 +81,7 @@ const snapScript = snapshotScript();
 const discoveryScript = discoveryHintScript();
 const rewardScript = rewardWhisperScript();
 const heartbeatPulseJs = heartbeatPulseScript();
-const radialRingJs  = radialRingScript();
-const radialA11yJs  = radialRingA11yScript();
+// radialRingJs and radialA11yJs removed — RadialRing stripped from layout
 // --- Consolidated engines ---
 const decayScript = decayEngineClientScript();
 const revivalScript = revivalEngineScript();
@@ -120,8 +119,7 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <script set:html={discoveryScript} />
     <script set:html={rewardScript} />
     <script set:html={heartbeatPulseJs} />
-    <script set:html={radialRingJs} />
-    <script set:html={radialA11yJs} />
+    <!-- radialRing scripts removed — component stripped from layout -->
     <!-- Consolidated engines (replace 15+ scripts with 3) -->
     <script set:html={decayScript} />
     <script set:html={revivalScript} />
@@ -132,16 +130,30 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
                     --mood-opacity 60s ease, --mood-speed 60s ease,
                     --mood-accent 60s ease;
       }
+      /* Simple mood-tinted gradient replaces AmbientLayer.
+         One gradient. Warm center. Dark edges. Done. */
+      body {
+        background: #0c0c0e;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse at 50% 30%,
+          rgba(var(--mood-accent-rgb, 120,120,120), 0.04) 0%,
+          transparent 70%
+        );
+      }
     </style>
   </head>
   <body>
     <FirstBreath />
-    <AmbientLayer />
     <SiteNav />
-    <RadialRing />
     <slot />
-    <Hearth />
-    <CelestialWitness />
     <RewardWhisper />
     <HeartbeatPulse />
     <QuietFollow />

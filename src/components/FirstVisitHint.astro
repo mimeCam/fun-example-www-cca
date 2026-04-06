@@ -1,0 +1,90 @@
+---
+// src/components/FirstVisitHint.astro
+// One-shot onboarding: "Posts fade with time. Hover to revive."
+//
+// Rendered for every visitor but hidden by default. The inline IIFE
+// in firstVisitHint.ts checks localStorage and shows/dismisses.
+// Entire client JS: < 30 lines. No framework. No imports.
+//
+// Dismissed on first DecayCard hover or touch interaction.
+// Never shown again (localStorage flag).
+
+import { firstVisitHintScript } from '../lib/firstVisitHint';
+
+const hintScript = firstVisitHintScript();
+---
+
+<div id="fvh" class="fvh" role="status" aria-live="polite">
+  <p class="fvh-text">
+    Posts fade with time.
+    <span class="fvh-accent">Your attention revives them.</span>
+  </p>
+</div>
+
+<script set:html={hintScript} />
+
+<style>
+  .fvh {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    max-width: 22rem;
+    text-align: center;
+  }
+
+  .fvh-text {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius, 12px);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.1);
+    margin: 0;
+  }
+
+  .fvh-accent {
+    color: var(--mood-accent, #d4956a);
+    font-weight: 500;
+  }
+
+  /* Show: fade in from below */
+  .fvh-visible {
+    animation: fvh-in 600ms ease-out forwards;
+    animation-delay: 1.2s;
+  }
+
+  /* Dismiss: fade out upward */
+  .fvh-dismiss {
+    animation: fvh-out 300ms ease-in forwards;
+  }
+
+  @keyframes fvh-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  @keyframes fvh-out {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fvh-visible { animation: fvh-fade 200ms ease-out forwards; }
+    .fvh-dismiss { animation: fvh-fade-out 200ms ease-in forwards; }
+
+    @keyframes fvh-fade {
+      from { opacity: 0; transform: translateX(-50%); }
+      to   { opacity: 1; transform: translateX(-50%); }
+    }
+    @keyframes fvh-fade-out {
+      from { opacity: 1; transform: translateX(-50%); }
+      to   { opacity: 0; transform: translateX(-50%); }
+    }
+  }
+</style>

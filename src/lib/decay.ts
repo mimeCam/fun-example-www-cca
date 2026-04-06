@@ -35,19 +35,24 @@ export function decayFactor(
 // Visual mappings (continuous, not bucketed)
 // ---------------------------------------------------------------------------
 
-/** Opacity: 1.0 (fresh) → 0.35 (ancient). Never invisible. */
+/** Opacity: 1.0 (fresh) → 0.4 (ancient). Floor at 0.4 for a11y contrast. */
 export function opacityFromDecay(factor: number): number {
-  return Math.max(0.35, 1 - factor * 0.65);
+  return Math.max(0.4, 1 - factor * 0.6);
 }
 
-/** Blur in px: 0 (fresh) → 1.5 (ancient). Subtle, not aggressive. */
+/** Blur in px: 0 (fresh) → 2 (ancient). Wider range for visible decay. */
 export function blurFromDecay(factor: number): number {
-  return +(factor * 1.5).toFixed(2);
+  return +(factor * 2).toFixed(2);
 }
 
-/** Saturation multiplier: 1.0 (fresh) → 0.6 (ancient). */
+/** Saturation multiplier: 1.0 (fresh) → 0.3 (ancient). Deep desaturation. */
 export function saturationFromDecay(factor: number): number {
-  return +(1 - factor * 0.4).toFixed(2);
+  return +(1 - factor * 0.7).toFixed(2);
+}
+
+/** Grain overlay opacity: 0 (fresh) → 0.4 (ancient). Aging texture. */
+export function grainFromDecay(factor: number): number {
+  return +(factor * 0.4).toFixed(2);
 }
 
 /** Shadow spread in px: 32 (fresh) → 0 (ancient). Decay eats the shadow. */
@@ -55,9 +60,9 @@ export function shadowSpreadFromDecay(factor: number): number {
   return +((1 - factor) * 32).toFixed(1);
 }
 
-/** Shadow opacity: 0.18 (fresh) → 0 (ancient). */
+/** Shadow opacity: 0.22 (fresh) → 0 (ancient). Wider for drama. */
 export function shadowAlphaFromDecay(factor: number): number {
-  return +((1 - factor) * 0.18).toFixed(3);
+  return +((1 - factor) * 0.22).toFixed(3);
 }
 
 /** Y-offset for shadow: 8 (fresh) → 0 (ancient). */
@@ -106,6 +111,7 @@ export interface DecayCSSVars {
   '--decay-opacity': string;
   '--decay-blur': string;
   '--decay-saturation': string;
+  '--decay-grain': string;
   '--decay-shadow-y': string;
   '--decay-shadow-spread': string;
   '--decay-shadow-alpha': string;
@@ -117,6 +123,7 @@ export function decayCSSVars(factor: number): DecayCSSVars {
     '--decay-opacity': String(opacityFromDecay(factor)),
     '--decay-blur': `${blurFromDecay(factor)}px`,
     '--decay-saturation': String(saturationFromDecay(factor)),
+    '--decay-grain': String(grainFromDecay(factor)),
     '--decay-shadow-y': `${shadowYFromDecay(factor)}px`,
     '--decay-shadow-spread': `${shadowSpreadFromDecay(factor)}px`,
     '--decay-shadow-alpha': String(shadowAlphaFromDecay(factor)),
@@ -151,13 +158,16 @@ export function _testDecayLib(): void {
   console.assert(mid > 0 && mid < 1, `mid factor out of range: ${mid}`);
 
   console.assert(opacityFromDecay(0) === 1, 'fresh opacity must be 1');
-  console.assert(opacityFromDecay(1) === 0.35, 'ancient opacity must be 0.35');
+  console.assert(opacityFromDecay(1) === 0.4, 'ancient opacity must be 0.4');
 
   console.assert(blurFromDecay(0) === 0, 'fresh blur must be 0');
-  console.assert(blurFromDecay(1) === 1.5, 'ancient blur must be 1.5');
+  console.assert(blurFromDecay(1) === 2, 'ancient blur must be 2');
 
   console.assert(saturationFromDecay(0) === 1, 'fresh sat must be 1');
-  console.assert(saturationFromDecay(1) === 0.6, 'ancient sat must be 0.6');
+  console.assert(saturationFromDecay(1) === 0.3, 'ancient sat must be 0.3');
+
+  console.assert(grainFromDecay(0) === 0, 'fresh grain must be 0');
+  console.assert(grainFromDecay(1) === 0.4, 'ancient grain must be 0.4');
 
   console.assert(freshnessTag(0) === 'just published', 'tag at 0');
   console.assert(freshnessTag(0.1) === 'recent', 'tag at 0.1');
@@ -167,7 +177,7 @@ export function _testDecayLib(): void {
 
   console.assert(shadowSpreadFromDecay(0) === 32, 'fresh shadow spread');
   console.assert(shadowSpreadFromDecay(1) === 0, 'fossil shadow spread');
-  console.assert(shadowAlphaFromDecay(0) === 0.18, 'fresh shadow alpha');
+  console.assert(shadowAlphaFromDecay(0) === 0.22, 'fresh shadow alpha');
   console.assert(shadowAlphaFromDecay(1) === 0, 'fossil shadow alpha');
   console.assert(shadowYFromDecay(0) === 8, 'fresh shadow y-offset');
   console.assert(shadowYFromDecay(1) === 0, 'fossil shadow y-offset');
@@ -179,7 +189,7 @@ export function _testDecayLib(): void {
 
   const style = decayStyleString(0);
   console.assert(style.includes('--decay-opacity:1'), 'style string');
-  console.assert(style.includes('--decay-shadow-alpha:0.18'), 'shadow in style');
+  console.assert(style.includes('--decay-shadow-alpha:0.22'), 'shadow in style');
 
   // maxDecayVars: must match factor=1 values
   const max = maxDecayVars();

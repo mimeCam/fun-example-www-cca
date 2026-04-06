@@ -16,6 +16,9 @@
   --shadow-fresh-spread: 32px;
   --shadow-fresh-alpha: 0.22;
 
+  /* Grain texture token — noise overlay for aging cards */
+  --decay-grain: 0;
+
   /* Sympathetic bloom tokens — cascade glow on connected posts */
   --sympathetic-ring-spread: 14px;
   --sympathetic-ring-alpha: 0.10;

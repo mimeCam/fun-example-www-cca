@@ -4,28 +4,27 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v3 — Consolidated Engines + Presence
-#   Three unified modules (decay-engine.ts + revival-engine.ts + presence-engine.ts)
-#   replace 17+ scattered client scripts. BaseLayout ~13 inline scripts.
-#   PoW is now optional (revivalGuard.ts bypasses when no header present).
-#   Nav: blog · constellations · graveyard · now (4-link max).
+# Architecture v4 — First-Visit Clarity Engine
+#   Three consolidated engines (decay-engine + revival-engine + presence-engine).
+#   Layout stripped: AmbientLayer, CelestialWitness, Hearth, RadialRing removed.
+#   Body uses single CSS radial gradient. Nav: field · graveyard · now (3 links).
+#   FirstVisitHint replaces GuidedTouch + DiscoveryWhisper (one-shot onboarding).
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (real-time revival pulses via EventSource),
-#           Proof of Life — Presence Indicator (live reader count + revival stats,
-#             ambient breathing dots, ripple on foreign revival, shares EventSource),
+#           Proof of Life — Presence Indicator (live reader count + revival stats),
 #           dynamic OG image generation (satori + resvg),
 #           anonymous session identity (sessionToken.ts),
 #           FirstBreath arrival choreography,
-#           Guided First Touch (interactive first-visit demo),
+#           FirstVisitHint (localStorage-gated one-shot onboarding),
 #           Consequential Decay / Graveyard (entomb + resurrect),
 #           Ambient Life Engine (phantom SSE pulses, seed revivals),
 #           Adaptive Decay Engine (seedling→growing→mature tiers),
-#           FirstVisitDiscovery (whisper hint + reward),
+#           Grain overlay (CSS noise texture via --decay-grain),
+#           Widened decay contrast (opacity 0.4 floor, saturation 0.3, blur 2px),
 #           Revival Guard anti-gaming (optional PoW, fingerprint, velocity),
-#           First Revival Echo (constellation-linked phantom heartbeat),
 #           Constellations page (force-directed star-field reading paths),
-#           Radial ring, heartbeat pulse, shimmer, snapshot, time-travel.
+#           Heartbeat pulse, shimmer, snapshot, time-travel.
 
 set -euo pipefail
 
