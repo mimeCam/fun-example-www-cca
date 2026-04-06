@@ -12,7 +12,10 @@
 #           first-visit cinematic handshake (2-second gate via localStorage),
 #           keyboard revival (Space/Enter hold on .decay-card, 600 ms dwell),
 #           spectacle demo revival (__demo__ slug, no DB write, handoff phase),
-#           accessible radial ring (RadialRing.astro + radialRingA11y.ts + ring.css).
+#           accessible radial ring (RadialRing.astro + radialRingA11y.ts + ring.css),
+#           revival share bottom sheet (RevivalShareSheet.astro + revivalShare.ts —
+#             slides up on revival:success, static scroll-revealed fallback button,
+#             OG preview, session guard, Web Share API + clipboard fallback).
 
 set -euo pipefail
 

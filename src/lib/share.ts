@@ -20,7 +20,7 @@ export function shareScript(): string {
     `  var btn=root.querySelector('[data-share-btn]');`,
     `  var toast=root.querySelector('[data-share-toast]');`,
     `  if(!btn)return;`,
-    buildShareUrl(),
+    shareUrl(),
     buildOnClick(),
     buildShowToast(),
     buildScrollReveal(),
@@ -29,8 +29,11 @@ export function shareScript(): string {
   ].join('\n');
 }
 
-/** Builds the URL resolver snippet — appends ?snap=<mood>.<phase> context. */
-function buildShareUrl(): string {
+/**
+ * Returns the JS shareUrl() function snippet — appends ?snap=<mood>.<phase>.
+ * Exported so other script factories (e.g. revivalShare.ts) can reuse it.
+ */
+export function shareUrl(): string {
   return [
     `  function shareUrl(){`,
     `    var u=new URL(location.href);`,
@@ -109,5 +112,7 @@ export function _testShare(): void {
   console.assert(script.includes('erosion-progress'), 'missing scroll reveal');
   console.assert(script.includes('snap'), 'missing snapshot context');
   console.assert(script.includes('data-time-phase'), 'missing phase read');
+  const url = shareUrl();
+  console.assert(url.includes('function shareUrl'), 'shareUrl export missing fn def');
   console.log('[share] script OK — Web Share + clipboard + snapshot context');
 }

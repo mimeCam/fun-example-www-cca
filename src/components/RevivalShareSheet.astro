@@ -1,0 +1,289 @@
+---
+// src/components/RevivalShareSheet.astro
+// Revival share bottom sheet — the emotional payoff after saving a dying post.
+//
+// Two triggers:
+//   1. revival:success event   → sheet slides up automatically (session-gated)
+//   2. Static share button     → sheet opens on demand (scroll-revealed at 60%)
+//
+// Props: slug for OG image + session key; revivalCount for SSR initial copy.
+// Client script is injected via revivalShare.ts factory (zero-dependency IIFE).
+
+import { revivalShareScript } from '../lib/revivalShare';
+
+interface Props {
+  slug: string;
+  revivalCount?: number;
+}
+
+const { slug, revivalCount = 0 } = Astro.props;
+
+function initialCopy(n: number): string {
+  if (n === 1) return "You're the first to save it";
+  if (n > 1) return `${n} people kept this alive`;
+  return 'Share this post';
+}
+
+const script = revivalShareScript(slug);
+---
+
+<!-- Bottom sheet backdrop + panel -->
+<div
+  class="revival-sheet"
+  id="revival-share-sheet"
+  data-slug={slug}
+  data-revival-count={revivalCount}
+  role="dialog"
+  aria-modal="true"
+  aria-label="Share this post"
+  aria-hidden="true"
+>
+  <div class="sheet-panel">
+    <div class="sheet-handle" aria-hidden="true"></div>
+
+    <button
+      class="sheet-dismiss"
+      data-sheet-dismiss
+      type="button"
+      aria-label="Dismiss share sheet"
+    >✕</button>
+
+    <p class="sheet-copy" data-revival-copy>
+      {initialCopy(revivalCount)}
+    </p>
+
+    <img
+      class="sheet-og"
+      src={`/api/og/${slug}.png`}
+      alt="Post preview"
+      width="400"
+      height="210"
+      loading="lazy"
+      decoding="async"
+    />
+
+    <div class="sheet-actions">
+      <button class="sheet-share-btn" data-sheet-share type="button">
+        Share →
+      </button>
+      <button class="sheet-copy-btn" data-sheet-copy type="button">
+        Copy link
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Static share button: fallback for readers who never revive (scroll-revealed) -->
+<aside class="static-share" aria-label="Share this post">
+  <button
+    class="static-share-btn"
+    data-static-share
+    type="button"
+    aria-label="Share this post"
+  >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round"
+         stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <polyline points="16 6 12 2 8 6" />
+      <line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
+    <span class="static-share-label">share</span>
+  </button>
+</aside>
+
+<script set:html={script} />
+
+<style>
+  /* ── Sheet backdrop ─────────────────────────────────────────────── */
+  .revival-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0);
+    transition: background 300ms ease;
+  }
+
+  .revival-sheet.sheet--open {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Sheet panel ────────────────────────────────────────────────── */
+  .sheet-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 2.5rem;
+    background: rgba(12, 12, 14, 0.97);
+    backdrop-filter: blur(16px);
+    border-radius: 1rem 1rem 0 0;
+    border: 1px solid rgba(var(--mood-accent-rgb, 156, 163, 175), 0.1);
+    border-bottom: none;
+    transform: translateY(100%);
+    opacity: 0;
+    transition: transform 300ms ease-out, opacity 300ms ease-out;
+  }
+
+  .revival-sheet.sheet--open .sheet-panel {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* ── Drag handle ────────────────────────────────────────────────── */
+  .sheet-handle {
+    width: 2.5rem;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 auto 1.5rem;
+    touch-action: pan-y;
+  }
+
+  /* ── Dismiss button ─────────────────────────────────────────────── */
+  .sheet-dismiss {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+  }
+
+  .sheet-dismiss:hover { background: rgba(255, 255, 255, 0.14); }
+
+  /* ── Revival copy ───────────────────────────────────────────────── */
+  .sheet-copy {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--mood-accent, #9ca3af);
+    text-align: center;
+    margin: 0 0 1.25rem;
+    line-height: 1.4;
+  }
+
+  /* ── OG preview ─────────────────────────────────────────────────── */
+  .sheet-og {
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 0 auto 1.25rem;
+    object-fit: cover;
+    border: 1px solid rgba(var(--mood-accent-rgb, 156, 163, 175), 0.1);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  /* ── Action buttons ─────────────────────────────────────────────── */
+  .sheet-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .sheet-share-btn,
+  .sheet-copy-btn {
+    flex: 1;
+    max-width: 160px;
+    padding: 0.65rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+  }
+
+  .sheet-share-btn {
+    background: var(--mood-accent, #9ca3af);
+    color: #0c0c0e;
+    border: 1px solid transparent;
+    font-weight: 600;
+  }
+
+  .sheet-share-btn:hover { opacity: 0.88; }
+
+  .sheet-copy-btn {
+    background: transparent;
+    color: var(--mood-accent, #9ca3af);
+    border: 1px solid rgba(var(--mood-accent-rgb, 156, 163, 175), 0.3);
+  }
+
+  .sheet-copy-btn:hover {
+    border-color: rgba(var(--mood-accent-rgb, 156, 163, 175), 0.6);
+  }
+
+  /* ── Static share button (scroll-revealed fallback) ─────────────── */
+  .static-share {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 8;
+  }
+
+  .static-share-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border: 1px solid rgba(var(--mood-accent-rgb, 156, 163, 175), 0.2);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
+    color: var(--mood-accent, #9ca3af);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: lowercase;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(var(--mood-accent-rgb, 156, 163, 175), 0.08);
+    transition: opacity 0.4s ease, transform 0.4s ease,
+                background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .static-share-btn.share--revealed {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .static-share-btn:hover {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(var(--mood-accent-rgb, 156, 163, 175), 0.4);
+  }
+
+  .static-share-btn:focus-visible {
+    outline: 2px solid var(--mood-accent, currentColor);
+    outline-offset: 2px;
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .sheet-panel,
+    .static-share-btn { transition: opacity 300ms ease; }
+    .sheet-panel { transform: none !important; }
+    .static-share-btn { transform: none !important; }
+  }
+
+  /* ── Mobile tweaks ──────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .static-share { bottom: 1rem; right: 1rem; }
+    .static-share-label { display: none; }
+  }
+</style>
