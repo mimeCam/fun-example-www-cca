@@ -71,8 +71,9 @@ function runGuardChain(
 // Steps (each <=10 lines)
 // ---------------------------------------------------------------------------
 
-/** Step 1: proof-of-work verification. */
+/** Step 1: proof-of-work verification. Optional at current scale. */
 function verifyProofStep(header: string | null): GuardResult {
+  if (!header) return { allowed: true, trust: 0.5 };
   const r = verifyProof(header);
   if (!r.valid) return { allowed: false, reason: r.reason, trust: 0 };
   return { allowed: true, trust: 1 };

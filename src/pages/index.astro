@@ -13,7 +13,7 @@ import DecayCard from '../components/DecayCard.astro';
 import DiscoveryWhisper from '../components/DiscoveryWhisper.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
-import { decayChoreographyScript } from '../lib/decayChoreography';
+// decayChoreographyScript removed — now included in decayEngineClientScript (BaseLayout)
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
 import GuidedTouch from '../components/GuidedTouch.astro';
@@ -27,7 +27,7 @@ const allEntombed = displayPosts.every(p => p.entombed);
 ---
 
 <BaseLayout title="Persona Blog">
-  <script set:html={decayChoreographyScript()} />
+  <!-- Choreography now in decayEngineClientScript (BaseLayout) -->
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
   <main class="feed">

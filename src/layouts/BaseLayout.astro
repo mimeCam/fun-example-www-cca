@@ -14,32 +14,34 @@ import { firstBreathScript } from '../lib/firstBreath';
 import FirstBreath from '../components/FirstBreath.astro';
 import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
-import { liveDecayScript } from '../lib/live-decay';
 import { shimmerScript } from '../lib/shimmer';
 import { snapshotScript } from '../lib/snapshot';
-import { revivalControllerScript } from '../lib/revivalController';
-import { powSolverScript, generateChallenge } from '../lib/proofOfWork';
-import { visitorFingerprintScript } from '../lib/visitorFingerprint';
-// Legacy imports removed: longPressRevive + reviveClient → revivalController
-import { keepAliveScript } from '../lib/keepAlive';
 import { discoveryHintScript } from '../lib/discoveryHint';
-import { bloomOrchestratorScript } from '../lib/bloomOrchestrator';
 import { rewardWhisperScript } from '../lib/rewardWhisper';
-import { heartbeatClientScript } from '../lib/heartbeatClient';
-import { heartbeatFxScript } from '../lib/heartbeatFx';
-import { heartbeatBridgeScript } from '../lib/heartbeatBridge';
 import { heartbeatPulseScript } from '../lib/heartbeatPulse';
-import { sympatheticBloomScript } from '../lib/sympatheticBloom';
-import { bloomGuardrailsScript } from '../lib/bloomGuardrails';
-import { bloomHapticsScript } from '../lib/bloomHaptics';
-import { bloomA11yScript } from '../lib/bloomA11y';
-import { cascadeMobileScript } from '../lib/cascadeMobile';
-import { firstEchoClientScript } from '../lib/firstEchoClient';
-// revivalToast removed — merged into rewardWhisper
-import { bloomOnArrivalScript } from '../lib/bloomOnArrival';
 import { radialRingScript } from '../lib/radialRing';
 import { radialRingA11yScript } from '../lib/radialRingA11y';
 import { getAdaptiveConfig } from '../lib/adaptiveDecay';
+// --- Consolidated engines (replace 15+ scattered scripts) ---
+import { decayEngineClientScript } from '../lib/decay-engine';
+import { revivalEngineScript } from '../lib/revival-engine';
+// Removed: liveDecayScript → merged into decayEngineClientScript
+// Removed: decayChoreographyScript → merged into decayEngineClientScript
+// Removed: revivalControllerScript → merged into revivalEngineScript
+// Removed: bloomOrchestratorScript → bloom is CSS transition in revivalEngineScript
+// Removed: bloomGuardrailsScript → not needed for CSS transitions
+// Removed: bloomHapticsScript → single haptic in revivalEngineScript
+// Removed: bloomA11yScript → prefers-reduced-motion in CSS
+// Removed: sympatheticBloomScript → heartbeat listener in revivalEngineScript
+// Removed: cascadeMobileScript → unified touch handler in revivalEngineScript
+// Removed: keepAliveScript → deferred (not needed at current scale)
+// Removed: powSolverScript → PoW optional at current scale
+// Removed: visitorFingerprintScript → deferred (not needed at current scale)
+// Removed: heartbeatClientScript → SSE in revivalEngineScript
+// Removed: heartbeatFxScript → deferred
+// Removed: heartbeatBridgeScript → deferred
+// Removed: firstEchoClientScript → deferred
+// Removed: bloomOnArrivalScript → deferred
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -72,31 +74,16 @@ const sessionScript = sessionTokenScript();
 const breathScript = firstBreathScript();
 const timeScript = timeAmbientScript();
 const seasonScript = seasonalScript();
-const decayScript = liveDecayScript();
 const shimScript = shimmerScript();
 const snapScript = snapshotScript();
-const powChallenge = generateChallenge();
-const powScript = powSolverScript(powChallenge);
-const fpScript = visitorFingerprintScript();
-const revivalScript = revivalControllerScript();
-const keepScript = keepAliveScript();
 const discoveryScript = discoveryHintScript();
-const bloomScript = bloomOrchestratorScript();
 const rewardScript = rewardWhisperScript();
-const heartbeatScript = heartbeatClientScript();
-const heartbeatFx = heartbeatFxScript();
-const heartbeatBridge = heartbeatBridgeScript();
 const heartbeatPulseJs = heartbeatPulseScript();
-const guardrailsJs = bloomGuardrailsScript();
-const hapticsJs = bloomHapticsScript();
-const a11yJs = bloomA11yScript();
-const cascadeMobileJs = cascadeMobileScript();
-const sympatheticScript = sympatheticBloomScript();
-const firstEchoJs = firstEchoClientScript();
-// toastScript removed — merged into rewardWhisper
-const arrivalScript = bloomOnArrivalScript();
 const radialRingJs  = radialRingScript();
 const radialA11yJs  = radialRingA11yScript();
+// --- Consolidated engines ---
+const decayScript = decayEngineClientScript();
+const revivalScript = revivalEngineScript();
 
 interface Props {
   title: string;
@@ -120,34 +107,21 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <meta name="decay-max-days" content={String(adaptiveMaxDays)} />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />
+    <!-- Session + ambient (kept as-is) -->
     <script set:html={sessionScript} />
     <script set:html={breathScript} />
     <script set:html={timeScript} />
     <script set:html={seasonScript} />
-    <script set:html={decayScript} />
     <script set:html={snapScript} />
     <script set:html={shimScript} />
-    <script set:html={powScript} />
-    <script set:html={fpScript} />
-    <script set:html={revivalScript} />
-    <script set:html={keepScript} />
     <script set:html={discoveryScript} />
-    <script set:html={guardrailsJs} />
-    <script set:html={hapticsJs} />
-    <script set:html={a11yJs} />
-    <script set:html={bloomScript} />
     <script set:html={rewardScript} />
-    <script set:html={heartbeatScript} />
-    <script set:html={heartbeatFx} />
-    <script set:html={heartbeatBridge} />
     <script set:html={heartbeatPulseJs} />
-    <script set:html={sympatheticScript} />
-    <script set:html={cascadeMobileJs} />
-    <script set:html={firstEchoJs} />
-    <!-- revivalToast removed — merged into rewardWhisper -->
-    <script set:html={arrivalScript} />
     <script set:html={radialRingJs} />
     <script set:html={radialA11yJs} />
+    <!-- Consolidated engines (replace 15+ scripts with 2) -->
+    <script set:html={decayScript} />
+    <script set:html={revivalScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

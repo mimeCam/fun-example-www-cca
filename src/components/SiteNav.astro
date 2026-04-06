@@ -12,11 +12,12 @@ const path = Astro.url.pathname;
 const pageId = getActivePage(path);
 const isBlogPost = pageId === 'blog';
 
-// Nav: 2+1 design — Home + Graveyard (core) + About (utility).
+// Nav: 4-link max — Home + Constellations (killer visual) + Graveyard + Now.
 const links: { label: string; href: string; id: PageId }[] = [
-  { label: 'blog',      href: '/',          id: 'home'      },
-  { label: 'graveyard', href: '/graveyard', id: 'graveyard' },
-  { label: 'now',       href: '/now',       id: 'now'       },
+  { label: 'blog',           href: '/',               id: 'home'           },
+  { label: 'constellations', href: '/constellations',  id: 'constellations' },
+  { label: 'graveyard',      href: '/graveyard',       id: 'graveyard'      },
+  { label: 'now',            href: '/now',              id: 'now'            },
 ];
 ---
 

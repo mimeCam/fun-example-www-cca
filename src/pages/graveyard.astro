@@ -9,7 +9,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TombstoneCard from '../components/TombstoneCard.astro';
 import { allPostDisplayData } from '../lib/postMeta';
-import { resurrectClientScript } from '../lib/resurrectClient';
+// resurrectClientScript removed — now included in revivalEngineScript (BaseLayout)
 
 const posts = await getCollection('blog');
 const all = allPostDisplayData(posts);
@@ -18,7 +18,7 @@ const livingCount = all.length - entombed.length;
 ---
 
 <BaseLayout title="Graveyard — Posts Lost to Time">
-  <script set:html={resurrectClientScript()} />
+  <!-- Resurrect handler now in revivalEngineScript (BaseLayout) -->
   <main class="graveyard">
     <header class="graveyard-header">
       <h1 class="graveyard-title">Graveyard</h1>
