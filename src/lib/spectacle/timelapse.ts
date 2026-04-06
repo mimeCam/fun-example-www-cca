@@ -17,6 +17,14 @@ import {
 } from '../decay';
 
 // ---------------------------------------------------------------------------
+// Phase durations — re-exported from controller as the canonical source.
+// timelapse.ts re-exports for consumers that only import visual timing.
+// ---------------------------------------------------------------------------
+
+export { DEFAULT_DURATIONS as PHASE_DURATIONS } from './controller';
+export type { SpectaclePhase } from './controller';
+
+// ---------------------------------------------------------------------------
 // Easing — sigmoid for cinematic feel (slow start → fast middle → slow end)
 // ---------------------------------------------------------------------------
 

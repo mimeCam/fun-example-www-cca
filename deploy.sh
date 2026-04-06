@@ -8,7 +8,8 @@
 #           SSE heartbeat (long-lived connections for real-time revival pulses),
 #           heartbeat bridge (remote→bloom), ambient presence pulse indicator,
 #           dynamic OG image generation (satori + resvg — needs extra memory),
-#           radial-ring revival gesture UI, first-visit spectacle state machine.
+#           FSM spectacle controller (idle→bloom→decay→resist→handoff→done),
+#           first-visit cinematic handshake (2-second gate via localStorage).
 
 set -euo pipefail
 

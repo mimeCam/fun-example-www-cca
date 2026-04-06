@@ -1,224 +1,73 @@
 ---
 // src/components/FirstVisitSpectacle.astro
-// First-visit choreographed reveal: demonstrates the decay-revival loop
-// in ~5 seconds, then gets out of the way forever.
+// First-visit spectacle: 2-second silent visual handshake.
+// Teaches the decay-revival mechanic through pure cinema — no words needed.
 //
-// Flow: max-decay → whisper → auto-bloom → social proof → settle → done
-// Gate: localStorage('spectacle:seen')
-// A11y: ARIA live region, reduced-motion safe, no modal/tooltip
-
-import { getTopRevival } from '../lib/collectiveMemory';
-
-const topRevival = getTopRevival();
-const revivalCount = topRevival.count;
-const revivalSlug = topRevival.slug;
+// Flow: BLOOM → DECAY → RESIST → HANDOFF → done (removed from DOM)
+// Gate: localStorage('spectacle_done') via checkFirstVisit() in onboardProbe.ts
+// A11y: aria-hidden; respects prefers-reduced-motion at two levels (CSS + JS)
+//
+// Note: old 5-second choreographed version below is DEPRECATED by this rewrite.
+// The legacy whisper/auto-bloom approach lives in git history.
 ---
 
-<div
-  id="spectacle-whisper"
-  class="spectacle-whisper"
-  aria-live="polite"
-  hidden
-></div>
+<!--
+  Overlay is aria-hidden — screen readers skip entirely.
+  The revival mechanic is discovered through interaction, not announced.
+  [data-phase] drives all CSS transitions; no inline styles from JS.
+-->
+<div id="spectacle-overlay" aria-hidden="true" data-phase="idle">
+  <div class="spectacle-card">
+    <div class="spectacle-bloom-ring"></div>
+    <p class="spectacle-card-date">Today</p>
+    <h2 class="spectacle-card-title">Words fade here</h2>
+    <p class="spectacle-card-body">
+      Content ages unless someone remembers it.
+    </p>
+    <div class="spectacle-keep-hint" aria-hidden="true"></div>
+  </div>
+</div>
 
-<style>
-  /* === WHISPER: centered bottom overlay === */
-  .spectacle-whisper {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    font: 300 0.875rem/1.4 system-ui, sans-serif;
-    color: var(--text-secondary, rgba(255,255,255,0.55));
-    opacity: 0;
-    transition: opacity 0.6s ease;
-    pointer-events: none;
-    z-index: 50;
-    text-align: center;
-    max-width: 28rem;
-    padding: 0 1rem;
-  }
-  .spectacle-whisper[data-visible] {
-    opacity: 1;
-  }
+<script>
+  import { createSpectacleController, DEFAULT_DURATIONS } from '../lib/spectacle/controller';
+  import { checkFirstVisit, markSpectacleDone } from '../lib/onboardProbe';
 
-  /* === SPECTACLE OVERRIDE: all cards at max decay === */
-  :global([data-spectacle-active]) :global(.decay-card) {
-    --decay-opacity: 0.35 !important;
-    --decay-blur: 2.5px !important;
-    --decay-saturation: 0.4 !important;
-    --decay-shadow-y: 0px !important;
-    --decay-shadow-spread: 0px !important;
-    --decay-shadow-alpha: 0 !important;
-    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  }
+  function initSpectacle(): void {
+    if (!checkFirstVisit()) return;
 
-  /* === Target card gets exempted during bloom === */
-  :global([data-spectacle-active]) :global(.decay-card[data-spectacle-target]) {
-    --decay-opacity: 1 !important;
-    --decay-blur: 0px !important;
-    --decay-saturation: 1 !important;
-    --decay-shadow-y: 8px !important;
-    --decay-shadow-spread: 32px !important;
-    --decay-shadow-alpha: 0.18 !important;
-  }
+    const overlay = document.getElementById('spectacle-overlay');
+    if (!overlay) return;
 
-  /* === REDUCED MOTION: opacity only === */
-  @media (prefers-reduced-motion: reduce) {
-    :global([data-spectacle-active]) :global(.decay-card) {
-      transition: opacity 0.3s ease !important;
-    }
-  }
-</style>
-
-<script is:inline define:vars={{ revivalCount, revivalSlug }}>
-;(function spectacleIIFE() {
-  /* ── gate ──────────────────────────────── */
-  var LS_KEY = 'spectacle:seen';
-
-  function isSeen() {
-    try { return localStorage.getItem(LS_KEY) === '1'; } catch(e) { return true; }
-  }
-  function markSeen() {
-    try { localStorage.setItem(LS_KEY, '1'); } catch(e) { /* private */ }
-  }
-  function reducedMotion() {
-    return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  }
-
-  if (isSeen()) return;
-  if (document.querySelector('[data-time-traveling]')) return;
-
-  var reduced = reducedMotion();
-
-  /* ── whisper messages ─────────────────── */
-  var MSGS = {
-    intro:   'words fade here unless someone remembers them',
-    revived: 'you just brought it back',
-    social:  revivalCount > 0
-      ? 'remembered by ' + revivalCount + ' readers'
-      : 'be the first to remember',
-  };
-
-  /* ── DOM refs ─────────────────────────── */
-  var whisper = document.getElementById('spectacle-whisper');
-
-  function showWhisper(text) {
-    if (!whisper) return;
-    whisper.textContent = text;
-    whisper.hidden = false;
-    whisper.setAttribute('data-visible', '');
-  }
-  function hideWhisper() {
-    if (!whisper) return;
-    whisper.removeAttribute('data-visible');
-    setTimeout(function() { whisper.hidden = true; }, 600);
-  }
-
-  /* ── find target card ─────────────────── */
-  function findTarget() {
-    if (revivalSlug) {
-      var bySlug = document.querySelector('.decay-card[data-slug="' + revivalSlug + '"]');
-      if (bySlug) return bySlug;
-    }
-    var cards = document.querySelectorAll('.decay-card[data-pub-date]');
-    var best = null, hiDecay = -1;
-    cards.forEach(function(c) {
-      var d = parseFloat(c.dataset.spectacleDecay || c.style.getPropertyValue('--decay-opacity') || '1');
-      var decay = 1 - d;
-      if (decay > hiDecay) { hiDecay = decay; best = c; }
+    const ctrl = createSpectacleController({
+      durations: DEFAULT_DURATIONS,
+      onPhase(phase) { (overlay as HTMLElement).dataset.phase = phase; },
+      onDone() {
+        overlay.remove();
+        markSpectacleDone();
+        document.dispatchEvent(new CustomEvent('spectacle:done'));
+      },
     });
-    return best || (cards.length ? cards[cards.length - 1] : null);
+
+    attachSkipListeners(ctrl, overlay as HTMLElement);
+
+    // Double-rAF gate: ensures overlay is painted before BLOOM fires.
+    // Without this, BLOOM triggers during layout on mobile → stutter.
+    requestAnimationFrame(() => requestAnimationFrame(() => ctrl.start()));
   }
 
-  /* ── abort on interaction ─────────────── */
-  var aborted = false;
-  function onInteract() {
-    if (aborted) return;
-    aborted = true;
-    settle();
+  function attachSkipListeners(
+    ctrl: ReturnType<typeof createSpectacleController>,
+    overlay: HTMLElement,
+  ): void {
+    const skip = () => ctrl.skip();
+    document.addEventListener('keydown', (e) => e.key === 'Escape' && skip(), { once: true });
+    overlay.addEventListener('pointerdown', skip, { once: true });
   }
 
-  /* ── settle: transition to real state ─── */
-  function settle() {
-    document.body.removeAttribute('data-spectacle-active');
-    var target = document.querySelector('[data-spectacle-target]');
-    if (target) target.removeAttribute('data-spectacle-target');
-    hideWhisper();
-    markSeen();
-    cleanup();
-  }
-
-  function cleanup() {
-    document.removeEventListener('click', onInteract);
-    document.removeEventListener('touchstart', onInteract);
-    document.removeEventListener('keydown', onInteract);
-    document.dispatchEvent(new CustomEvent('spectacle:complete'));
-  }
-
-  /* ── reduced-motion path ──────────────── */
-  function runReduced() {
-    showWhisper(MSGS.intro);
-    setTimeout(function() {
-      hideWhisper();
-      markSeen();
-      cleanup();
-    }, 3000);
-  }
-
-  /* ── full choreography (5s) ───────────── */
-  function runFull() {
-    document.body.setAttribute('data-spectacle-active', '');
-
-    /* Phase 1 (t=0): All cards forced to max decay via CSS attr */
-
-    /* Phase 2 (t=1.5s): Whisper intro */
-    setTimeout(function() {
-      if (aborted) return;
-      showWhisper(MSGS.intro);
-    }, 1500);
-
-    /* Phase 3 (t=3s): Auto-revive target card */
-    setTimeout(function() {
-      if (aborted) return;
-      var target = findTarget();
-      if (target) {
-        target.setAttribute('data-spectacle-target', '');
-        document.dispatchEvent(new CustomEvent('revival:success', {
-          detail: { slug: target.dataset.slug, newCount: revivalCount || 1, programmatic: true }
-        }));
-      }
-      showWhisper(MSGS.revived);
-    }, 3000);
-
-    /* Phase 4 (t=4.2s): Social proof */
-    setTimeout(function() {
-      if (aborted) return;
-      showWhisper(MSGS.social);
-    }, 4200);
-
-    /* Phase 5 (t=5.5s): Settle to real state */
-    setTimeout(function() {
-      if (!aborted) settle();
-    }, 5500);
-  }
-
-  /* ── interaction listeners (abort) ────── */
-  document.addEventListener('click', onInteract);
-  document.addEventListener('touchstart', onInteract);
-  document.addEventListener('keydown', onInteract);
-
-  /* ── start ─────────────────────────────── */
-  function start() {
-    if (reduced) { runReduced(); return; }
-    runFull();
-  }
-
+  // Start after DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
+    document.addEventListener('DOMContentLoaded', initSpectacle, { once: true });
   } else {
-    /* small delay to let decay choreography finish */
-    setTimeout(start, 300);
+    initSpectacle();
   }
-})();
 </script>

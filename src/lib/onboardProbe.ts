@@ -7,6 +7,42 @@
 // State: IDLE → WAITING → HINTING → REWARDING → DONE
 // Gates: localStorage (spectacle-seen), sessionStorage (hint-seen)
 
+// ---------------------------------------------------------------------------
+// FSM-era first-visit API (consumed by new FirstVisitSpectacle.astro)
+// ---------------------------------------------------------------------------
+
+const SPECTACLE_DONE_KEY = 'spectacle_done';
+const ONBOARD_HINT_DEBOUNCE_MS = 800;
+
+/** True on first visit only; false on every subsequent page load. */
+export function checkFirstVisit(): boolean {
+  try { return !localStorage.getItem(SPECTACLE_DONE_KEY); }
+  catch { return false; }
+}
+
+/** Stamps localStorage so checkFirstVisit() returns false from now on. */
+export function markSpectacleDone(): void {
+  try { localStorage.setItem(SPECTACLE_DONE_KEY, String(Date.now())); }
+  catch { /* private browsing */ }
+}
+
+/** Fires 'onboard:hint' after a short debounce for KeepButton pulse nudge. */
+export function triggerOnboardHint(): void {
+  setTimeout(
+    () => document.dispatchEvent(new CustomEvent('onboard:hint')),
+    ONBOARD_HINT_DEBOUNCE_MS,
+  );
+}
+
+// Self-register: bridge new 'spectacle:done' event → hint nudge system.
+if (typeof document !== 'undefined') {
+  document.addEventListener('spectacle:done', triggerOnboardHint, { once: true });
+}
+
+// ---------------------------------------------------------------------------
+// Legacy key (kept for backward compat — old IIFE script uses this)
+// ---------------------------------------------------------------------------
+
 const SPECTACLE_KEY = 'persona:spectacle-seen';
 const HINT_KEY = 'onboard-hint-seen';
 const REWARD_KEY = 'onboard-reward-seen';

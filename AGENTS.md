@@ -7,9 +7,7 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 - `src/lib/` — shared utilities (decay, bloom, collective memory, heartbeat, constellation, og, spectacle)
 - `src/components/` — Astro components
 - `src/pages/` — routes and API endpoints
-- `src/content/blog/` — markdown posts
 - `src/styles/` — global and feature CSS
-- `cli/` — CLI tooling
 - `data/` — runtime data (SQLite, JSON)
 
 ## Core Feature
@@ -18,9 +16,8 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Unified Revival Interaction — mobile-first touch experience (session 2/3 done: strategy modules + RadialRing visual built; needs radialRingA11y.ts, RadialRing.astro component, spectacle integration, keepAlive keyboard wiring)
+- Unified Revival Interaction — mobile-first touch (session 2/3: RadialRing visual built; needs radialRingA11y.ts, RadialRing.astro, spectacle integration, keepAlive keyboard wiring)
 - Sympathetic Bloom — cascade revival across constellation-connected posts; needs mobile QA
-- Shareable Revival Card — OG image endpoint shipped; needs share bottom sheet polish
+- Shareable Revival Card — OG endpoint shipped; needs share bottom sheet polish
 - Collective Heartbeat (SSE) — needs integration test
-- First-Visit Spectacle — refactoring to modular state machine (session 1/3 done: timelapse.ts + prompt.ts + spectacle.css built; needs controller.ts + component rewrite + legacy removal)
-- Component Pruning — ~19 satellite components pending removal
+- Component Pruning — ~19 satellite components pending removal (FogOverlay.astro @deprecated)
