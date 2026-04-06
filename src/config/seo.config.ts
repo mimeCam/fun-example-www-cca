@@ -77,3 +77,8 @@ function absoluteImage(src: string): string {
 export function siteDefaults(): Readonly<SiteMeta> {
   return SITE;
 }
+
+/** Build the dynamic OG image URL for a blog post slug. */
+export function ogImageUrl(slug: string): string {
+  return canonicalUrl(`/api/og/${slug}.png`);
+}

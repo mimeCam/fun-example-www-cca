@@ -23,6 +23,9 @@ FROM node:20-alpine AS server
 
 WORKDIR /app
 
+# Fonts for satori OG image generation (DejaVu Sans ships with Alpine's fontconfig)
+RUN apk add --no-cache fontconfig ttf-dejavu
+
 # Copy built output — client (static) + server (SSR entry)
 COPY --from=builder /app/dist ./dist
 

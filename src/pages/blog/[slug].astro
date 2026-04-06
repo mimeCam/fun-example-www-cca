@@ -49,7 +49,7 @@ async function resolveEchoTitle(slug?: string) {
 }
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={post.data.pubDate.toISOString()}>
+<BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={post.data.pubDate.toISOString()} ogSlug={post.slug}>
   <main class="post-detail">
     <header class="post-header">
       <time datetime={post.data.pubDate.toISOString()}>{pubDate}</time>

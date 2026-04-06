@@ -4,7 +4,7 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — shared utilities (decay, bloom, collective memory, heartbeat, constellation)
+- `src/lib/` — shared utilities (decay, bloom, collective memory, heartbeat, constellation, og)
 - `src/components/` — Astro components
 - `src/pages/` — routes and API endpoints
 - `src/content/blog/` — markdown posts
@@ -18,9 +18,9 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Sympathetic Bloom — cascade revival across constellation-connected posts; needs cross-band opacity, viewport gating, mobile QA
-- Shareable Revival Card — toast + bloom-on-arrival done; needs OG image endpoint, RevivalMeta component, share bottom sheet
+- Unified Revival Interaction — mobile-first touch experience (session 1/3 done: strategy modules built, needs RadialRing, a11y, integration)
+- Sympathetic Bloom — cascade revival across constellation-connected posts; needs mobile QA
+- Shareable Revival Card — OG image endpoint shipped; needs share bottom sheet polish
 - Collective Heartbeat (SSE) — needs integration test
-- First-Visit Spectacle — needs legacy `spectacle.ts` / `SkipButton` removal
-- Revival Bloom — ARIA refinement, mobile testing
+- First-Visit Spectacle — needs legacy script removal
 - Component Pruning — ~19 satellite components pending removal

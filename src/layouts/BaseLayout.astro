@@ -14,8 +14,8 @@ import { seasonalScript } from '../lib/seasonal';
 import { liveDecayScript } from '../lib/live-decay';
 import { shimmerScript } from '../lib/shimmer';
 import { snapshotScript } from '../lib/snapshot';
-import { longPressReviveScript } from '../lib/longPressRevive';
-import { reviveClientScript } from '../lib/reviveClient';
+import { revivalControllerScript } from '../lib/revivalController';
+// Legacy imports removed: longPressRevive + reviveClient → revivalController
 import { keepAliveScript } from '../lib/keepAlive';
 import { onboardHintScript } from '../lib/onboardHint';
 import { onboardProbeScript } from '../lib/onboardProbe';
@@ -56,8 +56,7 @@ const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();
 const shimScript = shimmerScript();
 const snapScript = snapshotScript();
-const longPressScript = longPressReviveScript();
-const reviveScript = reviveClientScript();
+const revivalScript = revivalControllerScript();
 const keepScript = keepAliveScript();
 const probeScript = onboardProbeScript();
 const hintScript = onboardHintScript();
@@ -76,9 +75,10 @@ interface Props {
   description?: string;
   type?: 'website' | 'article';
   publishedAt?: string;
+  ogSlug?: string;
 }
 
-const { title, description, type, publishedAt } = Astro.props;
+const { title, description, type, publishedAt, ogSlug } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
 ---
 
@@ -87,7 +87,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} />
+    <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />
     <script set:html={timeScript} />
@@ -95,8 +95,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={decayScript} />
     <script set:html={snapScript} />
     <script set:html={shimScript} />
-    <script set:html={longPressScript} />
-    <script set:html={reviveScript} />
+    <script set:html={revivalScript} />
     <script set:html={keepScript} />
     <script set:html={probeScript} />
     <script set:html={hintScript} />

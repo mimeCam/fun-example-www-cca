@@ -6,7 +6,8 @@
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (long-lived connections for real-time revival pulses),
-#           heartbeat bridge (remote→bloom), ambient presence pulse indicator.
+#           heartbeat bridge (remote→bloom), ambient presence pulse indicator,
+#           dynamic OG image generation (satori + resvg — needs extra memory).
 
 set -euo pipefail
 
@@ -55,7 +56,7 @@ docker run \
   --restart unless-stopped \
   --name "${CONTAINER_NAME}" \
   --publish "${HOST_PORT}:${CONTAINER_PORT}" \
-  --memory 512m \
+  --memory 768m \
   --volume "${DATA_VOLUME}:/app/dist/server/data" \
   --volume "${SQLITE_VOLUME}:/app/data" \
   "${IMAGE_NAME}"

@@ -8,12 +8,17 @@
 // TODO: add article:author and article:section tags for blog posts
 // TODO: add JSON-LD script injection once seo.config supports it
 
-import { resolveMeta, canonicalUrl } from '../config/seo.config';
+import { resolveMeta, canonicalUrl, ogImageUrl } from '../config/seo.config';
 import type { PageMeta } from '../config/seo.config';
 
-interface Props extends PageMeta {}
+interface Props extends PageMeta {
+  /** When set, uses dynamic decay-encoded OG image at /api/og/{slug}.png */
+  ogSlug?: string;
+}
 
-const resolved = resolveMeta(Astro.props);
+const { ogSlug, ...pageMeta } = Astro.props;
+const resolved = resolveMeta(pageMeta);
+if (ogSlug) resolved.image = ogImageUrl(ogSlug);
 ---
 
 <!-- Primary Meta -->
