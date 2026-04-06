@@ -17,7 +17,7 @@ import { groupIntoBands } from '../lib/timeBands';
 import { decayChoreographyScript } from '../lib/decayChoreography';
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
-import FirstVisitWhisper from '../components/FirstVisitWhisper.astro';
+import GuidedTouch from '../components/GuidedTouch.astro';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -49,7 +49,7 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
       </section>
     )}
 
-    <FirstVisitWhisper />
+    <GuidedTouch />
 
     {bands.recent.posts.length > 0 && (
       <section class="band band--recent" data-band="recent" aria-label={bands.recent.hint}>

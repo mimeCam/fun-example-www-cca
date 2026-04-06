@@ -4,10 +4,10 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — shared utilities (decay, ambient life, adaptive decay, whisper)
+- `src/lib/` — shared utilities
 - `src/data/` — runtime configs
 - `src/components/` — Astro components
-- `src/pages/` — routes and API endpoints (`src/pages/api/`)
+- `src/pages/` — routes and API endpoints
 - `data/` — runtime data (SQLite, JSON)
 
 ## Core Feature
@@ -16,8 +16,8 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- [wip] Sympathetic Bloom Mobile — needs physical-device QA
-- [wip] Component Pruning — satellite components pending removal
-- [wip] Navigation Simplification — 2+1 nav design
-- [wip] Homepage Cleanup — remove TimeTravelSlider, PulseTeaser
-- [wip] Dead code cleanup — onboardProbe.ts spectacle listeners
+- Sympathetic Bloom Mobile — needs physical-device QA
+- Component Pruning — satellite components pending removal
+- Navigation Simplification — 2+1 nav design
+- Homepage Cleanup — remove TimeTravelSlider, PulseTeaser
+- Dead code cleanup — onboardProbe.ts spectacle listeners

@@ -20,12 +20,14 @@
 #           FirstBreath arrival choreography (FirstBreath.astro + first-breath.css —
 #             time-aware whisper banner, 4-beat fade sequence, page desaturate→bloom,
 #             once per browser session via sessionStorage gate, reduced-motion safe),
-#           First Visit Whisper (FirstVisitWhisper.astro + whisperSequence.ts +
-#             whisperA11y.ts — non-blocking inline onboarding hint on first visit;
-#             localStorage gate 'whisper_seen'; 2-step sequence: decay awareness →
-#             graveyard discovery; auto-dismiss + click-dismiss; prefers-reduced-motion
-#             safe with static fallback; ARIA role=status + aria-live=polite;
-#             replaces former spectacle gate — lighter, zero overlay, zero blocking),
+#           Guided First Touch (GuidedTouch.astro + guidedTouch.ts + guided-touch.css —
+#             interactive first-visit demo replacing FirstVisitWhisper; walks visitor
+#             through one decay→revival cycle on a real card: spotlight overlay pulses
+#             on most-decayed card, ghost cursor drifts toward it, visitor hovers →
+#             real revival fires, whisper confirms "your attention keeps them alive";
+#             short-circuits if visitor interacts first; localStorage gate
+#             'guided_touch_seen'; prefers-reduced-motion safe with static fallback;
+#             ARIA role=status + aria-live=polite; zero new dependencies),
 #           Sympathetic Bloom mobile polish — circuit breaker guardrails (max 4
 #             concurrent blooms, 5s hard timeout, thundering-herd detection, FPS
 #             watchdog, Page Visibility pause), haptic choreography (diminishing
