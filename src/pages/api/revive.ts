@@ -36,6 +36,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   const { slug } = body;
   if (!slug || typeof slug !== 'string') return badRequest('Missing slug');
+  // Allow spectacle demo without touching the DB or rate limiter.
+  if (slug === '__demo__') return jsonOk({ ok: true, count: 0, resonance: [] });
   if (!(await slugExists(slug))) return badRequest('Unknown slug');
 
   const ip = clientIp(request);

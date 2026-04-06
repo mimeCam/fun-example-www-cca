@@ -29,6 +29,7 @@ import { sympatheticBloomScript } from '../lib/sympatheticBloom';
 import { revivalToastScript } from '../lib/revivalToast';
 import { bloomOnArrivalScript } from '../lib/bloomOnArrival';
 import { radialRingScript } from '../lib/radialRing';
+import { radialRingA11yScript } from '../lib/radialRingA11y';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -39,6 +40,7 @@ import Hearth from '../components/Hearth.astro';
 import QuietFollow from '../components/QuietFollow.astro';
 import RevivalReward from '../components/RevivalReward.astro';
 import HeartbeatPulse from '../components/HeartbeatPulse.astro';
+import RadialRing from '../components/RadialRing.astro';
 import '../styles/global.css';
 import '../styles/decay.css';
 import '../styles/choreography.css';
@@ -51,6 +53,7 @@ import '../styles/reward.css';
 import '../styles/heartbeat.css';
 import '../styles/revival-toast.css';
 import '../styles/radial-ring.css';
+import '../styles/ring.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const timeScript = timeAmbientScript();
@@ -71,7 +74,8 @@ const heartbeatPulseJs = heartbeatPulseScript();
 const sympatheticScript = sympatheticBloomScript();
 const toastScript = revivalToastScript();
 const arrivalScript = bloomOnArrivalScript();
-const radialRingJs = radialRingScript();
+const radialRingJs  = radialRingScript();
+const radialA11yJs  = radialRingA11yScript();
 
 interface Props {
   title: string;
@@ -112,6 +116,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={toastScript} />
     <script set:html={arrivalScript} />
     <script set:html={radialRingJs} />
+    <script set:html={radialA11yJs} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,
@@ -123,6 +128,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
   <body>
     <AmbientLayer />
     <SiteNav />
+    <RadialRing />
     <slot />
     <Hearth />
     <CelestialWitness />

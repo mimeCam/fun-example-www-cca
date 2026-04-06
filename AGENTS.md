@@ -16,7 +16,6 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Unified Revival Interaction — mobile-first touch (session 2/3: RadialRing visual built; needs radialRingA11y.ts, RadialRing.astro, spectacle integration, keepAlive keyboard wiring)
 - Sympathetic Bloom — cascade revival across constellation-connected posts; needs mobile QA
 - Shareable Revival Card — OG endpoint shipped; needs share bottom sheet polish
 - Collective Heartbeat (SSE) — needs integration test

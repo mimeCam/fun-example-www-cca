@@ -9,7 +9,10 @@
 #           heartbeat bridge (remote→bloom), ambient presence pulse indicator,
 #           dynamic OG image generation (satori + resvg — needs extra memory),
 #           FSM spectacle controller (idle→bloom→decay→resist→handoff→done),
-#           first-visit cinematic handshake (2-second gate via localStorage).
+#           first-visit cinematic handshake (2-second gate via localStorage),
+#           keyboard revival (Space/Enter hold on .decay-card, 600 ms dwell),
+#           spectacle demo revival (__demo__ slug, no DB write, handoff phase),
+#           accessible radial ring (RadialRing.astro + radialRingA11y.ts + ring.css).
 
 set -euo pipefail
 

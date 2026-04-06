@@ -7,8 +7,9 @@
 // Gate: localStorage('spectacle_done') via checkFirstVisit() in onboardProbe.ts
 // A11y: aria-hidden; respects prefers-reduced-motion at two levels (CSS + JS)
 //
-// Note: old 5-second choreographed version below is DEPRECATED by this rewrite.
-// The legacy whisper/auto-bloom approach lives in git history.
+// HANDOFF phase now fires a programmatic demo revival (slug='__demo__') so
+// the user sees the full radial-ring → bloom path before interacting.
+// /api/revive guards __demo__ and returns early without touching the DB.
 ---
 
 <!--
@@ -32,6 +33,47 @@
   import { createSpectacleController, DEFAULT_DURATIONS } from '../lib/spectacle/controller';
   import { checkFirstVisit, markSpectacleDone } from '../lib/onboardProbe';
 
+  // ── Demo revival helpers ──────────────────────────────────────────────────
+
+  /** Center coords of the spectacle demo card, fallback to viewport centre. */
+  function demoCardCenter(): { x: number; y: number } {
+    const card = document.querySelector('.spectacle-card') as HTMLElement | null;
+    if (!card) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const r = card.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  /** Dispatch a revival:* custom event with the given detail. */
+  function emitRevival(name: string, detail: Record<string, unknown>): void {
+    document.dispatchEvent(new CustomEvent(`revival:${name}`, { detail }));
+  }
+
+  /**
+   * Run a 600ms programmatic demo revival.
+   * Emits start → progress ticks → success with slug='__demo__'.
+   * The API guards __demo__ and returns ok:true without DB writes.
+   */
+  function runDemoRevival(): void {
+    const HOLD_MS = 600;
+    const TICK_MS = 16;
+    const pos = demoCardCenter();
+
+    emitRevival('start', { slug: '__demo__', x: pos.x, y: pos.y });
+
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      elapsed += TICK_MS;
+      const progress = Math.min(elapsed / HOLD_MS, 1);
+      emitRevival('progress', { slug: '__demo__', progress });
+      if (progress >= 1) {
+        clearInterval(timer);
+        emitRevival('success', { slug: '__demo__', newCount: 0, source: 'spectacle' });
+      }
+    }, TICK_MS);
+  }
+
+  // ── Spectacle FSM ─────────────────────────────────────────────────────────
+
   function initSpectacle(): void {
     if (!checkFirstVisit()) return;
 
@@ -40,7 +82,10 @@
 
     const ctrl = createSpectacleController({
       durations: DEFAULT_DURATIONS,
-      onPhase(phase) { (overlay as HTMLElement).dataset.phase = phase; },
+      onPhase(phase) {
+        (overlay as HTMLElement).dataset.phase = phase;
+        if (phase === 'handoff') runDemoRevival();
+      },
       onDone() {
         overlay.remove();
         markSpectacleDone();

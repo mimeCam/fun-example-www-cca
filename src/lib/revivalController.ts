@@ -9,7 +9,11 @@
 // Migration: coexists with old scripts during testing via data-revival-v2
 // feature flag on <body>. When confident, remove old scripts.
 
-import { desktopStrategyFragment } from './revivalDesktop';
+import {
+  desktopStrategyFragment,
+  keyboardHelpersFragment,
+  keyboardStrategyFragment,
+} from './revivalDesktop';
 import { touchStrategyFragment } from './revivalTouch';
 
 /** Card selector for revival-capable elements. */
@@ -19,10 +23,14 @@ const CARD_SELECTOR = '.decay-card[data-pub-date]';
 export function revivalControllerScript(): string {
   return `(function(){
   var SEL='${CARD_SELECTOR}';
+  var _revived={};
+  var KB_HOLD=600,KB_TICK=16;
 
   ${sharedHelpers()}
+  ${keyboardHelpersFragment()}
   ${desktopStrategyFragment()}
   ${touchStrategyFragment()}
+  ${keyboardStrategyFragment()}
   ${initFragment()}
 })();`;
 }
@@ -39,11 +47,11 @@ function sharedHelpers(): string {
   }
 
   function fired(s) {
-    return sessionStorage.getItem('revived:' + s) === '1';
+    return !!_revived[s];
   }
 
   function mark(s) {
-    sessionStorage.setItem('revived:' + s, '1');
+    _revived[s] = 1;
   }
 
   function emitSuccess(s, count, src) {
@@ -88,6 +96,7 @@ function initFragment(): string {
     if (!cards.length) return;
     desktopStrategy(cards, send);
     touchStrategy(cards, send);
+    keyboardStrategy(cards, send);
   }
 
   if (document.readyState === 'loading')
