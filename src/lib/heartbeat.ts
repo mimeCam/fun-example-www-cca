@@ -22,8 +22,14 @@ export interface HeartbeatEvent {
 
 type Controller = ReadableStreamDefaultController<Uint8Array>;
 
+/** Metadata for an SSE connection. */
+interface ConnectionMeta {
+  ctrl: Controller;
+  quiet: boolean;
+}
+
 /** Active SSE connections keyed by unique id. */
-const connections = new Map<string, Controller>();
+const connections = new Map<string, ConnectionMeta>();
 
 /** Debounce buffer: slug -> latest event + timer. */
 const pending = new Map<string, { event: HeartbeatEvent; timer: ReturnType<typeof setTimeout> }>();
@@ -53,19 +59,23 @@ function ssePing(): Uint8Array {
   return new TextEncoder().encode(': keepalive\n\n');
 }
 
-/** Send bytes to a single controller, removing it on failure. */
-function safeSend(id: string, ctrl: Controller, bytes: Uint8Array): void {
-  try { ctrl.enqueue(bytes); }
+/** Send bytes to a single connection, removing it on failure. */
+function safeSend(id: string, meta: ConnectionMeta, bytes: Uint8Array): void {
+  try { meta.ctrl.enqueue(bytes); }
   catch { connections.delete(id); }
 }
 
-/** Flush a debounced event to all connections. */
+/** Flush a debounced event to all connections. Skip quiet ones for phantoms. */
 function flush(slug: string): void {
   const entry = pending.get(slug);
   if (!entry) return;
   pending.delete(slug);
   const bytes = sseFrame(entry.event);
-  connections.forEach((ctrl, id) => safeSend(id, ctrl, bytes));
+  const isPhantom = entry.event.phantom === true;
+  connections.forEach((meta, id) => {
+    if (isPhantom && meta.quiet) return;
+    safeSend(id, meta, bytes);
+  });
 }
 
 /** Start keepalive + sweep timers if not running. */
@@ -88,7 +98,7 @@ function maybeStopTimers(): void {
 /** Ping every connection to keep proxies happy. */
 function pingAll(): void {
   const bytes = ssePing();
-  connections.forEach((ctrl, id) => safeSend(id, ctrl, bytes));
+  connections.forEach((meta, id) => safeSend(id, meta, bytes));
 }
 
 /** Remove dead controllers that threw on last enqueue. */
@@ -103,13 +113,13 @@ function sweepStale(): void {
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Register a new SSE connection. Returns [id, controller-setter]. */
-export function register(): { id: string; start: (ctrl: Controller) => void; cleanup: () => void } {
+/** Register a new SSE connection. Quiet connections skip phantom events. */
+export function register(quiet = false): { id: string; start: (ctrl: Controller) => void; cleanup: () => void } {
   const id = `hb-${++nextId}`;
   ensureTimers();
   return {
     id,
-    start(ctrl: Controller) { connections.set(id, ctrl); },
+    start(ctrl: Controller) { connections.set(id, { ctrl, quiet }); },
     cleanup() { connections.delete(id); maybeStopTimers(); },
   };
 }

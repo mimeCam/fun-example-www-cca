@@ -201,7 +201,8 @@ export function revivalEngineScript(): string {
   function initHeartbeat(){
     if(typeof EventSource==='undefined')return;
     var es;
-    try{es=new EventSource('/api/heartbeat');window.__hbES=es}catch(e){return}
+    var fvhV=parseInt(localStorage.getItem('fvh_visits')||'0',10);
+    try{es=new EventSource('/api/heartbeat?fvh='+fvhV);window.__hbES=es}catch(e){return}
     es.addEventListener('revival',function(e){
       try{
         var d=JSON.parse(e.data);if(!d.slug)return;

@@ -32,6 +32,7 @@ const formattedDate = formatPubDate(post.pubDate);
   data-decay-factor={post.decay.toFixed(4)}
   data-revival-count={post.revivalCount}
   data-revival-warm={post.revivalWarm ? 'true' : undefined}
+  data-fvh-quiet
   tabindex="0"
   aria-label={`${post.title} — hold Space or Enter to revive`}
 >

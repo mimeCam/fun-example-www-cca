@@ -83,6 +83,16 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* ---------------------------------------------------------------------------
+ * First-Visit Quiet Mode — amplified decay contrast for new visitors.
+ * .fvh-quiet is toggled on <main> by quietModeScript() when fvh_visits < 3.
+ * Wider opacity range (0.3–1.0) so decay is visible within 2 seconds.
+ * ---------------------------------------------------------------------------*/
+
+.fvh-quiet .decay-card {
+  --decay-opacity-floor: 0.30;
+}
+
 /* Reduced motion: skip transform animations, keep state changes */
 @media (prefers-reduced-motion: reduce) {
   .decay-card {

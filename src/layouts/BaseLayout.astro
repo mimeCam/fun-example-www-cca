@@ -70,6 +70,7 @@ import '../styles/first-breath.css';
 import '../styles/guided-touch.css';
 import '../styles/echo.css';
 import '../styles/presence.css';
+import '../styles/first-visit.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const sessionScript = sessionTokenScript();
@@ -157,5 +158,19 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <RewardWhisper />
     <HeartbeatPulse />
     <QuietFollow />
+    <!-- Gate overlays for new visitors (< 3 visits) -->
+    <script>
+      (function(){
+        var v=parseInt(localStorage.getItem('fvh_visits')||'0',10);
+        if(v>=3)return;
+        var ids=['reward-whisper','heartbeat-presence'];
+        ids.forEach(function(id){
+          var el=document.getElementById(id);
+          if(el)el.style.display='none';
+        });
+        var qf=document.querySelector('.quiet-follow');
+        if(qf)qf.style.display='none';
+      })();
+    </script>
   </body>
 </html>

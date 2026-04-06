@@ -9,9 +9,11 @@
 // Dismissed on first DecayCard hover or touch interaction.
 // Never shown again (localStorage flag).
 
-import { firstVisitHintScript } from '../lib/firstVisitHint';
+import { firstVisitHintScript, demoRevivalScript, quietModeScript } from '../lib/firstVisitHint';
 
 const hintScript = firstVisitHintScript();
+const demoScript = demoRevivalScript();
+const quietScript = quietModeScript();
 ---
 
 <div id="fvh" class="fvh" role="status" aria-live="polite">
@@ -21,7 +23,9 @@ const hintScript = firstVisitHintScript();
   </p>
 </div>
 
+<script set:html={quietScript} />
 <script set:html={hintScript} />
+<script set:html={demoScript} />
 
 <style>
   .fvh {

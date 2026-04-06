@@ -62,3 +62,55 @@ export function firstVisitHintScript(): string {
 export function isNewVisitorCheck(threshold = 3): string {
   return `(parseInt(localStorage.getItem('${VISITS_KEY}')||'0',10)<${threshold})`;
 }
+
+// ---------------------------------------------------------------------------
+// Demo revival — CSS-only glow on the most-decayed visible card at T+3s.
+// NOT a real revival. No API call. No collectiveMemory increment.
+// Adds .fvh-demo-glow class, removes on animationend.
+// ---------------------------------------------------------------------------
+
+/** Returns inline IIFE that triggers the demo glow at T+3s. */
+export function demoRevivalScript(): string {
+  return `(function(){
+  var V='${VISITS_KEY}',S='${SEEN_KEY}';
+  if(localStorage.getItem(S))return;
+  var visits=parseInt(localStorage.getItem(V)||'0',10);
+  if(visits>=3)return;
+  setTimeout(function(){
+    if(localStorage.getItem(S))return;
+    var card=findMostDecayed();
+    if(!card)return;
+    card.classList.add('fvh-demo-glow');
+    card.addEventListener('animationend',function(){
+      card.classList.remove('fvh-demo-glow');
+      card.classList.add('fvh-demo-done');
+    },{once:true});
+  },3000);
+  function findMostDecayed(){
+    var cards=document.querySelectorAll('.decay-card');
+    var best=null,bestFactor=-1;
+    cards.forEach(function(c){
+      var f=parseFloat(c.dataset.decayFactor||'0');
+      if(f>bestFactor){bestFactor=f;best=c;}
+    });
+    return best;
+  }
+})();`;
+}
+
+// ---------------------------------------------------------------------------
+// Quiet mode — adds .fvh-quiet to <main> for visits < 3.
+// Suppresses ambient overlays and amplifies decay contrast via CSS.
+// ---------------------------------------------------------------------------
+
+/** Returns inline IIFE that gates UI elements for new visitors. */
+export function quietModeScript(): string {
+  return `(function(){
+  var V='${VISITS_KEY}';
+  var visits=parseInt(localStorage.getItem(V)||'0',10);
+  var isNew=(visits<3);
+  var main=document.querySelector('.feed');
+  if(isNew&&main)main.classList.add('fvh-quiet');
+  document.documentElement.dataset.fvhQuiet=isNew?'true':'false';
+})();`;
+}

@@ -12,11 +12,11 @@
 // ---------------------------------------------------------------------------
 
 const CARD_SELECTOR = '.decay-card';
+// 3-phase bloom: Ignite → Glow → Settle (reduced from 5 phases).
+// Burst + Afterglow removed per bloom phase reduction spec.
 const PHASE_IGNITE_MS = 0;
-const PHASE_BURST_RECALC_MS = 800;
-const PHASE_AFTERGLOW_MS = 900;
+const PHASE_GLOW_MS = 800;
 const PHASE_SETTLE_MS = 1800;
-const PHASE_CLEANUP_MS = 3000;
 const MAX_DAYS = 365;
 const MS_PER_DAY = 86_400_000;
 const DEGRADED_MAX_INTENSITY = 0.5;
@@ -118,25 +118,18 @@ export function bloomOrchestratorScript(): string {
 
     setTimeout(function(){
       if(!blooming.has(slug))return;
-      patchDecay(el,count)
-    },${PHASE_BURST_RECALC_MS});
-
-    setTimeout(function(){
-      if(!blooming.has(slug))return;
+      patchDecay(el,count);
       el.classList.remove('blooming');
-      el.classList.add('bloom-afterglow')
-    },${PHASE_AFTERGLOW_MS});
+      el.classList.add('bloom-glow')
+    },${PHASE_GLOW_MS});
 
     setTimeout(function(){
       if(!blooming.has(slug))return;
-      el.classList.remove('bloom-afterglow','bloom-lift');
+      el.classList.remove('bloom-glow','bloom-lift');
       el.classList.add('bloom-settle');
-      demoteGpu(el)
-    },${PHASE_SETTLE_MS});
-
-    setTimeout(function(){
+      demoteGpu(el);
       cleanupBloom(el,slug)
-    },${PHASE_CLEANUP_MS})
+    },${PHASE_SETTLE_MS})
   }
 
   function cleanupBloom(el,slug){
@@ -217,7 +210,7 @@ export function bloomOrchestratorScript(): string {
   function forceCleanup(slug){
     var el=findCard(slug);
     if(!el)return;
-    el.classList.remove('blooming','bloom-lift','bloom-afterglow','bloom-settle');
+    el.classList.remove('blooming','bloom-lift','bloom-glow','bloom-settle');
     el.removeAttribute('data-bloom-lock');
     clearIntensity(el);
     demoteGpu(el);
@@ -282,8 +275,8 @@ export function _testBloomOrchestrator(): void {
     'adds bloom-lift class'
   );
   console.assert(
-    script.includes("bloom-afterglow"),
-    'adds bloom-afterglow class'
+    script.includes("bloom-glow"),
+    'adds bloom-glow class (3-phase: ignite → glow → settle)'
   );
   console.assert(
     script.includes("bloom-settle"),
@@ -314,8 +307,8 @@ export function _testBloomOrchestrator(): void {
     'uses shared ARIA region'
   );
   console.assert(
-    script.includes(String(PHASE_CLEANUP_MS)),
-    'cleanup at 3000ms'
+    script.includes(String(PHASE_SETTLE_MS)),
+    'settle at 1800ms (3-phase bloom)'
   );
 
   console.log('[bloom-orchestrator] OK — script structure verified');

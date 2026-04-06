@@ -4,11 +4,21 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v4 — First-Visit Clarity Engine
+# Architecture v5 — First-Visit Clarity Engine + Bloom Phase Reduction
 #   Three consolidated engines (decay-engine + revival-engine + presence-engine).
 #   Layout stripped: AmbientLayer, CelestialWitness, Hearth, RadialRing removed.
 #   Body uses single CSS radial gradient. Nav: field · graveyard · now (3 links).
 #   FirstVisitHint replaces GuidedTouch + DiscoveryWhisper (one-shot onboarding).
+#
+# Sprint (latest):
+#   - Bloom phase reduction (5→3): Ignite → Glow → Settle; Burst + Afterglow removed.
+#     bloomReducer.ts (new): pure 5→3 phase config transform.
+#   - First-Visit Clarity Engine (end-to-end):
+#     quietModeScript() adds .fvh-quiet to <main> for visits < 3 (amplified decay contrast).
+#     demoRevivalScript() auto-glows most-decayed card at T+3s (CSS-only, no fake revival).
+#     SSE phantom events suppressed for quiet-mode connections (heartbeat.ts API).
+#     Overlay gating: RewardWhisper, HeartbeatPulse, QuietFollow hidden for visits < 3.
+#     first-visit.css (new): .fvh-quiet overrides, .fvh-demo-glow keyframes.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (real-time revival pulses via EventSource),

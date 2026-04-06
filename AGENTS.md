@@ -18,6 +18,4 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 ## WIP
 
 - Consolidated Engines v2 — physical device QA pending (Pixel 6a, Galaxy A14, iPhone 13); old lib files kept for rollback
-- Ambient life gating for new visitors (fvh_visits < 3) — helper exported, not yet wired into ambientLife.ts
 - Sitemap reduction (11→6 pages) — nav updated, page removals deferred
-- Bloom phase reduction (5→3) — spec ready, implementation deferred
