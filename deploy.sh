@@ -4,14 +4,16 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v2 — Consolidated Engines
-#   Two unified modules (decay-engine.ts + revival-engine.ts) replace 17+
-#   scattered client scripts. BaseLayout went from ~30 inline scripts to ~13.
+# Architecture v3 — Consolidated Engines + Presence
+#   Three unified modules (decay-engine.ts + revival-engine.ts + presence-engine.ts)
+#   replace 17+ scattered client scripts. BaseLayout ~13 inline scripts.
 #   PoW is now optional (revivalGuard.ts bypasses when no header present).
 #   Nav: blog · constellations · graveyard · now (4-link max).
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (real-time revival pulses via EventSource),
+#           Proof of Life — Presence Indicator (live reader count + revival stats,
+#             ambient breathing dots, ripple on foreign revival, shares EventSource),
 #           dynamic OG image generation (satori + resvg),
 #           anonymous session identity (sessionToken.ts),
 #           FirstBreath arrival choreography,

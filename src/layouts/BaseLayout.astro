@@ -25,6 +25,7 @@ import { getAdaptiveConfig } from '../lib/adaptiveDecay';
 // --- Consolidated engines (replace 15+ scattered scripts) ---
 import { decayEngineClientScript } from '../lib/decay-engine';
 import { revivalEngineScript } from '../lib/revival-engine';
+import { presenceEngineScript } from '../lib/presence-engine';
 // Removed: liveDecayScript → merged into decayEngineClientScript
 // Removed: decayChoreographyScript → merged into decayEngineClientScript
 // Removed: revivalControllerScript → merged into revivalEngineScript
@@ -68,6 +69,7 @@ import '../styles/ring.css';
 import '../styles/first-breath.css';
 import '../styles/guided-touch.css';
 import '../styles/echo.css';
+import '../styles/presence.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const sessionScript = sessionTokenScript();
@@ -84,6 +86,7 @@ const radialA11yJs  = radialRingA11yScript();
 // --- Consolidated engines ---
 const decayScript = decayEngineClientScript();
 const revivalScript = revivalEngineScript();
+const presenceScript = presenceEngineScript();
 
 interface Props {
   title: string;
@@ -119,9 +122,10 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <script set:html={heartbeatPulseJs} />
     <script set:html={radialRingJs} />
     <script set:html={radialA11yJs} />
-    <!-- Consolidated engines (replace 15+ scripts with 2) -->
+    <!-- Consolidated engines (replace 15+ scripts with 3) -->
     <script set:html={decayScript} />
     <script set:html={revivalScript} />
+    <script set:html={presenceScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

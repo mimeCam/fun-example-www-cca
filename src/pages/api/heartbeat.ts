@@ -4,7 +4,8 @@
 // Auto-reconnect is handled by the browser's native EventSource API.
 
 import type { APIRoute } from 'astro';
-import { register } from '../../lib/heartbeat';
+import { register, sseNamedFrame } from '../../lib/heartbeat';
+import { presenceSnapshot } from '../../lib/presenceStats';
 import { startAmbientLife } from '../../lib/ambientLife';
 
 // Boot the Ambient Life Engine once on first module import.
@@ -29,6 +30,7 @@ function createStream(reg: ReturnType<typeof register>): ReadableStream<Uint8Arr
     start(controller) {
       reg.start(controller);
       sendWelcome(controller);
+      sendPresence(controller);
     },
     cancel() {
       reg.cleanup();
@@ -39,8 +41,15 @@ function createStream(reg: ReturnType<typeof register>): ReadableStream<Uint8Arr
 /** Send an initial comment so the client knows the stream is alive. */
 function sendWelcome(ctrl: ReadableStreamDefaultController<Uint8Array>): void {
   try {
-    const msg = `: connected\n\n`;
-    ctrl.enqueue(new TextEncoder().encode(msg));
+    ctrl.enqueue(new TextEncoder().encode(': connected\n\n'));
+  } catch { /* client already gone */ }
+}
+
+/** Send presence snapshot so the client has live data immediately. */
+function sendPresence(ctrl: ReadableStreamDefaultController<Uint8Array>): void {
+  try {
+    const snap = presenceSnapshot();
+    ctrl.enqueue(sseNamedFrame('presence', snap));
   } catch { /* client already gone */ }
 }
 

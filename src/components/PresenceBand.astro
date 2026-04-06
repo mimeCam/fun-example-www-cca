@@ -1,0 +1,84 @@
+---
+// src/components/PresenceBand.astro
+// "Proof of Life" — ambient presence bar above the decay field.
+// SSR: renders with real data from SQLite on first paint.
+// Client: presence-engine patches DOM via SSE presence events.
+//
+// Credits: Mike (architecture), Tanya (UX spec), Paul (priority)
+
+import { presenceSnapshot } from '../lib/presenceStats';
+
+const { readers, revivals } = presenceSnapshot();
+const text = formatPresenceText(readers, revivals);
+
+function formatPresenceText(r: number, rev: number): string {
+  if (r === 0 && rev === 0) return 'listening…';
+  if (r <= 1 && rev === 0) return 'you are the only reader here';
+  const parts: string[] = [];
+  if (r > 1) parts.push(`${r} readers tending the garden`);
+  if (r === 1) parts.push('you are the only reader here');
+  if (rev > 0) parts.push(`${rev} revival${rev === 1 ? '' : 's'} today`);
+  return parts.join(' · ');
+}
+---
+
+<div
+  class="presence-band"
+  id="presence-band"
+  aria-live="polite"
+  aria-atomic="true"
+  role="status"
+>
+  <span class="presence-text" id="presence-text">{text}</span>
+  <span class="presence-dots" id="presence-dots" aria-hidden="true">
+    {readers > 0 && Array.from({ length: Math.min(readers, 5) }).map((_, i) => (
+      <span class="presence-dot" style={`animation-delay: ${i * 0.7}s`} />
+    ))}
+  </span>
+</div>
+
+<style>
+  .presence-band {
+    text-align: center;
+    padding: 0.75rem 1rem 0.25rem;
+    max-width: 44rem;
+    margin: 0 auto;
+  }
+
+  .presence-text {
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    color: var(--mood-accent, #9CA3AF);
+    opacity: 0.6;
+    animation: presence-breathe 4s ease-in-out infinite;
+  }
+
+  .presence-dots {
+    display: inline-flex;
+    gap: 0.35rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .presence-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--mood-accent, #9CA3AF);
+    opacity: 0.4;
+    animation: presence-breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes presence-breathe {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.7; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .presence-text,
+    .presence-dot {
+      animation: none;
+      opacity: 0.6;
+    }
+  }
+</style>

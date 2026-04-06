@@ -1,0 +1,62 @@
+/* src/styles/presence.css
+ * Presence bar breathing + foreign revival ripple.
+ * Tempo is controlled by --presence-tempo (set by presence-engine).
+ * Reduced-motion: static opacity, no ripple.
+ *
+ * Credits: Tanya (design spec), Mike (architecture)
+ */
+
+/* --- Presence breathing (uses custom property for dynamic tempo) --- */
+
+.presence-band {
+  --presence-tempo: 4s;
+}
+
+.presence-text {
+  animation: presence-breathe var(--presence-tempo) ease-in-out infinite;
+}
+
+.presence-dot {
+  animation: presence-breathe var(--presence-tempo) ease-in-out infinite;
+}
+
+/* --- Foreign revival ripple on decay cards --- */
+
+.decay-card.presence-ripple {
+  animation: ripple-pulse 800ms ease-out forwards;
+}
+
+@keyframes ripple-pulse {
+  0% {
+    box-shadow:
+      0 var(--decay-shadow-y, 4px) var(--decay-shadow-spread, 16px)
+      rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.12)),
+      0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0.15);
+  }
+  40% {
+    box-shadow:
+      0 6px 24px rgba(var(--mood-accent-rgb, 120,120,120), 0.18),
+      0 0 0 6px rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+  }
+  100% {
+    box-shadow:
+      0 var(--decay-shadow-y, 4px) var(--decay-shadow-spread, 16px)
+      rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.12)),
+      0 0 0 12px rgba(var(--mood-accent-rgb, 120,120,120), 0);
+  }
+}
+
+/* --- Reduced motion: no animations --- */
+
+@media (prefers-reduced-motion: reduce) {
+  .presence-text,
+  .presence-dot {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .decay-card.presence-ripple {
+    animation: none;
+    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.15);
+  }
+}

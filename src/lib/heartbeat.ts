@@ -36,9 +36,15 @@ let nextId = 0;
 let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
 let sweepTimer: ReturnType<typeof setInterval> | null = null;
 
-/** Format an SSE data frame. */
+/** Format an SSE data frame (revival event). */
 function sseFrame(event: HeartbeatEvent): Uint8Array {
   const line = `event: revival\ndata: ${JSON.stringify(event)}\n\n`;
+  return new TextEncoder().encode(line);
+}
+
+/** Format a named SSE frame (for presence, etc.). */
+export function sseNamedFrame(name: string, data: unknown): Uint8Array {
+  const line = `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
   return new TextEncoder().encode(line);
 }
 

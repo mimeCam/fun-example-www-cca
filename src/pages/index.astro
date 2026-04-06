@@ -17,6 +17,7 @@ import { groupIntoBands } from '../lib/timeBands';
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
 import GuidedTouch from '../components/GuidedTouch.astro';
+import PresenceBand from '../components/PresenceBand.astro';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -31,6 +32,7 @@ const allEntombed = displayPosts.every(p => p.entombed);
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
   <main class="feed">
+    <PresenceBand />
     <DiscoveryWhisper />
 
     {allEntombed && (
