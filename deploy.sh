@@ -28,7 +28,12 @@
 #             watchdog, Page Visibility pause), haptic choreography (diminishing
 #             taps, reduced-motion safe), accessible cascade ARIA announcements,
 #             mobile cascade controller (120ms stagger, scroll assist, orientation),
-#             touch/desktop strategy delegation in sympatheticBloom.
+#             touch/desktop strategy delegation in sympatheticBloom,
+#           Consequential Decay / Graveyard (entomb.ts, /graveyard page,
+#             POST /api/resurrect, TombstoneCard, RisenBadge — posts that
+#             fully decay ≥0.95 + 30 days dormant get entombed; readers
+#             resurrect them with +3 revival weight; risen_at column
+#             auto-migrated in SQLite at startup; zero new dependencies).
 
 set -euo pipefail
 

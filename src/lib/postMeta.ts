@@ -12,7 +12,9 @@ import { hourToPhase } from './timeAmbient';
 import type { TimePhase } from './timeAmbient';
 import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './decay';
 import type { FreshnessTag } from './decay';
-import { getRevivalCounts } from './collectiveMemory';
+import { getRevivalCounts, getRisenTimestamps } from './collectiveMemory';
+import { isEntombed, isRecentlyRisen, DORMANCY_DAYS } from './entomb';
+import { daysSince } from './temporal';
 
 export interface PostMeta {
   slug: string;
@@ -65,6 +67,9 @@ export interface PostDisplayData extends PostMeta {
   decayStyle: string;
   revivalCount: number;
   revivalWarm: boolean;
+  entombed: boolean;
+  risenAt: Date | null;
+  recentlyRisen: boolean;
 }
 
 /** Bundles metadata + decay visuals for a single post. */
@@ -72,10 +77,13 @@ export function getPostDisplayData(
   post: CollectionEntry<'blog'>,
   now = new Date(),
   revivals = 0,
+  risenAt: Date | null = null,
 ): PostDisplayData {
   const meta = extractMeta(post);
   const factor = decayFactor(meta.pubDateISO, 365, now, revivals);
   const warm = revivalBonus(revivals) > 0.15;
+  const lastRevivalDays = lastRevivalDaysAgo(risenAt, now);
+  const entombed = isEntombed(factor, lastRevivalDays);
   return {
     ...meta,
     decay: factor,
@@ -83,7 +91,17 @@ export function getPostDisplayData(
     decayStyle: decayStyleString(factor),
     revivalCount: revivals,
     revivalWarm: warm,
+    entombed,
+    risenAt,
+    recentlyRisen: isRecentlyRisen(risenAt, now),
   };
+}
+
+/** Days since last revival/resurrection, or Infinity if never revived. */
+function lastRevivalDaysAgo(risenAt: Date | null, now: Date): number {
+  if (!risenAt) return Infinity;
+  const ms = now.getTime() - risenAt.getTime();
+  return Math.max(0, Math.floor(ms / 86_400_000));
 }
 
 /** Display data for all posts, sorted newest-first. Single DB query. */
@@ -92,13 +110,22 @@ export function allPostDisplayData(
   now = new Date(),
 ): PostDisplayData[] {
   const counts = safeRevivalCounts();
+  const risen = safeRisenTimestamps();
   const sorted = [...posts].sort(byNewest);
-  return sorted.map(p => getPostDisplayData(p, now, counts.get(p.slug) ?? 0));
+  return sorted.map(p =>
+    getPostDisplayData(p, now, counts.get(p.slug) ?? 0, risen.get(p.slug) ?? null),
+  );
 }
 
 /** Graceful fallback: returns empty map if DB unavailable (e.g. SSG build). */
 function safeRevivalCounts(): Map<string, number> {
   try { return getRevivalCounts(); }
+  catch { return new Map(); }
+}
+
+/** Graceful fallback for risen timestamps. */
+function safeRisenTimestamps(): Map<string, Date> {
+  try { return getRisenTimestamps(); }
   catch { return new Map(); }
 }
 

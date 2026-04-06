@@ -41,13 +41,14 @@ function ageDays(post: PostDisplayData): number {
   return Math.max(0, Math.floor(ms / 86_400_000));
 }
 
-/** Partition sorted posts into three time bands. */
+/** Partition sorted posts into three time bands. Entombed posts are excluded. */
 export function groupIntoBands(posts: PostDisplayData[]): TimeBands {
+  const living = posts.filter(p => !p.entombed);
   const now:     PostDisplayData[] = [];
   const recent:  PostDisplayData[] = [];
   const archive: PostDisplayData[] = [];
 
-  for (const p of posts) {
+  for (const p of living) {
     const age = ageDays(p);
     if      (age <= NOW_DAYS)    now.push(p);
     else if (age <= RECENT_DAYS) recent.push(p);
@@ -73,10 +74,11 @@ export function hasPosts(bands: TimeBands): boolean {
 // ---------------------------------------------------------------------------
 
 export function _testTimeBands(): void {
-  const fake = (iso: string): PostDisplayData => ({
+  const fake = (iso: string, entombed = false): PostDisplayData => ({
     slug: 'x', title: 'X', description: '', url: '', pubDate: new Date(iso),
     pubDateISO: iso, readingTime: 1, decay: 0, freshness: 'recent',
-    decayStyle: '',
+    decayStyle: '', revivalCount: 0, revivalWarm: false,
+    entombed, risenAt: null, recentlyRisen: false,
   });
 
   const now = new Date();

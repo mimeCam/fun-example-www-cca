@@ -34,8 +34,9 @@ function db(): Database.Database {
 function initTables(d: Database.Database): void {
   d.exec(`
     CREATE TABLE IF NOT EXISTS revivals (
-      slug  TEXT PRIMARY KEY,
-      count INTEGER DEFAULT 0
+      slug      TEXT PRIMARY KEY,
+      count     INTEGER DEFAULT 0,
+      risen_at  TEXT DEFAULT NULL
     );
     CREATE TABLE IF NOT EXISTS rate_limit (
       ip_slug TEXT PRIMARY KEY,
@@ -46,6 +47,14 @@ function initTables(d: Database.Database): void {
       last_at      INTEGER NOT NULL
     );
   `);
+  migrateRisenAt(d);
+}
+
+/** Add risen_at column if missing (safe to run repeatedly). */
+function migrateRisenAt(d: Database.Database): void {
+  const cols = d.prepare("PRAGMA table_info('revivals')").all() as Array<{ name: string }>;
+  const has = cols.some(c => c.name === 'risen_at');
+  if (!has) d.exec("ALTER TABLE revivals ADD COLUMN risen_at TEXT DEFAULT NULL");
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +96,37 @@ export function incrementRevival(slug: string): number {
   `);
   const row = stmt.get(slug) as { count: number } | undefined;
   return row?.count ?? 1;
+}
+
+/** Resurrect a post: bump revival count by weight, set risen_at. Returns new count. */
+export function resurrectPost(slug: string, weight: number): number {
+  const stmt = db().prepare(`
+    INSERT INTO revivals (slug, count, risen_at) VALUES (?, ?, ?)
+    ON CONFLICT(slug) DO UPDATE SET count = count + ?, risen_at = ?
+    RETURNING count
+  `);
+  const now = new Date().toISOString();
+  const row = stmt.get(slug, weight, now, weight, now) as { count: number } | undefined;
+  return row?.count ?? weight;
+}
+
+/** Get risen_at timestamps for all posts (one query for homepage). */
+export function getRisenTimestamps(): Map<string, Date> {
+  const rows = db()
+    .prepare('SELECT slug, risen_at FROM revivals WHERE risen_at IS NOT NULL')
+    .all() as Array<{ slug: string; risen_at: string }>;
+  const map = new Map<string, Date>();
+  for (const r of rows) map.set(r.slug, new Date(r.risen_at));
+  return map;
+}
+
+/** Get last revival timestamp for a single slug (for dormancy check). */
+export function getLastRevivalAt(slug: string): Date | null {
+  const row = db()
+    .prepare('SELECT risen_at FROM revivals WHERE slug = ?')
+    .get(slug) as { risen_at: string | null } | undefined;
+  if (!row?.risen_at) return null;
+  return new Date(row.risen_at);
 }
 
 // ---------------------------------------------------------------------------

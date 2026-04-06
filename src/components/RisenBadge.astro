@@ -1,0 +1,32 @@
+---
+// src/components/RisenBadge.astro
+// Small "risen" indicator on homepage cards that were recently resurrected.
+// Fades after 7 days (controlled by postMeta.recentlyRisen).
+// Mood-tinted, subtle — a quiet signal, not a spotlight.
+
+interface Props { visible: boolean; }
+
+const { visible } = Astro.props;
+---
+
+{visible && (
+  <span class="risen-badge" aria-label="Risen from the graveyard">
+    &#x2191; risen
+  </span>
+)}
+
+<style>
+  .risen-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(var(--mood-accent-rgb, 120,120,120), 0.65);
+    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
+    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+</style>

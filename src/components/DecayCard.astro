@@ -11,6 +11,7 @@
 
 import PostBadge from './PostBadge.astro';
 import RevivalBadge from './RevivalBadge.astro';
+import RisenBadge from './RisenBadge.astro';
 import KeepButton from './KeepButton.astro';
 import BloomParticles from './BloomParticles.astro';
 import { formatPubDate } from '../lib/dates'
@@ -47,6 +48,7 @@ const formattedDate = formatPubDate(post.pubDate);
     </span>
     {post.revivalCount > 0 && <span class="footer-dot">&middot;</span>}
     <RevivalBadge count={post.revivalCount} />
+    <RisenBadge visible={post.recentlyRisen} />
     <KeepButton slug={post.slug} />
   </div>
 </article>

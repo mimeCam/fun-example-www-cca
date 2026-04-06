@@ -6,7 +6,8 @@ import { resolveMood, type MoodDefinition } from './mood';
 
 /** Canonical page IDs used across navigation components. */
 export type PageId = 'home' | 'now' | 'wall' | 'embers'
-  | 'tidepool' | 'lowtide' | 'constellations' | 'blog' | 'pulse' | 'unknown';
+  | 'tidepool' | 'lowtide' | 'constellations' | 'blog' | 'pulse'
+  | 'graveyard' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
   ['/now', 'now'],
@@ -17,6 +18,7 @@ const PAGE_PREFIXES: [string, PageId][] = [
   ['/constellations', 'constellations'],
   ['/blog', 'blog'],
   ['/pulse', 'pulse'],
+  ['/graveyard', 'graveyard'],
 ];
 
 /** Derives the active PageId from a pathname string. SSR-safe. */

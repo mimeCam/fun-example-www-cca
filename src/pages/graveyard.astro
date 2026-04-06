@@ -1,0 +1,104 @@
+---
+// src/pages/graveyard.astro
+// The Graveyard — posts that reached full decay with zero recent revivals.
+// Visual inverse of the homepage: dark, monochrome, stripped bare.
+// No fog overlay, no bloom, no spectacle — the absence IS the atmosphere.
+// Resurrection requires deliberate action (click, not hover).
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TombstoneCard from '../components/TombstoneCard.astro';
+import { allPostDisplayData } from '../lib/postMeta';
+import { resurrectClientScript } from '../lib/resurrectClient';
+
+const posts = await getCollection('blog');
+const all = allPostDisplayData(posts);
+const entombed = all.filter(p => p.entombed);
+const livingCount = all.length - entombed.length;
+---
+
+<BaseLayout title="Graveyard — Posts Lost to Time">
+  <script set:html={resurrectClientScript()} />
+  <main class="graveyard">
+    <header class="graveyard-header">
+      <h1 class="graveyard-title">Graveyard</h1>
+      <p class="graveyard-subtitle">
+        {entombed.length === 0
+          ? 'Nothing here yet. All posts are still alive.'
+          : `${entombed.length} ${entombed.length === 1 ? 'post' : 'posts'} lost to time.`}
+      </p>
+    </header>
+
+    {entombed.length > 0 && (
+      <section class="tombs" aria-label="Entombed posts">
+        {entombed.map(post => <TombstoneCard post={post} />)}
+      </section>
+    )}
+
+    {entombed.length > 0 && livingCount > 0 && (
+      <footer class="graveyard-footer">
+        <a href="/" class="back-link">
+          &larr; {livingCount} {livingCount === 1 ? 'post' : 'posts'} still alive
+        </a>
+      </footer>
+    )}
+
+    {entombed.length === 0 && (
+      <footer class="graveyard-footer">
+        <a href="/" class="back-link">&larr; back to the living</a>
+      </footer>
+    )}
+  </main>
+</BaseLayout>
+
+<style>
+  .graveyard {
+    padding: 3rem 1rem 4rem;
+    max-width: 44rem;
+    margin: 0 auto;
+    min-height: 60vh;
+  }
+
+  .graveyard-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .graveyard-title {
+    font-size: 1.1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    margin: 0 0 0.5rem;
+  }
+
+  .graveyard-subtitle {
+    font-size: 0.78rem;
+    opacity: 0.3;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .tombs {
+    margin-bottom: 2rem;
+  }
+
+  .graveyard-footer {
+    text-align: center;
+    margin-top: 2rem;
+  }
+
+  .back-link {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    opacity: 0.35;
+    color: inherit;
+    text-decoration: none;
+    transition: opacity 200ms ease;
+  }
+
+  .back-link:hover {
+    opacity: 0.6;
+  }
+</style>
