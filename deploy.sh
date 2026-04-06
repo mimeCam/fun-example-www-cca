@@ -8,10 +8,7 @@
 #           SSE heartbeat (long-lived connections for real-time revival pulses),
 #           heartbeat bridge (remote→bloom), ambient presence pulse indicator,
 #           dynamic OG image generation (satori + resvg — needs extra memory),
-#           FSM spectacle controller (idle→bloom→decay→resist→handoff→done),
-#           first-visit cinematic handshake (2-second gate via localStorage),
 #           keyboard revival (Space/Enter hold on .decay-card, 600 ms dwell),
-#           spectacle demo revival (__demo__ slug, no DB write, handoff phase),
 #           accessible radial ring (RadialRing.astro + radialRingA11y.ts + ring.css),
 #           revival share bottom sheet (RevivalShareSheet.astro + revivalShare.ts —
 #             slides up on revival:success, static scroll-revealed fallback button,
@@ -23,6 +20,12 @@
 #           FirstBreath arrival choreography (FirstBreath.astro + first-breath.css —
 #             time-aware whisper banner, 4-beat fade sequence, page desaturate→bloom,
 #             once per browser session via sessionStorage gate, reduced-motion safe),
+#           First Visit Whisper (FirstVisitWhisper.astro + whisperSequence.ts +
+#             whisperA11y.ts — non-blocking inline onboarding hint on first visit;
+#             localStorage gate 'whisper_seen'; 2-step sequence: decay awareness →
+#             graveyard discovery; auto-dismiss + click-dismiss; prefers-reduced-motion
+#             safe with static fallback; ARIA role=status + aria-live=polite;
+#             replaces former spectacle gate — lighter, zero overlay, zero blocking),
 #           Sympathetic Bloom mobile polish — circuit breaker guardrails (max 4
 #             concurrent blooms, 5s hard timeout, thundering-herd detection, FPS
 #             watchdog, Page Visibility pause), haptic choreography (diminishing

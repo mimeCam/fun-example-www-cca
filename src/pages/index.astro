@@ -17,9 +17,7 @@ import { groupIntoBands } from '../lib/timeBands';
 import { decayChoreographyScript } from '../lib/decayChoreography';
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
-import TimeTravelSlider from '../components/TimeTravelSlider.astro';
-import FogOverlay from '../components/FogOverlay.astro';
-import FirstVisitSpectacle from '../components/FirstVisitSpectacle.astro';
+import FirstVisitWhisper from '../components/FirstVisitWhisper.astro';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
@@ -35,10 +33,7 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
   <script set:html={decayChoreographyScript()} />
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
-  <FogOverlay />
-  <FirstVisitSpectacle />
   <main class="feed">
-    <TimeTravelSlider />
     {freshestLoop && <PulseTeaser loop={freshestLoop} />}
 
     {allEntombed && (
@@ -53,6 +48,8 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
         {bands.now.posts.map(post => <DecayCard post={post} />)}
       </section>
     )}
+
+    <FirstVisitWhisper />
 
     {bands.recent.posts.length > 0 && (
       <section class="band band--recent" data-band="recent" aria-label={bands.recent.hint}>
@@ -141,11 +138,4 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
   }
   .graveyard-cta:hover { opacity: 1; }
 
-  /* ── Spectacle overrides ─────────────────────────── */
-  :global([data-spectacle-active]) .feed {
-    pointer-events: none;
-  }
-  :global([data-spectacle-active]) .tt-bar {
-    pointer-events: none;
-  }
 </style>
