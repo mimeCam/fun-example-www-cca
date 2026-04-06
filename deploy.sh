@@ -26,9 +26,17 @@
 #           Sympathetic Bloom mobile polish — circuit breaker guardrails (max 4
 #             concurrent blooms, 5s hard timeout, thundering-herd detection, FPS
 #             watchdog, Page Visibility pause), haptic choreography (diminishing
-#             taps, reduced-motion safe), accessible cascade ARIA announcements,
-#             mobile cascade controller (120ms stagger, scroll assist, orientation),
-#             touch/desktop strategy delegation in sympatheticBloom,
+#             taps 18→12→6ms, singlePulse API, reduced-motion safe), accessible
+#             cascade ARIA announcements + border-color flash for sympathetic
+#             cards under reduced-motion, mobile cascade controller (120ms stagger,
+#             scroll assist block:'nearest', active-scroll detection, orientation
+#             debounce), touch/desktop strategy delegation in sympatheticBloom,
+#             touch-cancel ghost bloom prevention in orchestrator, GPU will-change
+#             promote/demote lifecycle (frees mobile GPU memory after settle),
+#             degraded-mode intensity cap (0.5) when guardrails report low FPS,
+#             bloom.css: linear() spring curve (progressive enhancement), mobile
+#             particle cap (nth-child(n+5) hidden ≤640px), rolling 8-frame FPS
+#             sampling with 45fps degrade / 30fps kill thresholds,
 #           Consequential Decay / Graveyard (entomb.ts, /graveyard page,
 #             POST /api/resurrect, TombstoneCard, RisenBadge — posts that
 #             fully decay ≥0.95 + 30 days dormant get entombed; readers

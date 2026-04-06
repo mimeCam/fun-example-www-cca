@@ -1,8 +1,11 @@
 // src/lib/bloomOrchestrator.ts
 // The missing conductor: wires 'revival:success' to multi-phase bloom.
-// Phases: Validate → Ignite → Burst → Afterglow → Settle
+// Phases: Validate → Ignite → Burst → Afterglow → Settle → Cleanup
 // FIFO queue: max 1 bloom per card at a time.
 // Respects prefers-reduced-motion and time-travel state.
+// Handles touch-cancel to prevent ghost blooms from interrupted gestures.
+// Clears will-change after settle (frees GPU memory on mobile).
+// Uses degraded intensity when guardrails report low FPS.
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -16,6 +19,7 @@ const PHASE_SETTLE_MS = 1800;
 const PHASE_CLEANUP_MS = 3000;
 const MAX_DAYS = 365;
 const MS_PER_DAY = 86_400_000;
+const DEGRADED_MAX_INTENSITY = 0.5;
 
 // ---------------------------------------------------------------------------
 // Inline IIFE generator
@@ -27,6 +31,13 @@ export function bloomOrchestratorScript(): string {
   var blooming=new Set();
   var queue=[];
   var ttActive=false;
+  var cancelledSlugs=new Set();
+
+  listenRevival();
+  listenTimeTravel();
+  listenGuardrailKill();
+  listenTouchCancel();
+  ensureAriaRegion();
 
   function prefersReduced(){
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -59,7 +70,7 @@ export function bloomOrchestratorScript(): string {
     if(!region)return;
     var title=el.querySelector('.post-link');
     var name=title?title.textContent.trim():'Post';
-    region.textContent=name+' revived — remembered by '+count+' readers'
+    region.textContent=name+' revived \\u2014 remembered by '+count+' readers'
   }
 
   function updateBadge(el,count){
@@ -83,6 +94,10 @@ export function bloomOrchestratorScript(): string {
     if(!el)return dequeue();
     if(blooming.has(slug))return dequeue();
     if(ttActive)return dequeue();
+    if(cancelledSlugs.has(slug)){
+      cancelledSlugs.delete(slug);
+      return dequeue()
+    }
 
     blooming.add(slug);
     el.dataset.revivalCount=String(count);
@@ -93,35 +108,53 @@ export function bloomOrchestratorScript(): string {
       return dequeue()
     }
 
-    if(isLowFps())intensity=Math.min(intensity,0.5);
+    if(isDegraded())intensity=Math.min(intensity,${DEGRADED_MAX_INTENSITY});
     applyIntensity(el,intensity);
     el.setAttribute('data-bloom-lock','1');
+    promoteGpu(el);
     el.classList.add('blooming','bloom-lift');
     updateBadge(el,count);
     if(intensity>=1)announce(el,count);
 
     setTimeout(function(){
+      if(!blooming.has(slug))return;
       patchDecay(el,count)
     },${PHASE_BURST_RECALC_MS});
 
     setTimeout(function(){
+      if(!blooming.has(slug))return;
       el.classList.remove('blooming');
       el.classList.add('bloom-afterglow')
     },${PHASE_AFTERGLOW_MS});
 
     setTimeout(function(){
+      if(!blooming.has(slug))return;
       el.classList.remove('bloom-afterglow','bloom-lift');
-      el.classList.add('bloom-settle')
+      el.classList.add('bloom-settle');
+      demoteGpu(el)
     },${PHASE_SETTLE_MS});
 
     setTimeout(function(){
-      el.classList.remove('bloom-settle');
-      el.removeAttribute('data-bloom-lock');
-      clearIntensity(el);
-      blooming.delete(slug);
-      releaseGuardrail(slug);
-      dequeue()
+      cleanupBloom(el,slug)
     },${PHASE_CLEANUP_MS})
+  }
+
+  function cleanupBloom(el,slug){
+    el.classList.remove('bloom-settle');
+    el.removeAttribute('data-bloom-lock');
+    clearIntensity(el);
+    demoteGpu(el);
+    blooming.delete(slug);
+    releaseGuardrail(slug);
+    dequeue()
+  }
+
+  function promoteGpu(el){
+    el.style.willChange='transform, opacity'
+  }
+
+  function demoteGpu(el){
+    el.style.removeProperty('will-change')
   }
 
   function dequeue(){
@@ -132,9 +165,7 @@ export function bloomOrchestratorScript(): string {
 
   function applyIntensity(el,intensity){
     el.style.setProperty('--bloom-intensity',intensity.toFixed(2));
-    if(intensity<1){
-      el.classList.add('sympathetic')
-    }
+    if(intensity<1)el.classList.add('sympathetic')
   }
 
   function clearIntensity(el){
@@ -152,21 +183,36 @@ export function bloomOrchestratorScript(): string {
     runBloom(slug,count,intensity)
   }
 
-  document.addEventListener('revival:success',function(e){
-    var d=e.detail;
-    if(!d||!d.slug)return;
-    if(d.programmatic)ttActive=false;
-    enqueue(d.slug,d.newCount||1,d.intensity)
-  });
+  function listenRevival(){
+    document.addEventListener('revival:success',function(e){
+      var d=e.detail;
+      if(!d||!d.slug)return;
+      if(d.programmatic)ttActive=false;
+      enqueue(d.slug,d.newCount||1,d.intensity)
+    })
+  }
 
-  document.addEventListener('timetravel:seek',function(){ttActive=true});
-  document.addEventListener('timetravel:exit',function(){ttActive=false});
+  function listenTimeTravel(){
+    document.addEventListener('timetravel:seek',function(){ttActive=true});
+    document.addEventListener('timetravel:exit',function(){ttActive=false})
+  }
 
-  document.addEventListener('bloom:guardrail:kill',function(e){
-    var d=e.detail;
-    if(!d||!d.slug)return;
-    forceCleanup(d.slug)
-  });
+  function listenGuardrailKill(){
+    document.addEventListener('bloom:guardrail:kill',function(e){
+      var d=e.detail;
+      if(!d||!d.slug)return;
+      forceCleanup(d.slug)
+    })
+  }
+
+  function listenTouchCancel(){
+    document.addEventListener('revival:cancel',function(e){
+      var d=e.detail;
+      if(!d||!d.slug)return;
+      if(blooming.has(d.slug))forceCleanup(d.slug);
+      else cancelledSlugs.add(d.slug)
+    })
+  }
 
   function forceCleanup(slug){
     var el=findCard(slug);
@@ -174,6 +220,7 @@ export function bloomOrchestratorScript(): string {
     el.classList.remove('blooming','bloom-lift','bloom-afterglow','bloom-settle');
     el.removeAttribute('data-bloom-lock');
     clearIntensity(el);
+    demoteGpu(el);
     blooming.delete(slug);
     releaseGuardrail(slug)
   }
@@ -188,12 +235,15 @@ export function bloomOrchestratorScript(): string {
     if(api&&api.release)api.release(slug)
   }
 
-  function isLowFps(){
+  function isDegraded(){
     var api=document.__bloomGuardrails;
-    return api&&api.isLowFps?api.isLowFps():false
+    if(!api)return false;
+    if(api.isKilled&&api.isKilled())return true;
+    return api.isLowFps?api.isLowFps():false
   }
 
-  if(!document.getElementById('bloom-aria-region')){
+  function ensureAriaRegion(){
+    if(document.getElementById('bloom-aria-region'))return;
     var r=document.createElement('div');
     r.id='bloom-aria-region';
     r.setAttribute('aria-live','polite');
@@ -216,6 +266,14 @@ export function _testBloomOrchestrator(): void {
     'listens for revival:success'
   );
   console.assert(
+    script.includes("revival:cancel"),
+    'handles touch-cancel ghost bloom prevention'
+  );
+  console.assert(
+    script.includes("cancelledSlugs"),
+    'tracks cancelled slugs to prevent ghost blooms'
+  );
+  console.assert(
     script.includes("data-bloom-lock"),
     'sets bloom lock attribute'
   );
@@ -230,6 +288,14 @@ export function _testBloomOrchestrator(): void {
   console.assert(
     script.includes("bloom-settle"),
     'adds bloom-settle class'
+  );
+  console.assert(
+    script.includes("willChange"),
+    'promotes/demotes GPU will-change'
+  );
+  console.assert(
+    script.includes("demoteGpu"),
+    'clears will-change after settle to free GPU memory'
   );
   console.assert(
     script.includes("prefers-reduced-motion"),

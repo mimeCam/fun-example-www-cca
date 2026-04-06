@@ -6,6 +6,8 @@
 // Key behaviors:
 // - 600ms hold threshold (shorter than desktop — thumb fatigue)
 // - 10px move dead zone cancels revival (prevents scroll conflicts)
+// - Card lifts immediately on touch-start (instant feedback)
+// - Settles back with ease-out if released early
 // - Emits revival:start, revival:progress, revival:cancel events
 // - Vibration API pulses at 50% and 100% (progressive enhancement)
 
@@ -17,6 +19,12 @@ const MOVE_DEAD_ZONE = 10;
 
 /** Progress tick interval for ring animation (ms). */
 const TICK_MS = 16;
+
+/** Instant lift on touch-start (px). */
+const TOUCH_LIFT_PX = 2;
+
+/** Ease-out duration when touch releases early (ms). */
+const SETTLE_MS = 200;
 
 /** Returns inline JS fragment for touch hold revival. */
 export function touchStrategyFragment(): string {
@@ -32,7 +40,8 @@ export function touchStrategyFragment(): string {
     }
 
     function vibrate(ms) {
-      if (navigator.vibrate) navigator.vibrate(ms);
+      try { if (navigator.vibrate) navigator.vibrate(ms); }
+      catch(e) {}
     }
 
     function distanceMoved(touch) {
@@ -42,10 +51,25 @@ export function touchStrategyFragment(): string {
       return Math.sqrt(dx * dx + dy * dy);
     }
 
+    function liftCard(card) {
+      card.style.transition = 'transform 80ms ease-out';
+      card.style.transform = 'translateY(-${TOUCH_LIFT_PX}px)';
+    }
+
+    function settleCard(card) {
+      card.style.transition = 'transform ${SETTLE_MS}ms ease-out';
+      card.style.transform = '';
+      setTimeout(function() {
+        card.style.removeProperty('transition');
+        card.style.removeProperty('transform');
+      }, ${SETTLE_MS});
+    }
+
     function cancelRevival(reason) {
       if (!state) return;
       clearTimeout(state.holdTimer);
       clearInterval(state.tickTimer);
+      settleCard(state.card);
       emitPhase('cancel', {
         slug: state.slug, reason: reason
       });
@@ -57,6 +81,7 @@ export function touchStrategyFragment(): string {
       clearInterval(state.tickTimer);
       vibrate(30);
       var s = state.slug;
+      settleCard(state.card);
       emitPhase('progress', { slug: s, progress: 1 });
       send(s, 'touch');
       state = null;
@@ -93,6 +118,7 @@ export function touchStrategyFragment(): string {
         holdTimer: null,
         tickTimer: null
       };
+      liftCard(card);
       emitPhase('start', {
         slug: s,
         x: touch.clientX,

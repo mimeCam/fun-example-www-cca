@@ -1,17 +1,18 @@
 /* src/styles/bloom.css
  * Revival Bloom — dramatic visual feedback when a reader revives a post.
- * Three phases: Flash (0-200ms) → Hold (200-600ms) → Settle (600-1800ms).
+ * Phases: Ignite (0-100ms) → Burst (100-800ms) → Afterglow (800-1700ms)
+ *       → Settle (1700-2900ms) → Cleanup (3000ms)
  * GPU-composited only: transform, opacity, filter, box-shadow.
  * All animations respect prefers-reduced-motion.
+ * Mobile: capped particle count, will-change managed by JS.
  */
 
 /* ---------------------------------------------------------------------------
- * Phase 1-2: Active bloom (JS adds .blooming via Web Animations API)
+ * Phase 1-2: Active bloom (JS adds .blooming via orchestrator)
  * ------------------------------------------------------------------------- */
 
 .decay-card.blooming {
   pointer-events: none;
-  will-change: transform, opacity, filter, box-shadow;
   z-index: 2;
 }
 
@@ -81,19 +82,6 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Phase 3: Settle — card eases to new (fresher) decay level
- * Spring-like cubic-bezier with slight overshoot.
- * ------------------------------------------------------------------------- */
-
-.decay-card.bloom-settle {
-  transition:
-    opacity 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    filter 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* ---------------------------------------------------------------------------
  * Bloom particles: CSS-only burst scattered by .blooming parent
  * ------------------------------------------------------------------------- */
 
@@ -141,6 +129,13 @@
   }
 }
 
+/* Mobile: reduce particle count to save GPU budget */
+@media (max-width: 640px) {
+  .bloom-particle:nth-child(n+5) {
+    display: none;
+  }
+}
+
 /* ---------------------------------------------------------------------------
  * Bloom lift: card rises during ignite + burst phases
  * ------------------------------------------------------------------------- */
@@ -163,8 +158,10 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Bloom settle spring: card eases to final resting state
- * Sacred curve: cubic-bezier(0.34, 1.56, 0.64, 1) — 56% overshoot
+ * Bloom settle: card eases to final resting state
+ * Uses linear() for true spring physics where supported,
+ * falls back to cubic-bezier (56% overshoot) in older browsers.
+ * Ref: Josh Comeau's linear() timing function guide.
  * ------------------------------------------------------------------------- */
 
 .decay-card.bloom-settle {
@@ -173,6 +170,23 @@
     box-shadow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     filter 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Progressive enhancement: true spring via linear() */
+@supports (transition-timing-function: linear(0, 1)) {
+  .decay-card.bloom-settle {
+    --spring: linear(
+      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%,
+      0.938 16.7%, 1.017, 1.077, 1.121 24%, 1.149 26.2%,
+      1.159, 1.151 32%, 1.017 45.9%, 0.991, 0.977 55%,
+      0.975 58%, 0.997 69.2%, 1.003 76.3%, 1
+    );
+    transition:
+      transform 1.2s var(--spring),
+      box-shadow 1.2s var(--spring),
+      opacity 1.2s var(--spring),
+      filter 1.2s var(--spring);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -214,7 +228,10 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Reduced motion: instant state swap, no animation
+ * Reduced motion: emotionally resonant without motion
+ * Primary: opacity pulse + single haptic (JS handles haptic)
+ * Sympathetic: border-color flash (accent → transparent → back)
+ * Per Adobe's Defensive Design for Motion-Sensitive Users.
  * ------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -238,7 +255,7 @@
 
   .decay-card.sympathetic {
     border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.20);
-    transition: border-color 200ms ease;
+    transition: border-color 400ms ease;
   }
 
   .decay-card.sympathetic .bloom-ring {

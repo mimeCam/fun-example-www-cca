@@ -16,5 +16,4 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Sympathetic Bloom Mobile — needs physical-device QA
-- Dead code cleanup — orphaned old files (onboardProbe.ts, onboardHint.ts, revivalReward.ts, revivalToast.ts, FirstVisitWhisper.astro, whisperSequence.ts, whisperA11y.ts) pending deletion after deploy validation
+- Sympathetic Bloom Mobile — code hardened, needs physical-device QA (Pixel 6a, Galaxy A14, iPhone 13)

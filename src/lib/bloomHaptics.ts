@@ -2,12 +2,21 @@
 // Haptic choreography for sympathetic cascade on touch devices.
 // Primary revival: strong pulse (handled by revivalTouch.ts).
 // Sympathetic cascade: diminishing taps synced to stagger timing.
+// The haptic pattern IS the cascade rhythm — indexed by position.
 // Respects prefers-reduced-motion. Graceful no-op when unsupported.
 // Follows the inline IIFE pattern (see bloomOrchestrator.ts).
 
-const HAPTIC_PRIMARY_MS = 15;
-const HAPTIC_SECONDARY_MS = 10;
-const MAX_HAPTIC_INDEX = 2;
+/** First sympathetic bloom: decisive medium pulse. */
+const HAPTIC_PRIMARY_MS = 18;
+
+/** Second sympathetic bloom: lighter echo. */
+const HAPTIC_SECONDARY_MS = 12;
+
+/** Third sympathetic bloom: faintest whisper. */
+const HAPTIC_TERTIARY_MS = 6;
+
+/** Beyond this index: silence. Diminishing returns. */
+const MAX_HAPTIC_INDEX = 3;
 
 // ---------------------------------------------------------------------------
 // Inline IIFE generator
@@ -15,11 +24,11 @@ const MAX_HAPTIC_INDEX = 2;
 
 export function bloomHapticsScript(): string {
   return `(function(){
-  var PRIMARY=${HAPTIC_PRIMARY_MS};
-  var SECONDARY=${HAPTIC_SECONDARY_MS};
+  var PATTERN=[${HAPTIC_PRIMARY_MS},${HAPTIC_SECONDARY_MS},${HAPTIC_TERTIARY_MS}];
   var MAX_IDX=${MAX_HAPTIC_INDEX};
+  var supported=null;
 
-  document.__bloomHaptics={tap:tap};
+  document.__bloomHaptics={tap:tap,singlePulse:singlePulse};
 
   function tap(index){
     if(!canVibrate())return false;
@@ -29,8 +38,15 @@ export function bloomHapticsScript(): string {
     return vibrate(dur)
   }
 
+  function singlePulse(){
+    if(!canVibrate())return false;
+    return vibrate(PATTERN[0])
+  }
+
   function canVibrate(){
-    return typeof navigator!=='undefined'&&'vibrate'in navigator
+    if(supported!==null)return supported;
+    supported=typeof navigator!=='undefined'&&'vibrate'in navigator;
+    return supported
   }
 
   function prefersReduced(){
@@ -38,9 +54,8 @@ export function bloomHapticsScript(): string {
   }
 
   function hapticDur(index){
-    if(index===0)return PRIMARY;
-    if(index<MAX_IDX)return SECONDARY;
-    return 0
+    if(index>=MAX_IDX)return 0;
+    return PATTERN[index]||0
   }
 
   function vibrate(ms){
@@ -62,6 +77,10 @@ export function _testBloomHaptics(): void {
     'exposes haptics API',
   );
   console.assert(
+    script.includes('singlePulse'),
+    'exposes singlePulse for reduced-motion a11y',
+  );
+  console.assert(
     script.includes('navigator.vibrate'),
     'uses Vibration API',
   );
@@ -70,8 +89,16 @@ export function _testBloomHaptics(): void {
     'respects reduced motion',
   );
   console.assert(
+    script.includes('PATTERN'),
+    'uses indexed haptic pattern array',
+  );
+  console.assert(
     script.includes(String(HAPTIC_PRIMARY_MS)),
     'uses primary haptic constant',
+  );
+  console.assert(
+    script.includes(String(HAPTIC_TERTIARY_MS)),
+    'uses tertiary haptic constant',
   );
 
   console.log('[bloom-haptics] OK — script structure verified');

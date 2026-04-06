@@ -2,16 +2,21 @@
 // Mobile-specific cascade UX controller for Sympathetic Bloom.
 // Viewport-aware stagger, scroll-into-view assist, haptic integration,
 // orientation change handling, guardrail-gated bloom requests.
+// Caps cascade to MAX_CASCADE visible cards (mobile GPU budget).
+// Detects active scrolling to skip scroll-assist when user is in control.
+// Debounces orientation change observer rebuild.
 // Follows the inline IIFE pattern (see bloomOrchestrator.ts).
 
-const MOBILE_STAGGER_MS = 120;
+const MOBILE_STAGGER_MS = 150;
 const MOBILE_DELAY_BASE_MS = 200;
 const MOBILE_IO_THRESHOLD = 0.2;
 const SCROLL_ASSIST_PX = 100;
-const SCROLL_OFFSET_PX = 60;
 const INTENSITY_SCALE = 0.5;
 const CARD_SELECTOR = '.decay-card';
 const MIN_STRENGTH = 0.2;
+const MAX_CASCADE = 3;
+const ORIENT_DEBOUNCE_MS = 300;
+const SCROLL_IDLE_MS = 150;
 
 // ---------------------------------------------------------------------------
 // Inline IIFE generator
@@ -23,12 +28,17 @@ export function cascadeMobileScript(): string {
   var BASE_DELAY=${MOBILE_DELAY_BASE_MS};
   var IO_THRESH=${MOBILE_IO_THRESHOLD};
   var SCROLL_ZONE=${SCROLL_ASSIST_PX};
-  var SCROLL_PAD=${SCROLL_OFFSET_PX};
   var SCALE=${INTENSITY_SCALE};
   var MIN_STR=${MIN_STRENGTH};
+  var MAX_C=${MAX_CASCADE};
+  var ORIENT_DB=${ORIENT_DEBOUNCE_MS};
+  var SCROLL_IDLE=${SCROLL_IDLE_MS};
 
   var visible=new Set();
   var obs=null;
+  var orientTimer=null;
+  var scrollTimer=null;
+  var userScrolling=false;
 
   init();
 
@@ -36,7 +46,8 @@ export function cascadeMobileScript(): string {
     obs=createObs();
     observeAll();
     listenEvents();
-    listenOrientation()
+    listenOrientation();
+    listenScroll()
   }
 
   function createObs(){
@@ -54,30 +65,42 @@ export function cascadeMobileScript(): string {
 
   function observeAll(){
     if(!obs)return;
-    document.querySelectorAll('${CARD_SELECTOR}[data-slug]').forEach(function(el){
-      obs.observe(el)
-    })
+    var cards=document.querySelectorAll('${CARD_SELECTOR}[data-slug]');
+    cards.forEach(function(el){obs.observe(el)})
   }
 
   function listenEvents(){
-    document.addEventListener('heartbeat:revival',function(e){
-      handleCascade(e.detail&&e.detail.resonance)
-    });
-    document.addEventListener('revival:local:resonance',function(e){
-      handleCascade(e.detail&&e.detail.resonance)
-    })
+    document.addEventListener('heartbeat:revival',onCascade);
+    document.addEventListener('revival:local:resonance',onCascade)
+  }
+
+  function onCascade(e){
+    handleCascade(e.detail&&e.detail.resonance)
   }
 
   function listenOrientation(){
-    window.addEventListener('orientationchange',function(){
-      rebuildObs()
-    })
+    window.addEventListener('orientationchange',debouncedRebuild)
+  }
+
+  function debouncedRebuild(){
+    if(orientTimer)clearTimeout(orientTimer);
+    orientTimer=setTimeout(rebuildObs,ORIENT_DB)
   }
 
   function rebuildObs(){
     if(obs)obs.disconnect();
     obs=createObs();
     observeAll()
+  }
+
+  function listenScroll(){
+    window.addEventListener('scroll',markScrolling,{passive:true})
+  }
+
+  function markScrolling(){
+    userScrolling=true;
+    if(scrollTimer)clearTimeout(scrollTimer);
+    scrollTimer=setTimeout(function(){userScrolling=false},SCROLL_IDLE)
   }
 
   function handleCascade(resonance){
@@ -87,10 +110,14 @@ export function cascadeMobileScript(): string {
   }
 
   function filterCandidates(resonance){
-    return resonance.filter(function(link){
-      if(link.strength<MIN_STR)return false;
-      return visible.has(link.slug)||isNearFold(link.slug)
-    })
+    var out=[];
+    for(var i=0;i<resonance.length;i++){
+      if(out.length>=MAX_C)break;
+      var link=resonance[i];
+      if(link.strength<MIN_STR)continue;
+      if(visible.has(link.slug)||isNearFold(link.slug))out.push(link)
+    }
+    return out
   }
 
   function isNearFold(slug){
@@ -123,9 +150,10 @@ export function cascadeMobileScript(): string {
 
   function scrollAssist(slug){
     if(visible.has(slug))return;
+    if(userScrolling)return;
     var card=findCard(slug);
     if(!card)return;
-    card.scrollIntoView({behavior:'smooth',block:'center'})
+    card.scrollIntoView({behavior:'smooth',block:'nearest'})
   }
 
   function fireBloom(slug,intensity){
@@ -171,6 +199,22 @@ export function _testCascadeMobile(): void {
   console.assert(
     script.includes('scrollIntoView'),
     'provides scroll assist',
+  );
+  console.assert(
+    script.includes("block:'nearest'"),
+    'scroll-assist uses nearest, not center',
+  );
+  console.assert(
+    script.includes('userScrolling'),
+    'skips scroll-assist when user is scrolling',
+  );
+  console.assert(
+    script.includes('MAX_C'),
+    'caps cascade to max visible cards',
+  );
+  console.assert(
+    script.includes('debouncedRebuild'),
+    'debounces orientation observer rebuild',
   );
   console.assert(
     script.includes('__bloomGuardrails'),

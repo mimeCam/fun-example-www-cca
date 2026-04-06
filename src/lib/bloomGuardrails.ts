@@ -2,13 +2,16 @@
 // Defensive animation circuit breaker for cascade blooms.
 // Caps concurrent blooms, enforces hard timeouts, detects thundering herds,
 // pauses when tab is backgrounded, degrades on low FPS.
+// Rolling FPS sampling: auto-reduce intensity below 45fps, kill below 30fps.
 // Follows the inline IIFE pattern (see bloomOrchestrator.ts).
 
 const MAX_CONCURRENT = 4;
 const HARD_TIMEOUT_MS = 5000;
 const CIRCUIT_RATE = 3;
 const CIRCUIT_WINDOW_MS = 1000;
-const FPS_FLOOR = 30;
+const FPS_KILL = 30;
+const FPS_DEGRADE = 45;
+const FPS_SAMPLE_SIZE = 8;
 
 // ---------------------------------------------------------------------------
 // Inline IIFE generator
@@ -20,13 +23,16 @@ export function bloomGuardrailsScript(): string {
   var TIMEOUT=${HARD_TIMEOUT_MS};
   var RATE=${CIRCUIT_RATE};
   var WIN=${CIRCUIT_WINDOW_MS};
-  var FPS_MIN=${FPS_FLOOR};
+  var FPS_K=${FPS_KILL};
+  var FPS_D=${FPS_DEGRADE};
+  var SAMPLES=${FPS_SAMPLE_SIZE};
 
   var active=new Set();
   var pending=[];
   var stamps=[];
   var paused=false;
-  var lowFps=false;
+  var fpsLevel='ok';
+  var frameTimes=[];
 
   listenVis();
   monitorFps();
@@ -34,12 +40,16 @@ export function bloomGuardrailsScript(): string {
   document.__bloomGuardrails={
     request:request,
     release:release,
-    isLowFps:function(){return lowFps},
-    isPaused:function(){return paused}
+    isLowFps:function(){return fpsLevel!=='ok'},
+    isDegraded:function(){return fpsLevel==='degrade'},
+    isKilled:function(){return fpsLevel==='kill'},
+    isPaused:function(){return paused},
+    fpsLevel:function(){return fpsLevel}
   };
 
   function request(slug,intensity){
     if(paused)return'killed';
+    if(fpsLevel==='kill')return'killed';
     if(isThundering())return handleThunder(slug);
     if(active.size>=MAX)return enqueue(slug,intensity);
     return approve(slug)
@@ -115,13 +125,26 @@ export function bloomGuardrailsScript(): string {
 
   function monitorFps(){
     var last=performance.now();
-    function check(){
+    function sample(){
       var now=performance.now();
-      lowFps=(now-last)>(1000/FPS_MIN);
+      var delta=now-last;
       last=now;
-      requestAnimationFrame(check)
+      if(delta>0)frameTimes.push(delta);
+      if(frameTimes.length>SAMPLES)frameTimes.shift();
+      if(frameTimes.length>=SAMPLES)classifyFps();
+      requestAnimationFrame(sample)
     }
-    requestAnimationFrame(check)
+    requestAnimationFrame(sample)
+  }
+
+  function classifyFps(){
+    var sum=0;
+    for(var i=0;i<frameTimes.length;i++)sum+=frameTimes[i];
+    var avgMs=sum/frameTimes.length;
+    var fps=1000/avgMs;
+    if(fps<FPS_K)fpsLevel='kill';
+    else if(fps<FPS_D)fpsLevel='degrade';
+    else fpsLevel='ok'
   }
 })();`;
 }
@@ -146,6 +169,14 @@ export function _testBloomGuardrails(): void {
     'monitors FPS via rAF',
   );
   console.assert(
+    script.includes('classifyFps'),
+    'rolling FPS classification (ok/degrade/kill)',
+  );
+  console.assert(
+    script.includes('frameTimes'),
+    'uses rolling frame-time sample buffer',
+  );
+  console.assert(
     script.includes('bloom:guardrail:kill'),
     'dispatches kill events',
   );
@@ -156,6 +187,14 @@ export function _testBloomGuardrails(): void {
   console.assert(
     script.includes(String(HARD_TIMEOUT_MS)),
     'uses hard timeout constant',
+  );
+  console.assert(
+    script.includes(String(FPS_DEGRADE)),
+    'uses 45fps degrade threshold',
+  );
+  console.assert(
+    script.includes(String(FPS_KILL)),
+    'uses 30fps kill threshold',
   );
 
   console.log('[bloom-guardrails] OK — script structure verified');
