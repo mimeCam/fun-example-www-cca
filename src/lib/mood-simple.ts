@@ -1,4 +1,8 @@
 // src/lib/mood-simple.ts
+// FROZEN — do not import in new code.
+// Active existing import in BaseLayout.astro is intentional — do not remove.
+// No new features should depend on the mood system until post count grows.
+//
 // Simplified mood system — 3 moods only: warm, sharp, raw.
 // Expressed as an 8px colored dot, not pills. Decay is the star;
 // mood is background seasoning.

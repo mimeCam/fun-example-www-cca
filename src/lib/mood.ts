@@ -1,4 +1,8 @@
 // src/lib/mood.ts
+// FROZEN — do not import in new code.
+// No validated feature consumes this module. mood-simple.ts covers active use.
+// Deletion sprint pending when post count reaches 20+.
+//
 // Core mood system — maps mood IDs to CSS custom property values.
 // All downstream components consume only CSSMoodVars; they never reach
 // into MoodDefinition directly. Add a new mood here and the whole site

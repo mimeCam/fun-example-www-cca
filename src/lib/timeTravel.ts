@@ -1,4 +1,8 @@
 // src/lib/timeTravel.ts
+// FROZEN — do not import in new code.
+// Dependent on timeTravelBands.ts (also frozen). No UI exists for the slider.
+// Revisit when post count reaches 20+ and real reader traffic validates demand.
+//
 // Client-side time-travel engine — feeds a simulated date to existing decay math.
 // No new decay logic. Same pure functions, different clock.
 // Pauses live-decay via CustomEvent; resumes on exit.

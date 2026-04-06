@@ -1,4 +1,8 @@
 // src/lib/timeTravelBands.ts
+// FROZEN — do not import in new code.
+// Beautiful idea; 0 concurrent users to validate. Requires time-travel UI
+// which is not in the active roadmap. Revisit at 20+ posts / real traffic.
+//
 // Client-side band re-sorting during time-travel slider scrub.
 // Cards physically move between Now / Recent / Archive sections
 // using FLIP animations (First-Last-Invert-Play) for smooth transitions.

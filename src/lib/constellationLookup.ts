@@ -1,4 +1,8 @@
 // src/lib/constellationLookup.ts
+// FROZEN — do not import in new code.
+// Cascade revivals require node density (20+ posts, real concurrent readers)
+// that does not exist yet. Revisit in a later sprint.
+//
 // Server-side utility: resolves a slug's constellation connections from blog content.
 // Caches at module level — content is static in hybrid mode.
 // Filters self-references, clamps strength to [0, 1].

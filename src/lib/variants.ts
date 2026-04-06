@@ -1,4 +1,7 @@
 // src/lib/variants.ts
+// TODO: consolidate into decay-engine client script (Mike's freeze-sprawl directive).
+// Active import in blog/[slug].astro — do NOT delete.
+//
 // Seasonal Post Variants — makes blog content shift based on time of day
 // and post age. Pure functions + inline script generator.
 // No external dependencies. Graceful no-JS fallback (variants stay hidden).
