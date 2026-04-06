@@ -4,39 +4,37 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v20 — Cinematic Revival + Conviction Panel (2026-04-06)
+# Architecture v21 — Ghost Echoes (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Cinematic Revival Moment + Author Conviction Notes):
-#   revival-moment.ts — 5-phase cinematic revival sequence:
-#     Phase 1: anticipation SVG arc (strokeDashoffset fills over DWELL_MS);
-#     Phase 2: localStorage 7-day TTL gate (replaces sessionStorage);
-#     Phase 3a: WAAPI dissolve — scale lift + opacity via Element.animate();
-#     Phase 3b: chromatic aberration h1 flash at t=200ms (signature moment);
-#     Phase 4: witness badge — "You rescued this — N% decayed · M readers
-#     this month" (decayPct + monthlyCount from API); two-tap haptic pulse;
-#     Phase 5: SSE ripple — sympathetic bloom from other readers (unchanged).
-#   revival.css — anticipation-arc SVG styles + chroma-flash @keyframes;
-#     reduced-motion suppression for both new phases; --mood-accent-rgb token.
-#   ConvictionPanel.astro (new) — inline <details>/<summary> belief audit;
-#     max 5 convictions per post; verdict tokens: ✓ still-true, ✗ wrong,
-#     ↗ evolved, ? unaudited; strike-through for wrong beliefs; zero JS.
-#   content/config.ts — convictions[] frontmatter schema (max 5, verdictEnum);
-#   [slug].astro — imports ConvictionPanel; post-nav-row with "← back to field"
-#     + "[⚖ beliefs]" anchor link when convictions present.
-#   collectiveMemory.ts — getMonthlyRevivalCount(slug): 30-day window query
-#     on existing velocity_log table; used by /api/revive for witness badge.
-#   api/revive.ts — response now includes decayPct (0-100) + monthlyCount.
-#   decay-engine.ts — bug fixes: MAX_DAYS_DEFAULT 365→180 (cold-start fix for
-#     personal blogs), readingBonus cap 0.08→0.15 (raised for fairer credit);
-#     both fix applied in server function and client IIFE in sync.
-#   hello-world.md — seeded with example convictions array.
-#   Pure frontend + logic fixes — no new services, volumes, or runtime deps.
+# Sprint (latest — Ghost Echoes):
+#   GhostEchoes.astro (new) — revival-history sparkline panel per post.
+#     SSR stub (narrative label + total) renders without JS. Client IIFE
+#     fetches /api/ghost-echoes, injects animated SVG polyline, schedules
+#     adaptive echo-pulse dot. Companion to PresenceBand: "who was here
+#     before you" (static history) vs "who is here now" (SSE, real-time).
+#   revivalHistory.ts (new) — pure functions, zero side-effects, no DB:
+#     shapeBuckets(): bins Unix-ms timestamps into N weekly buckets;
+#     bucketToSVGPoints(): normalised SVG polyline string (always fills height);
+#     narrativeLabel(): "27 readers kept this alive — last tended 4d ago";
+#     echoIntervalMs(): adaptive pulse (3s high / 6s mid / 12s dormant).
+#   api/ghost-echoes.ts (new) — GET /api/ghost-echoes?slug=<slug>;
+#     returns { buckets, lastAt, total, svgPoints, intervalMs };
+#     Cache-Control: public, max-age=60 (historical context, stale-OK).
+#   ghost-echoes.css (new) — OKLCH palette, sparkline-draw + echo-pulse
+#     @keyframes; reduced-motion: static line + no animation; backdrop-blur.
+#   collectiveMemory.ts — getRevivalTimeline(slug, windowWeeks=8): queries
+#     velocity_log for raw timestamps; getMonthlyRevivalCount already present.
+#     Bug fix: maybePruneVelocity retention 2h → 90 days (preserves 8-week
+#     sparkline window; old value silently erased all sparkline history).
+#   [slug].astro — integrates <GhostEchoes slug={slug} /> above revival CTA.
+#   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),
+#           Ghost Echoes (revival sparkline — 8-week history, adaptive pulse),
 #           dynamic OG image generation (satori + resvg),
 #           Consequential Decay / Graveyard (entomb + resurrect),
 #           Graveyard Discovery Surface (teaser, stats, tombstone history),
