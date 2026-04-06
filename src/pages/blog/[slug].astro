@@ -99,6 +99,8 @@ function safeReadingSeconds(slug: string): number {
         count={revivalCount}
         urgency={postUrgency}
         conviction={latestConviction}
+        decayFactor={postDecay}
+        lifespan={post.data.lifespan ?? 365}
       />
     </div>
 

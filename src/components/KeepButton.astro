@@ -8,66 +8,115 @@
 //   count       — current revival count (0 = hide number, >0 = show inline)
 //   urgency     — 'critical' triggers pulsing glow ring
 //   conviction  — 'still-true' triggers subtle gold ring
+//   decayFactor — when provided, enables Pact Ritual (PactPanel + keep-pact.ts)
+//   lifespan    — post lifespan in days (used by PactPanel ring)
 //
-// Client wiring: handled by RevivalCounter via wireKeepButton() when on
-// a post detail page. On feed cards, client script in BaseLayout handles it.
+// Client wiring:
+//   With decayFactor:    keep-pact.ts wires the button (pact ritual flow)
+//   Without decayFactor: inline script below handles feed cards + banner buttons
+
+import PactPanel from './PactPanel.astro';
 
 interface Props {
-  slug: string;
-  count?: number;
-  urgency?: 'critical' | 'dying' | 'fading' | 'alive' | string;
-  conviction?: string | null;
+  slug:         string;
+  count?:       number;
+  urgency?:     'critical' | 'dying' | 'fading' | 'alive' | string;
+  conviction?:  string | null;
+  decayFactor?: number;
+  lifespan?:    number;
 }
 
-const { slug, count = 0, urgency, conviction } = Astro.props;
-const isCritical = urgency === 'critical';
+const { slug, count = 0, urgency, conviction, decayFactor, lifespan = 365 } = Astro.props;
+const isCritical  = urgency === 'critical';
 const isStillTrue = conviction === 'still-true';
+const hasPact     = decayFactor !== undefined;
 ---
 
-<button
-  class:list={['keep-btn', isCritical && 'keep-btn--critical', isStillTrue && 'keep-btn--still-true']}
-  data-keep-slug={slug}
-  aria-label="Keep this post alive"
-  type="button"
->
-  <span class="keep-icon">&#9829;</span>
-  <span class="keep-label">Keep Alive</span>
-  {count > 0 && <span class="keep-count"> &middot; {count}</span>}
-  {count === 0 && <span class="keep-count keep-count--hidden"></span>}
-</button>
+<div class:list={['pact-wrapper', hasPact && 'pact-wrapper--active']}>
+  <button
+    class:list={['keep-btn', isCritical && 'keep-btn--critical', isStillTrue && 'keep-btn--still-true']}
+    data-keep-slug={slug}
+    data-pact-trigger={hasPact ? '' : undefined}
+    aria-label="Keep this post alive"
+    type="button"
+  >
+    <span class="keep-icon">&#9829;</span>
+    <span class="keep-label">Keep this alive</span>
+    {count > 0  && <span class="keep-count"> &middot; {count}</span>}
+    {count === 0 && <span class="keep-count keep-count--hidden"></span>}
+  </button>
+
+  {hasPact && (
+    <PactPanel
+      slug={slug}
+      count={count}
+      decayFactor={decayFactor!}
+      lifespan={lifespan}
+      conviction={conviction}
+    />
+  )}
+</div>
 
 <style>
+  /* ── Wrapper — anchors PactPanel absolutely below the button ── */
+  .pact-wrapper {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pact-wrapper--active {
+    position: relative;   /* PactPanel uses position:absolute + top:100% */
+  }
+
+  /* ── Button ─────────────────────────────────────────────────── */
   .keep-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    min-height: 44px;
-    padding: 0.4rem 1.25rem;
-    font-size: 0.75rem;
+    min-height: 52px;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
     font-family: inherit;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     color: rgba(var(--mood-accent-rgb, 120,120,120), 0.80);
     background: rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
     border: 1.5px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
-    border-radius: 999px;
+    border-radius: 10px;
     cursor: pointer;
     transition:
       border-color 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      background 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 200ms ease,
-      transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      opacity 600ms ease-out;
+      background   200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow   200ms ease,
+      transform    200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity      600ms ease-out;
   }
 
   .keep-btn:hover {
-    background: rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.14);
+    background:   rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.14);
     border-color: rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.45);
-    box-shadow: 0 0 16px rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.18);
-    transform: scale(1.03);
+    box-shadow:   0 0 16px rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.18);
+    transform: scale(1.02);
   }
 
-  .keep-btn:active {
-    transform: scale(0.97);
+  .keep-btn:active { transform: scale(0.98); }
+
+  /* Pact open — button glows subtly */
+  .keep-btn[data-pact-state="open"] {
+    border-color: rgba(var(--mood-accent-rgb, 200,160,60), 0.55);
+    box-shadow:   0 0 12px rgba(var(--mood-accent-rgb, 200,160,60), 0.20);
+  }
+
+  /* Sealing state — brief pulse */
+  .keep-btn[data-pact-state="sealing"] {
+    animation: pact-seal-pulse 400ms ease forwards;
+  }
+
+  @keyframes pact-seal-pulse {
+    0%   { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb,200,160,60), 0); }
+    50%  { box-shadow: 0 0 20px rgba(var(--mood-accent-rgb,200,160,60), 0.35); }
+    100% { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb,200,160,60), 0); }
   }
 
   /* Kept state — status, not disabled */
@@ -75,8 +124,8 @@ const isStillTrue = conviction === 'still-true';
     opacity: 0.55;
     cursor: default;
     pointer-events: none;
-    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
-    border: 1.5px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+    background:   rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
+    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
   }
 
   /* Critical urgency — pulsing ring */
@@ -86,31 +135,28 @@ const isStillTrue = conviction === 'still-true';
   }
 
   /* still-true conviction — faint gold ring */
-  .keep-btn--still-true {
-    box-shadow: 0 0 8px rgba(200, 160, 60, 0.18);
-  }
+  .keep-btn--still-true { box-shadow: 0 0 8px rgba(200, 160, 60, 0.18); }
 
   @keyframes pulse-ring {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 80, 40, 0.0); }
+    0%, 100% { box-shadow: 0 0 0 0   rgba(255, 80, 40, 0.0); }
     50%       { box-shadow: 0 0 0 4px rgba(255, 80, 40, 0.18); }
   }
 
-  .keep-icon { font-size: 0.85rem; }
+  .keep-icon  { font-size: 0.85rem; }
 
   .keep-count {
     font-size: 0.72rem;
     opacity: 0.70;
     transition: opacity 200ms ease;
   }
-
   .keep-count--hidden { display: none; }
 </style>
 
 <script>
-  // Delegated handler for all KeepButtons on the page.
-  // On post pages, RevivalCounter.astro's initRevivalCounter() takes over the
-  // post-footer button (with counter + days banner). This handler covers feed
-  // cards and the DeathClockBanner button — anywhere with no RevivalCounter root.
+  // Delegated handler for KeepButtons WITHOUT the pact ritual wired.
+  // Covers: feed cards, DeathClockBanner — anywhere without decayFactor + RevivalCounter.
+  // Skips: buttons with data-pact-trigger (handled by keep-pact.ts)
+  //        buttons in .revival-footer (handled by revival-counter.ts)
   (function wireKeepButtons() {
     function getSessionId(): string | null {
       try { return sessionStorage.getItem('session-token'); } catch { return null; }
@@ -134,20 +180,19 @@ const isStillTrue = conviction === 'still-true';
     function rollback(btn: HTMLButtonElement, prevCount: number): void {
       btn.classList.remove('kept');
       const label = btn.querySelector('.keep-label');
-      if (label) label.textContent = 'Keep Alive';
+      if (label) label.textContent = 'Keep this alive';
       const icon = btn.querySelector('.keep-icon');
       if (icon) icon.textContent = '♥';
       updateCount(btn, prevCount);
     }
 
     function handleClick(btn: HTMLButtonElement): void {
-      // Skip if RevivalCounter has already wired this button (post detail page)
-      if (btn.dataset.wired) return;
+      if (btn.dataset.wired) return;        // pact or revival-counter owns this
+      if (btn.dataset.pactTrigger !== undefined) return; // pact-enabled, skip
       if (btn.classList.contains('kept')) return;
       const slug = btn.dataset.keepSlug;
       if (!slug) return;
 
-      // Optimistic update
       const countSpan = btn.querySelector('.keep-count');
       const prevCount = parseInt(countSpan?.textContent?.replace(/\D/g, '') ?? '0', 10) || 0;
       markKept(btn);
@@ -158,9 +203,7 @@ const isStillTrue = conviction === 'still-true';
       if (sessionId) headers['x-session-id'] = sessionId;
 
       fetch('/api/revive', {
-        method: 'POST',
-        keepalive: true,
-        headers,
+        method: 'POST', keepalive: true, headers,
         body: JSON.stringify({ slug }),
       })
         .then(r => {
@@ -168,8 +211,7 @@ const isStillTrue = conviction === 'still-true';
           return r.ok ? r.json() : null;
         })
         .then((data: { ok: boolean; count: number } | null) => {
-          if (!data) return;
-          updateCount(btn, data.count);
+          if (data) updateCount(btn, data.count);
         })
         .catch(() => rollback(btn, prevCount));
     }
@@ -177,8 +219,7 @@ const isStillTrue = conviction === 'still-true';
     document.addEventListener('click', (e) => {
       const btn = (e.target as Element).closest<HTMLButtonElement>('.keep-btn[data-keep-slug]');
       if (!btn) return;
-      // If RevivalCounter owns this button, skip — it has its own handler
-      if (btn.closest('.revival-footer')) return;
+      if (btn.closest('.revival-footer')) return; // revival-counter.ts owns these
       handleClick(btn);
     });
   })();

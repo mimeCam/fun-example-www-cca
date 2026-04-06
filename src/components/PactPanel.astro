@@ -1,0 +1,300 @@
+---
+// src/components/PactPanel.astro
+// Inline pact panel — intercepts KeepButton click, adds ceremony before revival fires.
+// Appears below KeepButton via absolute positioning. Zero CLS (panel is out-of-flow).
+// JS opens via [data-open]; @starting-style animates entrance; instant collapse on close.
+//
+// Architecture: pre-flight interceptor. No new endpoints, no new npm deps.
+// Credits: Mike (arch spec), Tanya (UX §4.1 ceremonial weight), Paul Kim (pact framing)
+
+interface Props {
+  slug: string;
+  count: number;
+  decayFactor: number;
+  lifespan?: number;
+  conviction?: string | null;
+}
+
+const { slug, count, decayFactor, lifespan = 365, conviction = null } = Astro.props;
+
+// Decay ring math — circumference of r=40 circle = 251.3px
+const decayPct = Math.min(1, Math.max(0, decayFactor));
+const dashOffset = (decayPct * 251.3).toFixed(1);
+const daysLeft   = Math.max(0, Math.round((1 - decayFactor) * lifespan));
+
+function buildPactCopy(n: number, decay: number, cv: string | null): string {
+  if (decay > 0.8 && (cv === 'wrong' || cv === 'abandoned'))
+    return "This belief is almost gone. The author called it wrong. You'd be saving a ghost.";
+  if (decay > 0.6 && cv === 'still-true') {
+    const kept = n > 0 ? `${n} ${n === 1 ? 'person has' : 'people have'} kept it alive.` : 'Be the first.';
+    return `The author still stands behind this. ${kept}`;
+  }
+  if (decay < 0.3)
+    return n === 0 ? "Still fresh. Be the first to sign this pact."
+                   : `Still fresh. ${n} already kept it.`;
+  if (n === 0) return "No one has kept this alive yet. Be the first.";
+  return `${n} ${n === 1 ? 'person is' : 'people are'} keeping this alive. Add your name.`;
+}
+
+const pactCopy = buildPactCopy(count, decayFactor, conviction);
+---
+
+<div
+  class="pact-panel"
+  data-pact-panel
+  data-slug={slug}
+  data-decay-pct={decayPct.toFixed(4)}
+  data-count={count}
+  data-conviction={conviction ?? ''}
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="false"
+  aria-label="Seal the pact"
+>
+  <div class="pact-inner">
+
+    <div class="pact-ring-col" aria-hidden="true">
+      <svg class="pact-ring" viewBox="0 0 100 100" width="56" height="56">
+        <circle cx="50" cy="50" r="40" class="ring-track" />
+        <circle
+          cx="50" cy="50" r="40"
+          class="ring-fill"
+          style={`stroke-dashoffset: ${dashOffset}px`}
+        />
+      </svg>
+      <span class="pact-days">{daysLeft}d</span>
+    </div>
+
+    <div class="pact-body">
+      <p class="pact-copy" data-pact-copy>{pactCopy}</p>
+
+      <div class="pact-chips" data-pact-chips aria-label="Why keep this alive? (optional)">
+        <button class="pact-chip" data-chip="still-relevant"    type="button">still relevant</button>
+        <button class="pact-chip" data-chip="changed-thinking"  type="button">changed my thinking</button>
+        <button class="pact-chip" data-chip="others-need-this"  type="button">others need this</button>
+      </div>
+
+      <button class="pact-seal-btn" data-pact-seal type="button">Seal the Pact</button>
+    </div>
+
+    <button class="pact-close-btn" data-pact-close type="button" aria-label="Cancel">✕</button>
+
+  </div>
+</div>
+
+<style>
+  /* ── Panel shell ──────────────────────────────────────────── */
+  .pact-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(360px, 90vw);
+    z-index: 20;
+  }
+
+  .pact-panel[data-open] {
+    display: block;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+    transition:
+      opacity   280ms ease,
+      transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Entrance animation — from invisible start position */
+  @starting-style {
+    .pact-panel[data-open] {
+      opacity: 0;
+      transform: translateX(-50%) translateY(8px) scale(0.97);
+    }
+  }
+
+  /* Fallback: no animation, just appear */
+  @supports not (selector(:has(*))) {
+    .pact-panel[data-open] { transition: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pact-panel[data-open] { transition: opacity 150ms ease; }
+    @starting-style {
+      .pact-panel[data-open] { opacity: 0; transform: translateX(-50%); }
+    }
+  }
+
+  /* ── Inner card ───────────────────────────────────────────── */
+  .pact-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.1rem 1.1rem;
+    background: rgba(18, 18, 20, 0.96);
+    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.22);
+    border-radius: 12px;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.45),
+      0 0 0 1px rgba(255,255,255,0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+  }
+
+  /* ── Decay ring column ────────────────────────────────────── */
+  .pact-ring-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    padding-top: 0.2rem;
+  }
+
+  .pact-ring {
+    overflow: visible;
+  }
+
+  .ring-track {
+    fill: none;
+    stroke: rgba(255,255,255,0.08);
+    stroke-width: 8;
+    stroke-linecap: round;
+  }
+
+  .ring-fill {
+    fill: none;
+    stroke: rgba(var(--mood-accent-rgb, 200,160,60), 0.65);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 251.3px;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 600ms ease;
+  }
+
+  .pact-days {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.38);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  /* ── Body: copy + chips + seal ────────────────────────────── */
+  .pact-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .pact-copy {
+    margin: 0;
+    font-size: 0.80rem;
+    line-height: 1.55;
+    color: rgba(255,255,255,0.70);
+  }
+
+  /* ── Optional chips ───────────────────────────────────────── */
+  .pact-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .pact-chip {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.68rem;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    color: rgba(255,255,255,0.40);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+
+  .pact-chip:hover {
+    color: rgba(255,255,255,0.70);
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.20);
+  }
+
+  .pact-chip.selected {
+    color: rgba(var(--mood-accent-rgb, 200,160,60), 0.90);
+    background: rgba(var(--mood-accent-rgb, 200,160,60), 0.10);
+    border-color: rgba(var(--mood-accent-rgb, 200,160,60), 0.35);
+  }
+
+  /* ── Seal button ──────────────────────────────────────────── */
+  .pact-seal-btn {
+    align-self: flex-start;
+    min-height: 36px;
+    padding: 0.4rem 1rem;
+    font-size: 0.78rem;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(var(--mood-accent-rgb, 200,160,60), 0.95);
+    background: rgba(var(--mood-accent-rgb, 200,160,60), 0.10);
+    border: 1.5px solid rgba(var(--mood-accent-rgb, 200,160,60), 0.40);
+    border-radius: 10px;
+    cursor: pointer;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 180ms ease;
+  }
+
+  .pact-seal-btn:hover {
+    background: rgba(var(--mood-accent-rgb, 200,160,60), 0.18);
+    border-color: rgba(var(--mood-accent-rgb, 200,160,60), 0.65);
+    box-shadow: 0 0 18px rgba(var(--mood-accent-rgb, 200,160,60), 0.18);
+  }
+
+  .pact-seal-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* ── Close button ─────────────────────────────────────────── */
+  .pact-close-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.28);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: color 150ms ease, background 150ms ease;
+    padding: 0;
+  }
+
+  .pact-close-btn:hover {
+    color: rgba(255,255,255,0.65);
+    background: rgba(255,255,255,0.08);
+  }
+</style>
+
+<script>
+  import { initKeepPact } from '../lib/keep-pact';
+
+  const panel = document.querySelector<HTMLElement>('[data-pact-panel]');
+  if (panel) {
+    initKeepPact({
+      slug:        panel.dataset.slug        ?? '',
+      count:       parseInt(panel.dataset.count ?? '0', 10),
+      decayFactor: parseFloat(panel.dataset.decayPct  ?? '0'),
+      conviction:  panel.dataset.conviction  || null,
+      lifespan:    365,
+    });
+  }
+</script>

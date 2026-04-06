@@ -140,7 +140,7 @@ interface SSEState {
 // KeepButton wiring
 // ---------------------------------------------------------------------------
 
-/** Wire a KeepButton to a RevivalCounter using the existing /api/revive endpoint. */
+/** Wire a KeepButton + RevivalCounter to the pact:confirmed event from keep-pact.ts. */
 export function wireKeepButton(
   btn: HTMLButtonElement,
   counterEl: HTMLElement,
@@ -151,7 +151,16 @@ export function wireKeepButton(
   lifespan: number,
 ): void {
   let count = currentCount;
-  btn.addEventListener('click', () => onKeepClick(btn, counterEl, bannerEl, slug, decayFactor, lifespan, { count: () => count, setCount: (n) => { count = n; } }));
+  const counter = { count: () => count, setCount: (n: number) => { count = n; } };
+  // Pact ritual dispatches 'pact:confirmed' before revival fires — listen on window.
+  // For buttons without pact (no decayFactor prop), keep-pact.ts never boots, so
+  // pact:confirmed never fires — those buttons are handled by KeepButton.astro inline script.
+  window.addEventListener('pact:confirmed', (e: Event) => {
+    const detail = (e as CustomEvent<{ slug: string; why?: string }>).detail;
+    if (detail.slug !== slug) return;
+    onKeepClick(btn, counterEl, bannerEl, slug, decayFactor, lifespan, counter);
+  });
+  btn.dataset.wired = 'revival-counter'; // blocks KeepButton.astro fallback handler
 }
 
 /** Handle a single KeepButton click — optimistic update + API call. */

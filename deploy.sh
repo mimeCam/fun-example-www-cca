@@ -4,39 +4,36 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v27 — KeepButton-Only Revival + Session Idempotency + SSE Reconnect (2026-04-06)
+# Architecture v28 — Pact Ritual (PactPanel + keep-pact.ts) (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — KeepButton-Only Revival + Session Idempotency + SSE Reconnect):
-#   revival-engine.ts — SIMPLIFIED: hover-dwell and touch press-and-hold
-#     removed entirely; KeepButton (revival-counter.ts) is now the SOLE revival
-#     trigger; feed-card module retains SSE sympathetic bloom + graveyard
-#     resurrect only; initDesktop/initTouch/initKeyboard deleted.
-#   revival-moment.ts — EVENT-DRIVEN: replaced hover/touch/keyboard handlers
-#     with document.addEventListener('revival:confirmed') dispatched by
-#     wireKeepButton; anticipation arc SVG removed; script ~40% smaller.
-#   revival-counter.ts — HARDENED: SSE auto-reconnect with exponential backoff
-#     (2 s initial → 32 s cap); session idempotency — markSessionRevived() stamps
-#     sessionStorage, isSessionRevived() pre-marks button on page load; rollback()
-#     now accepts counter ref; postRevive() + applyReviveResult() extracted;
-#     dispatchRevivalConfirmed() bridges counter → moment for visual choreography.
-#   heartbeat.ts — RESILIENT: Last-Event-ID replay on reconnect; monotonic
-#     event IDs in _eventLog (200-entry ring buffer); eventsAfter() helper;
-#     sseEventFrame() embeds id: field; register() accepts lastEventId param.
-#   collectiveMemory.ts — PERMANENT LOCK: canReviveBySession() changed from
-#     time-window rate-limit to permanent per-tab lock (SELECT existence only,
-#     no last_at comparison); one revival per tab per post forever.
-#   sessionToken.ts — TAB TOKEN: tab-scoped session-token written to
-#     sessionStorage on first load (crypto.randomUUID or fallback); sent as
-#     X-Session-Id header for per-tab revival idempotency.
-#   revive.ts (API) — IDEMPOTENCY RESPONSE: sessionConflict() returns 429 with
-#     { ok: false, alreadyRevived: true } so client can distinguish "already
-#     kept this tab" from generic rate-limit rollback.
-#   heartbeat.ts (API) — RECONNECT SUPPORT: parseLastEventId() reads
-#     Last-Event-ID header; passed to register() for missed-event replay.
-#   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
+# Sprint (latest — Pact Ritual: ceremonial pre-flight interceptor for KeepButton):
+#   PactPanel.astro — NEW: pre-flight ceremony panel that intercepts the
+#     KeepButton click before revival fires; absolutely-positioned below button;
+#     shows contextual pact copy (decay × conviction matrix), an optional
+#     why-chip selector (still-relevant / changed-thinking / others-need-this),
+#     a mini SVG decay ring with days-remaining counter, and a "Seal the Pact"
+#     CTA; @starting-style entrance animation + reduced-motion fallback;
+#     aria-hidden toggled correctly; zero CLS (out-of-flow absolute).
+#   keep-pact.ts — NEW: pact ritual orchestration lib; wires KeepButton click
+#     → PactPanel open → pact:confirmed CustomEvent dispatched on window;
+#     session-storage gate (pact-sealed:<slug>) prevents re-opening after seal;
+#     Escape / outside-click dismiss; chip toggle; applyKeptState() pre-marks
+#     button on page load when session already sealed; zero new endpoints or
+#     npm deps — pure vanilla TS.
+#   KeepButton.astro — UPDATED: wraps button in .pact-wrapper div for absolute
+#     PactPanel anchor; accepts new decayFactor + lifespan props; renders
+#     <PactPanel> when decayFactor provided; data-pact-trigger attribute signals
+#     keep-pact.ts wiring; inline fallback script unchanged for feed cards.
+#   revival-counter.ts — UPDATED: wireKeepButton() now listens for window
+#     'pact:confirmed' event (detail.slug guard) instead of direct button click;
+#     btn.dataset.wired = 'revival-counter' blocks KeepButton.astro fallback.
+#   blog/[slug].astro — UPDATED: passes decayFactor + lifespan props to
+#     KeepButton, activating the pact ritual on post detail pages.
+#   Pure frontend + TypeScript changes — no new services, volumes, env vars,
+#     npm packages, API endpoints, or runtime infrastructure required.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Death Clock (SVG ring countdown, 6-tier urgency, CSS-only animation),
