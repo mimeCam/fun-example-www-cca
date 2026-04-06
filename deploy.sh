@@ -4,32 +4,29 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v22 — Death Clock (2026-04-06)
+# Architecture v23 — Graveyard Ledger / Epitaph Engine (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Death Clock):
-#   death-clock.ts (new) — pure functions, zero side-effects, zero DB:
-#     daysUntilEntombment(): days until decay hits ENTOMB_THRESHOLD;
-#     clockUrgency(): 6-tier discriminant (immortal/thriving/aging/
-#       endangered/critical/dying); clockCSSVars() / clockStyleString()
-#     for server-side CSS custom properties (hue, pulse, dashoffset).
-#   api/death-clock.ts (new) — GET /api/death-clock?slug=<slug>;
-#     returns { daysRemaining, urgencyLevel, decayFactor, label, a11yLabel };
-#     Cache-Control: public, max-age=300 (countdown changes by days).
-#   DeathClock.astro (new) — SVG ring countdown, rendered SSR, no hydration
-#     island; CSS custom properties set server-side, ring animates purely
-#     in CSS; compact={true} variant for card footers.
-#   DeathClockBanner.astro (new) — sticky bottom banner (critical/dying only);
-#     non-modal, does not interrupt reading; dismissed via sessionStorage;
-#     inline KeepButton CTA.
-#   death-clock.css (new) — @layer death-clock: urgency hues, pulse ring
-#     @keyframes, banner chrome; reduced-motion: static, no animation.
-#   decay-engine.ts — added daysToEntombment() export (authoritative math).
-#   variants.ts — ageTier() is now a shim over freshnessTag() (unified
-#     decay-factor thresholds; old magic-number thresholds retired).
-#   [slug].astro — integrates DeathClock ring + DeathClockBanner per post.
+# Sprint (latest — Graveyard Ledger):
+#   epitaph-engine.ts (new) — deterministic narrative epitaphs for entombed
+#     posts; djb2(slug) % 3 variant selector → same input = same text every
+#     SSR render; 4-tier classification: legendary / contested / quiet /
+#     forgotten; pure functions, zero state, zero DB.
+#   graveyard-ledger.ts (new) — shapes PostDisplayData into LedgerEntry
+#     records; getEntombedLedger() paginated view; getGraveyardSummary()
+#     aggregates: longestSurvivor, mostContested, totalForeverLost,
+#     avgSurvivalDays, totalReaderMinutes; pure functions only.
+#   GraveyardLedger.astro (new) — Hall of Records hero section at top of
+#     /graveyard; 3-panel grid (longest survivor, most contested, forever
+#     lost); zero client-side JS; --color-grave-* OKLCH token themed.
+#   api/graveyard-stats.ts — extended response: longestSurvivorDays,
+#     mostContestedRevivals, avgSurvivalDays via getGraveyardSummary().
+#   graveyard.astro — integrates GraveyardLedger above tombstone list;
+#     dynamic <title> & <meta description> using live entombed count.
+#   decay-engine.ts — MAX_DAYS_DEFAULT aligned to 365 (matches death-clock.ts
+#     CLOCK_MAX_DAYS); new decayMaxDaysMetaTag() export (SSR meta tag).
 #   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
@@ -52,7 +49,9 @@
 #           Author Conviction Notes (ConvictionPanel, belief audit, verdicts),
 #           NowLine (pinned author status + graveyard hint on homepage),
 #           Murmurs (wall whispers on homepage, CLI-only submission),
-#           Grain overlay (CSS noise texture via --decay-grain).
+#           Grain overlay (CSS noise texture via --decay-grain),
+#           Graveyard Ledger / Epitaph Engine (Hall of Records, deterministic
+#           narrative epitaphs, 4-tier survival classification, summary stats).
 
 set -euo pipefail
 
