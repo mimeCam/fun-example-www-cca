@@ -18,7 +18,7 @@ import { daysSince } from './temporal';
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_DAYS_DEFAULT = 365;
+const MAX_DAYS_DEFAULT = 180; // cold-start fix: personal blog rarely spans a full year (Mike)
 const MS_PER_DAY = 86_400_000;
 const ENTOMB_THRESHOLD = 0.95;
 const DORMANCY_DAYS = 30;
@@ -36,13 +36,13 @@ export function revivalBonus(count: number): number {
 }
 
 /**
- * Reading bonus: logarithmic, capped at 0.08.
+ * Reading bonus: logarithmic, capped at 0.15.
  * Weaker than revival (0.30) — rewards presence, not gaming.
  * Every ~30s of reading is one unit. Curve saturates around 4 minutes.
- * Credits: Mike (architecture spec)
+ * Credits: Mike (architecture spec), cap raised 0.08 → 0.15 (bug fix)
  */
 export function readingBonus(readingSeconds: number): number {
-  return Math.min(0.08, Math.log(readingSeconds / 30 + 1) * 0.04);
+  return Math.min(0.15, Math.log(readingSeconds / 30 + 1) * 0.04);
 }
 
 /** Continuous decay: 0.0 (just published) → 1.0 (ancient). */
@@ -223,7 +223,7 @@ export function decayEngineClientScript(): string {
   var paused=false,lastTick=0;
 
   function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
-  function rdg(s){return Math.min(.08,Math.log(s/30+1)*.04)}
+  function rdg(s){return Math.min(.15,Math.log(s/30+1)*.04)}
   function df(p,n,r,s){return Math.max(0,Math.min(1,(n-p)/DAY/M)-rb(r)-rdg(s))}
   function patch(el,n){
     if(el.hasAttribute('data-bloom-lock'))return;
@@ -330,7 +330,7 @@ export function _testDecayEngine(): void {
 
   // Reading bonus
   console.assert(readingBonus(0) === 0, 'zero reading seconds');
-  console.assert(readingBonus(999999) === 0.08, 'reading capped at 0.08');
+  console.assert(readingBonus(999999) === 0.15, 'reading capped at 0.15');
   console.assert(readingBonus(30) > 0, 'one interval has bonus');
   console.assert(readingBonus(30) < 0.08, 'one interval below cap');
 

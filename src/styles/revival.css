@@ -363,6 +363,56 @@
   white-space: nowrap;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+ * ANTICIPATION ARC — Phase 1: SVG countdown ring during hover dwell
+ * Injected by revivalMomentScript; removed after trigger or cancel.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.anticipation-arc {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.7;
+}
+
+.anticipation-arc circle {
+  stroke: rgba(var(--mood-accent-rgb, 212,149,106), 0.6);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0ms linear; /* JS drives this, no CSS transition */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * CHROMATIC ABERRATION — Phase 3b: h1 flash at t=200ms
+ * Tanya: "signature moment — the revival has a face"
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes chroma-flash {
+  0%   { text-shadow: none; filter: none; }
+  15%  {
+    text-shadow:
+      -2px 0 rgba(255, 60, 120, 0.55),
+       2px 0 rgba(0, 210, 255, 0.55);
+    filter: brightness(1.15);
+  }
+  50%  {
+    text-shadow:
+      -1px 0 rgba(255, 60, 120, 0.25),
+       1px 0 rgba(0, 210, 255, 0.25);
+    filter: brightness(1.05);
+  }
+  100% { text-shadow: none; filter: none; }
+}
+
+.revival-stage h1.chroma-flash {
+  animation: chroma-flash 600ms ease-out forwards;
+}
+
 /* ═════════════════════��═════════════════════════════════════════════
  * REDUCED MOTION
  * ═══════════════════════════════════════════════════════════════════ */
@@ -419,6 +469,12 @@
     transition: opacity 0.2s ease;
     transform: translateX(-50%) translateY(0);
   }
+
+  /* Phase 1 arc: hidden when motion reduced — JS checks rm flag too */
+  .anticipation-arc { display: none; }
+
+  /* Phase 3b chromatic: skip flash entirely */
+  .revival-stage h1.chroma-flash { animation: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════

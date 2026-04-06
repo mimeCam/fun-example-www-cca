@@ -367,6 +367,15 @@ export function logVelocity(slug: string): void {
   maybePruneVelocity();
 }
 
+/** Count revivals for a slug in the last 30 days (for witness badge). */
+export function getMonthlyRevivalCount(slug: string): number {
+  const cutoff = Date.now() - 30 * 86_400_000;
+  const row = db()
+    .prepare('SELECT COUNT(*) AS c FROM velocity_log WHERE slug = ? AND ts > ?')
+    .get(slug, cutoff) as { c: number };
+  return row.c;
+}
+
 /** Count revivals for a slug within a time window. */
 export function getSlugVelocity(slug: string, windowMs: number): number {
   const cutoff = Date.now() - windowMs;

@@ -12,6 +12,7 @@ import {
   incrementDailyCount,
   recordRevival,
   recordRevivalBySession,
+  getMonthlyRevivalCount,
 } from '../../lib/collectiveMemory';
 import { broadcast } from '../../lib/heartbeat';
 import { revive as presenceRevive } from '../../lib/presence-hub';
@@ -85,6 +86,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Recalculate decay with new count so client can decide dismiss vs update
   const decayAfterRevival = decayFactorWithCount(pubDateISO, count);
+  const decayPct = Math.round(decayAfterRevival * 100);
+  const monthlyCount = getMonthlyRevivalCount(slug);
 
   const constellation = await getConstellation(slug);
   const resonance = constellation.length > 0 ? constellation : undefined;
@@ -92,7 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
   // Notify honest presence subscribers on this slug
   presenceRevive(slug);
 
-  return jsonOk({ ok: true, count, decayAfterRevival, resonance: resonance ?? [] });
+  return jsonOk({ ok: true, count, decayAfterRevival, decayPct, monthlyCount, resonance: resonance ?? [] });
 };
 
 // ---------------------------------------------------------------------------
