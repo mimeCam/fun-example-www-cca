@@ -4,37 +4,37 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v6 — Revival Moment (Tier 1 core feature)
-#   The decay IS the hint. The revival IS the onboarding.
-#   Blog posts show extreme temporal decay (blur, desaturation, grain) and
-#   revive via hover-dwell / touch-hold / keyboard — bloom ring, camera shake,
-#   haptic feedback, badge, sympathetic SSE, prefers-reduced-motion support.
-#   Replaces 6 bloom files + 4 onboarding components with 1 unified system.
+# Architecture v7 — Honest Presence (Tier 1 core feature)
+#   Real-time reader presence with zero phantoms. When nobody's here, count is zero.
+#   Blog posts show temporal decay + revival + live reader count via SSE.
+#   Ambient Life Engine quarantined — phantom pulses contradict honest presence.
 #
 # Sprint (latest):
-#   - Revival Moment on /blog/[slug] (core decay-to-revival transition):
-#     revival-moment.ts: unified choreography (dwell/touch/keyboard triggers,
-#       session gating, /api/revive POST, sympathetic SSE via EventSource).
-#     RevivalMoment.astro: wraps article in .revival-stage with CSS custom
-#       properties (--decay-opacity, --decay-blur, --decay-saturation, --stage-grain).
-#     decay-extremes.css: extreme decay visual layer (opacity floor 0.30, blur 4px,
-#       saturation 0.12 for ancient posts).
-#     revival-moment.css: revival bloom ring, badge, sympathetic pulse animations.
-#   - Prose styling for blog posts: h2/h3, blockquotes, code blocks, images.
-#   - BaseLayout wired: imports decay-extremes.css + revival-moment.css globally.
+#   - Honest Presence System (in-process, zero external dependencies):
+#     presence-hub.ts: in-memory connection registry (Map<slug, Set<Connection>>),
+#       stale reaper (60s), keepalive pings (30s), revival broadcast.
+#     presence-client.ts: client IIFE — connects to /api/presence?slug=xxx,
+#       breathing dot + count display, FLIP digit animation, ripple on revival.
+#     /api/presence: SSE endpoint per slug, streams {readers:N} on join/leave,
+#       {slug,ts} on foreign revival. Zero phantoms.
+#     PresenceBand.astro: redesigned with dot + count + label elements.
+#     presence.css: breathing dot, count-flip, ripple, a11y (reduced-motion).
+#   - /api/revive + /api/resurrect: wired to presence-hub revive() for ripple.
+#   - /api/heartbeat: Ambient Life Engine quarantined (kept for rollback).
+#   - BaseLayout: wired presence-client inline script + updated CSS imports.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (real-time revival pulses via EventSource),
-#           Proof of Life — Presence Indicator (live reader count + revival stats),
+#           Honest Presence (live per-slug reader count, zero phantoms),
 #           dynamic OG image generation (satori + resvg),
 #           anonymous session identity (sessionToken.ts),
 #           FirstBreath arrival choreography,
 #           FirstVisitHint (localStorage-gated one-shot onboarding),
 #           Consequential Decay / Graveyard (entomb + resurrect),
-#           Ambient Life Engine (phantom SSE pulses, seed revivals),
+#           Ambient Life Engine (quarantined — phantom SSE pulses, seed revivals),
 #           Adaptive Decay Engine (seedling→growing→mature tiers),
 #           Grain overlay (CSS noise texture via --decay-grain),
-#           Widened decay contrast (opacity 0.4 floor, saturation 0.3, blur 2px),
+#           Revival Moment (decay-to-revival transition, bloom ring, badge),
 #           Revival Guard anti-gaming (optional PoW, fingerprint, velocity),
 #           Constellations page (force-directed star-field reading paths),
 #           Heartbeat pulse, shimmer, snapshot, time-travel.

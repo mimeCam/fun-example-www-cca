@@ -25,7 +25,10 @@ import { getAdaptiveConfig } from '../lib/adaptiveDecay';
 // --- Consolidated engines (replace 15+ scattered scripts) ---
 import { decayEngineClientScript } from '../lib/decay-engine';
 import { revivalEngineScript } from '../lib/revival-engine';
-import { presenceEngineScript } from '../lib/presence-engine';
+// QUARANTINED: old presence-engine uses global heartbeat + phantom events.
+// Replaced by slug-aware presence-client using honest presence-hub.
+// import { presenceEngineScript } from '../lib/presence-engine';
+import { presenceClientScript } from '../lib/presence-client';
 // Removed: liveDecayScript → merged into decayEngineClientScript
 // Removed: decayChoreographyScript → merged into decayEngineClientScript
 // Removed: revivalControllerScript → merged into revivalEngineScript
@@ -88,7 +91,7 @@ const heartbeatPulseJs = heartbeatPulseScript();
 // --- Consolidated engines ---
 const decayScript = decayEngineClientScript();
 const revivalScript = revivalEngineScript();
-const presenceScript = presenceEngineScript();
+const presenceScript = presenceClientScript();
 
 interface Props {
   title: string;

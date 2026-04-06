@@ -6,11 +6,10 @@
 import type { APIRoute } from 'astro';
 import { register, sseNamedFrame } from '../../lib/heartbeat';
 import { presenceSnapshot } from '../../lib/presenceStats';
-import { startAmbientLife } from '../../lib/ambientLife';
-
-// Boot the Ambient Life Engine once on first module import.
-// Seeds revival counts + starts phantom pulse timer.
-startAmbientLife();
+// QUARANTINED: Ambient Life Engine — phantom pulses contradict honest presence.
+// Kept for rollback per AGENTS.md policy. See presence-hub.ts for replacement.
+// import { startAmbientLife } from '../../lib/ambientLife';
+// startAmbientLife();
 
 export const prerender = false;
 

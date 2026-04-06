@@ -19,6 +19,7 @@ import { formatPubDate } from '../../lib/dates';
 import { variantScript } from '../../lib/variants';
 import RevivalShareSheet from '../../components/RevivalShareSheet.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
+import PresenceBand from '../../components/PresenceBand.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -68,6 +69,7 @@ async function resolveEchoTitle(slug?: string) {
     </RevivalMoment>
 
     <Echo text={echo?.text} fromSlug={echo?.from} fromTitle={echoTitle} />
+    <PresenceBand />
   </main>
 
   <RevivalShareSheet slug={post.slug} revivalCount={0} />

@@ -1,61 +1,68 @@
 /* src/styles/presence.css
- * Presence bar breathing + foreign revival ripple.
- * Tempo is controlled by --presence-tempo (set by presence-engine).
- * Reduced-motion: static opacity, no ripple.
+ * Honest presence: breathing dot, count flip, revival ripple.
+ * Tempo driven by --presence-tempo (default 3s).
+ * Reduced-motion: static dot, instant count, no ripple.
  *
- * Credits: Tanya (design spec), Mike (architecture)
+ * Credits: Tanya (design spec), Mike (architecture), Elon (honest-zero)
  */
 
-/* --- Presence breathing (uses custom property for dynamic tempo) --- */
+/* --- Presence breathing dot --- */
 
 .presence-band {
-  --presence-tempo: 4s;
-}
-
-.presence-text {
-  animation: presence-breathe var(--presence-tempo) ease-in-out infinite;
+  --presence-tempo: 3s;
 }
 
 .presence-dot {
   animation: presence-breathe var(--presence-tempo) ease-in-out infinite;
 }
 
-/* --- Foreign revival ripple on decay cards --- */
-
-.decay-card.presence-ripple {
-  animation: ripple-pulse 800ms ease-out forwards;
+@keyframes presence-breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
 }
 
-@keyframes ripple-pulse {
+/* --- Count FLIP transition --- */
+
+.presence-count.count-flip {
+  animation: count-flip 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes count-flip {
+  0% { transform: translateY(4px); opacity: 0.3; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* --- Revival ripple on presence band --- */
+
+.presence-band.presence-ripple {
+  animation: presence-ripple-pulse 800ms ease-out forwards;
+}
+
+@keyframes presence-ripple-pulse {
   0% {
-    box-shadow:
-      0 var(--decay-shadow-y, 4px) var(--decay-shadow-spread, 16px)
-      rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.12)),
-      0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0.15);
+    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 120,120,120), 0.20);
   }
   40% {
-    box-shadow:
-      0 6px 24px rgba(var(--mood-accent-rgb, 120,120,120), 0.18),
-      0 0 0 6px rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+    box-shadow: 0 0 0 8px rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
   }
   100% {
-    box-shadow:
-      0 var(--decay-shadow-y, 4px) var(--decay-shadow-spread, 16px)
-      rgba(var(--mood-accent-rgb, 120,120,120), var(--decay-shadow-alpha, 0.12)),
-      0 0 0 12px rgba(var(--mood-accent-rgb, 120,120,120), 0);
+    box-shadow: 0 0 0 16px rgba(var(--mood-accent-rgb, 120,120,120), 0);
   }
 }
 
 /* --- Reduced motion: no animations --- */
 
 @media (prefers-reduced-motion: reduce) {
-  .presence-text,
   .presence-dot {
     animation: none;
     opacity: 0.6;
   }
 
-  .decay-card.presence-ripple {
+  .presence-count.count-flip {
+    animation: none;
+  }
+
+  .presence-band.presence-ripple {
     animation: none;
     border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.15);
   }

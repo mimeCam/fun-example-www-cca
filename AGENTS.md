@@ -13,10 +13,11 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Core Feature
 
-Temporal Decay + Collective Memory — posts visually age; reader attention revives them.
+Temporal Decay + Collective Memory — posts visually age; reader attention revives them. Honest Presence shows real-time reader counts per slug via SSE.
 
 ## WIP
 
-- Revival Moment — decay-to-revival transition on `/blog/[slug]`; needs physical device QA (Pixel 6a, Galaxy A14, iPhone 13); old bloom/onboarding files kept for rollback until QA
+- Honest Presence — physical device QA pending (SSE on low-end Android/3G, concurrent load); homepage PresenceBand not yet hydrating without a slug
+- Revival Moment — physical device QA pending (Pixel 6a, Galaxy A14, iPhone 13); old bloom/onboarding files kept for rollback
 - Consolidated Engines v2 — physical device QA pending; old lib files kept for rollback
 - Sitemap reduction (11→6 pages) — nav updated, page removals deferred

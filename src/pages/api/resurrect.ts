@@ -14,6 +14,7 @@ import {
   resurrectPost,
 } from '../../lib/collectiveMemory';
 import { broadcast } from '../../lib/heartbeat';
+import { revive as presenceRevive } from '../../lib/presence-hub';
 import { RESURRECT_BONUS } from '../../lib/entomb';
 
 export const prerender = false;
@@ -33,6 +34,8 @@ export const POST: APIRoute = async ({ request }) => {
   const count = resurrectPost(slug, RESURRECT_BONUS);
   stampRateLimit(sessionId, ip, slug);
   broadcast({ slug, count, ts: Date.now() });
+  // Notify honest presence subscribers on this slug
+  presenceRevive(slug);
 
   return jsonOk({ ok: true, count });
 };

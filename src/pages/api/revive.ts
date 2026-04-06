@@ -14,6 +14,7 @@ import {
   recordRevivalBySession,
 } from '../../lib/collectiveMemory';
 import { broadcast } from '../../lib/heartbeat';
+import { revive as presenceRevive } from '../../lib/presence-hub';
 import { getConstellation } from '../../lib/constellationLookup';
 import { checkRevival } from '../../lib/revivalGuard';
 import { FP_HEADER } from '../../lib/visitorFingerprint';
@@ -82,6 +83,8 @@ export const POST: APIRoute = async ({ request }) => {
   const constellation = await getConstellation(slug);
   const resonance = constellation.length > 0 ? constellation : undefined;
   broadcast({ slug, count, ts: Date.now(), resonance });
+  // Notify honest presence subscribers on this slug
+  presenceRevive(slug);
 
   return jsonOk({ ok: true, count, resonance: resonance ?? [] });
 };
