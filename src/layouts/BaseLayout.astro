@@ -29,6 +29,10 @@ import { heartbeatFxScript } from '../lib/heartbeatFx';
 import { heartbeatBridgeScript } from '../lib/heartbeatBridge';
 import { heartbeatPulseScript } from '../lib/heartbeatPulse';
 import { sympatheticBloomScript } from '../lib/sympatheticBloom';
+import { bloomGuardrailsScript } from '../lib/bloomGuardrails';
+import { bloomHapticsScript } from '../lib/bloomHaptics';
+import { bloomA11yScript } from '../lib/bloomA11y';
+import { cascadeMobileScript } from '../lib/cascadeMobile';
 import { revivalToastScript } from '../lib/revivalToast';
 import { bloomOnArrivalScript } from '../lib/bloomOnArrival';
 import { radialRingScript } from '../lib/radialRing';
@@ -77,6 +81,10 @@ const heartbeatScript = heartbeatClientScript();
 const heartbeatFx = heartbeatFxScript();
 const heartbeatBridge = heartbeatBridgeScript();
 const heartbeatPulseJs = heartbeatPulseScript();
+const guardrailsJs = bloomGuardrailsScript();
+const hapticsJs = bloomHapticsScript();
+const a11yJs = bloomA11yScript();
+const cascadeMobileJs = cascadeMobileScript();
 const sympatheticScript = sympatheticBloomScript();
 const toastScript = revivalToastScript();
 const arrivalScript = bloomOnArrivalScript();
@@ -114,6 +122,9 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={keepScript} />
     <script set:html={probeScript} />
     <script set:html={hintScript} />
+    <script set:html={guardrailsJs} />
+    <script set:html={hapticsJs} />
+    <script set:html={a11yJs} />
     <script set:html={bloomScript} />
     <script set:html={rewardScript} />
     <script set:html={heartbeatScript} />
@@ -121,6 +132,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={heartbeatBridge} />
     <script set:html={heartbeatPulseJs} />
     <script set:html={sympatheticScript} />
+    <script set:html={cascadeMobileJs} />
     <script set:html={toastScript} />
     <script set:html={arrivalScript} />
     <script set:html={radialRingJs} />

@@ -22,7 +22,13 @@
 #             solves shared-NAT / office-IP rate-limit false-positives),
 #           FirstBreath arrival choreography (FirstBreath.astro + first-breath.css —
 #             time-aware whisper banner, 4-beat fade sequence, page desaturate→bloom,
-#             once per browser session via sessionStorage gate, reduced-motion safe).
+#             once per browser session via sessionStorage gate, reduced-motion safe),
+#           Sympathetic Bloom mobile polish — circuit breaker guardrails (max 4
+#             concurrent blooms, 5s hard timeout, thundering-herd detection, FPS
+#             watchdog, Page Visibility pause), haptic choreography (diminishing
+#             taps, reduced-motion safe), accessible cascade ARIA announcements,
+#             mobile cascade controller (120ms stagger, scroll assist, orientation),
+#             touch/desktop strategy delegation in sympatheticBloom.
 
 set -euo pipefail
 

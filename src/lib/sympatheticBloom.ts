@@ -1,7 +1,8 @@
 // src/lib/sympatheticBloom.ts
 // Client-side handler: when a revival SSE event carries resonance[],
 // triggers half-intensity blooms on connected posts visible in viewport.
-// Staggers cascade by 200ms per connected post.
+// Staggers cascade by 200ms per connected post (desktop).
+// On touch devices, delegates entirely to cascadeMobile.ts.
 // Respects prefers-reduced-motion (opacity pulse only).
 // Skips cards not in viewport via IntersectionObserver.
 
@@ -20,6 +21,9 @@ export function sympatheticBloomScript(): string {
 function sympatheticIIFE(): void {
   const visible = new Set<string>();
 
+  // Strategy: touch devices use cascadeMobile (loaded separately)
+  if (isTouchDevice()) return;
+
   const observer = createObserver(visible);
   observeAllCards(observer);
 
@@ -34,6 +38,11 @@ function sympatheticIIFE(): void {
     if (!resonance) return;
     scheduleCascade(resonance, visible);
   }) as EventListener);
+
+  /** Detect touch device — delegates cascade to cascadeMobile. */
+  function isTouchDevice(): boolean {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  }
 
   /** Create an IntersectionObserver tracking visible slugs. */
   function createObserver(vis: Set<string>): IntersectionObserver {
@@ -60,7 +69,7 @@ function sympatheticIIFE(): void {
     vis: Set<string>,
   ): void {
     let index = 0;
-    const announced = false;
+    let announced = false;
 
     for (const link of resonance) {
       if (link.strength < 0.2) continue;
@@ -68,7 +77,7 @@ function sympatheticIIFE(): void {
       const delay = 300 + index * 200;
       const intensity = link.strength * 0.5;
       scheduleBloom(link.slug, intensity, delay);
-      if (!announced) announceFirst(link.slug);
+      if (!announced) { announceFirst(link.slug); announced = true; }
       index++;
     }
   }

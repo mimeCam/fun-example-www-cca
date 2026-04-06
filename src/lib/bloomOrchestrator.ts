@@ -86,12 +86,14 @@ export function bloomOrchestratorScript(): string {
 
     blooming.add(slug);
     el.dataset.revivalCount=String(count);
+    registerGuardrail(slug,intensity);
 
     if(prefersReduced()){
       reducedMotionPath(el,slug,count);
       return dequeue()
     }
 
+    if(isLowFps())intensity=Math.min(intensity,0.5);
     applyIntensity(el,intensity);
     el.setAttribute('data-bloom-lock','1');
     el.classList.add('blooming','bloom-lift');
@@ -117,6 +119,7 @@ export function bloomOrchestratorScript(): string {
       el.removeAttribute('data-bloom-lock');
       clearIntensity(el);
       blooming.delete(slug);
+      releaseGuardrail(slug);
       dequeue()
     },${PHASE_CLEANUP_MS})
   }
@@ -158,6 +161,37 @@ export function bloomOrchestratorScript(): string {
 
   document.addEventListener('timetravel:seek',function(){ttActive=true});
   document.addEventListener('timetravel:exit',function(){ttActive=false});
+
+  document.addEventListener('bloom:guardrail:kill',function(e){
+    var d=e.detail;
+    if(!d||!d.slug)return;
+    forceCleanup(d.slug)
+  });
+
+  function forceCleanup(slug){
+    var el=findCard(slug);
+    if(!el)return;
+    el.classList.remove('blooming','bloom-lift','bloom-afterglow','bloom-settle');
+    el.removeAttribute('data-bloom-lock');
+    clearIntensity(el);
+    blooming.delete(slug);
+    releaseGuardrail(slug)
+  }
+
+  function registerGuardrail(slug,intensity){
+    var api=document.__bloomGuardrails;
+    if(api&&api.request)api.request(slug,intensity)
+  }
+
+  function releaseGuardrail(slug){
+    var api=document.__bloomGuardrails;
+    if(api&&api.release)api.release(slug)
+  }
+
+  function isLowFps(){
+    var api=document.__bloomGuardrails;
+    return api&&api.isLowFps?api.isLowFps():false
+  }
 
   if(!document.getElementById('bloom-aria-region')){
     var r=document.createElement('div');

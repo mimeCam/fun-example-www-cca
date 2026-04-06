@@ -15,6 +15,6 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Sympathetic Bloom — cascade revival across constellation-connected posts; needs mobile QA
+- Sympathetic Bloom Mobile Polish — code complete, needs physical-device QA
 - Collective Heartbeat (SSE) — needs integration test
-- Component Pruning — ~19 satellite components pending removal (FogOverlay.astro @deprecated)
+- Component Pruning — ~19 satellite components pending removal
