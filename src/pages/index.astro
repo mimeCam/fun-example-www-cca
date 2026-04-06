@@ -14,17 +14,20 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
+import EndangeredBand from '../components/EndangeredBand.astro';
 import FirstVisitHint from '../components/FirstVisitHint.astro';
 import NowLine from '../components/NowLine.astro';
 import Murmurs from '../components/Murmurs.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
+import { endangeredClientScript } from '../lib/endangered';
 import { timeTravelScript } from '../lib/timeTravel';
 import { timeTravelBandsScript } from '../lib/timeTravelBands';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
 const bands = groupIntoBands(displayPosts);
+const endangered = displayPosts.filter(p => p.endangered);
 const entombedCount = displayPosts.filter(p => p.entombed).length;
 const allEntombed = displayPosts.every(p => p.entombed);
 ---
@@ -32,6 +35,7 @@ const allEntombed = displayPosts.every(p => p.entombed);
 <BaseLayout title="Persona Blog">
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
+  <script set:html={endangeredClientScript()} />
   <main class="feed">
 
     <NowLine />
@@ -69,6 +73,8 @@ const allEntombed = displayPosts.every(p => p.entombed);
         )}
       </section>
     )}
+
+    {endangered.length > 0 && <EndangeredBand posts={endangered} />}
 
     <Murmurs />
 

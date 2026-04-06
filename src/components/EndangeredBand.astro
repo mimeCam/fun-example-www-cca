@@ -1,0 +1,38 @@
+---
+// src/components/EndangeredBand.astro
+// Homepage surface for posts approaching entombment (decay ≥ 0.80, < 0.95).
+// Renders between archive band and Murmurs — the "last chance" threshold.
+//
+// Empty state: section doesn't render (handled by parent conditional).
+// Posts sorted by most-endangered first (highest decay).
+//
+// Credits: Mike (napkin plan §2), Tanya (UX spec §3.2B — dashed container,
+//          warm gradient, single-card emphasis)
+
+import EndangeredCard from './EndangeredCard.astro';
+import type { PostDisplayData } from '../lib/postMeta';
+
+interface Props { posts: PostDisplayData[]; }
+
+const { posts } = Astro.props;
+const sorted = [...posts].sort(byMostEndangered);
+
+function byMostEndangered(a: PostDisplayData, b: PostDisplayData): number {
+  return b.decay - a.decay;
+}
+---
+
+<section
+  class="band band--endangered"
+  aria-label="Posts about to be forgotten"
+>
+  <div class="endangered-header">
+    <h2 class="endangered-label">
+      <span class="endangered-pulse-dot"></span>
+      Fading away
+    </h2>
+    <p class="endangered-hint">These posts die without your attention</p>
+  </div>
+
+  {sorted.map(post => <EndangeredCard post={post} />)}
+</section>

@@ -4,26 +4,25 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v12 — Single-Screen Consolidation (2026-04-06)
+# Architecture v13 — Endangered Posts (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Page Consolidation):
-#   /now and /wall pages folded into homepage ("The Field").
-#   NowLine (hero + season tiers) renders pinned status inline on homepage.
-#   Murmurs component renders wall entries inline — no separate page.
-#   Wall submissions now CLI-only (node cli/whisper.mjs), web form removed.
-#   Archive tier removed from now data (NowTiered simplified).
-#   Nav simplified: only home, blog, graveyard remain as page IDs.
-#   Deleted pages: /now, /now/before, /wall.
-#   Deleted components: NowCard, WallEntry, WallExplainer, WallFaultLine,
-#   WallForm, WallFossil. Deleted libs: wallCounter, wallSubmit.
+# Sprint (latest — Endangered Posts):
+#   New "Endangered" surface on homepage for posts approaching entombment
+#   (decay 0.80–0.95). Three urgency tiers: warning, critical, final —
+#   drive pulsing border speed and countdown text. Cards show days-left
+#   countdown, auto-refresh hourly, and disappear on revival via SSE.
+#   New: EndangeredBand, EndangeredCard components; endangered.ts engine;
+#   endangered.css styles. PostDisplayData extended with endangered fields.
+#   Pure frontend feature — no new services or runtime dependencies.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),
 #           dynamic OG image generation (satori + resvg),
 #           Consequential Decay / Graveyard (entomb + resurrect),
+#           Endangered Posts (urgency tiers, pulse, countdown),
 #           Revival animations (bloom ring, scale lift, badge),
 #           Revival Guard anti-gaming (fingerprint, velocity),
 #           NowLine (pinned author status on homepage),

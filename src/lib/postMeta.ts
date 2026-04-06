@@ -12,6 +12,8 @@ import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './dec
 import type { FreshnessTag } from './decay-engine';
 import { getRevivalCounts, getRisenTimestamps } from './collectiveMemory';
 import { isEntombed, isRecentlyRisen } from './entomb';
+import { isEndangered, urgencyLevel, daysUntilEntomb } from './endangered';
+import type { UrgencyLevel } from './endangered';
 import { daysSince } from './temporal';
 
 export interface PostMeta {
@@ -61,6 +63,9 @@ export interface PostDisplayData extends PostMeta {
   revivalCount: number;
   revivalWarm: boolean;
   entombed: boolean;
+  endangered: boolean;
+  endangeredUrgency: UrgencyLevel;
+  endangeredDaysLeft: number;
   risenAt: Date | null;
   recentlyRisen: boolean;
 }
@@ -83,6 +88,7 @@ export function getPostDisplayData(
   const warm = revivalBonus(revivals) > 0.15;
   const lastRevivalDays = lastRevivalDaysAgo(risenAt, now);
   const entombed = isEntombed(factor, lastRevivalDays);
+  const endangered = isEndangered(factor);
   return {
     ...meta,
     decay: factor,
@@ -91,6 +97,9 @@ export function getPostDisplayData(
     revivalCount: revivals,
     revivalWarm: warm,
     entombed,
+    endangered,
+    endangeredUrgency: urgencyLevel(factor),
+    endangeredDaysLeft: daysUntilEntomb(factor),
     risenAt,
     recentlyRisen: isRecentlyRisen(risenAt, now),
   };

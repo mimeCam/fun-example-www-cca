@@ -17,5 +17,6 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
+- Endangered Posts — urgency tiers, pulse, countdown on homepage (new; needs SSE revival-dismiss polish)
 - Rewrite `mood.ts` (strip cycling/blending — warm-only locked)
 - Physical device QA (Pixel 6a, Galaxy A14, iPhone 13, SSE on 3G)

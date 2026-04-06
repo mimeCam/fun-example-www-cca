@@ -78,7 +78,8 @@ export function _testTimeBands(): void {
     slug: 'x', title: 'X', description: '', url: '', pubDate: new Date(iso),
     pubDateISO: iso, readingTime: 1, decay: 0, freshness: 'recent',
     decayStyle: '', revivalCount: 0, revivalWarm: false,
-    entombed, risenAt: null, recentlyRisen: false,
+    entombed, endangered: false, endangeredUrgency: 'warning',
+    endangeredDaysLeft: 0, risenAt: null, recentlyRisen: false,
   });
 
   const now = new Date();
