@@ -18,6 +18,7 @@ import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import { variantScript } from '../../lib/variants';
 import RevivalShareSheet from '../../components/RevivalShareSheet.astro';
+import RevivalMoment from '../../components/RevivalMoment.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -55,14 +56,16 @@ async function resolveEchoTitle(slug?: string) {
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
 
-    <article
-      class="post-body"
-      data-pub-date={hasVariants ? post.data.pubDate.toISOString() : undefined}
-    >
-      <Content />
-    </article>
+    <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
+      <article
+        class="post-body"
+        data-pub-date={hasVariants ? post.data.pubDate.toISOString() : undefined}
+      >
+        <Content />
+      </article>
 
-    {hasVariants && <script set:html={vScript} />}
+      {hasVariants && <script set:html={vScript} />}
+    </RevivalMoment>
 
     <Echo text={echo?.text} fromSlug={echo?.from} fromTitle={echoTitle} />
   </main>
@@ -126,7 +129,6 @@ async function resolveEchoTitle(slug?: string) {
     line-height: 1.75;
     color: rgba(255, 255, 255, 0.88);
   }
-  /* TODO: add prose styling for h2/h3, blockquotes, code blocks, images */
   .post-body :global(p) {
     margin-bottom: 1.4em;
   }
@@ -134,6 +136,53 @@ async function resolveEchoTitle(slug?: string) {
     color: var(--mood-accent, currentColor);
     text-decoration: underline;
     text-underline-offset: 2px;
+  }
+  .post-body :global(h2) {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 2.5em 0 0.75em;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.94);
+  }
+  .post-body :global(h3) {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 2em 0 0.5em;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.90);
+  }
+  .post-body :global(blockquote) {
+    border-left: 2px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
+    padding: 0.25em 1em;
+    margin: 1.5em 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+  }
+  .post-body :global(pre) {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 1em 1.25em;
+    margin: 1.5em 0;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .post-body :global(code) {
+    font-size: 0.88em;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+  .post-body :global(pre code) {
+    background: none;
+    padding: 0;
+  }
+  .post-body :global(img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius, 12px);
+    margin: 1.5em 0;
   }
   /* Variant blocks: hidden by default, revealed by inline script */
   .post-body :global(.variant) {

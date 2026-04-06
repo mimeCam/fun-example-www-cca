@@ -4,21 +4,24 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v5 — First-Visit Clarity Engine + Bloom Phase Reduction
-#   Three consolidated engines (decay-engine + revival-engine + presence-engine).
-#   Layout stripped: AmbientLayer, CelestialWitness, Hearth, RadialRing removed.
-#   Body uses single CSS radial gradient. Nav: field · graveyard · now (3 links).
-#   FirstVisitHint replaces GuidedTouch + DiscoveryWhisper (one-shot onboarding).
+# Architecture v6 — Revival Moment (Tier 1 core feature)
+#   The decay IS the hint. The revival IS the onboarding.
+#   Blog posts show extreme temporal decay (blur, desaturation, grain) and
+#   revive via hover-dwell / touch-hold / keyboard — bloom ring, camera shake,
+#   haptic feedback, badge, sympathetic SSE, prefers-reduced-motion support.
+#   Replaces 6 bloom files + 4 onboarding components with 1 unified system.
 #
 # Sprint (latest):
-#   - Bloom phase reduction (5→3): Ignite → Glow → Settle; Burst + Afterglow removed.
-#     bloomReducer.ts (new): pure 5→3 phase config transform.
-#   - First-Visit Clarity Engine (end-to-end):
-#     quietModeScript() adds .fvh-quiet to <main> for visits < 3 (amplified decay contrast).
-#     demoRevivalScript() auto-glows most-decayed card at T+3s (CSS-only, no fake revival).
-#     SSE phantom events suppressed for quiet-mode connections (heartbeat.ts API).
-#     Overlay gating: RewardWhisper, HeartbeatPulse, QuietFollow hidden for visits < 3.
-#     first-visit.css (new): .fvh-quiet overrides, .fvh-demo-glow keyframes.
+#   - Revival Moment on /blog/[slug] (core decay-to-revival transition):
+#     revival-moment.ts: unified choreography (dwell/touch/keyboard triggers,
+#       session gating, /api/revive POST, sympathetic SSE via EventSource).
+#     RevivalMoment.astro: wraps article in .revival-stage with CSS custom
+#       properties (--decay-opacity, --decay-blur, --decay-saturation, --stage-grain).
+#     decay-extremes.css: extreme decay visual layer (opacity floor 0.30, blur 4px,
+#       saturation 0.12 for ancient posts).
+#     revival-moment.css: revival bloom ring, badge, sympathetic pulse animations.
+#   - Prose styling for blog posts: h2/h3, blockquotes, code blocks, images.
+#   - BaseLayout wired: imports decay-extremes.css + revival-moment.css globally.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (real-time revival pulses via EventSource),

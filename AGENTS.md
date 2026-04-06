@@ -17,5 +17,6 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Consolidated Engines v2 — physical device QA pending (Pixel 6a, Galaxy A14, iPhone 13); old lib files kept for rollback
+- Revival Moment — decay-to-revival transition on `/blog/[slug]`; needs physical device QA (Pixel 6a, Galaxy A14, iPhone 13); old bloom/onboarding files kept for rollback until QA
+- Consolidated Engines v2 — physical device QA pending; old lib files kept for rollback
 - Sitemap reduction (11→6 pages) — nav updated, page removals deferred

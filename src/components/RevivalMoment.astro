@@ -1,0 +1,70 @@
+---
+// src/components/RevivalMoment.astro
+// Drop-in component for /blog/[slug] — wraps article content in the revival
+// stage and injects the interaction script.
+//
+// The decay IS the hint. The revival IS the onboarding.
+// No tooltips. No guided tours. No explanation text.
+// A visitor sees degraded content, hovers/touches, and witnesses revival.
+//
+// Replaces: FirstVisitHint, GuidedTouch, DiscoveryWhisper, FirstBreath
+//           (4 onboarding components → 0 needed)
+//
+// Credits: Mike (architecture), Tanya (UX spec), Paul Kim (60-second test)
+
+import {
+  revivalMomentScript,
+  stageStyleString,
+  decayTier,
+} from '../lib/revival-moment';
+import { decayFactor, revivalBonus } from '../lib/decay-engine';
+
+interface Props {
+  slug: string;
+  pubDate: Date;
+  revivalCount?: number;
+}
+
+const { slug, pubDate, revivalCount = 0 } = Astro.props;
+
+const factor = decayFactor(
+  pubDate.toISOString(),
+  365,
+  new Date(),
+  revivalCount,
+);
+const tier = decayTier(factor);
+const stageStyle = stageStyleString(factor);
+const script = revivalMomentScript(slug);
+---
+
+<div
+  class="revival-stage"
+  data-slug={slug}
+  data-decay-tier={tier}
+  data-decay-factor={factor.toFixed(2)}
+  style={stageStyle}
+  tabindex="0"
+  role="region"
+  aria-label="Blog post content — hover or hold to revive"
+>
+  <!-- Bloom ring: expands on revival -->
+  <div class="revival-ring" aria-hidden="true"></div>
+
+  <!-- Article content slot -->
+  <slot />
+</div>
+
+<!-- Revival badge: "You revived this" — injected text by JS -->
+<div class="revival-badge" aria-hidden="true"></div>
+
+<!-- Screen reader announcement region -->
+<div
+  class="revival-announce"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+></div>
+
+<!-- Revival moment interaction script -->
+<script set:html={script} />
