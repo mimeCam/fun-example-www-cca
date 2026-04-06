@@ -4,18 +4,23 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v13 — Endangered Posts (2026-04-06)
+# Architecture v14 — Endangered Posts: Multi-phase Revival Dismiss (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Endangered Posts):
-#   New "Endangered" surface on homepage for posts approaching entombment
-#   (decay 0.80–0.95). Three urgency tiers: warning, critical, final —
-#   drive pulsing border speed and countdown text. Cards show days-left
-#   countdown, auto-refresh hourly, and disappear on revival via SSE.
-#   New: EndangeredBand, EndangeredCard components; endangered.ts engine;
-#   endangered.css styles. PostDisplayData extended with endangered fields.
+# Sprint (latest — Endangered Revival Polish):
+#   Multi-phase animated card dismissal on revival: bloom flash → opacity
+#   fade → height collapse → DOM removal. Reduced-motion safe (instant
+#   removal). Debounced SSE revival handler (150 ms) coalesces rapid events.
+#   Cards update in-place (decay & pulse speed) when still endangered after
+#   revival instead of being removed. Band fades out when no cards remain.
+#   SSE revival event now carries decayAfterRevival so client can decide
+#   dismiss vs update. revive API returns decayAfterRevival in JSON response.
+#   decayFactorWithCount() helper exported from decay-engine for post-revival
+#   recalculation. SSE re-bind resilience via watchES() polling loop.
+#   Screen-reader announcements on card removal (ARIA live region).
+#   Exported animateCollapseSnippet() reusable height-collapse utility.
 #   Pure frontend feature — no new services or runtime dependencies.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
@@ -23,6 +28,7 @@
 #           dynamic OG image generation (satori + resvg),
 #           Consequential Decay / Graveyard (entomb + resurrect),
 #           Endangered Posts (urgency tiers, pulse, countdown),
+#           Multi-phase revival dismiss (bloom → fade → collapse, a11y),
 #           Revival animations (bloom ring, scale lift, badge),
 #           Revival Guard anti-gaming (fingerprint, velocity),
 #           NowLine (pinned author status on homepage),

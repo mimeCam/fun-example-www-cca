@@ -25,6 +25,8 @@ function byMostEndangered(a: PostDisplayData, b: PostDisplayData): number {
 <section
   class="band band--endangered"
   aria-label="Posts about to be forgotten"
+  aria-live="polite"
+  data-endangered-count={sorted.length}
 >
   <div class="endangered-header">
     <h2 class="endangered-label">

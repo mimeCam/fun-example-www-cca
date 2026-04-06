@@ -176,7 +176,48 @@
   50%      { opacity: 0.8; transform: scale(1.1); }
 }
 
-/* Exit animation (on revival via SSE) */
+/* ═══════════════════════════════════════════════════════════════════
+ * REVIVAL-DISMISS CHOREOGRAPHY — 3-phase exit
+ * Phase 1: bloom flash (200ms) — warm glow + slight scale-up
+ * Phase 2: fade-out (400ms)  — opacity to 0
+ * Phase 3: collapse (300ms)  — height to 0, handled by JS animateCollapse
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Phase 1: bloom flash — warm glow + slight scale-up */
+.endangered-card.revived-bloom {
+  animation: endangered-bloom 200ms ease-out forwards;
+  filter: saturate(0.8) brightness(1.15);
+  box-shadow: 0 0 24px rgba(212, 149, 106, 0.30);
+  z-index: 1;
+}
+
+@keyframes endangered-bloom {
+  0%   { transform: scale(1); }
+  60%  { transform: scale(1.02); }
+  100% { transform: scale(1.02); }
+}
+
+/* Phase 2: fade-out — opacity drops, scale settles */
+.endangered-card.revived-fade {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  filter: saturate(0.1);
+  box-shadow: none;
+  transition:
+    opacity 400ms ease-out,
+    transform 400ms ease-out,
+    filter 400ms ease-out,
+    box-shadow 400ms ease-out;
+}
+
+/* Band emptying — container fades when last card exits */
+.band--endangered.band--emptying {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 500ms ease-out, transform 500ms ease-out;
+}
+
+/* Legacy class preserved for compatibility */
 .endangered-card.revived {
   animation: endangered-exit 600ms ease-out forwards;
 }
@@ -214,8 +255,15 @@
     animation: none;
     opacity: 0.6;
   }
-  .endangered-card.revived {
+  .endangered-card.revived,
+  .endangered-card.revived-bloom,
+  .endangered-card.revived-fade {
     animation: none;
+    transition: none;
+    opacity: 0;
+  }
+  .band--endangered.band--emptying {
+    transition: none;
     opacity: 0;
   }
 }
@@ -235,4 +283,20 @@
   .endangered-tend-link {
     font-size: 0.55rem;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * SCREEN READER UTILITY — used by revival announce()
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

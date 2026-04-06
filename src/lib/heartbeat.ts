@@ -14,6 +14,8 @@ export interface HeartbeatEvent {
   slug: string;
   count: number;
   ts: number;
+  /** Post-revival decay factor — lets clients decide dismiss vs update. */
+  decayAfterRevival?: number;
   /** Constellation connections — present when revival triggers cascade. */
   resonance?: ResonanceLink[];
   /** True for ambient-life phantom pulses (synthetic, not a real reader). */

@@ -18,6 +18,7 @@ import { revive as presenceRevive } from '../../lib/presence-hub';
 import { getConstellation } from '../../lib/constellationLookup';
 import { checkRevival } from '../../lib/revivalGuard';
 import { FP_HEADER } from '../../lib/visitorFingerprint';
+import { decayFactorWithCount } from '../../lib/decay-engine';
 
 export const prerender = false;
 
@@ -48,10 +49,11 @@ function clientIp(request: Request): string {
   );
 }
 
-/** Validate slug exists in the blog collection. */
-async function slugExists(slug: string): Promise<boolean> {
+/** Find a post by slug, returning its pubDate if it exists. */
+async function findPost(slug: string): Promise<string | null> {
   const posts = await getCollection('blog');
-  return posts.some(p => p.slug === slug);
+  const post = posts.find(p => p.slug === slug);
+  return post?.data.pubDate?.toISOString() ?? null;
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -62,7 +64,8 @@ export const POST: APIRoute = async ({ request }) => {
   if (!slug || typeof slug !== 'string') return badRequest('Missing slug');
   // Allow spectacle demo without touching the DB or rate limiter.
   if (slug === '__demo__') return jsonOk({ ok: true, count: 0, resonance: [] });
-  if (!(await slugExists(slug))) return badRequest('Unknown slug');
+  const pubDateISO = await findPost(slug);
+  if (!pubDateISO) return badRequest('Unknown slug');
 
   const sessionId = request.headers.get('x-session-id');
   const ip = clientIp(request);
@@ -80,13 +83,16 @@ export const POST: APIRoute = async ({ request }) => {
   stampRateLimit(sessionId, ip, slug);
   stampDailyCounts(fp, ip);
 
+  // Recalculate decay with new count so client can decide dismiss vs update
+  const decayAfterRevival = decayFactorWithCount(pubDateISO, count);
+
   const constellation = await getConstellation(slug);
   const resonance = constellation.length > 0 ? constellation : undefined;
-  broadcast({ slug, count, ts: Date.now(), resonance });
+  broadcast({ slug, count, ts: Date.now(), decayAfterRevival, resonance });
   // Notify honest presence subscribers on this slug
   presenceRevive(slug);
 
-  return jsonOk({ ok: true, count, resonance: resonance ?? [] });
+  return jsonOk({ ok: true, count, decayAfterRevival, resonance: resonance ?? [] });
 };
 
 // ---------------------------------------------------------------------------

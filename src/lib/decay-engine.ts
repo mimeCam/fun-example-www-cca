@@ -46,6 +46,16 @@ export function decayFactor(
   return Math.max(0, raw - revivalBonus(revivalCount));
 }
 
+/** Compute decay with a known revival count (for post-revival API calls). */
+export function decayFactorWithCount(
+  pubDate: string,
+  revivalCount: number,
+  maxDays = MAX_DAYS_DEFAULT,
+  now = new Date(),
+): number {
+  return decayFactor(pubDate, maxDays, now, revivalCount);
+}
+
 // ---------------------------------------------------------------------------
 // Visual mappings — continuous, not bucketed
 // ---------------------------------------------------------------------------
@@ -317,6 +327,10 @@ export function _testDecayEngine(): void {
   console.assert(isRecentlyRisen(new Date('2026-04-02'), now), 'recent risen');
   console.assert(!isRecentlyRisen(new Date('2026-03-01'), now), 'old risen');
   console.assert(!isRecentlyRisen(null, now), 'null risen');
+
+  // decayFactorWithCount wrapper
+  const wc = decayFactorWithCount('2026-04-05', 5, 365, new Date('2026-04-05'));
+  console.assert(wc === 0, `withCount same-day: expected 0, got ${wc}`);
 
   // Client script
   const script = decayEngineClientScript();

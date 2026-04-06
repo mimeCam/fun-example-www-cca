@@ -40,7 +40,7 @@ const style = [decayStyleString(post.decay), endangeredStyleString(post.decay)].
     <h2 class="post-title">{post.title}</h2>
   </a>
   <div class="endangered-card-footer">
-    <span class="endangered-countdown">{countdown}</span>
+    <span class="endangered-countdown" aria-live="polite">{countdown}</span>
     <a href={href} class="endangered-tend-link">tend this post &rarr;</a>
   </div>
 </article>
