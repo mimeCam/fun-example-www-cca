@@ -28,6 +28,7 @@ import { heartbeatPulseScript } from '../lib/heartbeatPulse';
 import { sympatheticBloomScript } from '../lib/sympatheticBloom';
 import { revivalToastScript } from '../lib/revivalToast';
 import { bloomOnArrivalScript } from '../lib/bloomOnArrival';
+import { radialRingScript } from '../lib/radialRing';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -49,6 +50,7 @@ import '../styles/timetravel.css';
 import '../styles/reward.css';
 import '../styles/heartbeat.css';
 import '../styles/revival-toast.css';
+import '../styles/radial-ring.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const timeScript = timeAmbientScript();
@@ -69,6 +71,7 @@ const heartbeatPulseJs = heartbeatPulseScript();
 const sympatheticScript = sympatheticBloomScript();
 const toastScript = revivalToastScript();
 const arrivalScript = bloomOnArrivalScript();
+const radialRingJs = radialRingScript();
 
 interface Props {
   title: string;
@@ -108,6 +111,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={sympatheticScript} />
     <script set:html={toastScript} />
     <script set:html={arrivalScript} />
+    <script set:html={radialRingJs} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

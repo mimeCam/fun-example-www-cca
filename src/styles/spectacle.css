@@ -1,0 +1,113 @@
+/* src/styles/spectacle.css
+ * First-visit spectacle — fog overlay, phase transitions, hero card spotlight.
+ * Uses existing decay.css vars. Consumes --spectacle-progress from controller.
+ * Peak fog: 0.4 (twilight, not blackout — per Tanya's spec).
+ */
+
+/* ---------------------------------------------------------------------------
+ * Fog overlay (driven by --spectacle-progress custom property)
+ * FogOverlay.astro reads this; spectacle.css just documents the contract.
+ * z-index: 9 — below SiteNav (10), above content (0).
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --spectacle-progress: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Body flag: spectacle is active
+ * ------------------------------------------------------------------------- */
+
+body[data-spectacle-active] {
+  overflow-x: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+ * Card overrides during spectacle
+ * ------------------------------------------------------------------------- */
+
+[data-spectacle-active] .decay-card {
+  transition:
+    opacity 0.6s ease,
+    filter 0.6s ease,
+    box-shadow 0.6s ease !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Hero card spotlight — punches above fog during phase 3
+ * ------------------------------------------------------------------------- */
+
+.spectacle-hero {
+  z-index: 15;
+  position: relative;
+}
+
+.spectacle-hero::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(var(--mood-accent-rgb, 120,120,120), 0.06) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+[data-spectacle-active] .spectacle-hero::before {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+ * Skip button — fades in after 2s, bottom-right corner
+ * ------------------------------------------------------------------------- */
+
+.spectacle-skip {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 51;
+  font: 300 0.75rem/1 system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.4);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0.375rem 0.875rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease, color 0.2s ease;
+  pointer-events: none;
+}
+
+.spectacle-skip[data-visible] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.spectacle-skip:hover,
+.spectacle-skip:focus-visible {
+  color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.25);
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion: skip all spectacle animation
+ * ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-spectacle-active] .decay-card {
+    transition: opacity 0.2s ease !important;
+  }
+
+  .spectacle-hero::before {
+    display: none;
+  }
+
+  .spectacle-skip {
+    transition: none;
+  }
+}

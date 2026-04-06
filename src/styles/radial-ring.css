@@ -1,0 +1,62 @@
+/* src/styles/radial-ring.css
+ * Styles for the SVG radial progress ring shown during touch-hold revival.
+ * The ring fills over 600ms, blooms on success, dissolves on cancel.
+ * Colour inherits --mood-accent-rgb from the mood system automatically. */
+
+/* ── Overlay container ─────────────────────────────────── */
+
+.revival-ring-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── SVG ring ──────────────────────────────────────────── */
+
+.revival-ring {
+  position: absolute;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.revival-ring__track {
+  fill: none;
+  stroke: rgba(var(--mood-accent-rgb, 180, 160, 140), 0.7);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  will-change: stroke-dashoffset;
+  transition: stroke-dashoffset 16ms linear;
+}
+
+/* ── Bloom (success) ───────────────────────────────────── */
+
+.revival-ring--bloom {
+  animation: ring-bloom 400ms ease-out forwards;
+}
+
+@keyframes ring-bloom {
+  0%   { transform: translateZ(0) scale(1);   opacity: 1; filter: drop-shadow(0 0 4px rgba(var(--mood-accent-rgb, 180, 160, 140), 0.5)); }
+  60%  { transform: translateZ(0) scale(1.6); opacity: 0.6; filter: drop-shadow(0 0 8px rgba(var(--mood-accent-rgb, 180, 160, 140), 0.3)); }
+  100% { transform: translateZ(0) scale(1.8); opacity: 0;   filter: drop-shadow(0 0 0 transparent); }
+}
+
+/* ── Cancel (dissolve) ─────────────────────────────────── */
+
+.revival-ring--cancel {
+  animation: ring-dissolve 150ms ease-out forwards;
+}
+
+@keyframes ring-dissolve {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── Reduced motion ────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .revival-ring-overlay { display: none; }
+}

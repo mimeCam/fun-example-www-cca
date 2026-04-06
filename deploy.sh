@@ -7,7 +7,8 @@
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (long-lived connections for real-time revival pulses),
 #           heartbeat bridge (remote→bloom), ambient presence pulse indicator,
-#           dynamic OG image generation (satori + resvg — needs extra memory).
+#           dynamic OG image generation (satori + resvg — needs extra memory),
+#           radial-ring revival gesture UI, first-visit spectacle state machine.
 
 set -euo pipefail
 
@@ -61,10 +62,19 @@ docker run \
   --volume "${SQLITE_VOLUME}:/app/data" \
   "${IMAGE_NAME}"
 
-# ── 5. Quick health check ───────────────────────────────────────────────────
+# ── 5. Health check with retry ───────────────────────────────────────────────
 echo "==> [deploy] Waiting for container to become healthy…"
-sleep 2
-if docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+HEALTHY=false
+for i in 1 2 3; do
+  sleep 2
+  if docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    HEALTHY=true
+    break
+  fi
+  echo "==> [deploy] Health check attempt ${i}/3 — not yet running…"
+done
+
+if [ "${HEALTHY}" = true ]; then
   echo "==> [deploy] ✓ Container is running"
 else
   echo "==> [deploy] ✗ Container failed to start — check deployment.log" >&2
