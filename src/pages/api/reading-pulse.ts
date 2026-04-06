@@ -17,6 +17,10 @@ import { readingBonus } from '../../lib/decay-engine';
 
 const MAX_SECONDS_PER_PULSE = 60; // reject suspiciously large bursts
 
+// GET is not supported — return 405 so Astro's router stops warning during prerender.
+export const GET: APIRoute = () =>
+  new Response(null, { status: 405, headers: { Allow: 'POST' } });
+
 export const POST: APIRoute = async ({ request }) => {
   const body = await parseBody(request);
   if (!body) return badRequest('invalid json');

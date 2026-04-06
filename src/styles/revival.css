@@ -420,3 +420,44 @@
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * GRAVEYARD PAGE — entrance + tombstone enhancements
+ * Tanya §4: "quiet, monochrome, sacred — subtle fade-in on arrival"
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Page-level fade-in — the graveyard reveals itself slowly */
+@keyframes graveyard-arrive {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.graveyard {
+  animation: graveyard-arrive 500ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graveyard { animation: none; }
+}
+
+/* Tombstone resurrection: warm glow on the risen state (mirrors decay-card warm) */
+.tombstone.risen {
+  border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.18);
+  opacity: 0.7;
+  filter: saturate(0.35);
+  transition: border-color 600ms ease, opacity 600ms ease, filter 600ms ease;
+}
+
+/* Tombstone corner radius per Tanya design system (§7 — colder = 8px) */
+.tombstone {
+  border-radius: 8px;
+}
+
+/* Graveyard stats entry animation — staggers in after header */
+.graveyard-stats {
+  animation: graveyard-arrive 600ms ease-out 180ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graveyard-stats { animation: none; }
+}

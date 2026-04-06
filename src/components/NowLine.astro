@@ -10,6 +10,13 @@ import { partitionNow, emptyHeroQuip } from '../lib/now';
 import type { NowTiered, ComputedNowItem } from '../lib/now';
 import nowData from '../data/now.json';
 
+interface Props {
+  /** Count of entombed posts — shows a graveyard hint when > 0. */
+  graveyardCount?: number;
+}
+
+const { graveyardCount = 0 } = Astro.props;
+
 const data = nowData as NowTiered;
 const { hero, season } = partitionNow(data);
 const hasHero = hero.length > 0;
@@ -61,6 +68,14 @@ function cssDecay(item: ComputedNowItem): string {
         </li>
       )}
     </ul>
+  )}
+
+  {graveyardCount > 0 && (
+    <p class="now-graveyard-hint">
+      <a href="/graveyard" class="now-graveyard-link">
+        {graveyardCount} {graveyardCount === 1 ? 'post' : 'posts'} lost to time
+      </a>
+    </p>
   )}
 </div>
 
@@ -146,7 +161,26 @@ function cssDecay(item: ComputedNowItem): string {
     margin-top: 0.1rem;
   }
 
+  /* Graveyard hint — whisper-level, far from page noise */
+  .now-graveyard-hint {
+    margin: 0.65rem 0 0 2.4rem;
+    font-size: 0.68rem;
+    font-style: italic;
+  }
+
+  .now-graveyard-link {
+    color: rgba(255, 255, 255, 0.22);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 250ms ease;
+  }
+
+  .now-graveyard-link:hover {
+    color: rgba(255, 255, 255, 0.48);
+  }
+
   @media (max-width: 640px) {
     .now-season { margin-left: 1.2rem; }
+    .now-graveyard-hint { margin-left: 1.2rem; }
   }
 </style>

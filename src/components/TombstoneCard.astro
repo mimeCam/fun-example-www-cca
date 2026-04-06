@@ -14,6 +14,8 @@ const { post } = Astro.props;
 const formattedDate = formatPubDate(post.pubDate);
 const forgotten = entombmentAge(post.pubDateISO, 365);
 const daysLabel = forgotten === 1 ? 'day' : 'days';
+const readingMins = Math.round(post.readingSeconds / 60);
+const hasStats = post.revivalCount > 0 || readingMins > 0;
 ---
 
 <article
@@ -28,6 +30,23 @@ const daysLabel = forgotten === 1 ? 'day' : 'days';
   {post.description && (
     <p class="tomb-epitaph">{post.description}</p>
   )}
+  {hasStats && (
+    <dl class="tomb-stats" aria-label="Post history">
+      {post.revivalCount > 0 && (
+        <div class="tomb-stat">
+          <dt>revived</dt>
+          <dd>{post.revivalCount}×</dd>
+        </div>
+      )}
+      {readingMins > 0 && (
+        <div class="tomb-stat">
+          <dt>read for</dt>
+          <dd>{readingMins} min</dd>
+        </div>
+      )}
+    </dl>
+  )}
+
   <div class="tomb-footer">
     <span class="tomb-forgotten">
       {forgotten} {daysLabel} forgotten
@@ -83,6 +102,33 @@ const daysLabel = forgotten === 1 ? 'day' : 'days';
     font-size: 0.82rem;
     line-height: 1.5;
     opacity: 0.4;
+    font-style: italic;
+  }
+
+  /* History stats — data the post carried when it died */
+  .tomb-stats {
+    display: flex;
+    gap: 1.25rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+  }
+
+  .tomb-stat {
+    display: flex;
+    gap: 0.3rem;
+    align-items: baseline;
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    opacity: 0.3;
+  }
+
+  .tomb-stat dt {
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  .tomb-stat dd {
+    margin: 0;
     font-style: italic;
   }
 

@@ -9,12 +9,17 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TombstoneCard from '../components/TombstoneCard.astro';
 import { allPostDisplayData } from '../lib/postMeta';
+import { getResurrectionRate, getTotalReadingSecondsEntombed } from '../lib/graveyardStats';
 // resurrectClientScript removed — now included in revivalEngineScript (BaseLayout)
 
 const posts = await getCollection('blog');
 const all = allPostDisplayData(posts);
 const entombed = all.filter(p => p.entombed);
 const livingCount = all.length - entombed.length;
+const resurrectionRate = getResurrectionRate(all);
+const totalReadingSeconds = getTotalReadingSecondsEntombed(all);
+const totalReadingMins = Math.round(totalReadingSeconds / 60);
+const ratePercent = Math.round(resurrectionRate * 100);
 ---
 
 <BaseLayout title="Graveyard — Posts Lost to Time">
@@ -27,6 +32,25 @@ const livingCount = all.length - entombed.length;
           ? 'Nothing here yet. All posts are still alive.'
           : `${entombed.length} ${entombed.length === 1 ? 'post' : 'posts'} lost to time.`}
       </p>
+
+      {entombed.length > 0 && (
+        <dl class="graveyard-stats">
+          {totalReadingMins > 0 && (
+            <>
+              <div class="graveyard-stat">
+                <dt>read but forgotten</dt>
+                <dd>{totalReadingMins} min of reading left behind</dd>
+              </div>
+            </>
+          )}
+          {resurrectionRate > 0 && (
+            <div class="graveyard-stat">
+              <dt>resurrection rate</dt>
+              <dd>{ratePercent}% risen recently</dd>
+            </div>
+          )}
+        </dl>
+      )}
     </header>
 
     {entombed.length > 0 && (
@@ -78,6 +102,38 @@ const livingCount = all.length - entombed.length;
     opacity: 0.3;
     font-style: italic;
     margin: 0;
+  }
+
+  /* Per-graveyard aggregate stats — quiet data, not a dashboard */
+  .graveyard-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 1.25rem auto 0;
+    max-width: 26rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 0.85rem;
+  }
+
+  .graveyard-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+  }
+
+  .graveyard-stat dt {
+    text-transform: uppercase;
+    opacity: 0.25;
+    font-weight: 400;
+  }
+
+  .graveyard-stat dd {
+    margin: 0;
+    font-style: italic;
+    opacity: 0.35;
   }
 
   .tombs {

@@ -1,0 +1,108 @@
+---
+// src/components/GraveyardTeaser.astro
+// Subtle discovery surface shown on the homepage below NowLine when the
+// graveyard is non-empty. Silence over noise: renders nothing at count = 0.
+// No animations, no urgency — quiet presence that rewards curiosity.
+// One warm accent dot + count + link. That's it.
+//
+// Credits: Mike (architecture spec — Graveyard Discovery Surface),
+//          Tanya (UX §4 — /graveyard atmosphere: quiet, monochrome, sacred)
+
+interface Props {
+  entombedCount: number;
+  newestSlug?: string | null;
+}
+
+const { entombedCount, newestSlug = null } = Astro.props;
+const label = entombedCount === 1 ? 'post' : 'posts';
+// Link to newest entombed post when available; otherwise the graveyard index.
+const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
+---
+
+{entombedCount > 0 && (
+  <aside class="graveyard-teaser" aria-label="Posts sleeping in the graveyard">
+    <a href="/graveyard" class="teaser-link">
+      <span class="teaser-dot" aria-hidden="true"></span>
+      <span class="teaser-body">
+        <span class="teaser-count">{entombedCount}</span>
+        <span class="teaser-text">
+          {entombedCount === 1 ? 'post has' : 'posts have'} faded into the graveyard
+        </span>
+      </span>
+      <span class="teaser-cta" aria-hidden="true">visit &rarr;</span>
+    </a>
+  </aside>
+)}
+
+<style>
+  .graveyard-teaser {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.045);
+  }
+
+  .teaser-link {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.3);
+    transition: color 250ms ease;
+  }
+
+  .teaser-link:hover {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  /* Dim amber dot — life extinguished but not forgotten */
+  .teaser-dot {
+    flex-shrink: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: hsl(0, 0%, 38%);
+    opacity: 0.55;
+    transition: background 250ms ease, opacity 250ms ease;
+  }
+
+  .teaser-link:hover .teaser-dot {
+    background: hsl(33, 50%, 48%);
+    opacity: 0.8;
+  }
+
+  .teaser-body {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+
+  .teaser-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .teaser-text {
+    font-style: italic;
+    opacity: 0.85;
+  }
+
+  .teaser-cta {
+    margin-left: auto;
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+
+  .teaser-link:hover .teaser-cta {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+
+  @media (max-width: 640px) {
+    .teaser-cta { display: none; }
+  }
+</style>

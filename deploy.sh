@@ -4,35 +4,40 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v15 — Passive Reading Heartbeat (2026-04-06)
+# Architecture v16 — Graveyard Discovery Surface (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Passive Reading Heartbeat):
-#   Client IIFE fires POST /api/reading-pulse every 30 visible seconds
-#   (Page Visibility API pauses clock on hidden tabs — no background gaming).
-#   Server accumulates reading_seconds per slug in SQLite revivals table.
-#   readingBonus() (max 0.08) slows decay: rewards genuine presence without
-#   becoming a gaming vector (weaker than revival bonus 0.30).
-#   Rate-limited to one pulse per 25s per session+slug (new rate_limit_reading
-#   table, auto-migrated). decayFactor() updated to accept readingSeconds.
-#   decayFactorWithCount() helper updated for post-revival recalculation.
-#   allPostDisplayData() now passes reading_seconds to each card on homepage.
-#   ReadingPulse.astro: ambient dot fades in after first accepted heartbeat.
-#   data-reading-seconds attribute kept on decay cards for client-side RAF.
-#   Pure SSR/SQLite feature — no new services or runtime dependencies.
+# Sprint (latest — Graveyard Discovery Surface):
+#   Bug fix: GET /api/reading-pulse now returns 405 (was causing [WARN] spam).
+#   graveyardStats.ts — pure stat helpers: getEntombedCount, getEntombedPosts,
+#   getResurrectionRate, getNewestEntombed, getTotalReadingSecondsEntombed.
+#   GET /api/graveyard-stats — lightweight SSR endpoint returning
+#   { entombed, recentlyRisen, newestSlug, resurrectionRate } with 60s CDN cache.
+#   GraveyardTeaser.astro — homepage discovery surface below NowLine;
+#   renders nothing at count = 0 (silence over noise). Warm accent dot + count.
+#   NowLine.astro — graveyardCount prop; whisper-level hint below season items.
+#   index.astro — wired GraveyardTeaser + NowLine graveyardCount; removed old
+#   buried footer link (cleaner, more contextual discovery now).
+#   graveyard.astro — resurrection rate + total reading time stats in header
+#   (conditional, only shown when non-zero). TombstoneCard shows revival count
+#   + minutes read per tomb — the life each post carried before fading.
+#   revival.css — graveyard page fade-in entrance animation, tombstone `risen`
+#   state warm glow, 8px border-radius per Tanya design system (§7).
+#   Pure SSR/frontend — no new services, volumes, or runtime dependencies.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),
 #           dynamic OG image generation (satori + resvg),
 #           Consequential Decay / Graveyard (entomb + resurrect),
+#           Graveyard Discovery Surface (teaser, stats, tombstone history),
 #           Endangered Posts (urgency tiers, pulse, countdown),
 #           Multi-phase revival dismiss (bloom → fade → collapse, a11y),
 #           Revival animations (bloom ring, scale lift, badge),
 #           Revival Guard anti-gaming (fingerprint, velocity),
 #           Passive Reading Heartbeat (reading_seconds, readingBonus),
-#           NowLine (pinned author status on homepage),
+#           NowLine (pinned author status + graveyard hint on homepage),
 #           Murmurs (wall whispers on homepage, CLI-only submission),
 #           Grain overlay (CSS noise texture via --decay-grain).
 

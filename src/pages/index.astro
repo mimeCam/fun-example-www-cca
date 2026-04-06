@@ -18,15 +18,18 @@ import EndangeredBand from '../components/EndangeredBand.astro';
 import FirstVisitHint from '../components/FirstVisitHint.astro';
 import NowLine from '../components/NowLine.astro';
 import Murmurs from '../components/Murmurs.astro';
+import GraveyardTeaser from '../components/GraveyardTeaser.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
 import { endangeredClientScript } from '../lib/endangered';
+import { getEntombedCount, getNewestEntombed } from '../lib/graveyardStats';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
 const bands = groupIntoBands(displayPosts);
 const endangered = displayPosts.filter(p => p.endangered);
-const entombedCount = displayPosts.filter(p => p.entombed).length;
+const entombedCount = getEntombedCount(displayPosts);
+const newestEntombed = getNewestEntombed(displayPosts);
 const allEntombed = displayPosts.every(p => p.entombed);
 ---
 
@@ -34,7 +37,8 @@ const allEntombed = displayPosts.every(p => p.entombed);
   <script set:html={endangeredClientScript()} />
   <main class="feed">
 
-    <NowLine />
+    <NowLine graveyardCount={entombedCount} />
+    <GraveyardTeaser entombedCount={entombedCount} newestSlug={newestEntombed?.slug} />
 
     {allEntombed && (
       <div class="empty-state">
@@ -74,12 +78,6 @@ const allEntombed = displayPosts.every(p => p.entombed);
 
     <Murmurs />
 
-    {entombedCount > 0 && !allEntombed && (
-      <a href="/graveyard" class="graveyard-link">
-        {entombedCount} {entombedCount === 1 ? 'post' : 'posts'} lost to time &rarr;
-      </a>
-    )}
-
     <FirstVisitHint />
   </main>
 </BaseLayout>
@@ -115,24 +113,6 @@ const allEntombed = displayPosts.every(p => p.entombed);
     opacity: 0.3;
     margin-top: 0.5rem;
     font-style: italic;
-  }
-
-  /* Graveyard link — subtle footer, not a nav item (Tanya §2) */
-  .graveyard-link {
-    display: block;
-    text-align: center;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    opacity: 0.3;
-    color: rgba(255, 255, 255, 0.30);
-    text-decoration: none;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    transition: opacity 200ms ease;
-  }
-  .graveyard-link:hover {
-    opacity: 0.55;
-    color: rgba(255, 255, 255, 0.55);
   }
 
   .empty-state {
