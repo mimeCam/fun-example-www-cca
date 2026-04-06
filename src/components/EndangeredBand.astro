@@ -5,11 +5,13 @@
 //
 // Empty state: section doesn't render (handled by parent conditional).
 // Posts sorted by most-endangered first (highest decay).
+// SavedMoment fires when the last card is revived and the band empties.
 //
 // Credits: Mike (napkin plan §2), Tanya (UX spec §3.2B — dashed container,
 //          warm gradient, single-card emphasis)
 
 import EndangeredCard from './EndangeredCard.astro';
+import SavedMoment from './SavedMoment.astro';
 import type { PostDisplayData } from '../lib/postMeta';
 
 interface Props { posts: PostDisplayData[]; }
@@ -36,5 +38,8 @@ function byMostEndangered(a: PostDisplayData, b: PostDisplayData): number {
     <p class="endangered-hint">These posts die without your attention</p>
   </div>
 
-  {sorted.map(post => <EndangeredCard post={post} />)}
+  <div class="endangered-cards" data-endangered-count={sorted.length}>
+    {sorted.map(post => <EndangeredCard post={post} />)}
+  </div>
+  <SavedMoment />
 </section>

@@ -163,6 +163,84 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+ * EROSION BAR — visual conviction life-drain (amber → red)
+ * SSR sets --erosion-pct and --erosion-hue as inline vars.
+ * Client JS updates them on revival events.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.erosion-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  margin: 0.5rem 0 0.25rem;
+  overflow: hidden;
+}
+
+.erosion-fill {
+  height: 100%;
+  width: var(--erosion-pct, 50%);
+  background: hsl(var(--erosion-hue, 38deg), 85%, 55%);
+  border-radius: 2px;
+  animation: erosion-breathe var(--endangered-pulse-speed, 4s) ease-in-out infinite;
+  transition: width 1s ease, background 1s ease;
+}
+
+@keyframes erosion-breathe {
+  0%, 100% { opacity: 0.75; }
+  50%       { opacity: 1.0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erosion-fill {
+    animation: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * SAVED MOMENT — "All beliefs tended" emotional payoff toast
+ * Triggered by client JS adding .saved-moment--visible.
+ * Full cycle: fade-in 0.4s → hold 2.1s → fade-out 1.0s = 3.5s.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.saved-moment {
+  display: none;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-style: italic;
+  color: rgba(212, 149, 106, 0.8);
+  letter-spacing: 0.04em;
+}
+
+.saved-moment--visible {
+  display: block;
+  animation: saved-moment-cycle 3.5s ease-out forwards;
+}
+
+@keyframes saved-moment-cycle {
+  0%   { opacity: 0; }
+  11%  { opacity: 1; }   /* fade-in 0.4s */
+  71%  { opacity: 1; }   /* hold 2.1s */
+  100% { opacity: 0; }   /* fade-out 1.0s */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saved-moment--visible {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * COUNTDOWN GATE — show only at urgency=final, CSS-only, zero JS
+ * data-urgency is set SSR-side via urgencyLevel() in endangered.ts
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.endangered-card:not([data-urgency="final"]) .endangered-countdown {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
  * ANIMATIONS
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -255,9 +333,9 @@
     animation: none;
     opacity: 0.6;
   }
+  /* revived-fade removed: dismiss is now 2-phase (bloom → collapse) */
   .endangered-card.revived,
-  .endangered-card.revived-bloom,
-  .endangered-card.revived-fade {
+  .endangered-card.revived-bloom {
     animation: none;
     transition: none;
     opacity: 0;

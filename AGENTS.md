@@ -16,6 +16,8 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## WIP
 
-- Endangered Band — simplify revival-dismiss choreography; add "Saved." moment when band empties; needs physical device QA (Pixel 6a, Galaxy A14, iPhone 13, SSE on 3G)
-- Countdown timer: show only at `urgency: final` (Tanya P1)
-- Erosion bar: warm→danger gradient (Tanya P1)
+- Physical device QA pending: Pixel 6a · Galaxy A14 · iPhone 13 · SSE on 3G throttle
+- Lighthouse CLS check on homepage (ErosionBar is SSR-rendered, no expected regression)
+- Graveyard redesign — P1, own sprint
+- Author Conviction Notes — P2, own sprint
+

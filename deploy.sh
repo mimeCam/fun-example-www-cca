@@ -4,27 +4,31 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v17 — Honest Graveyard (2026-04-06)
+# Architecture v18 — Erosion Bar + SavedMoment (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Honest Graveyard):
-#   collectiveMemory.ts — migrateEntombedAt() adds entombed_at column to
-#   revivals table on boot (idempotent ALTER TABLE, COALESCE-safe); entombPost()
-#   records first entombment timestamp; getEntombedTimestamps() batch-reads all.
-#   postMeta.ts — PostDisplayData gains entombedAt: Date|null; allPostDisplayData()
-#   auto-records newly entombed posts server-side (no client round-trip needed).
-#   /api/entomb POST — explicit client-triggered entombment recording with
-#   in-memory idempotency cache to prevent duplicate SQLite WAL writes.
-#   graveyard.astro — SSR with ?page=N pagination (20 posts/page); stats row
-#   shows posts entombed + read-but-forgotten minutes + resurrection rate;
-#   TombstoneCard displays real entombed_at date from DB.
-#   mood.ts — GRAVEYARD_MOOD locks /graveyard to cool jazz palette (never warm);
-#   warmMoodIds() filters warm-temperature IDs for the living feed.
-#   index.astro — endangered posts excluded from main feed bands.
-#   FirstVisitHint.astro — iOS Safari safe-area inset fix (bottom padding).
-#   Pure SSR/frontend — no new services, volumes, or runtime dependencies.
+# Sprint (latest — Erosion Bar + SavedMoment):
+#   ErosionBar.astro (new) — visual conviction life-drain bar rendered inside
+#   each EndangeredCard; SSR-sets --erosion-pct and --erosion-hue as inline
+#   CSS vars (no layout shift); client JS recomputes on revival events.
+#   SavedMoment.astro (new) — "All beliefs tended. The record holds."
+#   emotional payoff toast; hidden by default, revealed by client JS when
+#   the last endangered card is dismissed; CSS handles full fade cycle (3.5s).
+#   endangered.ts — erosionBarPct() / erosionHue() server-side helpers;
+#   endangeredClientScript updated: 2-phase dismiss (bloom → collapse, -400ms
+#   fade phase removed for Android perf), patchErosion() updates bar vars on
+#   each revival event, showSavedMoment() wires dismissBand() to SavedMoment,
+#   refreshCards() called on boot to initialise erosion state immediately.
+#   EndangeredBand.astro — imports SavedMoment; wraps cards in
+#   .endangered-cards[data-endangered-count] for JS targeting.
+#   EndangeredCard.astro — embeds <ErosionBar> between title and footer;
+#   countdown text now final-urgency only (bar replaces general urgency cue).
+#   endangered.css — .erosion-bar / .erosion-fill (3px, overflow:hidden, hsl
+#   gradient, erosion-breathe keyframe); .saved-moment / .saved-moment--visible
+#   (display:none → flex, fade-in/hold/fade-out animation, aria-live polite).
+#   Pure frontend — no new services, volumes, or runtime dependencies.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),
@@ -32,8 +36,9 @@
 #           Consequential Decay / Graveyard (entomb + resurrect),
 #           Graveyard Discovery Surface (teaser, stats, tombstone history),
 #           Honest Graveyard (entombed_at timestamps, SSR pagination, mood lock),
-#           Endangered Posts (urgency tiers, pulse, countdown),
-#           Multi-phase revival dismiss (bloom → fade → collapse, a11y),
+#           Endangered Posts (urgency tiers, pulse, erosion bar, countdown),
+#           2-phase revival dismiss (bloom → collapse, a11y, Android-optimised),
+#           SavedMoment toast (emotional payoff when last card revived),
 #           Revival animations (bloom ring, scale lift, badge),
 #           Revival Guard anti-gaming (fingerprint, velocity),
 #           Passive Reading Heartbeat (reading_seconds, readingBonus),

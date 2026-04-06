@@ -1,0 +1,19 @@
+---
+// src/components/SavedMoment.astro
+// "All beliefs tended" confirmation toast — emotional payoff when the
+// last endangered post is revived and the band empties.
+//
+// Hidden by default. Client script (endangeredClientScript) adds
+// .saved-moment--visible when checkEmpty() finds no remaining cards.
+// CSS animation handles the full cycle: fade-in → hold → fade-out.
+//
+// Also fires when a remote user revives the last post via SSE —
+// the same dismissBand() path triggers it in both cases.
+//
+// Credits: Mike (napkin plan §3 — SavedMoment spec),
+//          Tanya (UX spec — emotional payoff, "The record holds")
+---
+
+<div class="saved-moment" aria-live="polite" aria-atomic="true">
+  All beliefs tended. The record holds.
+</div>

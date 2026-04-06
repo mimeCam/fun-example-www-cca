@@ -4,7 +4,7 @@
 // NOT a subclass of DecayCard — separate component, same CSS vars, same revival engine.
 // Composition over inheritance. Two components, one engine.
 //
-// Visual: desaturated, pulsing border, countdown text.
+// Visual: desaturated, pulsing border, erosion bar, countdown (final-urgency only).
 // Interaction: same hover-dwell revival via revivalEngineScript().
 //
 // Credits: Mike (architecture — "polymorphism is a killer"), Tanya (UX spec §3.2B)
@@ -13,6 +13,7 @@ import { formatPubDate } from '../lib/dates';
 import { countdownLabel, urgencyLevel, endangeredStyleString } from '../lib/endangered';
 import { decayStyleString } from '../lib/decay-engine';
 import type { PostDisplayData } from '../lib/postMeta';
+import ErosionBar from './ErosionBar.astro';
 
 interface Props { post: PostDisplayData; }
 
@@ -39,6 +40,7 @@ const style = [decayStyleString(post.decay), endangeredStyleString(post.decay)].
     <time datetime={post.pubDateISO} class="post-date">{formattedDate}</time>
     <h2 class="post-title">{post.title}</h2>
   </a>
+  <ErosionBar decayFactor={post.decay} urgency={urgency} />
   <div class="endangered-card-footer">
     <span class="endangered-countdown" aria-live="polite">{countdown}</span>
     <a href={href} class="endangered-tend-link">tend this post &rarr;</a>

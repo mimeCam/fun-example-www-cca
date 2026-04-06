@@ -58,6 +58,21 @@ export function daysUntilEntomb(
 }
 
 // ---------------------------------------------------------------------------
+// Erosion bar helpers — visual life-drain bar (warm amber → danger red)
+// ---------------------------------------------------------------------------
+
+/** Maps decay 0.80–0.95 to bar fill percentage: 100% at 0.80, 0% at 0.95. */
+export function erosionBarPct(decayFactor: number): number {
+  const clamped = Math.min(Math.max(decayFactor, 0.80), 0.95);
+  return Math.round((1 - (clamped - 0.80) / 0.15) * 100);
+}
+
+/** Maps urgency to HSL hue: warning=38° (amber), critical=18° (terracotta), final=0° (red). */
+export function erosionHue(urgency: UrgencyLevel): number {
+  return urgency === 'warning' ? 38 : urgency === 'critical' ? 18 : 0;
+}
+
+// ---------------------------------------------------------------------------
 // CSS custom properties for endangered cards
 // ---------------------------------------------------------------------------
 
@@ -131,7 +146,7 @@ export function endangeredClientScript(): string {
   return `(function(){
   var ENTOMB=${ENTOMB_THRESHOLD},ENDAN=${ENDANGERED_THRESHOLD};
   var MAX_DAYS=${MAX_DAYS_DEFAULT},DAY=86400000,HOUR=3600000;
-  var BLOOM_MS=200,FADE_MS=400,COLLAPSE_MS=300;
+  var BLOOM_MS=200,COLLAPSE_MS=300;
   var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var band=document.querySelector('.band--endangered');
   if(!band)return;
@@ -154,18 +169,30 @@ export function endangeredClientScript(): string {
     if(decay>=0.85)return '2s';
     return '4s';
   }
+  function erosionPct(decay){
+    var c=Math.min(Math.max(decay,0.80),0.95);
+    return Math.round((1-(c-0.80)/0.15)*100)+'%';
+  }
+  function erosionHue(decay){
+    return (decay>=0.92?0:decay>=0.85?18:38)+'deg';
+  }
+  function patchErosion(card,decay){
+    card.style.setProperty('--erosion-pct',erosionPct(decay));
+    card.style.setProperty('--erosion-hue',erosionHue(decay));
+  }
 
-  /* Refresh countdown text hourly */
-  function refreshCountdowns(){
+  /* Refresh countdown text + erosion vars hourly */
+  function refreshCards(){
     band.querySelectorAll('.endangered-card[data-decay-factor]')
       .forEach(function(card){
         var f=parseFloat(card.dataset.decayFactor);
         if(isNaN(f))return;
         var el=card.querySelector('.endangered-countdown');
         if(el)el.textContent=label(f);
+        patchErosion(card,f);
       });
   }
-  setInterval(refreshCountdowns,HOUR);
+  setInterval(refreshCards,HOUR);
 
   /* Announce removal for screen readers */
   function announce(text){
@@ -178,61 +205,56 @@ export function endangeredClientScript(): string {
     setTimeout(function(){el.remove()},3000);
   }
 
-  /* Update card countdown + pulse when still endangered */
+  /* Update card countdown + pulse + erosion when still endangered */
   function updateCard(card,newDecay){
     card.dataset.decayFactor=newDecay.toFixed(4);
     var el=card.querySelector('.endangered-countdown');
-    if(el){
-      el.textContent=label(newDecay);
-      el.setAttribute('aria-live','polite');
-    }
+    if(el)el.textContent=label(newDecay);
     card.style.setProperty('--endangered-pulse-speed',tierSpeed(newDecay));
+    patchErosion(card,newDecay);
   }
 
-  /* Fade the whole band when no cards remain */
-  function dismissBand(){
-    if(rm){
-      if(band.parentNode)band.parentNode.removeChild(band);
-      return;
-    }
-    band.classList.add('band--emptying');
-    setTimeout(function(){
-      if(band.parentNode)band.parentNode.removeChild(band);
-    },500);
+  /* Phase 1: bloom flash, then call onDone */
+  function bloomCard(card,onDone){
+    card.classList.add('revived-bloom');
+    setTimeout(function(){card.classList.remove('revived-bloom');onDone();},BLOOM_MS);
   }
 
-  /* Multi-phase exit: bloom -> fade -> collapse -> remove */
+  /* Remove card from DOM, announce, check band empty */
+  function removeCard(card,title){
+    if(card.parentNode)card.parentNode.removeChild(card);
+    announce(title+' has been revived');
+    checkEmpty();
+  }
+
+  /* 2-phase exit: bloom → collapse (fade phase removed, -400ms on mid-range Android) */
   function dismissCard(card,title){
     if(card.dataset.dismissing)return;
     card.dataset.dismissing='1';
-
-    if(rm){
-      if(card.parentNode)card.parentNode.removeChild(card);
-      announce(title+' has been revived');
-      checkEmpty();
-      return;
-    }
-
     card.setAttribute('role','status');
+    if(rm){card.setAttribute('aria-hidden','true');removeCard(card,title);return;}
+    bloomCard(card,function(){
+      animateCollapse(card,COLLAPSE_MS,'ease-out',function(){removeCard(card,title)});
+    });
+  }
 
-    /* Phase 1: bloom flash */
-    card.classList.add('revived-bloom');
-    setTimeout(function(){
+  /* Show "All beliefs tended" message */
+  function showSavedMoment(){
+    var sm=band.querySelector('.saved-moment');
+    if(sm)sm.classList.add('saved-moment--visible');
+  }
 
-      /* Phase 2: opacity fade-out */
-      card.classList.remove('revived-bloom');
-      card.classList.add('revived-fade');
-      setTimeout(function(){
+  /* Fade-remove the band from layout */
+  function removeBand(){
+    if(rm){if(band.parentNode)band.parentNode.removeChild(band);return;}
+    band.classList.add('band--emptying');
+    setTimeout(function(){if(band.parentNode)band.parentNode.removeChild(band)},500);
+  }
 
-        /* Phase 3: height collapse */
-        animateCollapse(card,COLLAPSE_MS,'ease-out',function(){
-          if(card.parentNode)card.parentNode.removeChild(card);
-          announce(title+' has been revived');
-          checkEmpty();
-        });
-
-      },FADE_MS);
-    },BLOOM_MS);
+  /* Show SavedMoment, then remove band after message completes */
+  function dismissBand(){
+    showSavedMoment();
+    setTimeout(removeBand,rm?200:3000);
   }
 
   function checkEmpty(){
@@ -253,14 +275,10 @@ export function endangeredClientScript(): string {
       delete pending[slug];
       var card=band.querySelector('.endangered-card[data-slug="'+slug+'"]');
       if(!card)return;
-      var title=card.querySelector('.post-title');
-      var name=title?title.textContent:'Post';
-
-      if(typeof decayAfter==='number'&&decayAfter>=ENDAN){
-        updateCard(card,decayAfter);
-        return;
-      }
-      dismissCard(card,name);
+      var name=(card.querySelector('.post-title')||{textContent:'Post'}).textContent;
+      typeof decayAfter==='number'&&decayAfter>=ENDAN
+        ?updateCard(card,decayAfter)
+        :dismissCard(card,name);
     },150);
   }
 
@@ -269,11 +287,8 @@ export function endangeredClientScript(): string {
     if(!es||es===boundES)return;
     boundES=es;
     es.addEventListener('revival',function(e){
-      try{
-        var d=JSON.parse(e.data);
-        if(!d.slug)return;
-        onRevival(d.slug,d.decayAfterRevival);
-      }catch(ex){}
+      try{var d=JSON.parse(e.data);if(!d.slug)return;onRevival(d.slug,d.decayAfterRevival);}
+      catch(ex){}
     });
   }
 
@@ -285,6 +300,7 @@ export function endangeredClientScript(): string {
   }
 
   updateBandCount();
+  refreshCards();
   watchES();
 })();`;
 }
@@ -335,18 +351,33 @@ export function _testEndangered(): void {
   const style = endangeredStyleString(0.90);
   console.assert(style.includes('--endangered-pulse-speed'), 'has pulse var');
 
-  // Client script — multi-phase dismiss
+  // erosionBarPct — 100% at 0.80, 0% at 0.95, clamped
+  console.assert(erosionBarPct(0.80) === 100, 'erosionBarPct 0.80 = 100');
+  console.assert(erosionBarPct(0.875) === 50, 'erosionBarPct 0.875 = 50');
+  console.assert(erosionBarPct(0.95) === 0,  'erosionBarPct 0.95 = 0');
+  console.assert(erosionBarPct(0.70) === 100, 'erosionBarPct clamp low = 100');
+  console.assert(erosionBarPct(0.99) === 0,   'erosionBarPct clamp high = 0');
+
+  // erosionHue — amber/terracotta/red by urgency tier
+  console.assert(erosionHue('warning')  === 38, 'warning hue = 38');
+  console.assert(erosionHue('critical') === 18, 'critical hue = 18');
+  console.assert(erosionHue('final')    === 0,  'final hue = 0');
+
+  // Client script — 2-phase dismiss (no revived-fade)
   const script = endangeredClientScript();
   console.assert(script.includes('endangered-card'), 'targets cards');
   console.assert(script.includes('revival'), 'listens for revivals');
   console.assert(script.includes('setInterval'), 'hourly refresh');
   console.assert(script.includes('animateCollapse'), 'has collapse utility');
   console.assert(script.includes('revived-bloom'), 'has bloom phase');
-  console.assert(script.includes('revived-fade'), 'has fade phase');
+  console.assert(!script.includes('revived-fade'), 'fade phase removed (2-phase)');
   console.assert(script.includes('decayAfterRevival'), 'reads enriched event');
   console.assert(script.includes('prefers-reduced-motion'), 'respects a11y');
   console.assert(script.includes('band--emptying'), 'band exit animation');
   console.assert(script.includes('watchES'), 'reconnect resilience');
+  console.assert(script.includes('saved-moment'), 'wires SavedMoment');
+  console.assert(script.includes('erosionPct'), 'updates erosion bar pct');
+  console.assert(script.includes('erosionHue'), 'updates erosion bar hue');
 
   // animateCollapse snippet is exported
   const collapse = animateCollapseSnippet();
