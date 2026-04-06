@@ -4,35 +4,32 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v24 — Conviction Physics (2026-04-06)
+# Architecture v25 — EndangeredCard DeathClock Ring (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Conviction Physics):
-#   decay-engine.ts — ConvictionVerdict type ('still-true' | 'evolved' |
-#     'unaudited' | 'wrong' | 'abandoned'); CONVICTION_MULTIPLIER map
-#     (0.7×–1.4×); convictionMultiplier() pure fn; dominantConviction()
-#     worst-case-wins reducer; decayFactor() + daysToEntombment() accept
-#     optional conviction param (null → 1.0× baseline, backwards-compatible);
-#     client-side IIFE updated with inline CM map + data-conviction read;
-#     'abandoned' token added alongside 'wrong' (matched penalty: 1.4×).
-#   death-clock.ts — CONVICTION_TINT map (per-verdict HSL ambient glow);
-#     convictionTintColor() helper; clockCSSVars() + clockStyleString() +
-#     daysUntilEntombment() all accept optional conviction param;
-#     --clock-conviction-tint CSS var emitted for drop-shadow filter.
-#   postMeta.ts — postConviction() extracts dominant verdict from frontmatter;
-#     PostDisplayData gains conviction field (ConvictionVerdict | null);
-#     decayFactor() call now passes conviction for accurate server-side physics.
-#   content/config.ts — verdictEnum extended with 'abandoned' token.
-#   DeathClock.astro — optional conviction prop; passes through to
-#     clockStyleString(); data-conviction attribute on root element;
-#     SVG ring gets drop-shadow(0 0 4px var(--clock-conviction-tint)) filter.
-#   DecayCard.astro — reads post.conviction, forwards it to DeathClock;
-#     data-conviction attribute on article element.
-#   api/death-clock.ts — extracts conviction from post frontmatter via
-#     dominantConviction(); passes to buildClockData(); response JSON
-#     includes conviction field for client consumers.
+# Sprint (latest — EndangeredCard DeathClock Ring):
+#   EndangeredCard.astro — text countdown replaced by DeathClock SVG ring
+#     (compact mode, left-aligned); flex-row layout (ring left, content right);
+#     aria-label now uses post.daysRemaining integer for screen readers;
+#     countdownLabel import removed.
+#   postMeta.ts — PostDisplayData gains maxDays (from lifespan frontmatter,
+#     default 365), daysRemaining (days until entombment), and clockUrgency
+#     (ClockUrgency 6-tier); resolveMaxDays() now reads per-post lifespan field;
+#     daysUntilEntomb() call passes maxDays for accurate per-post physics.
+#   content/config.ts — variants boolean field replaced with lifespan number
+#     field (positive, optional; post lifespan in days).
+#   endangered.ts — client IIFE simplified: daysLeft() + label() helpers
+#     removed (ring is SSR-rendered, no client text to update); MAX_DAYS
+#     constant removed from IIFE; refreshCards() + updateCard() no longer
+#     touch .endangered-countdown elements.
+#   endangered.css — .endangered-card-inner (flex-row) + .endangered-card-body
+#     (flex:1, min-width:0) added for ring+content layout; COUNTDOWN GATE
+#     block removed (no countdown element in DOM).
+#   blog/[slug].astro — variantScript() import + hasVariants logic removed;
+#     data-pub-date attribute on article element removed.
+#   hello-world.md — variants: true frontmatter field removed.
 #   Pure frontend + SQLite logic — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
@@ -45,7 +42,7 @@
 #           Honest Graveyard (entombed_at timestamps, SSR pagination, mood lock),
 #           Graveyard Epitaph layout (OKLCH tokens, scroll-driven entrance,
 #           candlelight footer, CSS :has() resurrection glow, empty state),
-#           Endangered Posts (urgency tiers, pulse, erosion bar, countdown),
+#           Endangered Posts (urgency tiers, pulse, erosion bar, DeathClock ring),
 #           2-phase revival dismiss (bloom → collapse, a11y, Android-optimised),
 #           SavedMoment toast (emotional payoff when last card revived),
 #           Cinematic Revival (5-phase: arc → localStorage gate → WAAPI dissolve

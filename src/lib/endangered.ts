@@ -145,7 +145,7 @@ export function animateCollapseSnippet(): string {
 export function endangeredClientScript(): string {
   return `(function(){
   var ENTOMB=${ENTOMB_THRESHOLD},ENDAN=${ENDANGERED_THRESHOLD};
-  var MAX_DAYS=${MAX_DAYS_DEFAULT},DAY=86400000,HOUR=3600000;
+  var HOUR=3600000;
   var BLOOM_MS=200,COLLAPSE_MS=300;
   var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var band=document.querySelector('.band--endangered');
@@ -156,14 +156,6 @@ export function endangeredClientScript(): string {
 
   ${animateCollapseSnippet()}
 
-  function daysLeft(decay){
-    var r=ENTOMB-decay;
-    return r<=0?0:Math.max(1,Math.ceil(r*MAX_DAYS));
-  }
-  function label(decay){
-    var d=daysLeft(decay);
-    return d<=1?'hours remaining':'fades in '+d+' days';
-  }
   function tierSpeed(decay){
     if(decay>=0.92)return '0.8s';
     if(decay>=0.85)return '2s';
@@ -181,14 +173,12 @@ export function endangeredClientScript(): string {
     card.style.setProperty('--erosion-hue',erosionHue(decay));
   }
 
-  /* Refresh countdown text + erosion vars hourly */
+  /* Refresh erosion bar vars hourly — ring is SSR-rendered, no text to update */
   function refreshCards(){
     band.querySelectorAll('.endangered-card[data-decay-factor]')
       .forEach(function(card){
         var f=parseFloat(card.dataset.decayFactor);
         if(isNaN(f))return;
-        var el=card.querySelector('.endangered-countdown');
-        if(el)el.textContent=label(f);
         patchErosion(card,f);
       });
   }
@@ -205,11 +195,9 @@ export function endangeredClientScript(): string {
     setTimeout(function(){el.remove()},3000);
   }
 
-  /* Update card countdown + pulse + erosion when still endangered */
+  /* Update card pulse speed + erosion when still endangered (ring is SSR, no text) */
   function updateCard(card,newDecay){
     card.dataset.decayFactor=newDecay.toFixed(4);
-    var el=card.querySelector('.endangered-countdown');
-    if(el)el.textContent=label(newDecay);
     card.style.setProperty('--endangered-pulse-speed',tierSpeed(newDecay));
     patchErosion(card,newDecay);
   }

@@ -3,7 +3,6 @@ title: "Hello World"
 pubDate: 2026-04-04
 description: "The first post. It will probably bother some people."
 badge: "Will bother some people"
-variants: true
 constellationName: "first light"
 starName: "Hello World"
 magnitude: 1

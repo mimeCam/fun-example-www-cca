@@ -15,7 +15,6 @@ import { allPostDisplayData } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
-import { variantScript } from '../../lib/variants';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import ReadingPulse from '../../components/ReadingPulse.astro';
 import ConvictionPanel from '../../components/ConvictionPanel.astro';
@@ -39,8 +38,6 @@ const { Content } = await post.render();
 const readingTime = getReadingTime(post.body);
 const pubDate = formatPubDate(post.data.pubDate);
 
-const hasVariants = post.data.variants === true;
-const vScript = hasVariants ? variantScript() : '';
 const convictions = post.data.convictions ?? [];
 const hasConvictions = convictions.length > 0;
 
@@ -79,14 +76,9 @@ function safeReadingSeconds(slug: string): number {
     </header>
 
     <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
-      <article
-        class="post-body"
-        data-pub-date={hasVariants ? post.data.pubDate.toISOString() : undefined}
-      >
+      <article class="post-body">
         <Content />
       </article>
-
-      {hasVariants && <script set:html={vScript} />}
     </RevivalMoment>
 
     <GhostEchoes slug={post.slug} />

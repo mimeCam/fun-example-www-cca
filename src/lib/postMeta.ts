@@ -14,6 +14,8 @@ import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombed
 import { isEntombed, isRecentlyRisen } from './entomb';
 import { isEndangered, urgencyLevel, daysUntilEntomb } from './endangered';
 import type { UrgencyLevel } from './endangered';
+import { clockUrgency as computeClockUrgency } from './death-clock';
+import type { ClockUrgency } from './death-clock';
 import { daysSince } from './temporal';
 
 export interface PostMeta {
@@ -71,11 +73,14 @@ export interface PostDisplayData extends PostMeta {
   risenAt: Date | null;
   recentlyRisen: boolean;
   conviction: ConvictionVerdict | null;  // dominant verdict; null when no convictions declared
+  maxDays: number;          // post lifespan in days — from frontmatter lifespan field (default 365)
+  daysRemaining: number;    // days until entombment, derived from decay + maxDays
+  clockUrgency: ClockUrgency;  // 6-tier urgency for DeathClock ring rendering
 }
 
-/** Max decay window in days. Hardcoded — adaptive config removed. */
-function resolveMaxDays(): number {
-  return 365;
+/** Max decay window in days. Reads lifespan frontmatter field; falls back to 365. */
+function resolveMaxDays(post: CollectionEntry<'blog'>): number {
+  return (post.data as { lifespan?: number }).lifespan ?? 365;
 }
 
 /** Extracts dominant conviction verdict from a blog post's frontmatter. */
@@ -94,13 +99,14 @@ export function getPostDisplayData(
   entombedAt: Date | null = null,
 ): PostDisplayData {
   const meta = extractMeta(post);
-  const maxDays = resolveMaxDays();
+  const maxDays = resolveMaxDays(post);
   const conviction = postConviction(post);
   const factor = decayFactor(meta.pubDateISO, maxDays, now, revivals, readingSeconds, conviction);
   const warm = revivalBonus(revivals) > 0.15;
   const lastRevivalDays = lastRevivalDaysAgo(risenAt, now);
   const entombed = isEntombed(factor, lastRevivalDays);
   const endangered = isEndangered(factor);
+  const daysLeft = daysUntilEntomb(factor, maxDays);
   return {
     ...meta,
     decay: factor,
@@ -113,10 +119,13 @@ export function getPostDisplayData(
     entombedAt,
     endangered,
     endangeredUrgency: urgencyLevel(factor),
-    endangeredDaysLeft: daysUntilEntomb(factor),
+    endangeredDaysLeft: daysLeft,
     risenAt,
     recentlyRisen: isRecentlyRisen(risenAt, now),
     conviction,
+    maxDays,
+    daysRemaining: daysLeft,
+    clockUrgency: computeClockUrgency(daysLeft),
   };
 }
 

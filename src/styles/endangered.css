@@ -95,6 +95,23 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+ * CARD INNER — flex-row: DeathClock ring left, text content right
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.endangered-card-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Right-side column: grows to fill, clips long titles gracefully */
+.endangered-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
  * CARD INNER ELEMENTS
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -229,15 +246,6 @@
     animation: none;
     opacity: 1;
   }
-}
-
-/* ═══════════════════════════════════════════════════════════════════
- * COUNTDOWN GATE — show only at urgency=final, CSS-only, zero JS
- * data-urgency is set SSR-side via urgencyLevel() in endangered.ts
- * ═══════════════════════════════════════════════════════════════════ */
-
-.endangered-card:not([data-urgency="final"]) .endangered-countdown {
-  display: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
