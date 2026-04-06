@@ -19,6 +19,7 @@ import { variantScript } from '../../lib/variants';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import ReadingPulse from '../../components/ReadingPulse.astro';
 import ConvictionPanel from '../../components/ConvictionPanel.astro';
+import GhostEchoes from '../../components/GhostEchoes.astro';
 // PresenceBand removed — presence indicator now lives in SiteNav (Tanya §2)
 
 export async function getStaticPaths() {
@@ -68,6 +69,8 @@ const hasConvictions = convictions.length > 0;
 
       {hasVariants && <script set:html={vScript} />}
     </RevivalMoment>
+
+    <GhostEchoes slug={post.slug} />
 
     {hasConvictions && <ConvictionPanel convictions={convictions} />}
 

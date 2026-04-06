@@ -1,0 +1,118 @@
+---
+// src/components/GhostEchoes.astro
+// Ghost Echoes — shows past collective revival history as a sparkline.
+//
+// Problem solved: solo reader arrives, feels alone. Ghost Echoes surfaces
+// evidence that others cared about this post before them — making the
+// revival they're about to trigger feel meaningful, not empty.
+//
+// Architecture:
+//   Server: renders a usable stub (narrative label + total). No JS needed.
+//   Client IIFE: fetches /api/ghost-echoes, injects SVG sparkline,
+//                schedules adaptive echo pulse animation.
+//
+// Companion: PresenceBand (SSE) = "who is here now"
+//            GhostEchoes (static) = "who was here before you"
+//            These share no state.
+//
+// Credits: Mike (architecture spec), Tanya (UX + pulse rhythm spec)
+
+import { getRevivalTimeline } from '../lib/collectiveMemory';
+import { shapeBuckets, narrativeLabel } from '../lib/revivalHistory';
+import '../styles/ghost-echoes.css';
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+const { timestamps, lastAt, total } = getRevivalTimeline(slug);
+const buckets = shapeBuckets(timestamps);
+const label = narrativeLabel(total, lastAt);
+const hasHistory = total > 0;
+---
+
+{hasHistory && (
+  <aside
+    class="ghost-echoes"
+    aria-label="Post revival history"
+    data-slug={slug}
+  >
+    <div class="echo-narrative">{label}</div>
+    <div class="echo-sparkline-row">
+      <svg
+        class="echo-sparkline"
+        aria-hidden="true"
+        viewBox="0 0 120 24"
+        width="120"
+        height="24"
+      >
+        <polyline class="echo-line" points="" fill="none" />
+      </svg>
+      <span class="echo-pulse-dot" aria-hidden="true"></span>
+    </div>
+  </aside>
+)}
+
+<script is:inline>
+(function ghostEchoes() {
+  const panel = document.querySelector('.ghost-echoes');
+  if (!panel) return;
+
+  const slug = panel.getAttribute('data-slug') ?? '';
+  let echoTimer = null;
+
+  function scheduleNextPulse(intervalMs) {
+    if (document.hidden) return;
+    echoTimer = setTimeout(() => firePulse(intervalMs), intervalMs);
+  }
+
+  function firePulse(intervalMs) {
+    const dot = panel.querySelector('.echo-pulse-dot');
+    if (!dot) return;
+    dot.classList.remove('echo-pulse-active');
+    void dot.offsetWidth; // trigger reflow to restart animation
+    dot.classList.add('echo-pulse-active');
+    scheduleNextPulse(intervalMs);
+  }
+
+  function injectSparkline(svgPoints) {
+    const line = panel.querySelector('.echo-line');
+    const svg  = panel.querySelector('.echo-sparkline');
+    if (line) line.setAttribute('points', svgPoints);
+    if (svg)  svg.classList.add('echo-sparkline--loaded');
+  }
+
+  function onVisibilityChange() {
+    if (!document.hidden) return;
+    if (echoTimer) { clearTimeout(echoTimer); echoTimer = null; }
+  }
+
+  function resumeOnVisible() {
+    if (document.hidden || !echoTimer) return;
+    // intervalMs lost — re-fetch is wasteful; just restart at 12s dormant rate
+    scheduleNextPulse(12_000);
+  }
+
+  async function init() {
+    try {
+      const res = await fetch('/api/ghost-echoes?slug=' + encodeURIComponent(slug));
+      if (!res.ok) return;
+      const data = await res.json();
+
+      injectSparkline(data.svgPoints);
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      scheduleNextPulse(data.intervalMs);
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      document.addEventListener('visibilitychange', resumeOnVisible);
+    } catch (_) { /* silent fail — sparkline is enhancement, not critical */ }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>

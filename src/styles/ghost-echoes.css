@@ -1,0 +1,122 @@
+/* src/styles/ghost-echoes.css
+ * Ghost Echoes — revival history sparkline panel.
+ * Two animations only: echo-pulse (dot) + sparkline-draw (SVG stroke).
+ * Both are gated by prefers-reduced-motion; static label always visible.
+ *
+ * Follows Tanya's design spec: OKLCH palette, 4-value radius scale,
+ * surface translucency only on panels not data-dense areas.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Panel shell
+ * ------------------------------------------------------------------------- */
+
+.ghost-echoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  margin: 2rem 0;
+  border-radius: 12px; /* --radius-md */
+  background: oklch(12% 0.007 270 / 0.60);
+  border: 1px solid oklch(100% 0 0 / 0.06);
+  backdrop-filter: blur(12px);
+}
+
+/* ---------------------------------------------------------------------------
+ * Narrative label
+ * ------------------------------------------------------------------------- */
+
+.echo-narrative {
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+  color: oklch(72% 0.18 295); /* --color-revival */
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+/* ---------------------------------------------------------------------------
+ * Sparkline row: SVG + pulse dot side-by-side
+ * ------------------------------------------------------------------------- */
+
+.echo-sparkline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* SVG starts invisible; JS adds --loaded class after injecting points */
+.echo-sparkline {
+  display: block;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.echo-sparkline--loaded {
+  opacity: 1;
+}
+
+.echo-line {
+  stroke: oklch(72% 0.18 295 / 0.70);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 500;
+  stroke-dashoffset: 500;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pulse dot — communicates "this post is tended"
+ * ------------------------------------------------------------------------- */
+
+.echo-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: oklch(72% 0.18 295);
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* ---------------------------------------------------------------------------
+ * Animations
+ * ------------------------------------------------------------------------- */
+
+@keyframes sparkline-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes echo-pulse {
+  0%   { box-shadow: 0 0 0 0 oklch(72% 0.18 295 / 0.6); }
+  70%  { box-shadow: 0 0 0 8px oklch(72% 0.18 295 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(72% 0.18 295 / 0); }
+}
+
+.echo-sparkline--loaded .echo-line {
+  animation: sparkline-draw 1.2s ease forwards;
+}
+
+.echo-pulse-dot.echo-pulse-active {
+  animation: echo-pulse 0.9s ease-out forwards;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pause echo when revival bloom is active (avoid competing animations)
+ * See GhostEchoes.astro client script for data-bloom-lock coordination.
+ * ------------------------------------------------------------------------- */
+
+[data-bloom-lock] .echo-pulse-dot {
+  animation-play-state: paused;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion — static label + line only, no animation
+ * ------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-sparkline { opacity: 1; }
+  .echo-line { stroke-dashoffset: 0; animation: none; }
+  .echo-pulse-dot { animation: none; }
+  .echo-pulse-dot.echo-pulse-active { animation: none; }
+}

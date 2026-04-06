@@ -367,6 +367,32 @@ export function logVelocity(slug: string): void {
   maybePruneVelocity();
 }
 
+// ---------------------------------------------------------------------------
+// Ghost Echoes — revival timeline (for sparkline)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the weekly revival timeline for a slug over the last N weeks.
+ * Uses velocity_log (now retained for 90 days — see maybePruneVelocity fix).
+ * Returns raw timestamps so revivalHistory.ts can shape them into buckets.
+ */
+export function getRevivalTimeline(slug: string, windowWeeks = 8): {
+  timestamps: number[];
+  lastAt: string | null;
+  total: number;
+} {
+  const cutoff = Date.now() - windowWeeks * 7 * 86_400_000;
+  const rows = db()
+    .prepare('SELECT ts FROM velocity_log WHERE slug = ? AND ts > ? ORDER BY ts ASC')
+    .all(slug, cutoff) as Array<{ ts: number }>;
+  const timestamps = rows.map(r => r.ts);
+  const lastRow = db()
+    .prepare('SELECT risen_at FROM revivals WHERE slug = ?')
+    .get(slug) as { risen_at: string | null } | undefined;
+  const total = getRevivalCount(slug);
+  return { timestamps, lastAt: lastRow?.risen_at ?? null, total };
+}
+
 /** Count revivals for a slug in the last 30 days (for witness badge). */
 export function getMonthlyRevivalCount(slug: string): number {
   const cutoff = Date.now() - 30 * 86_400_000;
@@ -394,13 +420,15 @@ export function getGlobalVelocity(windowMs: number): number {
   return row.c;
 }
 
-/** Prune velocity entries older than 2 hours (bounded delete). */
+/** Prune velocity entries older than 90 days (bounded delete).
+ *  90 days preserves the full 8-week Ghost Echoes sparkline window + buffer.
+ *  Was incorrectly set to 2 hours — that erased all sparkline history. */
 let _lastPrune = 0;
 function maybePruneVelocity(): void {
   const now = Date.now();
   if (now - _lastPrune < 120_000) return;
   _lastPrune = now;
-  const cutoff = now - 7_200_000;
+  const cutoff = now - 90 * 86_400_000; // 90 days
   db().prepare(
     'DELETE FROM velocity_log WHERE id IN (SELECT id FROM velocity_log WHERE ts < ? LIMIT 1000)'
   ).run(cutoff);
