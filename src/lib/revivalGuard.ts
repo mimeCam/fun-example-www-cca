@@ -4,7 +4,6 @@
 //   1. Proof-of-work  2. FP daily cap  3. IP daily cap
 //   4. Slug velocity  5. Global velocity  6. Trust score gate
 
-import { verifyProof } from './proofOfWork';
 import {
   getDailyCountByFp,
   getDailyCountByIp,
@@ -71,12 +70,9 @@ function runGuardChain(
 // Steps (each <=10 lines)
 // ---------------------------------------------------------------------------
 
-/** Step 1: proof-of-work verification. Optional at current scale. */
-function verifyProofStep(header: string | null): GuardResult {
-  if (!header) return { allowed: true, trust: 0.5 };
-  const r = verifyProof(header);
-  if (!r.valid) return { allowed: false, reason: r.reason, trust: 0 };
-  return { allowed: true, trust: 1 };
+/** Step 1: proof-of-work — bypassed at current scale. */
+function verifyProofStep(_header: string | null): GuardResult {
+  return { allowed: true, trust: 0.5 };
 }
 
 /** Resolve trust score from fingerprint. */

@@ -32,9 +32,7 @@ COPY --from=builder /app/dist ./dist
 # Copy production node_modules — @astrojs/node SSR needs @astrojs/internal-helpers at runtime
 COPY --from=builder /app/node_modules ./node_modules
 
-# Ambient Life Engine + Adaptive Decay Engine read config + blog markdown at runtime via process.cwd()
-COPY --from=builder /app/src/data/ambientLife.config.json ./src/data/ambientLife.config.json
-COPY --from=builder /app/src/data/adaptiveDecay.config.json ./src/data/adaptiveDecay.config.json
+# Blog markdown needed at runtime for content collection queries
 COPY --from=builder /app/src/content/blog/ ./src/content/blog/
 
 # Ensure data directories exist for whisper queue and collective memory DB.

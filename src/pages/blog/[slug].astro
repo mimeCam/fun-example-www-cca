@@ -10,14 +10,12 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
-import Echo from '../../components/Echo.astro';
 import PostNav from '../../components/PostNav.astro';
 import { allPostDisplayData } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import { variantScript } from '../../lib/variants';
-import RevivalShareSheet from '../../components/RevivalShareSheet.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import PresenceBand from '../../components/PresenceBand.astro';
 
@@ -35,18 +33,8 @@ const { Content } = await post.render();
 const readingTime = getReadingTime(post.body);
 const pubDate = formatPubDate(post.data.pubDate);
 
-const echo = post.data.echo;
-const echoTitle = await resolveEchoTitle(echo?.from);
 const hasVariants = post.data.variants === true;
 const vScript = hasVariants ? variantScript() : '';
-
-async function resolveEchoTitle(slug?: string) {
-  if (!slug) return undefined;
-  const posts = await getCollection('blog');
-  const match = posts.find(p => p.slug === slug);
-  if (!match) console.warn(`[Echo] slug "${slug}" not found`);
-  return match?.data.title;
-}
 ---
 
 <BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={post.data.pubDate.toISOString()} ogSlug={post.slug}>
@@ -68,11 +56,9 @@ async function resolveEchoTitle(slug?: string) {
       {hasVariants && <script set:html={vScript} />}
     </RevivalMoment>
 
-    <Echo text={echo?.text} fromSlug={echo?.from} fromTitle={echoTitle} />
     <PresenceBand />
   </main>
 
-  <RevivalShareSheet slug={post.slug} revivalCount={0} />
   <PostNav nav={nav} />
 
   <!-- Erosion Bar: scroll-driven progress as a CSS custom property -->

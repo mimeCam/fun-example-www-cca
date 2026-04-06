@@ -1,9 +1,0 @@
-{
-  "seedFloor": 4,
-  "seedJitter": 8,
-  "pulseIntervalMs": 60000,
-  "pulseVarianceMs": 30000,
-  "fadeThresholds": [3, 2, 1],
-  "fadeMultipliers": [0, 0.25, 0.5, 1.0],
-  "enabled": true
-}

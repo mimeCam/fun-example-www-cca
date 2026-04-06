@@ -5,16 +5,11 @@
 // Zero JS. Consistent with glassmorphism language.
 
 import { getActivePage, type PageId } from '../lib/nav';
-import MoodDot from './MoodDot.astro';
-import moodConfig from '../data/mood.config.json';
 
 const path = Astro.url.pathname;
 const pageId = getActivePage(path);
 const isBlogPost = pageId === 'blog';
 
-// Nav: 3-link max — field (homepage) + graveyard + now.
-// "field" reinforces the living-landscape metaphor.
-// Constellations accessible via link at bottom of homepage / post detail.
 const links: { label: string; href: string; id: PageId }[] = [
   { label: 'field',     href: '/',          id: 'home'      },
   { label: 'graveyard', href: '/graveyard', id: 'graveyard' },
@@ -23,7 +18,6 @@ const links: { label: string; href: string; id: PageId }[] = [
 ---
 
 <nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site navigation">
-  <MoodDot mood={moodConfig.current_mood} />
   {links.map(l => (
     <a href={l.href}
        class:list={['nav-link', { active: pageId === l.id }]}

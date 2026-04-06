@@ -4,54 +4,27 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v8 — Honest Presence + Global Scope (Tier 1 core feature)
-#   Real-time reader presence with zero phantoms. When nobody's here, count is zero.
-#   Blog posts show temporal decay + revival + live reader count via SSE.
-#   Homepage shows aggregate site-wide reader count via global-scope SSE.
-#   Ambient Life Engine quarantined — phantom pulses contradict honest presence.
+# Architecture v9 — Post-Scalpel Consolidation (2026-04-06)
+#   Core feature: Temporal Decay + Collective Memory — posts visually age;
+#   reader attention revives them. Honest Presence shows real-time reader
+#   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Global Presence Scope):
-#   - presence-hub.ts: added globalMap for homepage visitors (no slug),
-#     broadcastGlobal(), joinGlobal(), touchGlobal(), reapGlobalStale(),
-#     getGlobalCount() — total = slugMap connections + globalMap connections.
-#   - /api/presence: new ?scope=global route for aggregate site-wide stream;
-#     existing ?slug=xxx route unchanged. Zero external dependencies.
-#   - presence-client.ts: scope-aware via data-scope attribute on #presence-band;
-#     buildUrl() routes to slug or global endpoint; scope-specific labels
-#     ("N readers tending the garden" / "you are the only one here").
-#   - PresenceBand.astro: new scope prop + data-scope attribute.
-#   - index.astro: homepage PresenceBand now hydrates with scope="global".
-#   - presence.css: slower breathing tempo for homepage compact band.
-#
-# Previous sprint:
-#   - Honest Presence System (in-process, zero external dependencies):
-#     presence-hub.ts: in-memory connection registry (Map<slug, Set<Connection>>),
-#       stale reaper (60s), keepalive pings (30s), revival broadcast.
-#     presence-client.ts: client IIFE — connects to /api/presence?slug=xxx,
-#       breathing dot + count display, FLIP digit animation, ripple on revival.
-#     /api/presence: SSE endpoint per slug, streams {readers:N} on join/leave,
-#       {slug,ts} on foreign revival. Zero phantoms.
-#     PresenceBand.astro: redesigned with dot + count + label elements.
-#     presence.css: breathing dot, count-flip, ripple, a11y (reduced-motion).
-#   - /api/revive + /api/resurrect: wired to presence-hub revive() for ripple.
-#   - /api/heartbeat: Ambient Life Engine quarantined (kept for rollback).
-#   - BaseLayout: wired presence-client inline script + updated CSS imports.
+# Sprint (latest — Operation Scalpel Phase 1+2):
+#   Massive codebase consolidation: deleted 5 dead pages, 3 dead API routes,
+#   26 dead components, 61 dead lib files, 10 orphaned CSS files, 7 orphaned
+#   data files. Cleaned BaseLayout (15→8 imports), SiteNav, nav.ts. Fixed
+#   broken imports in postMeta.ts, revivalGuard.ts, variants.ts, og/[slug].png.ts.
+#   Rewrote variants.ts to be self-contained. Dockerfile updated to remove
+#   deleted config file references (ambientLife.config.json, adaptiveDecay.config.json).
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
-#           SSE heartbeat (real-time revival pulses via EventSource),
-#           Honest Presence (per-slug + global-scope reader count, zero phantoms),
+#           Honest Presence (per-slug + global-scope reader count via SSE),
 #           dynamic OG image generation (satori + resvg),
-#           anonymous session identity (sessionToken.ts),
-#           FirstBreath arrival choreography,
-#           FirstVisitHint (localStorage-gated one-shot onboarding),
 #           Consequential Decay / Graveyard (entomb + resurrect),
-#           Ambient Life Engine (quarantined — phantom SSE pulses, seed revivals),
-#           Adaptive Decay Engine (seedling→growing→mature tiers),
-#           Grain overlay (CSS noise texture via --decay-grain),
-#           Revival Moment (decay-to-revival transition, bloom ring, badge),
-#           Revival Guard anti-gaming (optional PoW, fingerprint, velocity),
-#           Constellations page (force-directed star-field reading paths),
-#           Heartbeat pulse, shimmer, snapshot, time-travel.
+#           Revival Moment (bloom ring, badge),
+#           Revival Guard anti-gaming (fingerprint, velocity),
+#           Wall (community whisper board),
+#           Grain overlay (CSS noise texture via --decay-grain).
 
 set -euo pipefail
 
@@ -78,7 +51,7 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   docker rm --force "${CONTAINER_NAME}" || true
 fi
 
-# ── 2. Ensure named data volumes exist (whisper queue + SQLite collective memory)
+# ── 2. Ensure named data volumes exist (wall queue + SQLite collective memory)
 echo "==> [deploy] Ensuring data volume: ${DATA_VOLUME}"
 docker volume create "${DATA_VOLUME}" || true
 echo "==> [deploy] Ensuring SQLite volume: ${SQLITE_VOLUME}"

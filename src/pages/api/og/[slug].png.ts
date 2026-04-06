@@ -7,7 +7,7 @@
 
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { decayFactor, freshnessTag } from '../../../lib/decay';
+import { decayFactor, freshnessTag } from '../../../lib/decay-engine';
 import { getRevivalCount } from '../../../lib/collectiveMemory';
 import { renderOGImage } from '../../../lib/og/renderOGImage';
 import { siteDefaults } from '../../../config/seo.config';

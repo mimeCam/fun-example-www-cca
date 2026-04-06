@@ -8,14 +8,11 @@
 import type { CollectionEntry } from 'astro:content';
 import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
-import { hourToPhase } from './timeAmbient';
-import type { TimePhase } from './timeAmbient';
-import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './decay';
-import type { FreshnessTag } from './decay';
+import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './decay-engine';
+import type { FreshnessTag } from './decay-engine';
 import { getRevivalCounts, getRisenTimestamps } from './collectiveMemory';
-import { isEntombed, isRecentlyRisen, DORMANCY_DAYS } from './entomb';
+import { isEntombed, isRecentlyRisen } from './entomb';
 import { daysSince } from './temporal';
-import { getAdaptiveConfig } from './adaptiveDecay';
 
 export interface PostMeta {
   slug: string;
@@ -53,11 +50,6 @@ function byNewest(a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>): numbe
   return b.data.pubDate.valueOf() - a.data.pubDate.valueOf();
 }
 
-/** Returns the current server-side time phase for OG meta hints. */
-export function currentPhase(): TimePhase {
-  return hourToPhase(new Date().getHours());
-}
-
 // ---------------------------------------------------------------------------
 // Unified display data — one call per post, used by homepage + blog pages
 // ---------------------------------------------------------------------------
@@ -73,10 +65,9 @@ export interface PostDisplayData extends PostMeta {
   recentlyRisen: boolean;
 }
 
-/** Resolve adaptive maxDays, falling back to 365 if unavailable. */
+/** Max decay window in days. Hardcoded — adaptive config removed. */
 function resolveMaxDays(): number {
-  const cfg = getAdaptiveConfig();
-  return cfg?.maxDays ?? 365;
+  return 365;
 }
 
 /** Bundles metadata + decay visuals for a single post. */

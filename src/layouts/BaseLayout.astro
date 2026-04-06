@@ -1,77 +1,21 @@
 ---
 // src/layouts/BaseLayout.astro
 // Root HTML shell — injects mood CSS vars into :root, slots page content.
-// All pages extend this layout. Minimal client-side JS islands.
-//
-// DONE: OG meta tags + canonical URL via SEOMeta component
-// DONE: Pruned 6 overlay elements (MoodPills, GhostDrawer, DriftButton,
-//       DriftCard, DroneToggle, DriftNav) per UX audit.
-// DONE: Wired simple 3-mood system, removed old mood radio machinery.
+// All pages extend this layout. Three client-side engines: decay, revival, presence.
 
 import { simpleMoodCSSString } from '../lib/mood-simple';
 import { sessionTokenScript } from '../lib/sessionToken';
-import { firstBreathScript } from '../lib/firstBreath';
-import FirstBreath from '../components/FirstBreath.astro';
-import { timeAmbientScript } from '../lib/timeAmbient';
-import { seasonalScript } from '../lib/seasonal';
-import { shimmerScript } from '../lib/shimmer';
-import { snapshotScript } from '../lib/snapshot';
-import { discoveryHintScript } from '../lib/discoveryHint';
-import { rewardWhisperScript } from '../lib/rewardWhisper';
-import { heartbeatPulseScript } from '../lib/heartbeatPulse';
-// Removed: radialRingScript — RadialRing component removed from layout
-// Removed: radialRingA11yScript — RadialRing component removed from layout
-import { getAdaptiveConfig } from '../lib/adaptiveDecay';
-// --- Consolidated engines (replace 15+ scattered scripts) ---
 import { decayEngineClientScript } from '../lib/decay-engine';
 import { revivalEngineScript } from '../lib/revival-engine';
-// QUARANTINED: old presence-engine uses global heartbeat + phantom events.
-// Replaced by slug-aware presence-client using honest presence-hub.
-// import { presenceEngineScript } from '../lib/presence-engine';
 import { presenceClientScript } from '../lib/presence-client';
-// Removed: liveDecayScript → merged into decayEngineClientScript
-// Removed: decayChoreographyScript → merged into decayEngineClientScript
-// Removed: revivalControllerScript → merged into revivalEngineScript
-// Removed: bloomOrchestratorScript → bloom is CSS transition in revivalEngineScript
-// Removed: bloomGuardrailsScript → not needed for CSS transitions
-// Removed: bloomHapticsScript → single haptic in revivalEngineScript
-// Removed: bloomA11yScript → prefers-reduced-motion in CSS
-// Removed: sympatheticBloomScript → heartbeat listener in revivalEngineScript
-// Removed: cascadeMobileScript → unified touch handler in revivalEngineScript
-// Removed: keepAliveScript → deferred (not needed at current scale)
-// Removed: powSolverScript → PoW optional at current scale
-// Removed: visitorFingerprintScript → deferred (not needed at current scale)
-// Removed: heartbeatClientScript → SSE in revivalEngineScript
-// Removed: heartbeatFxScript → deferred
-// Removed: heartbeatBridgeScript → deferred
-// Removed: firstEchoClientScript → deferred
-// Removed: bloomOnArrivalScript → deferred
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
-// Removed: AmbientLayer — replaced by single CSS radial gradient on body
-// Removed: CelestialWitness — stars clash with aging-paper metaphor
-// Removed: Hearth — poetic footer, moved to /now conceptually
-// Removed: RadialRing — competes with decay cards for attention
 import SiteNav from '../components/SiteNav.astro';
-import QuietFollow from '../components/QuietFollow.astro';
-import RewardWhisper from '../components/RewardWhisper.astro';
-import HeartbeatPulse from '../components/HeartbeatPulse.astro';
 import '../styles/global.css';
 import '../styles/decay.css';
-import '../styles/choreography.css';
-import '../styles/shimmer.css';
 import '../styles/revival.css';
 import '../styles/bloom.css';
-import '../styles/discovery.css';
-import '../styles/reward.css';
-import '../styles/heartbeat.css';
-// revival-toast.css removed — merged into RewardWhisper component
-import '../styles/radial-ring.css';
-import '../styles/ring.css';
-import '../styles/first-breath.css';
-import '../styles/guided-touch.css';
-import '../styles/echo.css';
 import '../styles/presence.css';
 import '../styles/first-visit.css';
 import '../styles/decay-extremes.css';
@@ -79,16 +23,6 @@ import '../styles/revival-moment.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const sessionScript = sessionTokenScript();
-const breathScript = firstBreathScript();
-const timeScript = timeAmbientScript();
-const seasonScript = seasonalScript();
-const shimScript = shimmerScript();
-const snapScript = snapshotScript();
-const discoveryScript = discoveryHintScript();
-const rewardScript = rewardWhisperScript();
-const heartbeatPulseJs = heartbeatPulseScript();
-// radialRingJs and radialA11yJs removed — RadialRing stripped from layout
-// --- Consolidated engines ---
 const decayScript = decayEngineClientScript();
 const revivalScript = revivalEngineScript();
 const presenceScript = presenceClientScript();
@@ -103,7 +37,6 @@ interface Props {
 
 const { title, description, type, publishedAt, ogSlug } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
-const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
 ---
 
 <!doctype html>
@@ -112,21 +45,10 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} />
-    <meta name="decay-max-days" content={String(adaptiveMaxDays)} />
+    <meta name="decay-max-days" content="365" />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />
-    <!-- Session + ambient (kept as-is) -->
     <script set:html={sessionScript} />
-    <script set:html={breathScript} />
-    <script set:html={timeScript} />
-    <script set:html={seasonScript} />
-    <script set:html={snapScript} />
-    <script set:html={shimScript} />
-    <script set:html={discoveryScript} />
-    <script set:html={rewardScript} />
-    <script set:html={heartbeatPulseJs} />
-    <!-- radialRing scripts removed — component stripped from layout -->
-    <!-- Consolidated engines (replace 15+ scripts with 3) -->
     <script set:html={decayScript} />
     <script set:html={revivalScript} />
     <script set:html={presenceScript} />
@@ -157,25 +79,7 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     </style>
   </head>
   <body>
-    <FirstBreath />
     <SiteNav />
     <slot />
-    <RewardWhisper />
-    <HeartbeatPulse />
-    <QuietFollow />
-    <!-- Gate overlays for new visitors (< 3 visits) -->
-    <script>
-      (function(){
-        var v=parseInt(localStorage.getItem('fvh_visits')||'0',10);
-        if(v>=3)return;
-        var ids=['reward-whisper','heartbeat-presence'];
-        ids.forEach(function(id){
-          var el=document.getElementById(id);
-          if(el)el.style.display='none';
-        });
-        var qf=document.querySelector('.quiet-follow');
-        if(qf)qf.style.display='none';
-      })();
-    </script>
   </body>
 </html>

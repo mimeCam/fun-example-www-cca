@@ -1,23 +1,14 @@
 // src/lib/nav.ts
 // Shared navigation helpers — framework-agnostic, SSR-safe.
-// Used by DriftNav, SiteNav, and any future routing-aware component.
 
-import { resolveMood, type MoodDefinition } from './mood';
-
-/** Canonical page IDs used across navigation components. */
-export type PageId = 'home' | 'now' | 'wall' | 'embers'
-  | 'tidepool' | 'lowtide' | 'constellations' | 'blog' | 'pulse'
+/** Canonical page IDs for the 6-page sitemap. */
+export type PageId = 'home' | 'now' | 'wall' | 'blog'
   | 'graveyard' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
   ['/now', 'now'],
   ['/wall', 'wall'],
-  ['/embers', 'embers'],
-  ['/tidepool', 'tidepool'],
-  ['/lowtide', 'lowtide'],
-  ['/constellations', 'constellations'],
   ['/blog', 'blog'],
-  ['/pulse', 'pulse'],
   ['/graveyard', 'graveyard'],
 ];
 
@@ -29,24 +20,6 @@ export function getActivePage(pathname: string): PageId {
     if (clean === prefix || clean.startsWith(prefix + '/')) return id;
   }
   return 'unknown';
-}
-
-/** Nav color tokens derived from the mood palette. */
-export interface MoodNavTokens {
-  color: string;
-  hoverColor: string;
-  activeAccent: string;
-  opacity: number;
-}
-
-/** Extracts nav-friendly tokens from a mood definition. */
-export function getMoodNavTokens(mood: MoodDefinition): MoodNavTokens {
-  return {
-    color: `rgba(${mood.accent_rgb}, 0.75)`,
-    hoverColor: mood.accent,
-    activeAccent: mood.accent,
-    opacity: 0.8,
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -61,8 +34,5 @@ export function _testNav(): void {
   console.assert(getActivePage('/wall#top') === 'wall', 'hash');
   console.assert(getActivePage('/blog/hello') === 'blog', 'blog slug');
   console.assert(getActivePage('/xyz') === 'unknown', 'unknown');
-  const tokens = getMoodNavTokens(resolveMood('lo-fi'));
-  console.assert(tokens.opacity === 0.8, 'opacity');
-  console.assert(tokens.activeAccent === '#D4956A', 'accent');
-  console.log('[nav] OK — getActivePage + getMoodNavTokens verified');
+  console.log('[nav] OK — getActivePage verified');
 }
