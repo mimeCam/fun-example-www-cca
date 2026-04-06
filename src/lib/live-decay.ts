@@ -8,7 +8,7 @@
 
 const SELECTOR = '.decay-card[data-pub-date]';
 const READY_SELECTOR = '.decay-card.choreo-done[data-pub-date]';
-const MAX_DAYS = 365;
+const MAX_DAYS_FALLBACK = 365;
 const MS_PER_DAY = 86_400_000;
 const TICK_INTERVAL_MS = 60_000; // 1 minute
 const CHOREO_FALLBACK_MS = 3_000; // wait max 3s for choreography
@@ -22,8 +22,13 @@ function revBonus(count: number): number {
   return Math.min(0.3, Math.log(count + 1) * 0.05);
 }
 
-function factor(pubMs: number, nowMs: number, revivals = 0): number {
-  const raw = Math.min(1, Math.max(0, (nowMs - pubMs) / MS_PER_DAY / MAX_DAYS));
+function readMaxDays(): number {
+  const meta = document.querySelector('meta[name="decay-max-days"]');
+  return meta ? +(meta as HTMLMetaElement).content || MAX_DAYS_FALLBACK : MAX_DAYS_FALLBACK;
+}
+
+function factor(pubMs: number, nowMs: number, revivals = 0, maxDays = MAX_DAYS_FALLBACK): number {
+  const raw = Math.min(1, Math.max(0, (nowMs - pubMs) / MS_PER_DAY / maxDays));
   return Math.max(0, raw - revBonus(revivals));
 }
 
@@ -55,11 +60,11 @@ function shadowAlpha(f: number): string {
 // DOM patching — sets all 6 CSS vars on one card element
 // ---------------------------------------------------------------------------
 
-function patchCard(el: HTMLElement, nowMs: number): void {
+function patchCard(el: HTMLElement, nowMs: number, maxDays: number): void {
   if (el.hasAttribute('data-bloom-lock')) return;
   const pubMs = new Date(el.dataset.pubDate!).getTime();
   const revivals = +(el.dataset.revivalCount || '0');
-  const f = factor(pubMs, nowMs, revivals);
+  const f = factor(pubMs, nowMs, revivals, maxDays);
   el.style.setProperty('--decay-opacity', opacity(f));
   el.style.setProperty('--decay-blur', blur(f));
   el.style.setProperty('--decay-saturation', saturation(f));
@@ -74,12 +79,13 @@ function patchCard(el: HTMLElement, nowMs: number): void {
 
 function startLoop(): void {
   let lastTick = 0;
+  const maxDays = readMaxDays();
   function tick(): void {
     const now = Date.now();
     if (now - lastTick >= TICK_INTERVAL_MS) {
       lastTick = now;
       const cards = document.querySelectorAll<HTMLElement>(READY_SELECTOR);
-      cards.forEach(card => patchCard(card, now));
+      cards.forEach(card => patchCard(card, now, maxDays));
     }
     requestAnimationFrame(tick);
   }
@@ -93,7 +99,9 @@ function startLoop(): void {
 /** Returns a self-executing script body for BaseLayout injection. */
 export function liveDecayScript(): string {
   return `(function(){
-  var S='${READY_SELECTOR}',M=${MAX_DAYS},D=${MS_PER_DAY};
+  var S='${READY_SELECTOR}',D=${MS_PER_DAY};
+  var mm=document.querySelector('meta[name="decay-max-days"]');
+  var M=mm?+mm.content||${MAX_DAYS_FALLBACK}:${MAX_DAYS_FALLBACK};
   var I=${TICK_INTERVAL_MS},L=0,FB=${CHOREO_FALLBACK_MS},paused=false;
   function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
   function f(p,n,r){var raw=Math.min(1,Math.max(0,(n-p)/D/M));return Math.max(0,raw-rb(r))}
@@ -122,7 +130,7 @@ export function _testLiveDecay(): void {
   const f0 = factor(Date.now(), Date.now());
   console.assert(f0 === 0, `same-ms factor: expected 0, got ${f0}`);
 
-  const yearAgo = Date.now() - MAX_DAYS * MS_PER_DAY;
+  const yearAgo = Date.now() - MAX_DAYS_FALLBACK * MS_PER_DAY;
   const f1 = factor(yearAgo, Date.now());
   console.assert(f1 === 1, `1-year factor: expected 1, got ${f1}`);
 

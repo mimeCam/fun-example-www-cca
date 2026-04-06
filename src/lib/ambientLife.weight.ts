@@ -2,6 +2,14 @@
 // Weighted random slug selection for phantom pulses.
 // Posts closer to death get more phantom attention —
 // "other readers are trying to save the dying ones."
+//
+// Weight thresholds are now adaptive — in a young blog, even
+// moderately decayed posts get high weight so phantom attention
+// spreads visibly across the small post set.
+//
+// See: adaptiveDecay.ts for threshold computation.
+
+import { getAdaptiveConfig } from './adaptiveDecay';
 
 export interface WeightedPost {
   slug: string;
@@ -9,12 +17,23 @@ export interface WeightedPost {
 }
 
 // ---------------------------------------------------------------------------
-// Weight tiers — dying posts attract more phantom attention
+// Weight tiers — adaptive thresholds from adaptive decay config
 // ---------------------------------------------------------------------------
 
+function defaultThresholds(): { high: number; mid: number } {
+  return { high: 0.7, mid: 0.3 };
+}
+
+function activeThresholds(): { high: number; mid: number } {
+  const cfg = getAdaptiveConfig();
+  if (!cfg) return defaultThresholds();
+  return { high: cfg.weightHighDecay, mid: cfg.weightMidDecay };
+}
+
 function weightFor(decay: number): number {
-  if (decay >= 0.7) return 3;
-  if (decay >= 0.3) return 2;
+  const { high, mid } = activeThresholds();
+  if (decay >= high) return 3;
+  if (decay >= mid) return 2;
   return 1;
 }
 
@@ -39,15 +58,15 @@ export function pickWeightedSlug(posts: WeightedPost[]): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Decay factor computation
+// Raw decay factor computation (no revival bonus — ambient layer only)
 // ---------------------------------------------------------------------------
 
 const DAY_MS = 86_400_000;
-const DECAY_SPAN_DAYS = 365;
 
-/** Compute decay factor (0–1) from publish date. */
+/** Compute raw decay factor (0–1) using adaptive maxDays. */
 export function decayFactor(pubDate: Date, now?: Date): number {
+  const cfg = getAdaptiveConfig();
+  const span = cfg?.maxDays ?? 365;
   const elapsed = (now ?? new Date()).getTime() - pubDate.getTime();
-  const days = elapsed / DAY_MS;
-  return Math.min(1, Math.max(0, days / DECAY_SPAN_DAYS));
+  return Math.min(1, Math.max(0, elapsed / DAY_MS / span));
 }

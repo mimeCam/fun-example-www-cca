@@ -40,7 +40,14 @@
 #             jittered timer, fades phantom activity as real readers arrive;
 #             reads src/data/ambientLife.config.json + src/content/blog/*.md
 #             at runtime — Dockerfile copies these into production image;
-#             zero new dependencies, plugs into heartbeat + collectiveMemory).
+#             zero new dependencies, plugs into heartbeat + collectiveMemory),
+#           Adaptive Decay Engine (adaptiveDecay.ts + adaptiveDecay.config.json —
+#             dynamically adjusts decay parameters based on blog maturity;
+#             three tiers: seedling→growing→mature with smooth interpolation;
+#             solves cold-start problem: young blogs show visual contrast from
+#             day one instead of all cards at ~0.16 decay; 24h auto-refresh;
+#             reads src/data/adaptiveDecay.config.json at runtime via process.cwd();
+#             integrates with postMeta, ambientLife, live-decay; zero new deps).
 
 set -euo pipefail
 

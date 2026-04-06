@@ -15,6 +15,7 @@ import type { FreshnessTag } from './decay';
 import { getRevivalCounts, getRisenTimestamps } from './collectiveMemory';
 import { isEntombed, isRecentlyRisen, DORMANCY_DAYS } from './entomb';
 import { daysSince } from './temporal';
+import { getAdaptiveConfig } from './adaptiveDecay';
 
 export interface PostMeta {
   slug: string;
@@ -72,6 +73,12 @@ export interface PostDisplayData extends PostMeta {
   recentlyRisen: boolean;
 }
 
+/** Resolve adaptive maxDays, falling back to 365 if unavailable. */
+function resolveMaxDays(): number {
+  const cfg = getAdaptiveConfig();
+  return cfg?.maxDays ?? 365;
+}
+
 /** Bundles metadata + decay visuals for a single post. */
 export function getPostDisplayData(
   post: CollectionEntry<'blog'>,
@@ -80,7 +87,8 @@ export function getPostDisplayData(
   risenAt: Date | null = null,
 ): PostDisplayData {
   const meta = extractMeta(post);
-  const factor = decayFactor(meta.pubDateISO, 365, now, revivals);
+  const maxDays = resolveMaxDays();
+  const factor = decayFactor(meta.pubDateISO, maxDays, now, revivals);
   const warm = revivalBonus(revivals) > 0.15;
   const lastRevivalDays = lastRevivalDaysAgo(risenAt, now);
   const entombed = isEntombed(factor, lastRevivalDays);

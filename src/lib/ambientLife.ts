@@ -6,31 +6,39 @@
 //   Pulse  — periodic phantom SSE events (ephemeral, not persisted)
 //   Fade   — scale phantom activity down as real readers arrive
 //
+// Now powered by Adaptive Decay Engine — pulse intervals, seed floors,
+// and weight thresholds all adjust dynamically based on blog maturity.
+// Config refreshes every 24h via a lightweight post-directory scan.
+//
 // Zero new dependencies. Plugs into existing collectiveMemory + heartbeat.
 
 import { readdirSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { broadcast, connectionCount } from './heartbeat';
 import { getRevivalCounts, incrementRevival } from './collectiveMemory';
-import { computeSeeds } from './ambientLife.seed';
+import { computeAgeAwareSeeds } from './ambientLife.seed';
 import { pickWeightedSlug, decayFactor } from './ambientLife.weight';
 import type { WeightedPost } from './ambientLife.weight';
+import {
+  computeAdaptiveConfig,
+  initAdaptiveConfig,
+  stopRefresh,
+  getAdaptiveConfig,
+  nextRhythmMultiplier,
+} from './adaptiveDecay';
+import type { BlogMaturity, AdaptiveDecayConfig } from './adaptiveDecay';
 
 // ---------------------------------------------------------------------------
-// Config (loaded once from JSON)
+// Legacy config — fallback only if adaptive system fails
 // ---------------------------------------------------------------------------
 
-interface AmbientConfig {
-  seedFloor: number;
-  seedJitter: number;
-  pulseIntervalMs: number;
-  pulseVarianceMs: number;
+interface LegacyConfig {
   fadeThresholds: number[];
   fadeMultipliers: number[];
   enabled: boolean;
 }
 
-function loadConfig(): AmbientConfig {
+function loadLegacyConfig(): LegacyConfig {
   const p = resolve(process.cwd(), 'src/data/ambientLife.config.json');
   return JSON.parse(readFileSync(p, 'utf-8'));
 }
@@ -42,11 +50,13 @@ function loadConfig(): AmbientConfig {
 interface PostMeta {
   slug: string;
   pubDate: Date;
+  ageDays: number;
 }
 
 function discoverPosts(): PostMeta[] {
   const dir = contentDir();
-  return listMarkdownFiles(dir).map(f => parsePostMeta(dir, f));
+  const now = new Date();
+  return listMarkdownFiles(dir).map(f => parsePostMeta(dir, f, now));
 }
 
 function contentDir(): string {
@@ -57,11 +67,12 @@ function listMarkdownFiles(dir: string): string[] {
   return readdirSync(dir).filter(f => f.endsWith('.md'));
 }
 
-function parsePostMeta(dir: string, file: string): PostMeta {
+function parsePostMeta(dir: string, file: string, now: Date): PostMeta {
   const slug = file.replace(/\.md$/, '');
   const raw = readFileSync(resolve(dir, file), 'utf-8');
   const pubDate = extractPubDate(raw);
-  return { slug, pubDate };
+  const ageDays = daysBetween(pubDate, now);
+  return { slug, pubDate, ageDays };
 }
 
 function extractPubDate(raw: string): Date {
@@ -69,14 +80,47 @@ function extractPubDate(raw: string): Date {
   return match ? new Date(match[1].trim()) : new Date();
 }
 
+function daysBetween(a: Date, b: Date): number {
+  return Math.max(0, Math.floor((b.getTime() - a.getTime()) / 86_400_000));
+}
+
 // ---------------------------------------------------------------------------
-// Seed Layer — ensure minimum revival counts on startup
+// Blog maturity snapshot — inputs for Adaptive Decay Engine
 // ---------------------------------------------------------------------------
 
-function runSeedLayer(posts: PostMeta[], cfg: AmbientConfig): void {
+function snapshotMaturity(posts: PostMeta[]): BlogMaturity {
+  if (posts.length === 0) return emptyMaturity();
+  const ages = posts.map(p => p.ageDays);
+  const counts = safeRevivalTotal();
+  return {
+    postCount: posts.length,
+    oldestAgeDays: Math.max(...ages),
+    newestAgeDays: Math.min(...ages),
+    totalRevivals: counts,
+  };
+}
+
+function emptyMaturity(): BlogMaturity {
+  return { postCount: 0, oldestAgeDays: 0, newestAgeDays: 0, totalRevivals: 0 };
+}
+
+function safeRevivalTotal(): number {
+  try {
+    const m = getRevivalCounts();
+    let total = 0;
+    m.forEach(v => { total += v; });
+    return total;
+  } catch { return 0; }
+}
+
+// ---------------------------------------------------------------------------
+// Seed Layer — ensure minimum revival counts on startup (age-aware)
+// ---------------------------------------------------------------------------
+
+function runSeedLayer(posts: PostMeta[], cfg: AdaptiveDecayConfig): void {
   const counts = getRevivalCounts();
-  const slugs = posts.map(p => p.slug);
-  const ops = computeSeeds(slugs, counts, cfg.seedFloor, cfg.seedJitter);
+  const postData = posts.map(p => ({ slug: p.slug, ageDays: p.ageDays }));
+  const ops = computeAgeAwareSeeds(postData, counts, cfg.seedFloor, cfg.seedJitter, cfg.maxDays);
   ops.forEach(op => applySeeds(op.slug, op.incrementBy));
 }
 
@@ -88,29 +132,27 @@ function applySeeds(slug: string, times: number): void {
 // Fade Layer — scale phantom activity by real connection count
 // ---------------------------------------------------------------------------
 
-function activityMultiplier(cfg: AmbientConfig): number {
+function activityMultiplier(legacy: LegacyConfig): number {
   const real = connectionCount();
-  const { fadeThresholds: t, fadeMultipliers: m } = cfg;
-  if (real >= t[0]) return m[0]; // 3+ real → off
-  if (real >= t[1]) return m[1]; // 2 real  → 25%
-  if (real >= t[2]) return m[2]; // 1 real  → 50%
-  return m[3];                   // alone   → full
+  const { fadeThresholds: t, fadeMultipliers: m } = legacy;
+  if (real >= t[0]) return m[0];
+  if (real >= t[1]) return m[1];
+  if (real >= t[2]) return m[2];
+  return m[3];
 }
 
 // ---------------------------------------------------------------------------
-// Pulse Layer — periodic phantom revival broadcasts
+// Pulse Layer — organic rhythm instead of uniform random
 // ---------------------------------------------------------------------------
 
 function buildWeightedPosts(posts: PostMeta[]): WeightedPost[] {
   const now = new Date();
-  return posts.map(p => ({
-    slug: p.slug,
-    decayFactor: decayFactor(p.pubDate, now),
-  }));
+  return posts.map(p => ({ slug: p.slug, decayFactor: decayFactor(p.pubDate, now) }));
 }
 
-function emitPulse(posts: PostMeta[], cfg: AmbientConfig): void {
-  if (Math.random() > activityMultiplier(cfg)) return;
+function emitPulse(posts: PostMeta[], legacy: LegacyConfig): void {
+  const rhythm = nextRhythmMultiplier();
+  if (Math.random() > activityMultiplier(legacy) * rhythm) return;
 
   const slug = pickWeightedSlug(buildWeightedPosts(posts));
   if (!slug) return;
@@ -124,16 +166,20 @@ function jitteredDelay(base: number, variance: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Pulse scheduler — self-scheduling with jittered intervals
+// Pulse scheduler — reads fresh adaptive config each tick
 // ---------------------------------------------------------------------------
 
 let pulseTimer: ReturnType<typeof setTimeout> | null = null;
 
-function schedulePulse(posts: PostMeta[], cfg: AmbientConfig): void {
-  const delay = jitteredDelay(cfg.pulseIntervalMs, cfg.pulseVarianceMs);
+function schedulePulse(posts: PostMeta[], legacy: LegacyConfig): void {
+  const cfg = getAdaptiveConfig();
+  const base = cfg?.pulseBaseMs ?? 60000;
+  const variance = cfg?.pulseVarianceMs ?? 30000;
+  const delay = jitteredDelay(base, variance);
+
   pulseTimer = setTimeout(() => {
-    emitPulse(posts, cfg);
-    schedulePulse(posts, cfg);
+    emitPulse(posts, legacy);
+    schedulePulse(posts, legacy);
   }, delay);
 }
 
@@ -153,18 +199,24 @@ export function startAmbientLife(): void {
   if (started) return;
   started = true;
 
-  const cfg = loadConfig();
-  if (!cfg.enabled) return;
+  const legacy = loadLegacyConfig();
+  if (!legacy.enabled) return;
 
   const posts = discoverPosts();
   if (posts.length === 0) return;
 
-  runSeedLayer(posts, cfg);
-  schedulePulse(posts, cfg);
+  const maturity = snapshotMaturity(posts);
+  initAdaptiveConfig(maturity, () => snapshotMaturity(discoverPosts()));
+
+  const cfg = getAdaptiveConfig();
+  if (cfg) runSeedLayer(posts, cfg);
+
+  schedulePulse(posts, legacy);
 }
 
 /** Stop the engine (for graceful shutdown). */
 export function stopAmbientLife(): void {
   stopPulse();
+  stopRefresh();
   started = false;
 }

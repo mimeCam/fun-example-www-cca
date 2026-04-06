@@ -37,6 +37,7 @@ import { revivalToastScript } from '../lib/revivalToast';
 import { bloomOnArrivalScript } from '../lib/bloomOnArrival';
 import { radialRingScript } from '../lib/radialRing';
 import { radialRingA11yScript } from '../lib/radialRingA11y';
+import { getAdaptiveConfig } from '../lib/adaptiveDecay';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -101,6 +102,7 @@ interface Props {
 
 const { title, description, type, publishedAt, ogSlug } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
+const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
 ---
 
 <!doctype html>
@@ -109,6 +111,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} />
+    <meta name="decay-max-days" content={String(adaptiveMaxDays)} />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />
     <script set:html={sessionScript} />

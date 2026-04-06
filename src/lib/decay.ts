@@ -6,7 +6,8 @@
 // Reuses daysSince() from temporal.ts — no duplication.
 // Pure functions. Stateless. Testable.
 //
-// TODO: tune maxDays default once post volume grows beyond ~20
+// maxDays is now adaptive — see adaptiveDecay.ts for dynamic computation.
+// The default 365 only applies when the adaptive system is unavailable.
 
 import { daysSince } from './temporal';
 
