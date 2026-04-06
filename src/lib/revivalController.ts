@@ -15,6 +15,7 @@ import {
   keyboardStrategyFragment,
 } from './revivalDesktop';
 import { touchStrategyFragment } from './revivalTouch';
+import { SESSION_HEADER } from './sessionToken';
 
 /** Card selector for revival-capable elements. */
 const CARD_SELECTOR = '.decay-card[data-pub-date]';
@@ -71,10 +72,12 @@ function sharedHelpers(): string {
   function send(s, src) {
     if (fired(s)) return;
     mark(s);
+    var hdrs={'Content-Type':'application/json'};
+    if(window.__sessionId)hdrs['${SESSION_HEADER}']=window.__sessionId;
     fetch('/api/revive', {
       method: 'POST',
       keepalive: true,
-      headers: { 'Content-Type': 'application/json' },
+      headers: hdrs,
       body: JSON.stringify({ slug: s })
     })
     .then(function(r) { return r.json(); })

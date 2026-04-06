@@ -1,0 +1,74 @@
+/* src/styles/first-breath.css
+   First Breath arrival choreography.
+   Matches the 4-beat JS sequence in firstBreath.ts:
+     0ms      → data-breath="active"  (page muted, banner slides in)
+     1500ms   → data-breath="settle"  (page blooms to full saturation)
+     2000ms   → whisper fades to 0.55 opacity  (JS inline style)
+     5500ms   → whisper fades to 0             (JS inline style)
+     7500ms   → data-breath removed, element removed
+   Respects prefers-reduced-motion. */
+
+/* ---------- Page bloom: instant desaturate → 1.5s bloom to full ---------- */
+
+html[data-breath="active"] body {
+  filter: saturate(0.12);
+  transition: none;
+}
+
+html[data-breath="settle"] body {
+  filter: saturate(1);
+  transition: filter 1.5s ease-out;
+}
+
+/* ---------- Banner container ---------- */
+
+.first-breath {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  z-index: 900;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.5rem;
+  margin: 0;
+  background: color-mix(in srgb, var(--color-bg, #0F0D0B) 72%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid color-mix(in srgb, var(--mood-accent, #F59E0B) 14%, transparent);
+
+  /* Hidden by default — JS-gated; no [data-breath] means second+ visit */
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+/* Slide down when breath is active (either phase) */
+html[data-breath] .first-breath {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 320ms ease-out, transform 320ms ease-out;
+}
+
+/* ---------- Whisper text ---------- */
+
+.first-breath__text {
+  font-size: 0.8125rem; /* 13px per design spec */
+  color: color-mix(in srgb, var(--mood-accent, #F59E0B) 65%, white);
+  letter-spacing: 0.05em;
+  text-align: center;
+  margin: 0;
+  opacity: 0; /* JS transitions this: 0 → 0.55 → 0 */
+  transition: opacity 1s ease-in-out;
+}
+
+/* ---------- Reduced motion: skip all transitions ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-breath="settle"] body,
+  html[data-breath] .first-breath,
+  .first-breath__text {
+    transition: none;
+  }
+}

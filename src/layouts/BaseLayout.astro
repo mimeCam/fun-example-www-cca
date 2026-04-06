@@ -9,6 +9,9 @@
 // DONE: Wired simple 3-mood system, removed old mood radio machinery.
 
 import { simpleMoodCSSString } from '../lib/mood-simple';
+import { sessionTokenScript } from '../lib/sessionToken';
+import { firstBreathScript } from '../lib/firstBreath';
+import FirstBreath from '../components/FirstBreath.astro';
 import { timeAmbientScript } from '../lib/timeAmbient';
 import { seasonalScript } from '../lib/seasonal';
 import { liveDecayScript } from '../lib/live-decay';
@@ -54,8 +57,11 @@ import '../styles/heartbeat.css';
 import '../styles/revival-toast.css';
 import '../styles/radial-ring.css';
 import '../styles/ring.css';
+import '../styles/first-breath.css';
 
 const cssString = simpleMoodCSSString(moodConfig.current_mood);
+const sessionScript = sessionTokenScript();
+const breathScript = firstBreathScript();
 const timeScript = timeAmbientScript();
 const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();
@@ -97,6 +103,8 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />
+    <script set:html={sessionScript} />
+    <script set:html={breathScript} />
     <script set:html={timeScript} />
     <script set:html={seasonScript} />
     <script set:html={decayScript} />
@@ -126,6 +134,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     </style>
   </head>
   <body>
+    <FirstBreath />
     <AmbientLayer />
     <SiteNav />
     <RadialRing />

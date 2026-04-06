@@ -55,9 +55,6 @@ export function getCurrentPhase(now = new Date()): TimePhase {
 // sessionStorage gates it to once per session.
 // ---------------------------------------------------------------------------
 
-// TODO: wire into FirstBreath.astro component (next session)
-// TODO: add prefers-reduced-motion bailout in script body
-
 export function firstBreathScript(): string {
   const phases = JSON.stringify(PHASE_RANGES);
   return [

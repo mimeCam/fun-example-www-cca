@@ -15,7 +15,14 @@
 #           accessible radial ring (RadialRing.astro + radialRingA11y.ts + ring.css),
 #           revival share bottom sheet (RevivalShareSheet.astro + revivalShare.ts —
 #             slides up on revival:success, static scroll-revealed fallback button,
-#             OG preview, session guard, Web Share API + clipboard fallback).
+#             OG preview, session guard, Web Share API + clipboard fallback),
+#           anonymous session identity (sessionToken.ts — UUID in localStorage,
+#             injected as window.__sessionId; X-Session-Id header on revival POSTs;
+#             session-scoped rate_limit_session SQLite table auto-created at runtime,
+#             solves shared-NAT / office-IP rate-limit false-positives),
+#           FirstBreath arrival choreography (FirstBreath.astro + first-breath.css —
+#             time-aware whisper banner, 4-beat fade sequence, page desaturate→bloom,
+#             once per browser session via sessionStorage gate, reduced-motion safe).
 
 set -euo pipefail
 

@@ -7,13 +7,27 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import {
   canRevive,
+  canReviveBySession,
   incrementRevival,
   recordRevival,
+  recordRevivalBySession,
 } from '../../lib/collectiveMemory';
 import { broadcast } from '../../lib/heartbeat';
 import { getConstellation } from '../../lib/constellationLookup';
 
 export const prerender = false;
+
+/** Prefer session-based rate check; fall back to IP when session is absent. */
+function checkRateLimit(sessionId: string | null, ip: string, slug: string): boolean {
+  if (sessionId) return canReviveBySession(sessionId, slug);
+  return canRevive(ip, slug);
+}
+
+/** Stamp whichever rate-limit store is in use. */
+function stampRateLimit(sessionId: string | null, ip: string, slug: string): void {
+  if (sessionId) { recordRevivalBySession(sessionId, slug); return; }
+  recordRevival(ip, slug);
+}
 
 /** Extract client IP from request headers. */
 function clientIp(request: Request): string {
@@ -40,11 +54,12 @@ export const POST: APIRoute = async ({ request }) => {
   if (slug === '__demo__') return jsonOk({ ok: true, count: 0, resonance: [] });
   if (!(await slugExists(slug))) return badRequest('Unknown slug');
 
+  const sessionId = request.headers.get('x-session-id');
   const ip = clientIp(request);
-  if (!canRevive(ip, slug)) return tooManyRequests();
+  if (!checkRateLimit(sessionId, ip, slug)) return tooManyRequests();
 
   const count = incrementRevival(slug);
-  recordRevival(ip, slug);
+  stampRateLimit(sessionId, ip, slug);
 
   const constellation = await getConstellation(slug);
   const resonance = constellation.length > 0 ? constellation : undefined;

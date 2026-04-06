@@ -41,6 +41,10 @@ function initTables(d: Database.Database): void {
       ip_slug TEXT PRIMARY KEY,
       last_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS rate_limit_session (
+      session_slug TEXT PRIMARY KEY,
+      last_at      INTEGER NOT NULL
+    );
   `);
 }
 
@@ -107,6 +111,29 @@ export function recordRevival(ip: string, slug: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Session-based rate limiting (preferred over IP when session ID is known)
+// ---------------------------------------------------------------------------
+
+/** True if this session+slug combo hasn't fired within the rate window. */
+export function canReviveBySession(sessionId: string, slug: string): boolean {
+  const key = `${sessionId}:${slug}`;
+  const row = db()
+    .prepare('SELECT last_at FROM rate_limit_session WHERE session_slug = ?')
+    .get(key) as { last_at: number } | undefined;
+  if (!row) return true;
+  return Date.now() - row.last_at >= RATE_WINDOW_MS;
+}
+
+/** Stamp the session rate-limit record for this session+slug. */
+export function recordRevivalBySession(sessionId: string, slug: string): void {
+  const key = `${sessionId}:${slug}`;
+  db().prepare(`
+    INSERT INTO rate_limit_session (session_slug, last_at) VALUES (?, ?)
+    ON CONFLICT(session_slug) DO UPDATE SET last_at = ?
+  `).run(key, Date.now(), Date.now());
+}
+
+// ---------------------------------------------------------------------------
 // Cleanup (optional, call periodically or on deploy)
 // ---------------------------------------------------------------------------
 
@@ -114,4 +141,5 @@ export function recordRevival(ip: string, slug: string): void {
 export function pruneRateLimits(): void {
   const cutoff = Date.now() - 3_600_000;
   db().prepare('DELETE FROM rate_limit WHERE last_at < ?').run(cutoff);
+  db().prepare('DELETE FROM rate_limit_session WHERE last_at < ?').run(cutoff);
 }
