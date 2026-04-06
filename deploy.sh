@@ -4,32 +4,36 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v19 — Graveyard Epitaph Redesign (2026-04-06)
+# Architecture v20 — Cinematic Revival + Conviction Panel (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Graveyard Epitaph Redesign):
-#   TombstoneCard.astro — full epitaph layout redesign: "here lies" header label,
-#   engraved title (layered text-shadow illusion), quoted italic description,
-#   Born/Faded date dl with prose-style stat line ("remembered by N readers ·
-#   M min held alive"), text-only resurrect CTA ("↑ breathe life back").
-#   Monochrome locked via --color-grave-* OKLCH tokens (not opacity on element).
-#   GraveyardEmptyState.astro (new) — silence-as-design empty state: "The
-#   graveyard is silent. No words have faded here yet." with breathing subtitle
-#   animation and return link; unique @keyframes name avoids collision.
-#   graveyard.css (new) — atmospheric layer for /graveyard only; loaded via
-#   import in graveyard.astro frontmatter (not global). Contains: @property
-#   --flame-y for smooth candlelight radial animation; OKLCH design tokens
-#   (warm charcoal, perceptually-uniform); scroll-driven rise-from-ground
-#   entrance (@supports guard for non-Chromium); staggered breathe animation
-#   per tombstone; CSS :has() resurrection bloom ring + warm-title glow;
-#   candlelight footer ::before ambient; full reduced-motion suppression.
-#   graveyard.astro — uses graveyard-epitaph header (numbers carved in stone:
-#   posts forgotten, minutes unread, brought back); GraveyardEmptyState for
-#   zero-posts path; 2-col tombstone grid (max-width 52rem); text-only
-#   pagination; candlelight footer with living-count link.
-#   Pure frontend — no new services, volumes, or runtime dependencies.
+# Sprint (latest — Cinematic Revival Moment + Author Conviction Notes):
+#   revival-moment.ts — 5-phase cinematic revival sequence:
+#     Phase 1: anticipation SVG arc (strokeDashoffset fills over DWELL_MS);
+#     Phase 2: localStorage 7-day TTL gate (replaces sessionStorage);
+#     Phase 3a: WAAPI dissolve — scale lift + opacity via Element.animate();
+#     Phase 3b: chromatic aberration h1 flash at t=200ms (signature moment);
+#     Phase 4: witness badge — "You rescued this — N% decayed · M readers
+#     this month" (decayPct + monthlyCount from API); two-tap haptic pulse;
+#     Phase 5: SSE ripple — sympathetic bloom from other readers (unchanged).
+#   revival.css — anticipation-arc SVG styles + chroma-flash @keyframes;
+#     reduced-motion suppression for both new phases; --mood-accent-rgb token.
+#   ConvictionPanel.astro (new) — inline <details>/<summary> belief audit;
+#     max 5 convictions per post; verdict tokens: ✓ still-true, ✗ wrong,
+#     ↗ evolved, ? unaudited; strike-through for wrong beliefs; zero JS.
+#   content/config.ts — convictions[] frontmatter schema (max 5, verdictEnum);
+#   [slug].astro — imports ConvictionPanel; post-nav-row with "← back to field"
+#     + "[⚖ beliefs]" anchor link when convictions present.
+#   collectiveMemory.ts — getMonthlyRevivalCount(slug): 30-day window query
+#     on existing velocity_log table; used by /api/revive for witness badge.
+#   api/revive.ts — response now includes decayPct (0-100) + monthlyCount.
+#   decay-engine.ts — bug fixes: MAX_DAYS_DEFAULT 365→180 (cold-start fix for
+#     personal blogs), readingBonus cap 0.08→0.15 (raised for fairer credit);
+#     both fix applied in server function and client IIFE in sync.
+#   hello-world.md — seeded with example convictions array.
+#   Pure frontend + logic fixes — no new services, volumes, or runtime deps.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),
@@ -42,9 +46,11 @@
 #           Endangered Posts (urgency tiers, pulse, erosion bar, countdown),
 #           2-phase revival dismiss (bloom → collapse, a11y, Android-optimised),
 #           SavedMoment toast (emotional payoff when last card revived),
-#           Revival animations (bloom ring, scale lift, badge),
+#           Cinematic Revival (5-phase: arc → localStorage gate → WAAPI dissolve
+#           → chromatic h1 flash → witness badge + SSE ripple),
 #           Revival Guard anti-gaming (fingerprint, velocity),
 #           Passive Reading Heartbeat (reading_seconds, readingBonus),
+#           Author Conviction Notes (ConvictionPanel, belief audit, verdicts),
 #           NowLine (pinned author status + graveyard hint on homepage),
 #           Murmurs (wall whispers on homepage, CLI-only submission),
 #           Grain overlay (CSS noise texture via --decay-grain).

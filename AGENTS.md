@@ -18,5 +18,11 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 - Physical device QA: Pixel 6a · Galaxy A14 · iPhone 13 · SSE on 3G throttle
 - Lighthouse CLS pass on homepage
-- Author Conviction Notes — P2, own sprint
+
+## Done (last sprint)
+
+- **Cinematic Revival Moment** — 5-phase sequence: anticipation SVG arc → localStorage 7-day gate → WAAPI dissolve + chromatic h1 flash at t=200ms → witness badge (decay% + monthly count) → SSE ripple
+- **Bug fixes** — `MAX_DAYS_DEFAULT` 365→180 (cold-start fix), `readingBonus` cap 0.08→0.15; both in `decay-engine.ts` and client IIFE
+- **Author Conviction Notes** — `ConvictionPanel.astro` (inline `<details>` collapsible), `convictions[]` frontmatter schema, `[⚖ beliefs]` nav link in post header; `hello-world.md` seeded with example convictions
+- **API enrichment** — `/api/revive` now returns `decayPct` + `monthlyCount`; `getMonthlyRevivalCount()` added to `collectiveMemory.ts`
 
