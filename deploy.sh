@@ -60,7 +60,17 @@
 #             RewardWhisper.astro + rewardWhisper.ts + discovery.css —
 #             single whisper hint replaces 22KB FSM onboarding; old
 #             onboardProbe/onboardHint/revivalReward/revivalToast merged into
-#             two lightweight modules; nav simplified to 2+1; zero new deps).
+#             two lightweight modules; nav simplified to 2+1; zero new deps),
+#           Revival Guard anti-gaming system (revivalGuard.ts + proofOfWork.ts +
+#             visitorFingerprint.ts + /api/challenge endpoint —
+#             6-step fail-fast chain: hashcash PoW (16-bit difficulty, ~50ms
+#             desktop), privacy-respecting browser fingerprint (8 navigator/
+#             screen signals SHA-256 hashed client-side), per-FP daily cap,
+#             per-IP daily cap, per-slug hourly velocity governor, global
+#             hourly velocity governor; visitor trust scoring (age + visit
+#             frequency); SQLite tables auto-migrated: visitor_trust,
+#             velocity_log, daily_counts; stale-challenge auto-refresh on
+#             client; uses Node built-in crypto — zero new dependencies).
 
 set -euo pipefail
 

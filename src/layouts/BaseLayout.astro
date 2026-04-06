@@ -18,6 +18,8 @@ import { liveDecayScript } from '../lib/live-decay';
 import { shimmerScript } from '../lib/shimmer';
 import { snapshotScript } from '../lib/snapshot';
 import { revivalControllerScript } from '../lib/revivalController';
+import { powSolverScript, generateChallenge } from '../lib/proofOfWork';
+import { visitorFingerprintScript } from '../lib/visitorFingerprint';
 // Legacy imports removed: longPressRevive + reviveClient → revivalController
 import { keepAliveScript } from '../lib/keepAlive';
 import { discoveryHintScript } from '../lib/discoveryHint';
@@ -71,6 +73,9 @@ const seasonScript = seasonalScript();
 const decayScript = liveDecayScript();
 const shimScript = shimmerScript();
 const snapScript = snapshotScript();
+const powChallenge = generateChallenge();
+const powScript = powSolverScript(powChallenge);
+const fpScript = visitorFingerprintScript();
 const revivalScript = revivalControllerScript();
 const keepScript = keepAliveScript();
 const discoveryScript = discoveryHintScript();
@@ -119,6 +124,8 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <script set:html={decayScript} />
     <script set:html={snapScript} />
     <script set:html={shimScript} />
+    <script set:html={powScript} />
+    <script set:html={fpScript} />
     <script set:html={revivalScript} />
     <script set:html={keepScript} />
     <script set:html={discoveryScript} />

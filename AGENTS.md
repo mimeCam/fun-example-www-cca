@@ -17,3 +17,4 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 ## WIP
 
 - Sympathetic Bloom Mobile — code hardened, needs physical-device QA (Pixel 6a, Galaxy A14, iPhone 13)
+- Revival Integrity Shield — needs production deploy + live PoW verification on target devices (Galaxy A14, ~200ms solve time expected)

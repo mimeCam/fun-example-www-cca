@@ -9,11 +9,14 @@ import {
   canRevive,
   canReviveBySession,
   incrementRevival,
+  incrementDailyCount,
   recordRevival,
   recordRevivalBySession,
 } from '../../lib/collectiveMemory';
 import { broadcast } from '../../lib/heartbeat';
 import { getConstellation } from '../../lib/constellationLookup';
+import { checkRevival } from '../../lib/revivalGuard';
+import { FP_HEADER } from '../../lib/visitorFingerprint';
 
 export const prerender = false;
 
@@ -27,6 +30,12 @@ function checkRateLimit(sessionId: string | null, ip: string, slug: string): boo
 function stampRateLimit(sessionId: string | null, ip: string, slug: string): void {
   if (sessionId) { recordRevivalBySession(sessionId, slug); return; }
   recordRevival(ip, slug);
+}
+
+/** Stamp daily counters for fingerprint and IP. */
+function stampDailyCounts(fp: string | null, ip: string): void {
+  if (fp) incrementDailyCount(`fp:${fp}`);
+  incrementDailyCount(`ip:${ip}`);
 }
 
 /** Extract client IP from request headers. */
@@ -56,10 +65,19 @@ export const POST: APIRoute = async ({ request }) => {
 
   const sessionId = request.headers.get('x-session-id');
   const ip = clientIp(request);
+
+  // Revival Guard: PoW + fingerprint + velocity checks
+  const proof = request.headers.get('x-proof-of-work');
+  const fp = request.headers.get(FP_HEADER.toLowerCase()) ?? request.headers.get(FP_HEADER);
+  const guard = checkRevival(proof, fp, ip, slug);
+  if (!guard.allowed) return tooManyRequests(guard.reason);
+
+  // Legacy per-slug rate limit still applies
   if (!checkRateLimit(sessionId, ip, slug)) return tooManyRequests();
 
   const count = incrementRevival(slug);
   stampRateLimit(sessionId, ip, slug);
+  stampDailyCounts(fp, ip);
 
   const constellation = await getConstellation(slug);
   const resonance = constellation.length > 0 ? constellation : undefined;
@@ -86,6 +104,8 @@ function jsonOk(data: Record<string, unknown>): Response {
   return new Response(JSON.stringify(data), { status: 200, headers });
 }
 
-function tooManyRequests(): Response {
-  return new Response(null, { status: 429 });
+function tooManyRequests(reason?: string): Response {
+  const body = reason ? JSON.stringify({ error: reason }) : null;
+  const headers = reason ? { 'Content-Type': 'application/json' } : {};
+  return new Response(body, { status: 429, headers });
 }

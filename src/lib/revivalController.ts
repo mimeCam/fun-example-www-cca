@@ -16,6 +16,7 @@ import {
 } from './revivalDesktop';
 import { touchStrategyFragment } from './revivalTouch';
 import { SESSION_HEADER } from './sessionToken';
+import { FP_HEADER } from './visitorFingerprint';
 
 /** Card selector for revival-capable elements. */
 const CARD_SELECTOR = '.decay-card[data-pub-date]';
@@ -74,20 +75,46 @@ function sharedHelpers(): string {
     mark(s);
     var hdrs={'Content-Type':'application/json'};
     if(window.__sessionId)hdrs['${SESSION_HEADER}']=window.__sessionId;
-    fetch('/api/revive', {
-      method: 'POST',
-      keepalive: true,
-      headers: hdrs,
-      body: JSON.stringify({ slug: s })
+    var promises=[];
+    if(window.__powReady)promises.push(window.__powReady);
+    else promises.push(Promise.resolve(null));
+    if(window.__visitorFp)promises.push(window.__visitorFp);
+    else promises.push(Promise.resolve(null));
+    Promise.all(promises).then(function(vals){
+      if(vals[0])hdrs['x-proof-of-work']=vals[0];
+      if(vals[1])hdrs['${FP_HEADER}']=vals[1];
+      return fetch('/api/revive',{
+        method:'POST',keepalive:true,
+        headers:hdrs,
+        body:JSON.stringify({slug:s})
+      });
     })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d && d.ok) {
-        emitSuccess(s, d.count, src);
+    .then(function(r){
+      if(r.status===429){
+        return r.json().then(function(d){
+          if(d&&d.error==='stale-challenge')refreshChallenge();
+          return null;
+        });
+      }
+      return r.json();
+    })
+    .then(function(d){
+      if(d&&d.ok){
+        emitSuccess(s,d.count,src);
         emitResonance(d.resonance);
       }
     })
-    .catch(function() {});
+    .catch(function(){});
+  }
+
+  function refreshChallenge(){
+    fetch('/api/challenge').then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.challenge){
+        window.__powChallenge=d.challenge;
+        window.__powReady=window.__solvePoW(d.challenge);
+      }
+    }).catch(function(){});
   }`;
 }
 

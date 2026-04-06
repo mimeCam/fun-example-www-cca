@@ -48,6 +48,7 @@ function initTables(d: Database.Database): void {
     );
   `);
   migrateRisenAt(d);
+  migrateGuardTables(d);
 }
 
 /** Add risen_at column if missing (safe to run repeatedly). */
@@ -55,6 +56,31 @@ function migrateRisenAt(d: Database.Database): void {
   const cols = d.prepare("PRAGMA table_info('revivals')").all() as Array<{ name: string }>;
   const has = cols.some(c => c.name === 'risen_at');
   if (!has) d.exec("ALTER TABLE revivals ADD COLUMN risen_at TEXT DEFAULT NULL");
+}
+
+/** Create Revival Guard tables for anti-gaming (safe to run repeatedly). */
+function migrateGuardTables(d: Database.Database): void {
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS visitor_trust (
+      fp_hash    TEXT PRIMARY KEY,
+      score      REAL DEFAULT 0.5,
+      visits     INTEGER DEFAULT 0,
+      last_at    INTEGER NOT NULL,
+      first_seen INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS velocity_log (
+      id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL,
+      ts   INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_velocity_slug_ts
+      ON velocity_log(slug, ts);
+    CREATE TABLE IF NOT EXISTS daily_counts (
+      key    TEXT PRIMARY KEY,
+      count  INTEGER DEFAULT 0,
+      day    TEXT NOT NULL
+    );
+  `);
 }
 
 // ---------------------------------------------------------------------------
@@ -182,4 +208,126 @@ export function pruneRateLimits(): void {
   const cutoff = Date.now() - 3_600_000;
   db().prepare('DELETE FROM rate_limit WHERE last_at < ?').run(cutoff);
   db().prepare('DELETE FROM rate_limit_session WHERE last_at < ?').run(cutoff);
+}
+
+// ---------------------------------------------------------------------------
+// Revival Guard: visitor trust
+// ---------------------------------------------------------------------------
+
+type TrustRow = { fp_hash: string; score: number; visits: number; first_seen: number };
+
+/** Read trust record for a fingerprint hash. */
+export function getVisitorTrust(fp: string): TrustRow | null {
+  const row = db()
+    .prepare('SELECT fp_hash, score, visits, first_seen FROM visitor_trust WHERE fp_hash = ?')
+    .get(fp) as TrustRow | undefined;
+  return row ?? null;
+}
+
+/** Upsert trust: increment visits, recalculate score. */
+export function upsertVisitorTrust(fp: string): void {
+  const now = Date.now();
+  upsertVisitorRow(fp, now);
+  recalcTrust(fp);
+}
+
+/** Insert or update the visitor_trust row. */
+function upsertVisitorRow(fp: string, now: number): void {
+  db().prepare(`
+    INSERT INTO visitor_trust (fp_hash, score, visits, last_at, first_seen)
+    VALUES (?, 0.5, 1, ?, ?)
+    ON CONFLICT(fp_hash) DO UPDATE SET visits = visits + 1, last_at = ?
+  `).run(fp, now, now, now);
+}
+
+/** Recalculate trust score based on age and visit count. */
+function recalcTrust(fp: string): void {
+  const row = getVisitorTrust(fp);
+  if (!row) return;
+  const ageMs = Date.now() - row.first_seen;
+  const dayMs = 86_400_000;
+  const score = (ageMs > dayMs && row.visits > 3) ? 1.0 : 0.5;
+  db().prepare('UPDATE visitor_trust SET score = ? WHERE fp_hash = ?')
+    .run(score, fp);
+}
+
+// ---------------------------------------------------------------------------
+// Revival Guard: velocity tracking
+// ---------------------------------------------------------------------------
+
+/** Log a revival event for velocity calculation. */
+export function logVelocity(slug: string): void {
+  db().prepare('INSERT INTO velocity_log (slug, ts) VALUES (?, ?)')
+    .run(slug, Date.now());
+  maybePruneVelocity();
+}
+
+/** Count revivals for a slug within a time window. */
+export function getSlugVelocity(slug: string, windowMs: number): number {
+  const cutoff = Date.now() - windowMs;
+  const row = db()
+    .prepare('SELECT COUNT(*) AS c FROM velocity_log WHERE slug = ? AND ts > ?')
+    .get(slug, cutoff) as { c: number };
+  return row.c;
+}
+
+/** Count all revivals within a time window. */
+export function getGlobalVelocity(windowMs: number): number {
+  const cutoff = Date.now() - windowMs;
+  const row = db()
+    .prepare('SELECT COUNT(*) AS c FROM velocity_log WHERE ts > ?')
+    .get(cutoff) as { c: number };
+  return row.c;
+}
+
+/** Prune velocity entries older than 2 hours (bounded delete). */
+let _lastPrune = 0;
+function maybePruneVelocity(): void {
+  const now = Date.now();
+  if (now - _lastPrune < 120_000) return;
+  _lastPrune = now;
+  const cutoff = now - 7_200_000;
+  db().prepare(
+    'DELETE FROM velocity_log WHERE id IN (SELECT id FROM velocity_log WHERE ts < ? LIMIT 1000)'
+  ).run(cutoff);
+}
+
+// ---------------------------------------------------------------------------
+// Revival Guard: daily counts (fingerprint + IP)
+// ---------------------------------------------------------------------------
+
+/** Today's date key for daily bucketing. */
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Get daily revival count for a fingerprint. */
+export function getDailyCountByFp(fp: string): number {
+  return getDailyCount(`fp:${fp}`);
+}
+
+/** Get daily revival count for an IP. */
+export function getDailyCountByIp(ip: string): number {
+  return getDailyCount(`ip:${ip}`);
+}
+
+/** Increment daily count for a key. */
+export function incrementDailyCount(key: string): void {
+  const day = todayKey();
+  db().prepare(`
+    INSERT INTO daily_counts (key, count, day) VALUES (?, 1, ?)
+    ON CONFLICT(key) DO UPDATE SET
+      count = CASE WHEN day = ? THEN count + 1 ELSE 1 END,
+      day = ?
+  `).run(key, day, day, day);
+}
+
+/** Read daily count, resetting if the day has changed. */
+function getDailyCount(key: string): number {
+  const day = todayKey();
+  const row = db()
+    .prepare('SELECT count, day FROM daily_counts WHERE key = ?')
+    .get(key) as { count: number; day: string } | undefined;
+  if (!row || row.day !== day) return 0;
+  return row.count;
 }
