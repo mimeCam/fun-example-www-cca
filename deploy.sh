@@ -4,12 +4,26 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v7 — Honest Presence (Tier 1 core feature)
+# Architecture v8 — Honest Presence + Global Scope (Tier 1 core feature)
 #   Real-time reader presence with zero phantoms. When nobody's here, count is zero.
 #   Blog posts show temporal decay + revival + live reader count via SSE.
+#   Homepage shows aggregate site-wide reader count via global-scope SSE.
 #   Ambient Life Engine quarantined — phantom pulses contradict honest presence.
 #
-# Sprint (latest):
+# Sprint (latest — Global Presence Scope):
+#   - presence-hub.ts: added globalMap for homepage visitors (no slug),
+#     broadcastGlobal(), joinGlobal(), touchGlobal(), reapGlobalStale(),
+#     getGlobalCount() — total = slugMap connections + globalMap connections.
+#   - /api/presence: new ?scope=global route for aggregate site-wide stream;
+#     existing ?slug=xxx route unchanged. Zero external dependencies.
+#   - presence-client.ts: scope-aware via data-scope attribute on #presence-band;
+#     buildUrl() routes to slug or global endpoint; scope-specific labels
+#     ("N readers tending the garden" / "you are the only one here").
+#   - PresenceBand.astro: new scope prop + data-scope attribute.
+#   - index.astro: homepage PresenceBand now hydrates with scope="global".
+#   - presence.css: slower breathing tempo for homepage compact band.
+#
+# Previous sprint:
 #   - Honest Presence System (in-process, zero external dependencies):
 #     presence-hub.ts: in-memory connection registry (Map<slug, Set<Connection>>),
 #       stale reaper (60s), keepalive pings (30s), revival broadcast.
@@ -25,7 +39,7 @@
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           SSE heartbeat (real-time revival pulses via EventSource),
-#           Honest Presence (live per-slug reader count, zero phantoms),
+#           Honest Presence (per-slug + global-scope reader count, zero phantoms),
 #           dynamic OG image generation (satori + resvg),
 #           anonymous session identity (sessionToken.ts),
 #           FirstBreath arrival choreography,

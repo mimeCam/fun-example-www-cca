@@ -13,14 +13,17 @@
 interface Props {
   /** When true, renders in compact mode for the homepage. */
   compact?: boolean;
+  /** Connection scope: "global" for homepage aggregate, "slug" for per-post. */
+  scope?: 'global' | 'slug';
 }
 
-const { compact = false } = Astro.props;
+const { compact = false, scope = 'slug' } = Astro.props;
 ---
 
 <div
   class:list={['presence-band', { 'presence-band--compact': compact }]}
   id="presence-band"
+  data-scope={scope}
   aria-live="polite"
   aria-atomic="true"
   role="status"

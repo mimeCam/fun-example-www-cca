@@ -21,6 +21,12 @@
   50% { opacity: 0.8; transform: scale(1.15); }
 }
 
+/* --- Homepage compact: slower, calmer breathing tempo --- */
+
+.presence-band--compact {
+  --presence-tempo: 4s;
+}
+
 /* --- Count FLIP transition --- */
 
 .presence-count.count-flip {

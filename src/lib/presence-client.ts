@@ -1,7 +1,11 @@
 // src/lib/presence-client.ts
-// Client IIFE — connects to /api/presence?slug=xxx for honest reader count.
+// Client IIFE — connects to /api/presence for honest reader count.
+// Supports two scopes via data-scope attribute on #presence-band:
+//   "slug"   → /api/presence?slug=xxx  (per-post, blog detail)
+//   "global" → /api/presence?scope=global (aggregate, homepage)
+//
 // Renders breathing dot + count in PresenceBand. Ripple on foreign revival.
-// No phantoms. count >= 2 shows "N readers". count < 2 shows nothing special.
+// No phantoms. Zero readers = zero. That's the point.
 //
 // Same injection pattern as decay-engine.ts / revival-engine.ts:
 // Server TS function returns inline <script> IIFE as string.
@@ -22,6 +26,20 @@ export function presenceClientScript(): string {
   function getSlug(){
     var m=location.pathname.match(/^\\/blog\\/([^\\/]+)/);
     return m?m[1]:null;
+  }
+
+  /* --- Scope detection from data attribute --- */
+  function getScope(){
+    var b=bandEl();
+    return b?b.getAttribute('data-scope')||'slug':'slug';
+  }
+
+  /* --- Build SSE URL based on scope --- */
+  function buildUrl(){
+    var scope=getScope();
+    if(scope==='global') return '/api/presence?scope=global';
+    var slug=getSlug();
+    return slug?'/api/presence?slug='+encodeURIComponent(slug):null;
   }
 
   /* --- DOM refs --- */
@@ -45,24 +63,40 @@ export function presenceClientScript(): string {
     el.classList.add('count-flip');
   }
 
-  /* --- Update text label --- */
+  /* --- Text labels per scope --- */
+  function slugLabel(n){
+    if(n>=2) return n+' readers keeping this alive';
+    if(n===1) return 'you are here';
+    return '';
+  }
+
+  function globalLabel(n){
+    if(n>=2) return n+' readers tending the garden';
+    if(n===1) return 'you are the only one here';
+    return 'listening\\u2026';
+  }
+
+  /* --- Update text label (scope-aware) --- */
   function updateLabel(n){
     var el=textEl();if(!el)return;
-    if(n>=2) el.textContent=n+' readers keeping this alive';
-    else if(n===1) el.textContent='you are here';
-    else el.textContent='';
+    var scope=getScope();
+    el.textContent=scope==='global'?globalLabel(n):slugLabel(n);
   }
 
   /* --- Show/hide breathing dot --- */
   function updateDot(n){
     var d=dotEl();if(!d)return;
-    d.style.display=n>=2?'inline-block':'none';
+    var scope=getScope();
+    var show=scope==='global'?n>=1:n>=2;
+    d.style.display=show?'inline-block':'none';
   }
 
   /* --- Show/hide the whole band --- */
   function updateBand(n){
     var b=bandEl();if(!b)return;
-    b.classList.toggle('presence-active',n>=1);
+    var scope=getScope();
+    var active=scope==='global'?n>=1:n>=1;
+    b.classList.toggle('presence-active',active);
   }
 
   /* --- Handle presence event --- */
@@ -92,12 +126,12 @@ export function presenceClientScript(): string {
     setTimeout(function(){b.classList.remove('presence-ripple')},RIPPLE);
   }
 
-  /* --- Connect SSE --- */
+  /* --- Connect SSE (scope-aware) --- */
   function connect(){
-    var slug=getSlug();
-    if(!slug||typeof EventSource==='undefined')return;
+    var url=buildUrl();
+    if(!url||typeof EventSource==='undefined')return;
     try{
-      es=new EventSource('/api/presence?slug='+encodeURIComponent(slug));
+      es=new EventSource(url);
       es.addEventListener('presence',onPresence);
       es.addEventListener('revival',onRevival);
       es.onerror=onError;
@@ -135,9 +169,13 @@ export function _testPresenceClient(): void {
   const s = presenceClientScript();
   const checks: [string, string][] = [
     ['presence-band', 'targets band'], ['presence-count', 'targets count'],
-    ['presence-dot', 'targets dot'], ['/api/presence?slug=', 'uses new endpoint'],
+    ['presence-dot', 'targets dot'], ['/api/presence?slug=', 'slug endpoint'],
+    ['/api/presence?scope=global', 'global endpoint'],
+    ['data-scope', 'reads scope attribute'],
     ['presence-ripple', 'ripple class'], ['prefers-reduced-motion', 'a11y'],
     ["'presence'", 'listens presence'], ["'revival'", 'listens revival'],
+    ['tending the garden', 'global label plural'],
+    ['you are the only one here', 'global label solo'],
   ];
   checks.forEach(([tok, lbl]) => check(s, tok, lbl));
   console.assert(!s.includes('__hbES'), 'no legacy EventSource sharing');

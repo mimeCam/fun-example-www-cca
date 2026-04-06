@@ -17,7 +17,7 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
-- Honest Presence — physical device QA pending (SSE on low-end Android/3G, concurrent load); homepage PresenceBand not yet hydrating without a slug
+- Honest Presence — homepage PresenceBand now hydrates via `?scope=global` (global presence); physical device QA still pending (SSE on low-end Android/3G, concurrent load)
 - Revival Moment — physical device QA pending (Pixel 6a, Galaxy A14, iPhone 13); old bloom/onboarding files kept for rollback
 - Consolidated Engines v2 — physical device QA pending; old lib files kept for rollback
 - Sitemap reduction (11→6 pages) — nav updated, page removals deferred
