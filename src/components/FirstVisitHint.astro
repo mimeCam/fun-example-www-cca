@@ -30,7 +30,7 @@ const quietScript = quietModeScript();
 <style>
   .fvh {
     position: fixed;
-    bottom: 2rem;
+    bottom: calc(2rem + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     z-index: 20;

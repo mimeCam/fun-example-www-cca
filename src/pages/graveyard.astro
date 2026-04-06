@@ -4,22 +4,42 @@
 // Visual inverse of the homepage: dark, monochrome, stripped bare.
 // No fog overlay, no bloom, no spectacle — the absence IS the atmosphere.
 // Resurrection requires deliberate action (click, not hover).
+//
+// SSR: reads ?page= query param for pagination (P1 fix).
+// Mood: locked to GRAVEYARD_MOOD (jazz) — cool, respectful, unhurried (P2 fix).
+//
+// Credits: Mike (architecture — pagination + entombed_at migration),
+//          Tanya (UX spec §4 — Graveyard layout, entombed_at display)
+
+export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TombstoneCard from '../components/TombstoneCard.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { getResurrectionRate, getTotalReadingSecondsEntombed } from '../lib/graveyardStats';
-// resurrectClientScript removed — now included in revivalEngineScript (BaseLayout)
+
+const PAGE_SIZE = 20;
+
+const pageParam = Astro.url.searchParams.get('page');
+const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
 
 const posts = await getCollection('blog');
 const all = allPostDisplayData(posts);
 const entombed = all.filter(p => p.entombed);
 const livingCount = all.length - entombed.length;
+const totalPages = Math.max(1, Math.ceil(entombed.length / PAGE_SIZE));
+const safePage = Math.min(currentPage, totalPages);
+
+const offset = (safePage - 1) * PAGE_SIZE;
+const pageEntombed = entombed.slice(offset, offset + PAGE_SIZE);
+
 const resurrectionRate = getResurrectionRate(all);
 const totalReadingSeconds = getTotalReadingSecondsEntombed(all);
 const totalReadingMins = Math.round(totalReadingSeconds / 60);
 const ratePercent = Math.round(resurrectionRate * 100);
+const hasPrev = safePage > 1;
+const hasNext = safePage < totalPages;
 ---
 
 <BaseLayout title="Graveyard — Posts Lost to Time">
@@ -35,28 +55,46 @@ const ratePercent = Math.round(resurrectionRate * 100);
 
       {entombed.length > 0 && (
         <dl class="graveyard-stats">
+          <div class="graveyard-stat">
+            <dt>posts entombed</dt>
+            <dd>{entombed.length}</dd>
+          </div>
           {totalReadingMins > 0 && (
-            <>
-              <div class="graveyard-stat">
-                <dt>read but forgotten</dt>
-                <dd>{totalReadingMins} min of reading left behind</dd>
-              </div>
-            </>
+            <div class="graveyard-stat">
+              <dt>read but forgotten</dt>
+              <dd>{totalReadingMins} min</dd>
+            </div>
           )}
           {resurrectionRate > 0 && (
             <div class="graveyard-stat">
               <dt>resurrection rate</dt>
-              <dd>{ratePercent}% risen recently</dd>
+              <dd>{ratePercent}%</dd>
             </div>
           )}
         </dl>
       )}
     </header>
 
-    {entombed.length > 0 && (
+    {pageEntombed.length > 0 && (
       <section class="tombs" aria-label="Entombed posts">
-        {entombed.map(post => <TombstoneCard post={post} />)}
+        {pageEntombed.map(post => <TombstoneCard post={post} />)}
       </section>
+    )}
+
+    {totalPages > 1 && (
+      <nav class="graveyard-pages" aria-label="Graveyard pagination">
+        {hasPrev && (
+          <a href={`/graveyard?page=${safePage - 1}`} class="page-link page-link--prev">
+            &larr; newer graves
+          </a>
+        )}
+        <span class="page-count">{safePage} / {totalPages}</span>
+        {hasNext && (
+          <a href={`/graveyard?page=${safePage + 1}`} class="page-link page-link--next">
+            older graves &rarr;
+          </a>
+        )}
+      </nav>
     )}
 
     {entombed.length > 0 && livingCount > 0 && (
@@ -104,22 +142,23 @@ const ratePercent = Math.round(resurrectionRate * 100);
     margin: 0;
   }
 
-  /* Per-graveyard aggregate stats — quiet data, not a dashboard */
+  /* Three-figure stats row — quiet data, not a dashboard */
   .graveyard-stats {
     display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
     margin: 1.25rem auto 0;
-    max-width: 26rem;
+    max-width: 32rem;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     padding-top: 0.85rem;
   }
 
   .graveyard-stat {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
     font-size: 0.65rem;
     letter-spacing: 0.04em;
   }
@@ -133,11 +172,40 @@ const ratePercent = Math.round(resurrectionRate * 100);
   .graveyard-stat dd {
     margin: 0;
     font-style: italic;
-    opacity: 0.35;
+    opacity: 0.45;
+    font-size: 0.9rem;
   }
 
   .tombs {
     margin-bottom: 2rem;
+  }
+
+  /* Pagination — restrained; page numbers are ceremony, not chrome */
+  .graveyard-pages {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 1.5rem 0 2rem;
+  }
+
+  .page-link {
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.35;
+    color: inherit;
+    text-decoration: none;
+    transition: opacity 200ms ease;
+  }
+
+  .page-link:hover { opacity: 0.65; }
+
+  .page-count {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    opacity: 0.2;
+    text-transform: uppercase;
   }
 
   .graveyard-footer {
@@ -154,7 +222,5 @@ const ratePercent = Math.round(resurrectionRate * 100);
     transition: opacity 200ms ease;
   }
 
-  .back-link:hover {
-    opacity: 0.6;
-  }
+  .back-link:hover { opacity: 0.6; }
 </style>

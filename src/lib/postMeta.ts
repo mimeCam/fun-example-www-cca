@@ -10,7 +10,7 @@ import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
 import { decayFactor, freshnessTag, decayStyleString, revivalBonus } from './decay-engine';
 import type { FreshnessTag } from './decay-engine';
-import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds } from './collectiveMemory';
+import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost } from './collectiveMemory';
 import { isEntombed, isRecentlyRisen } from './entomb';
 import { isEndangered, urgencyLevel, daysUntilEntomb } from './endangered';
 import type { UrgencyLevel } from './endangered';
@@ -64,6 +64,7 @@ export interface PostDisplayData extends PostMeta {
   revivalWarm: boolean;
   readingSeconds: number;
   entombed: boolean;
+  entombedAt: Date | null;  // ISO timestamp from DB; null until first entombment is recorded
   endangered: boolean;
   endangeredUrgency: UrgencyLevel;
   endangeredDaysLeft: number;
@@ -83,6 +84,7 @@ export function getPostDisplayData(
   revivals = 0,
   risenAt: Date | null = null,
   readingSeconds = 0,
+  entombedAt: Date | null = null,
 ): PostDisplayData {
   const meta = extractMeta(post);
   const maxDays = resolveMaxDays();
@@ -100,6 +102,7 @@ export function getPostDisplayData(
     revivalWarm: warm,
     readingSeconds,
     entombed,
+    entombedAt,
     endangered,
     endangeredUrgency: urgencyLevel(factor),
     endangeredDaysLeft: daysUntilEntomb(factor),
@@ -123,15 +126,33 @@ export function allPostDisplayData(
   const counts = safeRevivalCounts();
   const risen = safeRisenTimestamps();
   const reading = safeReadingSeconds();
+  const tombedAt = safeEntombedTimestamps();
   const sorted = [...posts].sort(byNewest);
-  return sorted.map(p =>
+  const result = sorted.map(p =>
     getPostDisplayData(
       p, now,
       counts.get(p.slug) ?? 0,
       risen.get(p.slug) ?? null,
       reading.get(p.slug) ?? 0,
+      tombedAt.get(p.slug) ?? null,
     ),
   );
+  recordNewlyEntombed(result, now);
+  return result;
+}
+
+/**
+ * For any post newly detected as entombed (no DB timestamp yet),
+ * record today as entombed_at and patch the in-memory object.
+ * Idempotent: entombPost() uses COALESCE — safe to call repeatedly.
+ */
+function recordNewlyEntombed(posts: PostDisplayData[], now: Date): void {
+  for (const p of posts) {
+    if (p.entombed && !p.entombedAt) {
+      safeEntombPost(p.slug, now);
+      p.entombedAt = now;
+    }
+  }
 }
 
 /** Graceful fallback: returns empty map if DB unavailable (e.g. SSG build). */
@@ -150,6 +171,18 @@ function safeRisenTimestamps(): Map<string, Date> {
 function safeReadingSeconds(): Map<string, number> {
   try { return getAllReadingSeconds(); }
   catch { return new Map(); }
+}
+
+/** Graceful fallback for entombed_at timestamps. */
+function safeEntombedTimestamps(): Map<string, Date> {
+  try { return getEntombedTimestamps(); }
+  catch { return new Map(); }
+}
+
+/** Graceful write: record entombment; swallows errors during SSG builds. */
+function safeEntombPost(slug: string, now: Date): void {
+  try { entombPost(slug, now); }
+  catch { /* DB unavailable at build time — skip silently */ }
 }
 
 // ---------------------------------------------------------------------------

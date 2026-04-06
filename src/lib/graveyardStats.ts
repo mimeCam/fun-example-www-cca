@@ -1,11 +1,10 @@
 // src/lib/graveyardStats.ts
 // Pure stats functions for the Graveyard Discovery Surface.
-// Derives entombment data from PostDisplayData — no new DB tables needed.
 // Callers join DB revival data with the content collection at page level,
 // then pass PostDisplayData[] here. All functions are stateless + testable.
 //
-// Note: cannot store entombed_at in DB yet (no migration) — derive from
-// pubDate + decay threshold per Mike's architecture spec.
+// entombed_at is now stored in the DB via collectiveMemory.entombPost()
+// and surfaced on PostDisplayData.entombedAt — no more pubDate approximation.
 //
 // Credits: Mike (architecture spec — Graveyard Discovery Surface, napkin plan)
 
@@ -19,6 +18,7 @@ export interface EntombedPost {
   slug: string;
   title: string;
   pubDateISO: string;
+  entombedAt: Date | null;   // actual entombment timestamp from DB (null = not yet recorded)
   revivalCount: number;
   readingSeconds: number;
 }
@@ -81,6 +81,7 @@ function toEntombed(p: PostDisplayData): EntombedPost {
     slug: p.slug,
     title: p.title,
     pubDateISO: p.pubDateISO,
+    entombedAt: p.entombedAt,
     revivalCount: p.revivalCount,
     readingSeconds: p.readingSeconds,
   };
@@ -95,7 +96,7 @@ export function _testGraveyardStats(): void {
     description: '', url: '', pubDate: new Date('2024-01-01'), readingTime: 1,
     decay: 0, freshness: 'fossil' as const, decayStyle: '', revivalWarm: false,
     endangered: false, endangeredUrgency: 'ok' as const, endangeredDaysLeft: 999,
-    risenAt: null,
+    risenAt: null, entombedAt: null,
   };
 
   const entombedPost: PostDisplayData = {

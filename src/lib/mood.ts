@@ -69,7 +69,18 @@ export const MOODS: Record<MoodId, MoodDefinition> = {
 };
 
 // ---------------------------------------------------------------------------
-// Public API — three functions, zero side-effects
+// Graveyard constants — locked palette, no cycling (P2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fixed mood for /graveyard.  Jazz is deep, respectful, unhurried —
+ * the right register for grief.  Never warm, never cozy.
+ * Warm moods (lo-fi) belong to the living feed; graveyard stays cool.
+ */
+export const GRAVEYARD_MOOD: MoodId = 'jazz';
+
+// ---------------------------------------------------------------------------
+// Public API — five functions, zero side-effects
 // ---------------------------------------------------------------------------
 
 /** Resolves a mood ID string to its definition; falls back to 'default'. */
@@ -100,6 +111,11 @@ export function moodToCSSString(vars: CSSMoodVars): string {
 /** Returns non-default mood IDs for UI pill rendering. */
 export function activeMoodIds(): MoodId[] {
   return (Object.keys(MOODS) as MoodId[]).filter(id => id !== 'default');
+}
+
+/** Returns only warm-temperature mood IDs (safe for the living feed). */
+export function warmMoodIds(): MoodId[] {
+  return (Object.keys(MOODS) as MoodId[]).filter(id => MOODS[id].temperature === 'warm');
 }
 
 /** Generates global CSS rules that wire radio :checked state to ambient + pill visuals. */

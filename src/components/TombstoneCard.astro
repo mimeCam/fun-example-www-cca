@@ -2,17 +2,20 @@
 // src/components/TombstoneCard.astro
 // Ghost card for the /graveyard page. Monochrome, low-opacity, faint border.
 // No hover-revival — resurrection requires a deliberate click.
-// Shows epitaph: title, publication date, entombment age ("days forgotten").
+// Shows epitaph: title, publication date, entombment date + days forgotten.
 
-import { entombmentAge } from '../lib/entomb';
 import { formatPubDate } from '../lib/dates';
+import { daysSince } from '../lib/temporal';
 import type { PostDisplayData } from '../lib/postMeta';
 
 interface Props { post: PostDisplayData; }
 
 const { post } = Astro.props;
 const formattedDate = formatPubDate(post.pubDate);
-const forgotten = entombmentAge(post.pubDateISO, 365);
+const entombDate = post.entombedAt ? formatPubDate(post.entombedAt) : null;
+const forgotten = post.entombedAt
+  ? daysSince(post.entombedAt.toISOString())
+  : daysSince(post.pubDateISO);           // fallback: age from publish date
 const daysLabel = forgotten === 1 ? 'day' : 'days';
 const readingMins = Math.round(post.readingSeconds / 60);
 const hasStats = post.revivalCount > 0 || readingMins > 0;
@@ -49,7 +52,10 @@ const hasStats = post.revivalCount > 0 || readingMins > 0;
 
   <div class="tomb-footer">
     <span class="tomb-forgotten">
-      {forgotten} {daysLabel} forgotten
+      {entombDate
+        ? <>Entombed {entombDate} &middot; forgotten {forgotten} {daysLabel}</>
+        : <>{forgotten} {daysLabel} forgotten</>
+      }
     </span>
     <button
       class="resurrect-btn"

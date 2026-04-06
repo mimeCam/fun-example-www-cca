@@ -26,8 +26,11 @@ import { getEntombedCount, getNewestEntombed } from '../lib/graveyardStats';
 
 const posts = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
-const bands = groupIntoBands(displayPosts);
 const endangered = displayPosts.filter(p => p.endangered);
+// Tanya P0: endangered posts must not appear in main feed bands — absence = drama.
+// groupIntoBands already excludes entombed; we also exclude endangered here.
+const feedPosts = displayPosts.filter(p => !p.endangered);
+const bands = groupIntoBands(feedPosts);
 const entombedCount = getEntombedCount(displayPosts);
 const newestEntombed = getNewestEntombed(displayPosts);
 const allEntombed = displayPosts.every(p => p.entombed);

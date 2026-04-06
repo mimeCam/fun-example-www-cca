@@ -51,6 +51,7 @@ function initTables(d: Database.Database): void {
   migrateRisenAt(d);
   migrateGuardTables(d);
   migrateReadingSessions(d);
+  migrateEntombedAt(d);
 }
 
 /**
@@ -66,6 +67,14 @@ function migrateReadingSessions(d: Database.Database): void {
     session_slug TEXT PRIMARY KEY,
     last_at      INTEGER NOT NULL
   );`);
+}
+
+/** Add entombed_at column if missing (safe to run repeatedly). */
+function migrateEntombedAt(d: Database.Database): void {
+  const cols = d.prepare("PRAGMA table_info('revivals')").all() as Array<{ name: string }>;
+  if (!cols.some(c => c.name === 'entombed_at')) {
+    d.exec("ALTER TABLE revivals ADD COLUMN entombed_at TEXT DEFAULT NULL");
+  }
 }
 
 /** Add risen_at column if missing (safe to run repeatedly). */
@@ -170,6 +179,32 @@ export function getLastRevivalAt(slug: string): Date | null {
     .get(slug) as { risen_at: string | null } | undefined;
   if (!row?.risen_at) return null;
   return new Date(row.risen_at);
+}
+
+// ---------------------------------------------------------------------------
+// Entombment — record when a post first crosses the decay threshold
+// ---------------------------------------------------------------------------
+
+/**
+ * Record the first entombment timestamp for a slug.
+ * Idempotent: COALESCE guarantees existing entombed_at is never overwritten.
+ */
+export function entombPost(slug: string, now = new Date()): void {
+  const iso = now.toISOString();
+  db().prepare(`
+    INSERT INTO revivals (slug, entombed_at) VALUES (?, ?)
+    ON CONFLICT(slug) DO UPDATE SET entombed_at = COALESCE(entombed_at, ?)
+  `).run(slug, iso, iso);
+}
+
+/** Batch-read all entombed_at timestamps (one query for graveyard page). */
+export function getEntombedTimestamps(): Map<string, Date> {
+  const rows = db()
+    .prepare('SELECT slug, entombed_at FROM revivals WHERE entombed_at IS NOT NULL')
+    .all() as Array<{ slug: string; entombed_at: string }>;
+  const map = new Map<string, Date>();
+  for (const r of rows) map.set(r.slug, new Date(r.entombed_at));
+  return map;
 }
 
 // ---------------------------------------------------------------------------
