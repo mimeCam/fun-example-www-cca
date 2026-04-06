@@ -1,8 +1,12 @@
 ---
 // src/components/TombstoneCard.astro
-// Ghost card for the /graveyard page. Monochrome, low-opacity, faint border.
-// No hover-revival — resurrection requires a deliberate click.
-// Shows epitaph: title, publication date, entombment date + days forgotten.
+// Epitaph card for the /graveyard page.
+// Layout: "HERE LIES · title · description · Born/Faded · stats · resurrect"
+// Monochrome locked via --color-grave-* tokens, not CSS opacity on the element.
+// Resurrection requires a deliberate click — no hover-revival (Mike, Tanya §3.3).
+//
+// WARNING: Do NOT merge with DecayCard. Different visual contracts. — Mike
+// Credits: Mike (epitaph layout spec), Tanya (UX spec §3.3, §3.5, §6.2)
 
 import { formatPubDate } from '../lib/dates';
 import { daysSince } from '../lib/temporal';
@@ -11,181 +15,203 @@ import type { PostDisplayData } from '../lib/postMeta';
 interface Props { post: PostDisplayData; }
 
 const { post } = Astro.props;
-const formattedDate = formatPubDate(post.pubDate);
-const entombDate = post.entombedAt ? formatPubDate(post.entombedAt) : null;
-const forgotten = post.entombedAt
-  ? daysSince(post.entombedAt.toISOString())
-  : daysSince(post.pubDateISO);           // fallback: age from publish date
-const daysLabel = forgotten === 1 ? 'day' : 'days';
-const readingMins = Math.round(post.readingSeconds / 60);
-const hasStats = post.revivalCount > 0 || readingMins > 0;
+
+const formattedPubDate  = formatPubDate(post.pubDate);
+const entombDate        = post.entombedAt ? formatPubDate(post.entombedAt) : null;
+const forgotten         = forgottenDays(post);
+const daysLabel         = forgotten === 1 ? 'day' : 'days';
+const readingMins       = Math.round(post.readingSeconds / 60);
+const statsProse        = buildStatsProse(post.revivalCount, readingMins);
+
+/** Days since entombment, falling back to days since publish. */
+function forgottenDays(p: PostDisplayData): number {
+  return p.entombedAt
+    ? daysSince(p.entombedAt.toISOString())
+    : daysSince(p.pubDateISO);
+}
+
+/** Prose-style stat line: "remembered by 3 readers · 4 min held alive" */
+function buildStatsProse(revivals: number, mins: number): string {
+  const parts: string[] = [];
+  if (revivals > 0) parts.push(`remembered by ${revivals} ${revivals === 1 ? 'reader' : 'readers'}`);
+  if (mins > 0)     parts.push(`${mins} min held alive`);
+  return parts.join(' · ');
+}
 ---
 
 <article
-  class="tombstone"
+  class="tombstone tombstone-card"
   data-slug={post.slug}
   aria-label={`${post.title} — forgotten ${forgotten} ${daysLabel}`}
 >
-  <time datetime={post.pubDateISO} class="tomb-date">
-    {formattedDate}
-  </time>
-  <h2 class="tomb-title">{post.title}</h2>
-  {post.description && (
-    <p class="tomb-epitaph">{post.description}</p>
-  )}
-  {hasStats && (
-    <dl class="tomb-stats" aria-label="Post history">
-      {post.revivalCount > 0 && (
-        <div class="tomb-stat">
-          <dt>revived</dt>
-          <dd>{post.revivalCount}×</dd>
+  <div class="tombstone-inner">
+
+    <span class="tomb-here-lies">here lies</span>
+
+    <h2 class="tomb-title">{post.title}</h2>
+
+    {post.description && (
+      <p class="tomb-epitaph">&#8220;{post.description}&#8221;</p>
+    )}
+
+    <dl class="tomb-dates">
+      <div class="tomb-date-row">
+        <dt>born</dt>
+        <dd><time datetime={post.pubDateISO}>{formattedPubDate}</time></dd>
+      </div>
+      {entombDate && (
+        <div class="tomb-date-row">
+          <dt>faded</dt>
+          <dd>{entombDate} · forgotten {forgotten} {daysLabel}</dd>
         </div>
       )}
-      {readingMins > 0 && (
-        <div class="tomb-stat">
-          <dt>read for</dt>
-          <dd>{readingMins} min</dd>
+      {!entombDate && (
+        <div class="tomb-date-row">
+          <dt>lost</dt>
+          <dd>forgotten {forgotten} {daysLabel}</dd>
         </div>
       )}
     </dl>
-  )}
 
-  <div class="tomb-footer">
-    <span class="tomb-forgotten">
-      {entombDate
-        ? <>Entombed {entombDate} &middot; forgotten {forgotten} {daysLabel}</>
-        : <>{forgotten} {daysLabel} forgotten</>
-      }
-    </span>
-    <button
-      class="resurrect-btn"
-      data-resurrect-slug={post.slug}
-      aria-label={`Resurrect "${post.title}"`}
-    >
-      &#x2191; resurrect
-    </button>
+    {statsProse && (
+      <p class="tomb-stats-prose">{statsProse}</p>
+    )}
+
+    <div class="tomb-footer">
+      <button
+        class="resurrect-btn"
+        data-resurrect-slug={post.slug}
+        aria-label={`Resurrect "${post.title}"`}
+      >
+        ↑ breathe life back
+      </button>
+    </div>
+
   </div>
 </article>
 
 <style>
+  /* Card shell: stone-like — angular radius, inset shadow, surface colour */
   .tombstone {
-    position: relative;
-    padding: 1.5rem 1.75rem;
-    border-radius: var(--radius, 12px);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(150, 150, 150, 0.08);
-    max-width: 40rem;
-    margin: 0 auto 1.25rem;
-    opacity: 0.45;
-    filter: saturate(0);
-    transition: opacity 0.4s ease, filter 0.4s ease;
+    background: var(--color-grave-surface);
+    border: 1px solid var(--color-grave-border);
+    border-radius: var(--radius-grave, 6px);
+    box-shadow: var(--shadow-grave-card);
+    padding: 20px 24px;
   }
 
-  .tombstone:hover {
-    opacity: 0.6;
-    filter: saturate(0.2);
-  }
-
-  .tomb-date {
-    display: block;
-    font-size: 0.68rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    opacity: 0.5;
-    margin-bottom: 0.25rem;
-  }
-
-  .tomb-title {
-    margin: 0 0 0.5rem;
-    font-size: 1.15rem;
-    font-weight: 500;
-    line-height: 1.3;
-    color: rgba(180, 180, 180, 0.7);
-  }
-
-  .tomb-epitaph {
-    margin: 0.4rem 0 0;
-    font-size: 0.82rem;
-    line-height: 1.5;
-    opacity: 0.4;
-    font-style: italic;
-  }
-
-  /* History stats — data the post carried when it died */
-  .tomb-stats {
+  /* Inner wrapper carries the breathing animation from graveyard.css */
+  .tombstone-inner {
     display: flex;
-    gap: 1.25rem;
-    margin: 0.75rem 0 0;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* "here lies" — tiny label above the title, like a headstone inscription cap */
+  .tomb-here-lies {
+    display: block;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-grave-ghost);
+    margin-bottom: 0.1rem;
+  }
+
+  /* Engraved text illusion: layered text-shadow — Mike §1 */
+  .tomb-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-grave-text);
+    text-wrap: balance;
+    text-shadow:
+      0  1px 0 oklch(8%  0.01 50),
+      0 -1px 0 oklch(30% 0.01 50);
+  }
+
+  /* Description as italic epitaph — quoted, muted */
+  .tomb-epitaph {
+    margin: 0;
+    font-size: 0.88rem;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--color-grave-ghost);
+  }
+
+  /* Born / Faded dates — quiet, horizontal, prose-like */
+  .tomb-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin: 0.35rem 0 0;
     padding: 0;
   }
 
-  .tomb-stat {
+  .tomb-date-row {
     display: flex;
-    gap: 0.3rem;
+    gap: 0.4rem;
     align-items: baseline;
-    font-size: 0.62rem;
-    letter-spacing: 0.04em;
-    opacity: 0.3;
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    color: var(--color-grave-ghost);
   }
 
-  .tomb-stat dt {
+  .tomb-date-row dt {
     text-transform: uppercase;
+    letter-spacing: 0.08em;
     font-weight: 400;
+    font-size: 0.6rem;
+    flex-shrink: 0;
   }
 
-  .tomb-stat dd {
-    margin: 0;
-    font-style: italic;
+  .tomb-date-row dd { margin: 0; }
+
+  /* Prose stat line: "remembered by 3 readers · 4 min held alive" */
+  .tomb-stats-prose {
+    margin: 0.25rem 0 0;
+    font-size: 0.68rem;
+    color: var(--color-grave-ghost);
+    letter-spacing: 0.02em;
   }
 
+  /* Footer: resurrect affordance — right-aligned, text-only — Tanya §3.3 */
   .tomb-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 1rem;
-    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 0.85rem;
   }
 
-  .tomb-forgotten {
-    font-size: 0.65rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    opacity: 0.4;
-  }
-
+  /* Text-only resurrect: no border, no background, no hover box — Tanya §3.3 */
   .resurrect-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.3rem 0.75rem;
-    font-size: 0.65rem;
-    font-family: inherit;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: rgba(200, 200, 200, 0.7);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(200, 200, 200, 0.15);
-    border-radius: 999px;
+    /* Reset button chrome */
+    appearance: none;
+    background: none;
+    border: none;
     cursor: pointer;
-    transition:
-      border-color 200ms ease,
-      background 300ms ease,
-      opacity 400ms ease,
-      transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-family: inherit;
+
+    /* Text styling */
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--color-grave-ghost);
+    transition: color 200ms ease;
+
+    /* Invisible padding: 44px tap target without visual weight — Tanya §6.2 */
+    padding: 14px 0 14px 1rem;
   }
 
-  .resurrect-btn:hover {
-    border-color: rgba(200, 200, 200, 0.35);
-    background: rgba(255, 255, 255, 0.08);
+  .resurrect-btn:hover,
+  .resurrect-btn:focus-visible {
+    color: var(--mood-accent, oklch(72% 0.12 65));
+    outline: none;
   }
 
-  .resurrect-btn:active {
-    transform: scale(0.96);
-  }
-
+  /* Risen state: amber text, no pointer — JS applies this class */
   .resurrect-btn.risen {
-    opacity: 0.4;
+    color: var(--mood-accent, oklch(72% 0.12 65));
     cursor: default;
     pointer-events: none;
+    opacity: 0.85;
   }
 </style>

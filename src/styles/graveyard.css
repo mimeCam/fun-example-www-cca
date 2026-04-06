@@ -1,0 +1,150 @@
+/* src/styles/graveyard.css
+   Atmospheric layer — /graveyard page only.
+   Import in graveyard.astro frontmatter; do NOT load via BaseLayout.
+   Load order: global.css → decay.css → graveyard.css
+
+   Credits: Mike (architecture), Tanya (UX spec §3), DevBrain (webkit.org,
+            lyra.horse — scroll-driven animations, @starting-style, @property)
+*/
+
+/* ── Animatable custom property: candlelight flame position ────── */
+@property --flame-y {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 60%;
+}
+
+/* ── Graveyard design tokens ─────────────────────────────────────
+   OKLCH gives perceptually-uniform colour across OLED + IPS displays.
+   Pure black causes halation; warm charcoal (14%) does not. — Tanya §1.1
+*/
+:root {
+  --color-grave-bg:      oklch(14% 0.015 50);
+  --color-grave-surface: oklch(19% 0.012 50);
+  --color-grave-border:  oklch(28% 0.010 50);
+  --color-grave-text:    oklch(65% 0.008 50);
+  --color-grave-ghost:   oklch(40% 0.006 50);
+  --radius-grave: 6px;
+
+  /* Inset shadow: sunken/buried feeling. — Tanya §1.2 */
+  --shadow-grave-card:
+    inset 0 1px 0 oklch(28% 0.01 50 / 0.6),
+    0 2px 8px oklch(8% 0.01 50 / 0.4);
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────── */
+
+/* Tombstones rise from bottom as they enter the viewport */
+@keyframes rise-from-ground {
+  from { opacity: 0; transform: translateY(2rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Near-imperceptible chest-barely-rising breathing — Tanya §3.4 */
+@keyframes breathe {
+  0%, 100% { opacity: 0.97; }
+  50%       { opacity: 1.00; }
+}
+
+/* Candlelight: animates --flame-y for smooth radial interpolation */
+@keyframes flicker {
+  0%, 100% { --flame-y: 60%; }
+  33%       { --flame-y: 57%; }
+  66%       { --flame-y: 63%; }
+}
+
+/* Title warms briefly on resurrection, returns to resting — Tanya §3.5 */
+@keyframes warm-title {
+  0%   { color: var(--color-grave-text); }
+  40%  { color: var(--mood-accent, oklch(72% 0.12 65)); }
+  100% { color: var(--color-grave-text); }
+}
+
+/* Single quiet bloom ring — no particle burst, graveyard is silent — Tanya §3.5 */
+@keyframes bloom-ring-once {
+  0%   { box-shadow: var(--shadow-grave-card), 0 0 0 0 oklch(72% 0.12 65 / 0.35); }
+  100% { box-shadow: var(--shadow-grave-card), 0 0 0 20px oklch(72% 0.12 65 / 0); }
+}
+
+/* ── Page: dark warm charcoal background ─────────────────────────── */
+.graveyard-page {
+  background: var(--color-grave-bg);
+  color: var(--color-grave-text);
+  min-height: 100vh;
+}
+
+/* ── Tombstone grid: 2-column on desktop — Tanya §3.3 ───────────── */
+.tombs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .tombs { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Tombstone card: scroll-driven entrance — Mike §2, DevBrain ─── */
+.tombstone-card {
+  animation: rise-from-ground linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 40%;
+}
+
+/* Browsers without scroll-driven animation support */
+@supports not (animation-timeline: view()) {
+  .tombstone-card { animation: none; opacity: 1; }
+}
+
+/* ── Inner wrapper: breathing — separate layer from scroll anim ── */
+.tombstone-inner {
+  animation: breathe 8s ease-in-out infinite;
+}
+
+/* Stagger so cards don't all breathe in sync */
+.tombstone-card:nth-child(2n)  .tombstone-inner { animation-delay: -2s; }
+.tombstone-card:nth-child(3n)  .tombstone-inner { animation-delay: -4s; }
+.tombstone-card:nth-child(4n)  .tombstone-inner { animation-delay: -6s; }
+.tombstone-card:nth-child(5n)  .tombstone-inner { animation-delay: -8s; }
+
+/* ── Resurrection visual response — Tanya §3.5 ───────────────────── */
+
+/* CSS :has() triggers warm glow when JS applies .risen to the button */
+.tombstone-card:has(.resurrect-btn.risen) {
+  animation: bloom-ring-once 0.8s ease-out forwards;
+}
+
+.tombstone-card:has(.resurrect-btn.risen) .tomb-title {
+  animation: warm-title 1.2s ease-out forwards;
+}
+
+/* ── Candlelight footer ambient — Mike §5, @property enables smooth ─ */
+.graveyard-footer {
+  position: relative;
+  isolation: isolate;
+}
+
+.graveyard-footer::before {
+  content: '';
+  position: absolute;
+  inset: -4rem -6rem 0;
+  background: radial-gradient(
+    ellipse at center var(--flame-y),
+    oklch(35% 0.08 50 / 0.12),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+  animation: flicker 4s ease-in-out infinite;
+}
+
+/* ── Reduced motion: skip all animations — Mike §2, Tanya §3.4 ──── */
+@media (prefers-reduced-motion: reduce) {
+  .tombstone-card          { animation: none !important; opacity: 1; }
+  .tombstone-inner         { animation: none !important; opacity: 0.98; }
+  .graveyard-footer::before { animation: none !important; }
+
+  .tombstone-card:has(.resurrect-btn.risen)            { animation: none !important; }
+  .tombstone-card:has(.resurrect-btn.risen) .tomb-title { animation: none !important; }
+}

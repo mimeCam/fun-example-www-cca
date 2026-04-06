@@ -1,226 +1,206 @@
 ---
 // src/pages/graveyard.astro
 // The Graveyard — posts that reached full decay with zero recent revivals.
-// Visual inverse of the homepage: dark, monochrome, stripped bare.
-// No fog overlay, no bloom, no spectacle — the absence IS the atmosphere.
-// Resurrection requires deliberate action (click, not hover).
+// Emotional climax of the product. Dark warm charcoal. Stats carved like epitaphs.
+// No fog, no bloom, no spectacle — the absence IS the atmosphere.
 //
-// SSR: reads ?page= query param for pagination (P1 fix).
-// Mood: locked to GRAVEYARD_MOOD (jazz) — cool, respectful, unhurried (P2 fix).
+// SSR: reads ?page= query param for pagination.
+// graveyard.css imported here only — do not pollute global styles.
 //
-// Credits: Mike (architecture — pagination + entombed_at migration),
-//          Tanya (UX spec §4 — Graveyard layout, entombed_at display)
+// Credits: Mike (architecture — pagination, napkin plan),
+//          Tanya (UX spec §3 — epitaph stats, 2-col grid, dark charcoal)
 
 export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TombstoneCard from '../components/TombstoneCard.astro';
+import GraveyardEmptyState from '../components/GraveyardEmptyState.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { getResurrectionRate, getTotalReadingSecondsEntombed } from '../lib/graveyardStats';
+import '../styles/graveyard.css';
 
 const PAGE_SIZE = 20;
 
-const pageParam = Astro.url.searchParams.get('page');
+const pageParam  = Astro.url.searchParams.get('page');
 const currentPage = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
 
-const posts = await getCollection('blog');
-const all = allPostDisplayData(posts);
-const entombed = all.filter(p => p.entombed);
+const posts       = await getCollection('blog');
+const all         = allPostDisplayData(posts);
+const entombed    = all.filter(p => p.entombed);
 const livingCount = all.length - entombed.length;
-const totalPages = Math.max(1, Math.ceil(entombed.length / PAGE_SIZE));
-const safePage = Math.min(currentPage, totalPages);
+const totalPages  = Math.max(1, Math.ceil(entombed.length / PAGE_SIZE));
+const safePage    = Math.min(currentPage, totalPages);
 
-const offset = (safePage - 1) * PAGE_SIZE;
+const offset       = (safePage - 1) * PAGE_SIZE;
 const pageEntombed = entombed.slice(offset, offset + PAGE_SIZE);
 
-const resurrectionRate = getResurrectionRate(all);
+const resurrectionRate   = getResurrectionRate(all);
 const totalReadingSeconds = getTotalReadingSecondsEntombed(all);
-const totalReadingMins = Math.round(totalReadingSeconds / 60);
-const ratePercent = Math.round(resurrectionRate * 100);
+const totalReadingMins   = Math.round(totalReadingSeconds / 60);
+const broughtBack        = Math.round(resurrectionRate * entombed.length);
+
 const hasPrev = safePage > 1;
 const hasNext = safePage < totalPages;
 ---
 
 <BaseLayout title="Graveyard — Posts Lost to Time">
-  <!-- Resurrect handler now in revivalEngineScript (BaseLayout) -->
-  <main class="graveyard">
-    <header class="graveyard-header">
-      <h1 class="graveyard-title">Graveyard</h1>
-      <p class="graveyard-subtitle">
-        {entombed.length === 0
-          ? 'Nothing here yet. All posts are still alive.'
-          : `${entombed.length} ${entombed.length === 1 ? 'post' : 'posts'} lost to time.`}
-      </p>
+  <main class="graveyard graveyard-page">
 
-      {entombed.length > 0 && (
-        <dl class="graveyard-stats">
-          <div class="graveyard-stat">
-            <dt>posts entombed</dt>
-            <dd>{entombed.length}</dd>
+    <!-- Epitaph stats: numbers carved in stone — Tanya §3.2 -->
+    {entombed.length > 0 && (
+      <header class="graveyard-epitaph" aria-label="Graveyard statistics">
+
+        <div class="epitaph-stat">
+          <span class="epitaph-number">{entombed.length}</span>
+          <span class="epitaph-label">posts forgotten</span>
+        </div>
+
+        {totalReadingMins > 0 && (
+          <div class="epitaph-stat">
+            <span class="epitaph-number">{totalReadingMins.toLocaleString()}</span>
+            <span class="epitaph-label">minutes unread</span>
           </div>
-          {totalReadingMins > 0 && (
-            <div class="graveyard-stat">
-              <dt>read but forgotten</dt>
-              <dd>{totalReadingMins} min</dd>
-            </div>
-          )}
-          {resurrectionRate > 0 && (
-            <div class="graveyard-stat">
-              <dt>resurrection rate</dt>
-              <dd>{ratePercent}%</dd>
-            </div>
-          )}
-        </dl>
-      )}
-    </header>
+        )}
 
+        {broughtBack > 0 && (
+          <div class="epitaph-stat">
+            <span class="epitaph-number">{broughtBack}</span>
+            <span class="epitaph-label">brought back</span>
+          </div>
+        )}
+
+      </header>
+    )}
+
+    <!-- Empty state: silence is the message — Mike §6 -->
+    {entombed.length === 0 && <GraveyardEmptyState />}
+
+    <!-- Tombstone grid — Tanya §3.3 (2-col desktop, 1-col mobile) -->
     {pageEntombed.length > 0 && (
       <section class="tombs" aria-label="Entombed posts">
         {pageEntombed.map(post => <TombstoneCard post={post} />)}
       </section>
     )}
 
+    <!-- Pagination — text only, no chrome — Mike §7 -->
     {totalPages > 1 && (
       <nav class="graveyard-pages" aria-label="Graveyard pagination">
         {hasPrev && (
-          <a href={`/graveyard?page=${safePage - 1}`} class="page-link page-link--prev">
+          <a href={`/graveyard?page=${safePage - 1}`} class="page-link">
             &larr; newer graves
           </a>
         )}
         <span class="page-count">{safePage} / {totalPages}</span>
         {hasNext && (
-          <a href={`/graveyard?page=${safePage + 1}`} class="page-link page-link--next">
+          <a href={`/graveyard?page=${safePage + 1}`} class="page-link">
             older graves &rarr;
           </a>
         )}
       </nav>
     )}
 
-    {entombed.length > 0 && livingCount > 0 && (
+    <!-- Footer: candlelight ambient + back link — Mike §5 -->
+    {entombed.length > 0 && (
       <footer class="graveyard-footer">
         <a href="/" class="back-link">
-          &larr; {livingCount} {livingCount === 1 ? 'post' : 'posts'} still alive
+          ← {livingCount} {livingCount === 1 ? 'post' : 'posts'} still alive
         </a>
       </footer>
     )}
 
-    {entombed.length === 0 && (
-      <footer class="graveyard-footer">
-        <a href="/" class="back-link">&larr; back to the living</a>
-      </footer>
-    )}
   </main>
 </BaseLayout>
 
 <style>
   .graveyard {
-    padding: 3rem 1rem 4rem;
-    max-width: 44rem;
+    padding: 4rem 1.25rem 6rem;
+    max-width: 52rem;
     margin: 0 auto;
-    min-height: 60vh;
   }
 
-  .graveyard-header {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-
-  .graveyard-title {
-    font-size: 1.1rem;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    opacity: 0.4;
-    margin: 0 0 0.5rem;
-  }
-
-  .graveyard-subtitle {
-    font-size: 0.78rem;
-    opacity: 0.3;
-    font-style: italic;
-    margin: 0;
-  }
-
-  /* Three-figure stats row — quiet data, not a dashboard */
-  .graveyard-stats {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    flex-wrap: wrap;
-    margin: 1.25rem auto 0;
-    max-width: 32rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 0.85rem;
-  }
-
-  .graveyard-stat {
+  /* ── Epitaph stats: numbers floating on the dark page — Tanya §3.2 */
+  .graveyard-epitaph {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
-    font-size: 0.65rem;
-    letter-spacing: 0.04em;
+    gap: 3rem;
+    text-align: center;
+    margin-bottom: 4rem;
+    padding-top: 1.5rem;
   }
 
-  .graveyard-stat dt {
-    text-transform: uppercase;
-    opacity: 0.25;
-    font-weight: 400;
+  .epitaph-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
   }
 
-  .graveyard-stat dd {
-    margin: 0;
-    font-style: italic;
-    opacity: 0.45;
+  /* Large thin numbers — weight 300, like chiselled stone — Tanya §3.2 */
+  .epitaph-number {
+    font-size: 3.5rem;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--color-grave-text);
+    letter-spacing: -0.01em;
+  }
+
+  .epitaph-label {
     font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-grave-ghost);
   }
 
   .tombs {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
   }
 
-  /* Pagination — restrained; page numbers are ceremony, not chrome */
+  /* ── Pagination — restrained prose — */
   .graveyard-pages {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 1.5rem;
-    margin: 1.5rem 0 2rem;
+    margin: 1.5rem 0 2.5rem;
   }
 
   .page-link {
     font-size: 0.65rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    opacity: 0.35;
-    color: inherit;
+    color: var(--color-grave-ghost);
     text-decoration: none;
-    transition: opacity 200ms ease;
+    transition: color 200ms ease;
+    padding: 10px 0;
   }
 
-  .page-link:hover { opacity: 0.65; }
+  .page-link:hover { color: var(--color-grave-text); }
 
   .page-count {
     font-size: 0.6rem;
     letter-spacing: 0.08em;
-    opacity: 0.2;
-    text-transform: uppercase;
+    color: var(--color-grave-ghost);
+    opacity: 0.5;
   }
 
+  /* ── Footer: candlelight is in graveyard.css via ::before — */
   .graveyard-footer {
     text-align: center;
-    margin-top: 2rem;
+    padding-top: 2rem;
   }
 
   .back-link {
     font-size: 0.72rem;
     letter-spacing: 0.04em;
-    opacity: 0.35;
-    color: inherit;
+    color: var(--color-grave-ghost);
     text-decoration: none;
-    transition: opacity 200ms ease;
+    transition: color 200ms ease;
+    padding: 10px 0;
+    display: inline-block;
   }
 
-  .back-link:hover { opacity: 0.6; }
+  .back-link:hover { color: var(--color-grave-text); }
 </style>

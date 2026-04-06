@@ -4,30 +4,31 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v18 — Erosion Bar + SavedMoment (2026-04-06)
+# Architecture v19 — Graveyard Epitaph Redesign (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Erosion Bar + SavedMoment):
-#   ErosionBar.astro (new) — visual conviction life-drain bar rendered inside
-#   each EndangeredCard; SSR-sets --erosion-pct and --erosion-hue as inline
-#   CSS vars (no layout shift); client JS recomputes on revival events.
-#   SavedMoment.astro (new) — "All beliefs tended. The record holds."
-#   emotional payoff toast; hidden by default, revealed by client JS when
-#   the last endangered card is dismissed; CSS handles full fade cycle (3.5s).
-#   endangered.ts — erosionBarPct() / erosionHue() server-side helpers;
-#   endangeredClientScript updated: 2-phase dismiss (bloom → collapse, -400ms
-#   fade phase removed for Android perf), patchErosion() updates bar vars on
-#   each revival event, showSavedMoment() wires dismissBand() to SavedMoment,
-#   refreshCards() called on boot to initialise erosion state immediately.
-#   EndangeredBand.astro — imports SavedMoment; wraps cards in
-#   .endangered-cards[data-endangered-count] for JS targeting.
-#   EndangeredCard.astro — embeds <ErosionBar> between title and footer;
-#   countdown text now final-urgency only (bar replaces general urgency cue).
-#   endangered.css — .erosion-bar / .erosion-fill (3px, overflow:hidden, hsl
-#   gradient, erosion-breathe keyframe); .saved-moment / .saved-moment--visible
-#   (display:none → flex, fade-in/hold/fade-out animation, aria-live polite).
+# Sprint (latest — Graveyard Epitaph Redesign):
+#   TombstoneCard.astro — full epitaph layout redesign: "here lies" header label,
+#   engraved title (layered text-shadow illusion), quoted italic description,
+#   Born/Faded date dl with prose-style stat line ("remembered by N readers ·
+#   M min held alive"), text-only resurrect CTA ("↑ breathe life back").
+#   Monochrome locked via --color-grave-* OKLCH tokens (not opacity on element).
+#   GraveyardEmptyState.astro (new) — silence-as-design empty state: "The
+#   graveyard is silent. No words have faded here yet." with breathing subtitle
+#   animation and return link; unique @keyframes name avoids collision.
+#   graveyard.css (new) — atmospheric layer for /graveyard only; loaded via
+#   import in graveyard.astro frontmatter (not global). Contains: @property
+#   --flame-y for smooth candlelight radial animation; OKLCH design tokens
+#   (warm charcoal, perceptually-uniform); scroll-driven rise-from-ground
+#   entrance (@supports guard for non-Chromium); staggered breathe animation
+#   per tombstone; CSS :has() resurrection bloom ring + warm-title glow;
+#   candlelight footer ::before ambient; full reduced-motion suppression.
+#   graveyard.astro — uses graveyard-epitaph header (numbers carved in stone:
+#   posts forgotten, minutes unread, brought back); GraveyardEmptyState for
+#   zero-posts path; 2-col tombstone grid (max-width 52rem); text-only
+#   pagination; candlelight footer with living-count link.
 #   Pure frontend — no new services, volumes, or runtime dependencies.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
@@ -36,6 +37,8 @@
 #           Consequential Decay / Graveyard (entomb + resurrect),
 #           Graveyard Discovery Surface (teaser, stats, tombstone history),
 #           Honest Graveyard (entombed_at timestamps, SSR pagination, mood lock),
+#           Graveyard Epitaph layout (OKLCH tokens, scroll-driven entrance,
+#           candlelight footer, CSS :has() resurrection glow, empty state),
 #           Endangered Posts (urgency tiers, pulse, erosion bar, countdown),
 #           2-phase revival dismiss (bloom → collapse, a11y, Android-optimised),
 #           SavedMoment toast (emotional payoff when last card revived),
