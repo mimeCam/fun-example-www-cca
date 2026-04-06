@@ -10,9 +10,8 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
-import PulseTeaser from '../components/PulseTeaser.astro';
+import DiscoveryWhisper from '../components/DiscoveryWhisper.astro';
 import { allPostDisplayData } from '../lib/postMeta';
-import { getPulseData, activeLoops } from '../lib/pulse';
 import { groupIntoBands } from '../lib/timeBands';
 import { decayChoreographyScript } from '../lib/decayChoreography';
 import { timeTravelScript } from '../lib/timeTravel';
@@ -25,8 +24,6 @@ const bands = groupIntoBands(displayPosts);
 const entombedCount = displayPosts.filter(p => p.entombed).length;
 const allEntombed = displayPosts.every(p => p.entombed);
 
-const pulseData = await getPulseData();
-const freshestLoop = activeLoops(pulseData)[0] ?? null;
 ---
 
 <BaseLayout title="Persona Blog">
@@ -34,7 +31,7 @@ const freshestLoop = activeLoops(pulseData)[0] ?? null;
   <script set:html={timeTravelScript()} />
   <script set:html={timeTravelBandsScript()} />
   <main class="feed">
-    {freshestLoop && <PulseTeaser loop={freshestLoop} />}
+    <DiscoveryWhisper />
 
     {allEntombed && (
       <div class="empty-state">

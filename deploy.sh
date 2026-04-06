@@ -21,13 +21,8 @@
 #             time-aware whisper banner, 4-beat fade sequence, page desaturate→bloom,
 #             once per browser session via sessionStorage gate, reduced-motion safe),
 #           Guided First Touch (GuidedTouch.astro + guidedTouch.ts + guided-touch.css —
-#             interactive first-visit demo replacing FirstVisitWhisper; walks visitor
-#             through one decay→revival cycle on a real card: spotlight overlay pulses
-#             on most-decayed card, ghost cursor drifts toward it, visitor hovers →
-#             real revival fires, whisper confirms "your attention keeps them alive";
-#             short-circuits if visitor interacts first; localStorage gate
-#             'guided_touch_seen'; prefers-reduced-motion safe with static fallback;
-#             ARIA role=status + aria-live=polite; zero new dependencies),
+#             interactive first-visit demo; walks visitor through one decay→revival
+#             cycle on a real card; localStorage gate; reduced-motion safe),
 #           Sympathetic Bloom mobile polish — circuit breaker guardrails (max 4
 #             concurrent blooms, 5s hard timeout, thundering-herd detection, FPS
 #             watchdog, Page Visibility pause), haptic choreography (diminishing
@@ -52,7 +47,12 @@
 #             solves cold-start problem: young blogs show visual contrast from
 #             day one instead of all cards at ~0.16 decay; 24h auto-refresh;
 #             reads src/data/adaptiveDecay.config.json at runtime via process.cwd();
-#             integrates with postMeta, ambientLife, live-decay; zero new deps).
+#             integrates with postMeta, ambientLife, live-decay; zero new deps),
+#           FirstVisitDiscovery (DiscoveryWhisper.astro + discoveryHint.ts +
+#             RewardWhisper.astro + rewardWhisper.ts + discovery.css —
+#             single whisper hint replaces 22KB FSM onboarding; old
+#             onboardProbe/onboardHint/revivalReward/revivalToast merged into
+#             two lightweight modules; nav simplified to 2+1; zero new deps).
 
 set -euo pipefail
 

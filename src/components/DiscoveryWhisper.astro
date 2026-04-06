@@ -1,0 +1,89 @@
+---
+// src/components/DiscoveryWhisper.astro
+// Single whisper hint for first-time visitors.
+// Replaces FirstVisitWhisper.astro (6.8K) — one div, CSS-only animation.
+//
+// "Posts fade with time. Hover to remember." (desktop)
+// "Posts fade with time. Long-press to remember." (mobile)
+//
+// A11y: role="status", aria-live="polite", prefers-reduced-motion safe.
+// Positioned absolutely near most-decayed card by discoveryHint.ts.
+---
+
+<div
+  id="discovery-whisper"
+  class="discovery-hint"
+  role="status"
+  aria-live="polite"
+>
+  <p class="discovery-text">
+    <span class="discovery-line">posts fade with time.</span>
+    <span class="discovery-action discovery-desktop">hover to remember.</span>
+    <span class="discovery-action discovery-touch">long-press to remember.</span>
+  </p>
+</div>
+
+<style>
+  .discovery-hint {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    max-width: 240px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+
+  .discovery-hint:global(.discovery--visible) {
+    opacity: 1;
+  }
+
+  .discovery-hint:global(.discovery--exiting) {
+    opacity: 0;
+    transition: opacity 300ms ease-in;
+  }
+
+  .discovery-text {
+    font-size: 0.72rem;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    color: rgba(var(--mood-accent-rgb, 120, 120, 120), 0.6);
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(var(--mood-accent-rgb, 120, 120, 120), 0.08);
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .discovery-line { display: block; }
+  .discovery-action { display: block; font-style: italic; }
+
+  /* Device branching via CSS media query */
+  .discovery-desktop { display: block; }
+  .discovery-touch { display: none; }
+
+  @media (hover: none) {
+    .discovery-desktop { display: none; }
+    .discovery-touch { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .discovery-hint {
+      transition: none;
+    }
+    .discovery-hint:global(.discovery--visible) {
+      opacity: 1;
+    }
+    .discovery-hint:global(.discovery--exiting) {
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .discovery-hint { max-width: 85%; }
+  }
+</style>

@@ -20,10 +20,9 @@ import { snapshotScript } from '../lib/snapshot';
 import { revivalControllerScript } from '../lib/revivalController';
 // Legacy imports removed: longPressRevive + reviveClient → revivalController
 import { keepAliveScript } from '../lib/keepAlive';
-import { onboardHintScript } from '../lib/onboardHint';
-import { onboardProbeScript } from '../lib/onboardProbe';
+import { discoveryHintScript } from '../lib/discoveryHint';
 import { bloomOrchestratorScript } from '../lib/bloomOrchestrator';
-import { revivalRewardScript } from '../lib/revivalReward';
+import { rewardWhisperScript } from '../lib/rewardWhisper';
 import { heartbeatClientScript } from '../lib/heartbeatClient';
 import { heartbeatFxScript } from '../lib/heartbeatFx';
 import { heartbeatBridgeScript } from '../lib/heartbeatBridge';
@@ -33,7 +32,7 @@ import { bloomGuardrailsScript } from '../lib/bloomGuardrails';
 import { bloomHapticsScript } from '../lib/bloomHaptics';
 import { bloomA11yScript } from '../lib/bloomA11y';
 import { cascadeMobileScript } from '../lib/cascadeMobile';
-import { revivalToastScript } from '../lib/revivalToast';
+// revivalToast removed — merged into rewardWhisper
 import { bloomOnArrivalScript } from '../lib/bloomOnArrival';
 import { radialRingScript } from '../lib/radialRing';
 import { radialRingA11yScript } from '../lib/radialRingA11y';
@@ -46,7 +45,7 @@ import SiteNav from '../components/SiteNav.astro';
 import CelestialWitness from '../components/CelestialWitness.astro';
 import Hearth from '../components/Hearth.astro';
 import QuietFollow from '../components/QuietFollow.astro';
-import RevivalReward from '../components/RevivalReward.astro';
+import RewardWhisper from '../components/RewardWhisper.astro';
 import HeartbeatPulse from '../components/HeartbeatPulse.astro';
 import RadialRing from '../components/RadialRing.astro';
 import '../styles/global.css';
@@ -55,11 +54,10 @@ import '../styles/choreography.css';
 import '../styles/shimmer.css';
 import '../styles/revival.css';
 import '../styles/bloom.css';
-import '../styles/hint.css';
-import '../styles/timetravel.css';
+import '../styles/discovery.css';
 import '../styles/reward.css';
 import '../styles/heartbeat.css';
-import '../styles/revival-toast.css';
+// revival-toast.css removed — merged into RewardWhisper component
 import '../styles/radial-ring.css';
 import '../styles/ring.css';
 import '../styles/first-breath.css';
@@ -75,10 +73,9 @@ const shimScript = shimmerScript();
 const snapScript = snapshotScript();
 const revivalScript = revivalControllerScript();
 const keepScript = keepAliveScript();
-const probeScript = onboardProbeScript();
-const hintScript = onboardHintScript();
+const discoveryScript = discoveryHintScript();
 const bloomScript = bloomOrchestratorScript();
-const rewardScript = revivalRewardScript();
+const rewardScript = rewardWhisperScript();
 const heartbeatScript = heartbeatClientScript();
 const heartbeatFx = heartbeatFxScript();
 const heartbeatBridge = heartbeatBridgeScript();
@@ -88,7 +85,7 @@ const hapticsJs = bloomHapticsScript();
 const a11yJs = bloomA11yScript();
 const cascadeMobileJs = cascadeMobileScript();
 const sympatheticScript = sympatheticBloomScript();
-const toastScript = revivalToastScript();
+// toastScript removed — merged into rewardWhisper
 const arrivalScript = bloomOnArrivalScript();
 const radialRingJs  = radialRingScript();
 const radialA11yJs  = radialRingA11yScript();
@@ -124,8 +121,7 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <script set:html={shimScript} />
     <script set:html={revivalScript} />
     <script set:html={keepScript} />
-    <script set:html={probeScript} />
-    <script set:html={hintScript} />
+    <script set:html={discoveryScript} />
     <script set:html={guardrailsJs} />
     <script set:html={hapticsJs} />
     <script set:html={a11yJs} />
@@ -137,7 +133,7 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <script set:html={heartbeatPulseJs} />
     <script set:html={sympatheticScript} />
     <script set:html={cascadeMobileJs} />
-    <script set:html={toastScript} />
+    <!-- revivalToast removed — merged into rewardWhisper -->
     <script set:html={arrivalScript} />
     <script set:html={radialRingJs} />
     <script set:html={radialA11yJs} />
@@ -157,7 +153,7 @@ const adaptiveMaxDays = getAdaptiveConfig()?.maxDays ?? 365;
     <slot />
     <Hearth />
     <CelestialWitness />
-    <RevivalReward />
+    <RewardWhisper />
     <HeartbeatPulse />
     <QuietFollow />
   </body>

@@ -1,0 +1,32 @@
+/* src/styles/discovery.css
+ * Discovery flow animations — hint + reward whisper.
+ * Replaces hint.css (for onboard) + revival-toast.css animations.
+ *
+ * Respects prefers-reduced-motion throughout.
+ * Uses mood accent vars for tinting.
+ * GPU-composited transforms only (opacity, transform).
+ */
+
+/* ── Point-pulse: subtle glow on most-decayed card ────────── */
+
+.decay-card.discovery-target {
+  animation: discovery-point-pulse 2s ease-in-out 1;
+}
+
+@keyframes discovery-point-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(var(--mood-accent-rgb, 120, 120, 120), 0);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(var(--mood-accent-rgb, 120, 120, 120), 0.2);
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .decay-card.discovery-target {
+    animation: none;
+    box-shadow: 0 0 8px rgba(var(--mood-accent-rgb, 120, 120, 120), 0.15);
+  }
+}

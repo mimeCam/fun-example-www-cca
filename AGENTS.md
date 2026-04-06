@@ -17,7 +17,4 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 ## WIP
 
 - Sympathetic Bloom Mobile — needs physical-device QA
-- Component Pruning — satellite components pending removal
-- Navigation Simplification — 2+1 nav design
-- Homepage Cleanup — remove TimeTravelSlider, PulseTeaser
-- Dead code cleanup — onboardProbe.ts spectacle listeners
+- Dead code cleanup — orphaned old files (onboardProbe.ts, onboardHint.ts, revivalReward.ts, revivalToast.ts, FirstVisitWhisper.astro, whisperSequence.ts, whisperA11y.ts) pending deletion after deploy validation
