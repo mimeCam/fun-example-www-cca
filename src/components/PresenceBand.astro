@@ -5,7 +5,7 @@
 // count  = 1: "you are here" (just you).
 // count  = 0: empty — the blog looks dead. That's the point.
 //
-// SSR: renders shell. Client: presence-client.ts hydrates via SSE.
+// SSR: renders shell. Client: presence-unified.ts hydrates via SSE.
 // Used on /blog/[slug] (per-post) and optionally on index (global).
 //
 // Credits: Mike (architecture), Tanya (UX spec), Elon (honest-zero)
@@ -31,6 +31,7 @@ const { compact = false, scope = 'slug' } = Astro.props;
   <span class="presence-dot" id="presence-dot" aria-hidden="true" style="display:none"></span>
   <span class="presence-text" id="presence-text"></span>
   <span class="presence-count" id="presence-count" aria-hidden="true">0</span>
+  <span class="presence-fallback" id="presence-fallback" style="display:none"></span>
 </div>
 
 <style>
@@ -72,6 +73,14 @@ const { compact = false, scope = 'slug' } = Astro.props;
 
   .presence-count {
     display: none;
+  }
+
+  .presence-fallback {
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    color: var(--mood-accent, #9CA3AF);
+    opacity: 0.38;
+    font-style: italic;
   }
 
   @keyframes presence-breathe {

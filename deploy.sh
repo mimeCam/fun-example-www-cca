@@ -4,18 +4,19 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v9 — Post-Scalpel Consolidation (2026-04-06)
+# Architecture v10 — Unified Presence (2026-04-06)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Operation Scalpel Phase 1+2):
-#   Massive codebase consolidation: deleted 5 dead pages, 3 dead API routes,
-#   26 dead components, 61 dead lib files, 10 orphaned CSS files, 7 orphaned
-#   data files. Cleaned BaseLayout (15→8 imports), SiteNav, nav.ts. Fixed
-#   broken imports in postMeta.ts, revivalGuard.ts, variants.ts, og/[slug].png.ts.
-#   Rewrote variants.ts to be self-contained. Dockerfile updated to remove
-#   deleted config file references (ambientLife.config.json, adaptiveDecay.config.json).
+# Sprint (latest — Unified Presence Engine):
+#   Merged presence-client.ts + presence-engine.ts → presence-unified.ts.
+#   Single EventSource singleton (window.__presenceES), cold-start fallback
+#   ("last tended X ago"), exponential backoff reconnect, Last-Event-Id replay
+#   buffer (10 events/slug), mobile stale timeout (60s→120s via Sec-CH-UA-Mobile),
+#   card+band ripple on foreign revival, breathing tempo by reader count.
+#   presence-hub.ts: replay ring buffer, mobile-aware stale reaping.
+#   API /api/presence: lastActivity from collectiveMemory, mobile detection.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Honest Presence (per-slug + global-scope reader count via SSE),

@@ -2,13 +2,15 @@
 // SSE endpoint for honest reader presence.
 // GET /api/presence?slug=xxx  — per-slug event stream (blog posts).
 // GET /api/presence?scope=global — aggregate site-wide stream (homepage).
-// Streams: { readers: N } on join/leave, { slug, ts } on foreign revival.
+// Streams: { readers: N, lastActivity? } on join/leave, { slug, ts } on revival.
+// Supports Last-Event-Id replay and mobile stale timeout extension.
 // Zero phantoms. Zero readers = zero. That's the point.
 //
 // Credits: Mike (architecture), Elon (honest-zero philosophy)
 
 import type { APIRoute } from 'astro';
 import { join, joinGlobal, getCount, getGlobalCount } from '../../lib/presence-hub';
+import { getLastRevivalAt } from '../../lib/collectiveMemory';
 
 export const prerender = false;
 
@@ -36,6 +38,22 @@ function isGlobalScope(url: URL): boolean {
   return url.searchParams.get('scope') === 'global';
 }
 
+/** Parse Last-Event-Id from query param (client sends on reconnect). */
+function parseLastEventId(url: URL): number {
+  const raw = url.searchParams.get('lastEventId');
+  if (!raw) return 0;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Detect mobile client via Sec-CH-UA-Mobile hint or User-Agent. */
+function isMobile(request: Request): boolean {
+  const hint = request.headers.get('Sec-CH-UA-Mobile');
+  if (hint) return hint === '?1';
+  const ua = request.headers.get('User-Agent') || '';
+  return /mobile|android|iphone/i.test(ua);
+}
+
 /** Encode an SSE frame. */
 function sseFrame(event: string, data: unknown): Uint8Array {
   const line = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -48,9 +66,13 @@ function sendWelcome(ctrl: Controller): void {
   catch { /* client gone */ }
 }
 
-/** Send current reader count for a slug. */
+/** Send current reader count for a slug with lastActivity. */
 function sendSlugCount(ctrl: Controller, slug: string): void {
-  try { ctrl.enqueue(sseFrame('presence', { readers: getCount(slug) })); }
+  const readers = getCount(slug);
+  const lastRevival = getLastRevivalAt(slug);
+  const lastActivity = lastRevival ? lastRevival.toISOString() : null;
+  const payload = { readers, lastActivity };
+  try { ctrl.enqueue(sseFrame('presence', payload)); }
   catch { /* client gone */ }
 }
 
@@ -61,31 +83,44 @@ function sendGlobalCount(ctrl: Controller): void {
 }
 
 /** Build SSE stream for a specific slug. */
-function createSlugStream(slug: string): ReadableStream<Uint8Array> {
-  const reg = join(slug);
+function createSlugStream(slug: string, mobile: boolean, lastEventId: number): ReadableStream<Uint8Array> {
+  const reg = join(slug, { mobile, lastEventId });
   return new ReadableStream<Uint8Array>({
-    start: (ctrl) => { reg.start(ctrl); sendWelcome(ctrl); sendSlugCount(ctrl, slug); },
+    start: (ctrl) => {
+      reg.start(ctrl);
+      sendWelcome(ctrl);
+      sendSlugCount(ctrl, slug);
+    },
     cancel: () => reg.cleanup(),
   });
 }
 
 /** Build SSE stream for global (homepage) scope. */
-function createGlobalStream(): ReadableStream<Uint8Array> {
-  const reg = joinGlobal();
+function createGlobalStream(mobile: boolean): ReadableStream<Uint8Array> {
+  const reg = joinGlobal({ mobile });
   return new ReadableStream<Uint8Array>({
-    start: (ctrl) => { reg.start(ctrl); sendWelcome(ctrl); sendGlobalCount(ctrl); },
+    start: (ctrl) => {
+      reg.start(ctrl);
+      sendWelcome(ctrl);
+      sendGlobalCount(ctrl);
+    },
     cancel: () => reg.cleanup(),
   });
 }
 
 export const GET: APIRoute = ({ request }) => {
   const url = new URL(request.url);
+  const mobile = isMobile(request);
 
   if (isGlobalScope(url)) {
-    return new Response(createGlobalStream(), { headers: sseHeaders() });
+    return new Response(createGlobalStream(mobile), { headers: sseHeaders() });
   }
 
   const slug = parseSlug(url);
   if (!slug) return new Response('Missing slug', { status: 400 });
-  return new Response(createSlugStream(slug), { headers: sseHeaders() });
+  const lastEventId = parseLastEventId(url);
+  return new Response(
+    createSlugStream(slug, mobile, lastEventId),
+    { headers: sseHeaders() },
+  );
 };

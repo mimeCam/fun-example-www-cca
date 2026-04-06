@@ -7,7 +7,7 @@ import { simpleMoodCSSString } from '../lib/mood-simple';
 import { sessionTokenScript } from '../lib/sessionToken';
 import { decayEngineClientScript } from '../lib/decay-engine';
 import { revivalEngineScript } from '../lib/revival-engine';
-import { presenceClientScript } from '../lib/presence-client';
+import { presenceUnifiedScript } from '../lib/presence-unified';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -25,7 +25,7 @@ const cssString = simpleMoodCSSString(moodConfig.current_mood);
 const sessionScript = sessionTokenScript();
 const decayScript = decayEngineClientScript();
 const revivalScript = revivalEngineScript();
-const presenceScript = presenceClientScript();
+const presenceScript = presenceUnifiedScript();
 
 interface Props {
   title: string;

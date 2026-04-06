@@ -202,7 +202,7 @@ export function revivalEngineScript(): string {
     if(typeof EventSource==='undefined')return;
     var es;
     var fvhV=parseInt(localStorage.getItem('fvh_visits')||'0',10);
-    try{es=new EventSource('/api/heartbeat?fvh='+fvhV);window.__hbES=es}catch(e){return}
+    try{es=new EventSource('/api/heartbeat?fvh='+fvhV);window.__presenceES=es}catch(e){return}
     es.addEventListener('revival',function(e){
       try{
         var d=JSON.parse(e.data);if(!d.slug)return;
@@ -246,8 +246,9 @@ export function _testRevivalEngine(): void {
   // Rate limiting
   console.assert(script.includes('sessionStorage'), 'session gate');
 
-  // Heartbeat
+  // Heartbeat + unified presence key
   console.assert(script.includes('EventSource'), 'SSE listener');
+  console.assert(script.includes('__presenceES'), 'unified EventSource key');
 
   console.log('[revival-engine] OK — all checks passed');
 }

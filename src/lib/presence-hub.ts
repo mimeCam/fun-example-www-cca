@@ -12,6 +12,14 @@ interface Connection {
   id: string;
   ctrl: Controller;
   lastSeen: number;
+  mobile: boolean;
+}
+
+/** A buffered SSE event for Last-Event-Id replay. */
+interface BufferedEvent {
+  id: number;
+  event: string;
+  data: unknown;
 }
 
 /** Per-slug connection set + broadcast helpers. */
@@ -20,10 +28,16 @@ const slugMap = new Map<string, Map<string, Connection>>();
 /** Global-scope connections (homepage visitors with no slug). */
 const globalMap = new Map<string, Connection>();
 
+/** Ring buffer of recent events per slug (max REPLAY_BUFFER_SIZE). */
+const replayBuffers = new Map<string, BufferedEvent[]>();
+
 const STALE_MS = 60_000;
+const STALE_MOBILE_MS = 120_000;
 const KEEPALIVE_MS = 30_000;
+const REPLAY_BUFFER_SIZE = 10;
 
 let nextId = 0;
+let nextEventId = 0;
 let reaperTimer: ReturnType<typeof setInterval> | null = null;
 let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -46,10 +60,42 @@ function removeConn(slug: string, id: string): void {
   if (conns.size === 0) slugMap.delete(slug);
 }
 
-/** Encode an SSE frame. */
-function sseFrame(event: string, data: unknown): Uint8Array {
-  const line = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+/** Encode an SSE frame with optional event id. */
+function sseFrame(event: string, data: unknown, id?: number): Uint8Array {
+  const idLine = id != null ? `id: ${id}\n` : '';
+  const line = `${idLine}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
   return new TextEncoder().encode(line);
+}
+
+/** Push an event into the replay ring buffer for a slug. */
+function bufferEvent(slug: string, event: string, data: unknown): number {
+  const id = ++nextEventId;
+  let buf = replayBuffers.get(slug);
+  if (!buf) { buf = []; replayBuffers.set(slug, buf); }
+  buf.push({ id, event, data });
+  if (buf.length > REPLAY_BUFFER_SIZE) buf.shift();
+  return id;
+}
+
+/** Replay missed events since lastEventId for a slug. */
+function replayFrom(slug: string, lastId: number, ctrl: Controller): void {
+  const buf = replayBuffers.get(slug);
+  if (!buf) return;
+  for (const evt of buf) {
+    if (evt.id <= lastId) continue;
+    safeSendRaw(ctrl, sseFrame(evt.event, evt.data, evt.id));
+  }
+}
+
+/** Send raw bytes to a controller (no slug tracking). */
+function safeSendRaw(ctrl: Controller, bytes: Uint8Array): void {
+  try { ctrl.enqueue(bytes); }
+  catch { /* client gone */ }
+}
+
+/** Stale timeout for a connection (mobile gets longer window). */
+function staleMs(conn: Connection): number {
+  return conn.mobile ? STALE_MOBILE_MS : STALE_MS;
 }
 
 /** Send bytes to a controller, removing on failure. */
@@ -62,7 +108,8 @@ function safeSend(slug: string, conn: Connection, bytes: Uint8Array): void {
 function broadcastCount(slug: string): void {
   const conns = slugMap.get(slug);
   if (!conns) return;
-  const payload = sseFrame('presence', { readers: conns.size });
+  const id = bufferEvent(slug, 'presence', { readers: conns.size });
+  const payload = sseFrame('presence', { readers: conns.size }, id);
   conns.forEach(conn => safeSend(slug, conn, payload));
 }
 
@@ -70,7 +117,8 @@ function broadcastCount(slug: string): void {
 function broadcastRevival(slug: string, ts: number): void {
   const conns = slugMap.get(slug);
   if (!conns) return;
-  const payload = sseFrame('revival', { slug, ts });
+  const id = bufferEvent(slug, 'revival', { slug, ts });
+  const payload = sseFrame('revival', { slug, ts }, id);
   conns.forEach(conn => safeSend(slug, conn, payload));
 }
 
@@ -113,7 +161,7 @@ function reapStale(): void {
   const now = Date.now();
   slugMap.forEach((conns, slug) => {
     conns.forEach((conn, id) => {
-      if (now - conn.lastSeen > STALE_MS) removeConn(slug, id);
+      if (now - conn.lastSeen > staleMs(conn)) removeConn(slug, id);
     });
     if (conns.size === 0) slugMap.delete(slug);
   });
@@ -125,7 +173,7 @@ function reapStale(): void {
 function reapGlobalStale(now: number): void {
   let reaped = false;
   globalMap.forEach((conn, id) => {
-    if (now - conn.lastSeen > STALE_MS) { globalMap.delete(id); reaped = true; }
+    if (now - conn.lastSeen > staleMs(conn)) { globalMap.delete(id); reaped = true; }
   });
   if (reaped) broadcastGlobal();
 }
@@ -158,24 +206,24 @@ export function getCount(slug: string): number {
 }
 
 /** Add a connection to a slug and broadcast the new count. */
-function addConn(slug: string, id: string, ctrl: Controller): void {
-  const conn: Connection = { id, ctrl, lastSeen: Date.now() };
+function addConn(slug: string, id: string, ctrl: Controller, mobile: boolean): void {
+  const conn: Connection = { id, ctrl, lastSeen: Date.now(), mobile };
   ensureSlug(slug).set(id, conn);
   broadcastCount(slug);
-  broadcastGlobal(); // slug join changes total site readers
+  broadcastGlobal();
 }
 
 /** Drop a connection from a slug and broadcast the new count. */
 function dropConn(slug: string, id: string): void {
   removeConn(slug, id);
   broadcastCount(slug);
-  broadcastGlobal(); // slug leave changes total site readers
+  broadcastGlobal();
   maybeStopTimers();
 }
 
 /** Add a global-scope connection (homepage visitor). */
-function addGlobalConn(id: string, ctrl: Controller): void {
-  const conn: Connection = { id, ctrl, lastSeen: Date.now() };
+function addGlobalConn(id: string, ctrl: Controller, mobile: boolean): void {
+  const conn: Connection = { id, ctrl, lastSeen: Date.now(), mobile };
   globalMap.set(id, conn);
   broadcastGlobal();
 }
@@ -187,24 +235,43 @@ function dropGlobalConn(id: string): void {
   maybeStopTimers();
 }
 
+/** Options for joining a presence channel. */
+interface JoinOpts {
+  mobile?: boolean;
+  lastEventId?: number;
+}
+
+/** Lifecycle hooks returned by join/joinGlobal. */
+interface JoinHandle {
+  id: string;
+  start: (ctrl: Controller) => void;
+  cleanup: () => void;
+}
+
 /** Register a new reader on a slug. Returns id + lifecycle hooks. */
-export function join(slug: string): { id: string; start: (ctrl: Controller) => void; cleanup: () => void } {
+export function join(slug: string, opts: JoinOpts = {}): JoinHandle {
   const id = `p-${++nextId}`;
+  const mobile = opts.mobile ?? false;
+  const lastId = opts.lastEventId ?? 0;
   ensureTimers();
   return {
     id,
-    start: (ctrl: Controller) => addConn(slug, id, ctrl),
+    start: (ctrl: Controller) => {
+      addConn(slug, id, ctrl, mobile);
+      if (lastId > 0) replayFrom(slug, lastId, ctrl);
+    },
     cleanup: () => dropConn(slug, id),
   };
 }
 
 /** Register a homepage visitor (global scope, no slug). */
-export function joinGlobal(): { id: string; start: (ctrl: Controller) => void; cleanup: () => void } {
+export function joinGlobal(opts: JoinOpts = {}): JoinHandle {
   const id = `g-${++nextId}`;
+  const mobile = opts.mobile ?? false;
   ensureTimers();
   return {
     id,
-    start: (ctrl: Controller) => addGlobalConn(id, ctrl),
+    start: (ctrl: Controller) => addGlobalConn(id, ctrl, mobile),
     cleanup: () => dropGlobalConn(id),
   };
 }
