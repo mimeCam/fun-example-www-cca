@@ -4,18 +4,17 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — decay engine, death-clock, mood, entomb, collective memory, revival history, presence
-- `src/components/` — UI components (inc. `DecayCard`, `DeathClock`, `DeathClockBanner`, `GhostEchoes`, `ConvictionPanel`)
+- `src/lib/` — decay engine, death-clock, epitaph engine, graveyard ledger, mood, entomb, collective memory, revival history, presence
+- `src/components/` — `DecayCard`, `DeathClock`, `DeathClockBanner`, `GhostEchoes`, `ConvictionPanel`, `TombstoneCard`, `GraveyardLedger`
 - `src/pages/api/` — SSE + JSON endpoints (death-clock, ghost-echoes, graveyard-stats, reading-pulse)
 - `src/content/blog/` — Markdown posts
-- `src/styles/` — CSS layers (inc. `death-clock.css`)
+- `src/styles/` — CSS layers
 
 ## Core Feature
 
 **Temporal Decay + Collective Memory** — posts visually age and die; reader attention revives them.
-Death Clock ring (`DeathClock.astro` + `src/lib/death-clock.ts`) counts down each post's remaining lifespan.
-Ghost Echoes sparkline (`GhostEchoes.astro` + `src/lib/revivalHistory.ts`) makes solo readers feel collective presence.
-Real-time presence via SSE (`src/lib/presence-unified.ts`). Entombed posts live at `/graveyard`.
+Death Clock ring counts down each post's lifespan. Ghost Echoes sparkline surfaces collective presence.
+Real-time presence via SSE (`src/lib/presence-unified.ts`). Dead posts entombed at `/graveyard` with epitaphs and Hall of Records.
 
 ## WIP
 

@@ -11,6 +11,8 @@
 import { formatPubDate } from '../lib/dates';
 import { daysSince } from '../lib/temporal';
 import type { PostDisplayData } from '../lib/postMeta';
+import { survivalTier, generateEpitaph, tierCSSClass, tierLabel } from '../lib/epitaph-engine';
+import { CLOCK_MAX_DAYS } from '../lib/death-clock';
 
 interface Props { post: PostDisplayData; }
 
@@ -22,6 +24,13 @@ const forgotten         = forgottenDays(post);
 const daysLabel         = forgotten === 1 ? 'day' : 'days';
 const readingMins       = Math.round(post.readingSeconds / 60);
 const statsProse        = buildStatsProse(post.revivalCount, readingMins);
+
+// Epitaph engine — deterministic narrative + tier badge
+const survDays  = calcSurvivalDays(post);
+const tier      = survivalTier(survDays, post.revivalCount);
+const epitaph   = generateEpitaph(post.slug, survDays, post.revivalCount, readingMins);
+const tierCss   = tierCSSClass(tier);
+const tombAge   = (Math.min(survDays / CLOCK_MAX_DAYS, 1)).toFixed(3);
 
 /** Days since entombment, falling back to days since publish. */
 function forgottenDays(p: PostDisplayData): number {
@@ -37,22 +46,34 @@ function buildStatsProse(revivals: number, mins: number): string {
   if (mins > 0)     parts.push(`${mins} min held alive`);
   return parts.join(' · ');
 }
+
+/** UTC-safe survival days from pub → entombment (or now). */
+function calcSurvivalDays(p: PostDisplayData): number {
+  const end = p.entombedAt ?? new Date();
+  return Math.max(0, Math.round((end.getTime() - p.pubDate.getTime()) / 86_400_000));
+}
 ---
 
 <article
   class="tombstone tombstone-card"
   data-slug={post.slug}
+  data-survival-days={survDays}
+  style={`--tomb-age:${tombAge}`}
   aria-label={`${post.title} — forgotten ${forgotten} ${daysLabel}`}
 >
   <div class="tombstone-inner">
 
-    <span class="tomb-here-lies">here lies</span>
+    <div class="tomb-header-row">
+      <span class="tomb-here-lies">here lies</span>
+      <span class={`tomb-tier ${tierCss}`}>{tierLabel(tier)}</span>
+    </div>
 
     <h2 class="tomb-title">{post.title}</h2>
 
-    {post.description && (
-      <p class="tomb-epitaph">&#8220;{post.description}&#8221;</p>
-    )}
+    <p class="tomb-epitaph">{epitaph}</p>
+
+    {/* post.description preserved for accessibility */}
+    {post.description && <meta itemprop="description" content={post.description} />}
 
     <dl class="tomb-dates">
       <div class="tomb-date-row">
@@ -91,9 +112,10 @@ function buildStatsProse(revivals: number, mins: number): string {
 </article>
 
 <style>
-  /* Card shell: stone-like — angular radius, inset shadow, surface colour */
+  /* Card shell: stone-like — angular radius, inset shadow, --tomb-age tints surface */
   .tombstone {
-    background: var(--color-grave-surface);
+    /* --tomb-age: 0.0 (new) → 1.0 (ancient) — drives stone surface darkness */
+    background: oklch(calc(12% + var(--tomb-age, 0.5) * 6%) 0.01 50 / 0.95);
     border: 1px solid var(--color-grave-border);
     border-radius: var(--radius-grave, 6px);
     box-shadow: var(--shadow-grave-card);
@@ -107,15 +129,37 @@ function buildStatsProse(revivals: number, mins: number): string {
     gap: 0.5rem;
   }
 
+  /* Row: "here lies" left, tier badge right */
+  .tomb-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.1rem;
+  }
+
   /* "here lies" — tiny label above the title, like a headstone inscription cap */
   .tomb-here-lies {
-    display: block;
     font-size: 0.6rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--color-grave-ghost);
-    margin-bottom: 0.1rem;
   }
+
+  /* Survival tier badge — pill, uses hue arc positions per tier */
+  .tomb-tier {
+    font-size: 0.52rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    opacity: 0.65;
+  }
+
+  .tier-legendary { color: oklch(65% 0.12 160); }   /* sage — stood the test */
+  .tier-contested { color: oklch(68% 0.14  45); }   /* amber — fought over */
+  .tier-quiet     { color: oklch(55% 0.06 270); }   /* muted blue — gentle exit */
+  .tier-forgotten { color: var(--color-grave-ghost); } /* achromatic — no story */
 
   /* Engraved text illusion: layered text-shadow — Mike §1 */
   .tomb-title {

@@ -1,0 +1,151 @@
+---
+// src/components/GraveyardLedger.astro
+// Hall of Records — hero section at the top of /graveyard.
+// Three panels: Longest Survivor · Most Contested · Forever Lost.
+// Zero client-side JS. Uses only --color-grave-* tokens.
+// Credits: Mike (arch §4.5), Tanya (UX §3.6)
+
+import type { GraveyardSummary } from '../lib/graveyard-ledger';
+
+interface Props { summary: GraveyardSummary; }
+
+const { summary } = Astro.props;
+const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = summary;
+---
+
+<section class="hall-of-records" aria-label="Hall of Records">
+
+  <header class="hall-header">
+    <span class="hall-eyebrow">Hall of Records</span>
+    <p class="hall-subtitle">Every post here was once alive. Some fought hard.</p>
+  </header>
+
+  <div class="hall-panels">
+
+    {longestSurvivor && (
+      <div class="hall-panel">
+        <span class="panel-label">Longest Survivor</span>
+        <span class="panel-stat">{longestSurvivor.survivalDays} days</span>
+        <a href={`/blog/${longestSurvivor.slug}/`} class="panel-title">
+          <s>{longestSurvivor.title}</s>
+        </a>
+      </div>
+    )}
+
+    {mostContested && (
+      <div class="hall-panel">
+        <span class="panel-label">Most Contested</span>
+        <span class="panel-stat">{mostContested.totalRevivalCount}&times; revived</span>
+        <a href={`/blog/${mostContested.slug}/`} class="panel-title">
+          <s>{mostContested.title}</s>
+        </a>
+      </div>
+    )}
+
+    <div class="hall-panel">
+      <span class="panel-label">Forever Lost</span>
+      <span class="panel-stat">{totalForeverLost} {totalForeverLost === 1 ? 'post' : 'posts'}</span>
+      <span class="panel-desc">never revived</span>
+    </div>
+
+  </div>
+
+  {avgSurvivalDays > 0 && (
+    <p class="hall-avg">avg survival &middot; {avgSurvivalDays} days</p>
+  )}
+
+</section>
+
+<style>
+  .hall-of-records {
+    margin-bottom: 3.5rem;
+    padding: 1.75rem 1.5rem 1.25rem;
+    border: 1px solid var(--color-grave-border);
+    border-radius: 0; /* graveyard is flat and austere — Tanya §1.3 */
+  }
+
+  /* Eyebrow + subtitle — small, engraved feel */
+  .hall-eyebrow {
+    display: block;
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-grave-ghost);
+    margin-bottom: 0.4rem;
+  }
+
+  .hall-subtitle {
+    margin: 0 0 1.5rem;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--color-grave-ghost);
+    line-height: 1.5;
+  }
+
+  /* Three panels: side-by-side desktop, stacked mobile */
+  .hall-panels {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 600px) {
+    .hall-panels { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .hall-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--color-grave-border);
+  }
+
+  /* Small label: "LONGEST SURVIVOR" */
+  .panel-label {
+    font-size: 0.57rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-grave-ghost);
+  }
+
+  /* The big number — weight 300 like headstone chiselling */
+  .panel-stat {
+    font-size: 1.75rem;
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--color-grave-text);
+    letter-spacing: -0.01em;
+  }
+
+  /* Struck-through dead post link */
+  .panel-title {
+    font-size: 0.78rem;
+    color: var(--color-grave-ghost);
+    text-decoration: none;
+    transition: color 180ms ease;
+    line-height: 1.4;
+  }
+
+  .panel-title:hover { color: var(--color-grave-text); }
+
+  .panel-title s {
+    text-decoration-color: oklch(35% 0.008 50);
+  }
+
+  /* "never revived" sub-label */
+  .panel-desc {
+    font-size: 0.72rem;
+    color: var(--color-grave-ghost);
+    font-style: italic;
+  }
+
+  /* Footer avg line */
+  .hall-avg {
+    margin: 1.25rem 0 0;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    color: var(--color-grave-ghost);
+    text-align: right;
+  }
+</style>

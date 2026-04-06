@@ -18,13 +18,21 @@ import { daysSince } from './temporal';
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_DAYS_DEFAULT = 180; // cold-start fix: personal blog rarely spans a full year (Mike)
+// Aligned with CLOCK_MAX_DAYS in death-clock.ts — single source of truth for post lifespan.
+// Importing death-clock.ts here would be circular (it imports decay-engine).
+// Both constants are 365; death-clock.ts is the canonical owner. — Mike §4.1
+const MAX_DAYS_DEFAULT = 365;
 const MS_PER_DAY = 86_400_000;
 const ENTOMB_THRESHOLD = 0.95;
 const DORMANCY_DAYS = 30;
 const RISEN_VISIBLE_DAYS = 7;
 
 export { ENTOMB_THRESHOLD, DORMANCY_DAYS };
+
+/** Meta tag HTML string — single source of truth for client-side decay window. */
+export function decayMaxDaysMetaTag(): string {
+  return `<meta name="decay-max-days" content="${MAX_DAYS_DEFAULT}">`;
+}
 
 // ---------------------------------------------------------------------------
 // Core decay — pure math, zero state

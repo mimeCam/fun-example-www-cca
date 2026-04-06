@@ -15,17 +15,27 @@ import {
   getResurrectionRate,
   getNewestEntombed,
 } from '../../lib/graveyardStats';
+import { getGraveyardSummary } from '../../lib/graveyard-ledger';
 
 export const GET: APIRoute = async () => {
   const posts = await getCollection('blog');
   const display = allPostDisplayData(posts);
 
-  const entombed = getEntombedCount(display);
-  const recentlyRisen = display.filter(p => p.entombed && p.recentlyRisen).length;
-  const newest = getNewestEntombed(display);
+  const entombed        = getEntombedCount(display);
+  const recentlyRisen   = display.filter(p => p.entombed && p.recentlyRisen).length;
+  const newest          = getNewestEntombed(display);
   const resurrectionRate = getResurrectionRate(display);
+  const summary         = getGraveyardSummary(display);
 
-  return json({ entombed, recentlyRisen, newestSlug: newest?.slug ?? null, resurrectionRate });
+  return json({
+    entombed,
+    recentlyRisen,
+    newestSlug:            newest?.slug ?? null,
+    resurrectionRate,
+    longestSurvivorDays:   summary.longestSurvivor?.survivalDays ?? 0,
+    mostContestedRevivals: summary.mostContested?.totalRevivalCount ?? 0,
+    avgSurvivalDays:       summary.avgSurvivalDays,
+  });
 };
 
 // ---------------------------------------------------------------------------
