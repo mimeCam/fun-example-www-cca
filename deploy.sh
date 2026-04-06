@@ -33,7 +33,14 @@
 #             POST /api/resurrect, TombstoneCard, RisenBadge — posts that
 #             fully decay ≥0.95 + 30 days dormant get entombed; readers
 #             resurrect them with +3 revival weight; risen_at column
-#             auto-migrated in SQLite at startup; zero new dependencies).
+#             auto-migrated in SQLite at startup; zero new dependencies),
+#           Ambient Life Engine (ambientLife.ts + seed/weight/config —
+#             makes the blog feel alive with zero visitors: seeds minimum
+#             revival counts on startup, emits phantom SSE pulses on a
+#             jittered timer, fades phantom activity as real readers arrive;
+#             reads src/data/ambientLife.config.json + src/content/blog/*.md
+#             at runtime — Dockerfile copies these into production image;
+#             zero new dependencies, plugs into heartbeat + collectiveMemory).
 
 set -euo pipefail
 

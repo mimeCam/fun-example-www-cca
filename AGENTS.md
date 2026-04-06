@@ -15,6 +15,6 @@ Temporal Decay + Collective Memory — posts visually age; reader attention revi
 
 ## WIP
 
+- Ambient Life Engine — seeding + phantom pulses deployed, needs tuning
 - Sympathetic Bloom Mobile — needs physical-device QA
-- Collective Heartbeat (SSE) — needs integration test
 - Component Pruning — ~19 satellite components pending removal

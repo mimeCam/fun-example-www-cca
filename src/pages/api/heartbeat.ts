@@ -5,6 +5,11 @@
 
 import type { APIRoute } from 'astro';
 import { register } from '../../lib/heartbeat';
+import { startAmbientLife } from '../../lib/ambientLife';
+
+// Boot the Ambient Life Engine once on first module import.
+// Seeds revival counts + starts phantom pulse timer.
+startAmbientLife();
 
 export const prerender = false;
 

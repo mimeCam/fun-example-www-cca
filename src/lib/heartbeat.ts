@@ -16,6 +16,8 @@ export interface HeartbeatEvent {
   ts: number;
   /** Constellation connections — present when revival triggers cascade. */
   resonance?: ResonanceLink[];
+  /** True for ambient-life phantom pulses (synthetic, not a real reader). */
+  phantom?: boolean;
 }
 
 type Controller = ReadableStreamDefaultController<Uint8Array>;
