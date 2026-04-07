@@ -38,7 +38,7 @@ const line   = tagline(avg);
 const isLive = avg.status === 'live';
 ---
 
-<aside class:list={['conviction-meter', mod]} aria-label="Author conviction batting average">
+<aside id="conviction-meter" class:list={['conviction-meter', mod]} aria-label="Author conviction batting average">
 
   {avg.status === 'cold' && (
     <span class="cm-cold">No sealed predictions yet.</span>
@@ -47,11 +47,11 @@ const isLive = avg.status === 'live';
   {isLive && (
     <div class="cm-body">
       <div class="cm-headline">
-        <span class="cm-pct" aria-label={`${avg.pct} percent accuracy`}>{avg.pct}%</span>
+        <span class="cm-pct" data-cm-pct={avg.pct} aria-label={`${avg.pct} percent accuracy`}>{avg.pct}%</span>
         <div class="cm-pills" aria-label="Breakdown">
-          <span class="cm-pill cm-pill--correct" title="Predictions that proved right">✓ {avg.correct} correct</span>
-          <span class="cm-pill cm-pill--wrong"   title="Predictions that proved wrong">✗ {avg.wrong} wrong</span>
-          <span class="cm-pill cm-pill--pending" title="Active predictions, not yet resolved">⏳ {avg.pending} pending</span>
+          <span class="cm-pill cm-pill--correct" data-cm-correct={avg.correct} title="Predictions that proved right">✓ {avg.correct} correct</span>
+          <span class="cm-pill cm-pill--wrong"   data-cm-wrong={avg.wrong}     title="Predictions that proved wrong">✗ {avg.wrong} wrong</span>
+          <span class="cm-pill cm-pill--pending" data-cm-pending={avg.pending} title="Active predictions, not yet resolved">⏳ {avg.pending} pending</span>
         </div>
       </div>
 
@@ -248,3 +248,9 @@ const isLive = avg.status === 'live';
     .cm-headline      { gap: 0.65rem; }
   }
 </style>
+
+{/* Live-verdict wire: imports fire only on the client, deferred — non-blocking. */}
+<script>
+  import { initLiveConviction } from '../lib/client/live-conviction';
+  initLiveConviction();
+</script>

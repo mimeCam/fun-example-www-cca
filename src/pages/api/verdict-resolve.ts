@@ -93,8 +93,11 @@ export const POST: APIRoute = async ({ request }) => {
     // Broadcast verdict:declared — non-blocking, fire-and-forget (never rejects POST).
     try {
       const batting = computeBattingAverage();
-      const newBattingAvg = batting.status === 'live' ? batting.pct : null;
-      broadcastNamed('verdict:declared', { slug, verdict, newBattingAvg, sealedAt: record.sealedAt });
+      const newBattingAvg = batting.status === 'live' ? batting.pct    : null;
+      const correct      = batting.status === 'live' ? batting.correct  : 0;
+      const wrong        = batting.status === 'live' ? batting.wrong    : 0;
+      const pending      = batting.status === 'live' ? batting.pending  : 0;
+      broadcastNamed('verdict:declared', { slug, verdict, newBattingAvg, correct, wrong, pending, sealedAt: record.sealedAt });
     } catch { /* broadcast failure must never reject the POST */ }
 
     return json({ ok: true, verdict: record.verdict, hmac: record.hmac_seal, sealedAt: record.sealedAt });

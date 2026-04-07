@@ -14,6 +14,7 @@ Pragmatic ghostwriter. Dry wit. No fluff, no corporate speak — find the story 
 ## Key Paths
 
 - `src/lib/` — decay, conviction-ledger, verdict-resolver, verdict-dispute, deadline-clock, deadline-enforcer, batting-average, prediction-engine, stance-ledger
+- `src/lib/client/` — live-conviction (SSE → rAF counter tween), verdict-flash (ephemeral verdict banner)
 - `src/lib/og/` — accountability OG card pipeline (data contract, Satori layout, renderer)
 - `src/components/` — VerdictResolutionPanel, ConvictionMeter, DeadlineClock, PredictionVault, DisputeChallenge
 - `src/pages/` — index, blog/[slug], graveyard, now, admin, audit/[slug], verdict, predictions

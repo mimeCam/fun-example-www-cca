@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v43 — Accountability OG Image Pipeline (2026-04-07)
+# Architecture v44 — Live Conviction Meter (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -15,8 +15,37 @@
 #   challenge an author's sealed verdict; ≥33% dispute ratio marks it
 #   'contested' and excludes it from the batting average until resolved.
 #   OG cards now lead with accountability: batting average is the hero.
+#   Live Conviction Meter: batting average animates in real-time as verdicts
+#   are sealed — no page reload needed; SSE stream reused (no extra connection).
 #
-# Sprint (latest — Accountability OG Image Pipeline):
+# Sprint (latest — Live Conviction Meter):
+#   lib/client/live-conviction.ts — NEW: client-side SSE listener for
+#     'verdict:declared' events; reuses window.__heartbeat EventSource (Mike
+#     arch §3 — one connection, no duplicates); rAF counter animation tweens
+#     batting-average pct; prefers-reduced-motion instant patch; circuit-breaker
+#     skips animation when delta === 0. DOM contract: data-cm-pct / data-cm-
+#     correct / data-cm-wrong / data-cm-pending attributes on ConvictionMeter.
+#   lib/client/verdict-flash.ts — NEW: ephemeral fixed-position verdict banner;
+#     mounts → auto-fades after 3 s → self-removes; verdict-aware colour (green/
+#     amber/rose/ash) per Tanya §3.1; ARIA live region for screen readers;
+#     suppressed entirely under prefers-reduced-motion (ARIA still fires).
+#   styles/conviction-live.css — NEW: CSS transitions for ConvictionMeter live
+#     updates; color-variant swap (background/border/box-shadow only — no height);
+#     cm-digit-pop keyframe via linear() spring easing; correct-pill highlight;
+#     prefers-reduced-motion guard disables all transitions & animations.
+#   components/ConvictionMeter.astro — UPDATED: id="conviction-meter" for DOM
+#     targeting; data-cm-pct / data-cm-correct / data-cm-wrong / data-cm-pending
+#     attributes added for live patching; deferred <script> calls initLiveConviction().
+#   layouts/BaseLayout.astro — UPDATED: imports conviction-live.css globally so
+#     the CSS is available on every page that renders ConvictionMeter.
+#   pages/api/verdict-resolve.ts — UPDATED: verdict:declared SSE broadcast now
+#     includes correct / wrong / pending pill counts alongside newBattingAvg so
+#     the client can patch all four values in one atomic update.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Accountability OG Image Pipeline):
 #   lib/og/accountabilityData.ts — NEW: discriminated-union data contract
 #     (cold | post | home variants); buildPostAccountabilityData() +
 #     buildHomeAccountabilityData() builders isolate DB access from layout.
