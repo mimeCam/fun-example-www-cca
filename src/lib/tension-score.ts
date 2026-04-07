@@ -21,7 +21,7 @@ export interface TensionResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MIN_STANCES = 10;
+const MIN_STANCES = 3; // lowered from 10 — enable early tension signals (Mike §POI)
 const DOMINANCE_THRESHOLD = 0.75;
 
 // ---------------------------------------------------------------------------

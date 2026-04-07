@@ -4,12 +4,34 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v37 — Conviction Audit Trail + JSON-LD (2026-04-07)
+# Architecture v38 — Verdict Wall (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
+#   The Verdict Wall surfaces every post on trial, sorted by tension.
 #
-# Sprint (latest — Conviction Audit Trail + JSON-LD):
+# Sprint (latest — Verdict Wall):
+#   pages/verdict.astro — NEW: SSR Verdict Wall (/verdict); every post on
+#     trial sorted by tension score. Hero + stats bar + filter tabs (all /
+#     living / endangered / revived / fossil) + 2-col card grid. ?filter=
+#     query param drives state with zero client JS. prerender=false.
+#   lib/verdict-wall.ts — NEW: pure sort + categorisation; buildVerdictWall()
+#     merges PostDisplayData[] + StanceDistribution map → VerdictPost[].
+#     buildStats() aggregates living / endangered / revived / fossil / contested
+#     counts. filterPosts() + parseFilter() guard untrusted query params.
+#   components/VerdictCard.astro — NEW: specimen-cabinet jury card; DeathClock
+#     ring + title + state badge (Row 1), conviction verdict (Row 2), stance
+#     bar — agree(emerald)/torn(amber)/disagree(red) (Row 3), CTA + audit link
+#     (Row 4). Fossil cards desaturated via CSS filter. SSR-only, no islands.
+#   styles/verdict.css — NEW: layout layer for /verdict; 2-col CSS Grid (≥600px),
+#     hero, stats bar, filter tabs, contested signal banner (amber pulse glyph),
+#     empty state, footer. Card-level styles scoped inside VerdictCard.astro.
+#   lib/tension-score.ts — UPDATED: MIN_STANCES lowered 10→3 to enable early
+#     tension signals on posts with few votes.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db. ADMIN_SECRET still required.
+#
+# Sprint (prev — Conviction Audit Trail + JSON-LD):
 #   pages/audit/[slug].astro — NEW: public SSR proof page per post; shows
 #     sealed conviction receipt or "NOT YET SEALED" if author hasn't locked yet.
 #     Returns 404 for unknown slugs. Zero client JS — pure server HTML.

@@ -13,12 +13,12 @@ Pragmatic ghostwriter. Dry wit. No fluff, no corporate speak — find the story 
 
 ## Key Paths
 
-- `src/lib/` — decay-engine, conviction-ledger, audit-verifier, tension-score, stance-ledger, revival-engine, heartbeat (SSE), cause-of-death, json-ld, og/ogLayout
-- `src/components/` — ConvictionHero, ConvictionTimeline, AuditReceipt, StanceDrawer, DecayCard, TombstoneCard, AdminSealForm, DeathClock
-- `src/pages/` — index, blog/[slug], graveyard, now, admin, audit/[slug]
-- `src/pages/api/` — conviction-seal, conviction-audit, revive, entomb, stance, heartbeat, og/[slug].png
-- `src/content/blog/` — Markdown posts (`coverImage` frontmatter links cover art)
-- `public/images/covers/` — `[slug].{svg,jpg,png,webp}`
+- `src/lib/` — all engine logic (decay, conviction, tension, stances, audit, revival, heartbeat, verdict-wall)
+- `src/components/` — UI components
+- `src/pages/` — routes: index, blog/[slug], graveyard, now, admin, audit/[slug], verdict
+- `src/pages/api/` — API endpoints
+- `src/content/blog/` — Markdown posts
+- `public/images/covers/` — cover art per slug
 - `cli/` — seal-conviction.mjs
 
 ## WIP
@@ -26,4 +26,3 @@ Pragmatic ghostwriter. Dry wit. No fluff, no corporate speak — find the story 
 - Seal all 6 posts via `/admin` (ADMIN_SECRET required) — audit pages show "NOT YET SEALED" until done
 - Verify `reader_events` table migration on live `revivals.db`
 - Device QA: Pixel 6a · Galaxy A14 · iPhone 13 · SSE on 3G
-- **Verdict Wall** (`/verdict` + VerdictCard) — next sprint

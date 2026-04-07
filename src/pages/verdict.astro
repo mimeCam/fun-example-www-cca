@@ -1,0 +1,169 @@
+---
+// src/pages/verdict.astro
+// The Verdict Wall — every post on trial, sorted by tension.
+// Killer feature: the one page that makes the whole system legible.
+//
+// Layout: hero + stats bar + filter tabs + 2-col card grid + footer.
+// SSR only — live tension data must not be cached at build time.
+// Filter state via ?filter= query param (no JS required for basic nav).
+//
+// Credits: Michael Koch (arch spec — data model, sort order),
+//          Tanya Donska (UX spec — layout, filter tabs, hero, atmosphere)
+
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import VerdictCard from '../components/VerdictCard.astro';
+import ConvictionMeter from '../components/ConvictionMeter.astro';
+import { allPostDisplayData } from '../lib/postMeta';
+import { getAllStanceDistributions } from '../lib/stance-ledger';
+import { buildVerdictWall, filterPosts, parseFilter } from '../lib/verdict-wall';
+import type { VerdictFilter } from '../lib/verdict-wall';
+import { computeBattingAverage } from '../lib/batting-average';
+import '../styles/verdict.css';
+
+// ── Data assembly ─────────────────────────────────────────────────────────────
+
+const posts    = await getCollection('blog');
+const all      = allPostDisplayData(posts);
+const dists    = safeGetDists();
+const wall     = buildVerdictWall(all, dists);
+const avg      = computeBattingAverage();
+const avgLive  = avg.status === 'live' && avg.total > 0 ? avg : null;
+
+// ── Filter ────────────────────────────────────────────────────────────────────
+
+const rawFilter = Astro.url.searchParams.get('filter');
+const filter: VerdictFilter = parseFilter(rawFilter);
+const shown = filterPosts(wall.posts, filter);
+
+// ── Page meta ─────────────────────────────────────────────────────────────────
+
+const pageTitle = 'Verdict Wall — All Posts on Trial';
+const pageDesc  = `${wall.stats.total} posts. ${wall.stats.contested} contested. Every belief is on the record.`;
+
+// ── Filter tab definitions ────────────────────────────────────────────────────
+
+interface FilterTab {
+  id: VerdictFilter;
+  label: string;
+  count: number;
+}
+
+const tabs: FilterTab[] = [
+  { id: 'all',        label: 'All',           count: wall.stats.total      },
+  { id: 'living',     label: 'Living',         count: wall.stats.living     },
+  { id: 'endangered', label: 'Endangered ⚠',  count: wall.stats.endangered },
+  { id: 'revived',    label: 'Revived',        count: wall.stats.revived    },
+  { id: 'fossil',     label: 'Fossil',         count: wall.stats.fossil     },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Safe wrapper — empty map if DB unavailable at boot time. */
+function safeGetDists() {
+  try { return getAllStanceDistributions(); }
+  catch { return new Map(); }
+}
+
+/** Build filter tab href — omit param for 'all' (cleaner URL). */
+function tabHref(id: VerdictFilter): string {
+  return id === 'all' ? '/verdict' : `/verdict?filter=${id}`;
+}
+---
+
+<BaseLayout title={pageTitle} description={pageDesc}>
+  <main class="verdict-page">
+
+    <ConvictionMeter avg={avg} />
+
+    <!-- Hero -->
+    <header class="verdict-hero">
+      <h1 class="verdict-hero-title">The Verdict Wall</h1>
+      <p class="verdict-hero-tagline">
+        Every belief sealed on publish. Readers weigh in. Decay keeps score.
+      </p>
+      {avgLive && (
+        <div class="verdict-avg-chip" title={`${avgLive.correct} of ${avgLive.total} sealed bets held true`}>
+          <span>{avgLive.pct}% ✓</span>
+          <span class="verdict-avg-chip__label">batting average</span>
+        </div>
+      )}
+    </header>
+
+    <!-- Stats bar -->
+    <div class="verdict-stats" aria-label="Wall statistics">
+      <div class="verdict-stat">
+        <span class="verdict-stat__value">{wall.stats.total}</span>
+        <span class="verdict-stat__label">total posts</span>
+      </div>
+      {wall.stats.contested > 0 && (
+        <div class="verdict-stat">
+          <span class="verdict-stat__value" style="color: #f59e0b;">{wall.stats.contested}</span>
+          <span class="verdict-stat__label">contested</span>
+        </div>
+      )}
+      {wall.stats.fossil > 0 && (
+        <div class="verdict-stat">
+          <span class="verdict-stat__value" style="color: #4b5563;">{wall.stats.fossil}</span>
+          <span class="verdict-stat__label">entombed</span>
+        </div>
+      )}
+      {wall.stats.endangered > 0 && (
+        <div class="verdict-stat">
+          <span class="verdict-stat__value" style="color: #f97316;">{wall.stats.endangered}</span>
+          <span class="verdict-stat__label">endangered</span>
+        </div>
+      )}
+    </div>
+
+    <!-- Contested banner — only when genuinely split opinions exist -->
+    {wall.stats.contested > 0 && (
+      <div class="verdict-contested-banner" role="status" aria-live="polite">
+        <span class="verdict-contested-banner__glyph" aria-hidden="true">◈</span>
+        <span>
+          {wall.stats.contested === 1
+            ? '1 post has genuine disagreement — readers are split'
+            : `${wall.stats.contested} posts have genuine disagreement — readers are split`}
+        </span>
+      </div>
+    )}
+
+    <!-- Filter tabs -->
+    <nav class="verdict-filters" aria-label="Filter posts">
+      {tabs.filter(t => t.count > 0 || t.id === 'all').map(tab => (
+        <a
+          href={tabHref(tab.id)}
+          class:list={['verdict-filter-tab', filter === tab.id && 'verdict-filter-tab--active']}
+          aria-current={filter === tab.id ? 'page' : undefined}
+        >
+          {tab.label}
+          {tab.count > 0 && <span style="opacity: 0.5; margin-left: 4px;">({tab.count})</span>}
+        </a>
+      ))}
+    </nav>
+
+    <!-- Card grid -->
+    <section class="verdict-grid" aria-label={`${shown.length} posts`}>
+      {shown.length > 0
+        ? shown.map(post => <VerdictCard post={post} />)
+        : (
+          <div class="verdict-empty">
+            <p>No posts match this filter.</p>
+          </div>
+        )
+      }
+    </section>
+
+    <!-- Footer -->
+    {wall.stats.fossil > 0 && (
+      <footer class="verdict-footer">
+        <a href="/graveyard" class="verdict-footer-link">
+          {wall.stats.fossil} {wall.stats.fossil === 1 ? 'post' : 'posts'} in the graveyard →
+        </a>
+      </footer>
+    )}
+
+  </main>
+</BaseLayout>

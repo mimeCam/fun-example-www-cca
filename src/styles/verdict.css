@@ -1,0 +1,216 @@
+/* src/styles/verdict.css
+   Layout layer for /verdict — Verdict Wall.
+   Import in verdict.astro frontmatter only. Do NOT load via BaseLayout.
+   Card-level styles live in VerdictCard.astro (scoped).
+   Load order: global.css → verdict.css
+
+   Credits: Tanya Donska (UX spec — 2-col grid, hero, filter tabs, atmosphere)
+*/
+
+/* ── Page container ──────────────────────────────────────────────── */
+
+.verdict-page {
+  padding: 3rem 1.25rem 6rem;
+  max-width: 54rem;          /* 860px ≈ 54rem at 16px base */
+  margin: 0 auto;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────── */
+
+.verdict-hero {
+  margin-bottom: 2.5rem;
+}
+
+.verdict-hero-title {
+  font-size: clamp(1.5rem, 5vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 0.4rem;
+  line-height: 1.1;
+}
+
+.verdict-hero-tagline {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.38);
+  margin: 0 0 1rem;
+  letter-spacing: 0.01em;
+  max-width: 38rem;
+}
+
+/* Batting average chip: inline amber pill — reuses global chip tokens */
+.verdict-avg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.08);
+  font-size: 0.72rem;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.verdict-avg-chip__label {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.04em;
+}
+
+/* ── Stats bar ───────────────────────────────────────────────────── */
+
+.verdict-stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.verdict-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.verdict-stat__value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.verdict-stat__label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+/* ── Filter tabs ─────────────────────────────────────────────────── */
+
+.verdict-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+
+.verdict-filter-tab {
+  padding: 5px 14px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.38);
+  text-decoration: none;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+  white-space: nowrap;
+}
+
+.verdict-filter-tab:hover {
+  color: rgba(255, 255, 255, 0.75);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.verdict-filter-tab--active {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.07);
+}
+
+/* ── Card grid: 2-col desktop, 1-col mobile ──────────────────────── */
+
+.verdict-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 600px) {
+  .verdict-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+
+.verdict-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.verdict-empty p {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.28);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+
+.verdict-footer {
+  margin-top: 3rem;
+  text-align: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.verdict-footer-link {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.28);
+  text-decoration: none;
+  transition: color 200ms ease;
+  display: inline-block;
+  padding: 8px 0;
+}
+
+.verdict-footer-link:hover { color: rgba(255, 255, 255, 0.65); }
+
+/* ── Contested signal banner ─────────────────────────────────────── */
+
+.verdict-contested-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  font-size: 0.7rem;
+  color: rgba(245, 158, 11, 0.85);
+  letter-spacing: 0.03em;
+}
+
+.verdict-contested-banner__glyph {
+  font-size: 0.9rem;
+  animation: pulse-glyph 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse-glyph {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1.0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict-contested-banner__glyph { animation: none; opacity: 0.8; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .verdict-page     { padding: 2rem 1rem 4rem; }
+  .verdict-stats    { gap: 1rem; }
+  .verdict-filters  { gap: 0.3rem; }
+}

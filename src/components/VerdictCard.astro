@@ -1,0 +1,368 @@
+---
+// src/components/VerdictCard.astro
+// Jury card for the Verdict Wall — specimen-cabinet presentation.
+// One post on trial: conviction label, stance bar, death clock, CTA.
+// SSR-only. No hydration island — all state encoded server-side.
+//
+// Layout (Tanya §VerdictCard spec):
+//   Row 1: DeathClock ring (compact) + title + state badge
+//   Row 2: conviction verdict (amber ◈ glyph, large) + label
+//   Row 3: stance bar — agree(emerald) | torn(amber) | disagree(red)
+//   Row 4: CTA [Take Stance →] + [audited ✓] link
+//
+// Credits: Tanya Donska (UX spec — VerdictCard layout, colors, hover)
+
+import type { VerdictPost } from '../lib/verdict-wall';
+import DeathClock from './DeathClock.astro';
+
+interface Props {
+  post: VerdictPost;
+}
+
+const { post } = Astro.props;
+
+// ── State badge ───────────────────────────────────────────────────────────────
+
+const STATE_LABELS: Record<string, string> = {
+  living:     'LIVING',
+  endangered: 'ENDANGERED',
+  revived:    'REVIVED',
+  fossil:     'FOSSIL',
+};
+
+const STATE_COLORS: Record<string, string> = {
+  living:     '#f59e0b',  // amber
+  endangered: '#f97316',  // orange
+  revived:    '#10b981',  // emerald
+  fossil:     '#4b5563',  // cool gray
+};
+
+const stateColor = STATE_COLORS[post.verdictState] ?? '#4b5563';
+const stateLabel = STATE_LABELS[post.verdictState] ?? 'UNKNOWN';
+
+// ── Conviction label ──────────────────────────────────────────────────────────
+
+const CONVICTION_LABELS: Record<string, string> = {
+  'still-true': 'Still True',
+  'evolved':    'Evolved',
+  'unaudited':  'Unaudited',
+  'wrong':      'Wrong',
+  'abandoned':  'Abandoned',
+};
+
+const CONVICTION_COLORS: Record<string, string> = {
+  'still-true': '#10b981',
+  'evolved':    '#f59e0b',
+  'unaudited':  'rgba(255,255,255,0.35)',
+  'wrong':      '#f87171',
+  'abandoned':  '#6b7280',
+};
+
+const convictionKey   = post.conviction ?? 'unaudited';
+const convictionLabel = CONVICTION_LABELS[convictionKey] ?? 'Unaudited';
+const convictionColor = CONVICTION_COLORS[convictionKey] ?? 'rgba(255,255,255,0.35)';
+
+// ── Stance bar ────────────────────────────────────────────────────────────────
+
+const hasStances = post.stanceTotal > 0;
+
+// ── Inline border-left accent via CSS var ────────────────────────────────────
+const cardStyle = `--state-color: ${stateColor};`;
+---
+
+<article
+  class:list={['verdict-card', `verdict-card--${post.verdictState}`]}
+  style={cardStyle}
+  data-slug={post.slug}
+  aria-label={`${post.title} — ${stateLabel}`}
+>
+
+  <!-- Row 1: clock + title + badge -->
+  <div class="vc-header">
+    <DeathClock
+      daysRemaining={post.daysRemaining}
+      urgency={post.clockUrgency}
+      compact={true}
+      conviction={post.conviction}
+    />
+    <div class="vc-title-group">
+      <h2 class="vc-title">
+        <a href={`/blog/${post.slug}/`} class="vc-title-link">{post.title}</a>
+      </h2>
+      <span
+        class="vc-state-badge"
+        style={`color: ${stateColor}; border-color: ${stateColor}33;`}
+        aria-label={`Status: ${stateLabel}`}
+      >{stateLabel}</span>
+    </div>
+  </div>
+
+  <!-- Row 2: conviction verdict -->
+  <div class="vc-conviction" style={`color: ${convictionColor};`}>
+    <span class="vc-conviction-glyph" aria-hidden="true">◈</span>
+    <span class="vc-conviction-value">{convictionLabel}</span>
+    <span class="vc-conviction-label">conviction</span>
+  </div>
+
+  <!-- Row 3: stance bar -->
+  {hasStances ? (
+    <div
+      class="vc-stance-bar"
+      aria-label={`Stances: ${post.agreePct}% agree, ${post.tornPct}% torn, ${post.disagreePct}% disagree`}
+      title={`${post.stanceTotal} total votes`}
+    >
+      <div class="vc-stance-segments">
+        {post.agreeCount > 0 && (
+          <div
+            class="vc-stance-seg vc-stance-seg--agree"
+            style={`width: ${post.agreePct}%`}
+            aria-label={`Agree ${post.agreePct}%`}
+          />
+        )}
+        {post.tornCount > 0 && (
+          <div
+            class="vc-stance-seg vc-stance-seg--torn"
+            style={`width: ${post.tornPct}%`}
+            aria-label={`Torn ${post.tornPct}%`}
+          />
+        )}
+        {post.disagreeCount > 0 && (
+          <div
+            class="vc-stance-seg vc-stance-seg--disagree"
+            style={`width: ${post.disagreePct}%`}
+            aria-label={`Disagree ${post.disagreePct}%`}
+          />
+        )}
+      </div>
+      <div class="vc-stance-legend" aria-hidden="true">
+        {post.agreeCount > 0    && <span class="vc-leg vc-leg--agree">{post.agreePct}%</span>}
+        {post.tornCount > 0     && <span class="vc-leg vc-leg--torn">{post.tornPct}%</span>}
+        {post.disagreeCount > 0 && <span class="vc-leg vc-leg--disagree">{post.disagreePct}%</span>}
+        <span class="vc-leg-total">{post.stanceTotal} votes</span>
+      </div>
+    </div>
+  ) : (
+    <p class="vc-no-stances">No verdicts yet — be first</p>
+  )}
+
+  <!-- Row 4: CTA -->
+  <div class="vc-actions">
+    {!post.entombed && (
+      <a href={`/blog/${post.slug}/`} class="vc-cta">Take Stance →</a>
+    )}
+    {post.entombed && (
+      <a href={`/graveyard`} class="vc-cta vc-cta--ghost">View in graveyard →</a>
+    )}
+    <a
+      href={`/audit/${post.slug}/`}
+      class="vc-audit-link"
+      aria-label="View conviction audit receipt"
+    >audited ✓</a>
+  </div>
+
+</article>
+
+<style>
+  /* ── Card shell ──────────────────────────────────────────────────── */
+  .verdict-card {
+    position: relative;
+    background: #1a1612;
+    border: 1px solid #2a2420;
+    border-left: 3px solid var(--state-color, #f59e0b);
+    border-radius: 12px;
+    padding: 1rem 1.1rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: box-shadow 200ms ease-out, transform 200ms ease-out;
+  }
+
+  .verdict-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 28px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(245, 158, 11, 0.12);
+  }
+
+  /* ── Row 1: header ───────────────────────────────────────────────── */
+  .vc-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .vc-title-group {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .vc-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.3;
+    /* Clamp to 2 lines — preserves grid height uniformity */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .vc-title-link {
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+
+  .vc-title-link:hover { color: #f59e0b; }
+
+  .vc-state-badge {
+    align-self: flex-start;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    padding: 2px 7px;
+    border: 1px solid;
+    border-radius: 4px;
+    background: transparent;
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+
+  /* ── Row 2: conviction ───────────────────────────────────────────── */
+  .vc-conviction {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+
+  .vc-conviction-glyph {
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.7;
+  }
+
+  .vc-conviction-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .vc-conviction-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.25);
+    align-self: center;
+  }
+
+  /* ── Row 3: stance bar ───────────────────────────────────────────── */
+  .vc-stance-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .vc-stance-segments {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .vc-stance-seg {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 400ms ease;
+    min-width: 4px; /* always visible even at 1% */
+  }
+
+  .vc-stance-seg--agree    { background: #10b981; } /* emerald */
+  .vc-stance-seg--torn     { background: #f59e0b; } /* amber   */
+  .vc-stance-seg--disagree { background: #f87171; } /* red     */
+
+  .vc-stance-legend {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .vc-leg {
+    font-size: 0.62rem;
+    font-weight: 600;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+  }
+
+  .vc-leg--agree    { color: #10b981; }
+  .vc-leg--torn     { color: #f59e0b; }
+  .vc-leg--disagree { color: #f87171; }
+
+  .vc-leg-total {
+    font-size: 0.58rem;
+    color: rgba(255, 255, 255, 0.22);
+    margin-left: auto;
+  }
+
+  /* ── No stances placeholder ──────────────────────────────────────── */
+  .vc-no-stances {
+    font-size: 0.65rem;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.2);
+    margin: 0;
+  }
+
+  /* ── Row 4: actions ──────────────────────────────────────────────── */
+  .vc-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .vc-cta {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #f59e0b;
+    text-decoration: none;
+    transition: opacity 150ms ease;
+  }
+
+  .vc-cta:hover { opacity: 0.7; }
+
+  .vc-cta--ghost { color: rgba(255, 255, 255, 0.35); }
+
+  .vc-audit-link {
+    font-size: 0.62rem;
+    color: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 150ms ease;
+  }
+
+  .vc-audit-link:hover { color: rgba(255, 255, 255, 0.6); }
+
+  /* ── Fossil: desaturate the whole card ───────────────────────────── */
+  .verdict-card--fossil {
+    opacity: 0.7;
+    filter: saturate(0.5);
+  }
+
+  .verdict-card--fossil:hover {
+    opacity: 0.9;
+    filter: saturate(0.7);
+  }
+
+  /* ── Reduced motion ──────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .verdict-card { transition: none; }
+    .vc-stance-seg { transition: none; }
+  }
+</style>
