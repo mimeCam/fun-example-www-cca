@@ -1,25 +1,35 @@
 ---
 // src/components/SiteNav.astro
-// Minimal sticky nav — site name (left) + presence indicator (right).
-// No links. The field speaks for itself. URL bar is sufficient navigation.
+// Minimal sticky nav — logo (left) · /now · /graveyard (right cluster).
+// Three items max (Tanya §12). Active page underlined in amber (conviction gold).
 // Erosion bar retained on blog post detail pages only.
 //
 // Presence elements use the same IDs as the old PresenceBand so
-// presence-unified.ts hydrates them automatically. Scope is set
-// based on pageId: blog→"slug", everything else→"global".
+// presence-unified.ts hydrates them automatically.
 //
-// Credits: Tanya (UX spec §2, §8), Elon (strip nav links)
+// Credits: Tanya (UX spec §12 — Navigation), Elon (strip nav links)
 
 import { getActivePage } from '../lib/nav';
 
-const path = Astro.url.pathname;
-const pageId = getActivePage(path);
-const isBlogPost = pageId === 'blog';
+const path        = Astro.url.pathname;
+const pageId      = getActivePage(path);
+const isBlogPost  = pageId === 'blog';
 const presenceScope = isBlogPost ? 'slug' : 'global';
 ---
 
 <nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site">
-  <a href="/" class="site-name">octopoid</a>
+  <a href="/" class:list={['site-name', pageId === 'home' && 'nav-link--active']}>
+    octopoid
+  </a>
+
+  <div class="nav-links">
+    <a href="/now" class:list={['nav-link', pageId === 'now' && 'nav-link--active']}>
+      now
+    </a>
+    <a href="/graveyard" class:list={['nav-link', pageId === 'graveyard' && 'nav-link--active']}>
+      graveyard
+    </a>
+  </div>
 
   <div
     class="presence-indicator"
@@ -44,15 +54,16 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
     top: 0;
     z-index: 10;
     display: flex;
-    justify-content: space-between;
     align-items: center;
     height: 48px;
     padding: 0 1.5rem;
+    gap: 1.25rem;
     background: rgba(12, 12, 14, 0.75);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
+  /* Site name / logo */
   .site-name {
     font-size: 0.82rem;
     font-weight: 600;
@@ -60,10 +71,34 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
     color: rgba(255, 255, 255, 0.88);
     text-decoration: none;
     transition: opacity 120ms ease;
+    flex-shrink: 0;
+  }
+  .site-name:hover { opacity: 0.7; }
+
+  /* Secondary nav links */
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
-  .site-name:hover {
-    opacity: 0.7;
+  .nav-link {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.38);
+    text-decoration: none;
+    transition: color 150ms ease;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+  }
+
+  .nav-link:hover { color: rgba(255, 255, 255, 0.7); }
+
+  /* Active page: amber underline — conviction gold is the active signal */
+  .nav-link--active,
+  .site-name.nav-link--active {
+    color: rgba(255, 255, 255, 0.75);
+    border-bottom-color: #F5A623;
   }
 
   /* ── Presence indicator (right side) ── */
@@ -74,11 +109,10 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
     gap: 8px;
     opacity: 0;
     transition: opacity 0.4s ease;
+    margin-left: auto;
   }
 
-  .presence-indicator.presence-active {
-    opacity: 1;
-  }
+  .presence-indicator.presence-active { opacity: 1; }
 
   .presence-dot {
     width: 6px;
@@ -95,9 +129,7 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
     color: rgba(255, 255, 255, 0.45);
   }
 
-  .presence-count {
-    display: none;
-  }
+  .presence-count { display: none; }
 
   .presence-fallback {
     font-size: 0.63rem;
@@ -146,7 +178,8 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
   /* ── Responsive ── */
 
   @media (max-width: 640px) {
-    .site-nav { padding: 0 1rem; }
+    .site-nav { padding: 0 1rem; gap: 0.75rem; }
+    .nav-link { font-size: 0.68rem; }
   }
 
   @media (prefers-reduced-motion: reduce) {

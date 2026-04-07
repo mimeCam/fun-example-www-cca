@@ -1,13 +1,14 @@
 // src/lib/nav.ts
 // Shared navigation helpers — framework-agnostic, SSR-safe.
-// Post-consolidation: /now and /wall folded into homepage.
+// /now is a first-class page (Tanya §3 — sitemap revision).
 
 /** Canonical page IDs for the sitemap. */
-export type PageId = 'home' | 'blog' | 'graveyard' | 'unknown';
+export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
-  ['/blog', 'blog'],
+  ['/blog',      'blog'],
   ['/graveyard', 'graveyard'],
+  ['/now',       'now'],
 ];
 
 /** Derives the active PageId from a pathname string. SSR-safe. */
@@ -25,13 +26,14 @@ export function getActivePage(pathname: string): PageId {
 // ---------------------------------------------------------------------------
 
 export function _testNav(): void {
-  console.assert(getActivePage('/') === 'home', 'root -> home');
-  console.assert(getActivePage('/blog/hello') === 'blog', 'blog slug');
-  console.assert(getActivePage('/graveyard') === 'graveyard', 'graveyard');
-  console.assert(getActivePage('/now') === 'unknown', '/now removed');
-  console.assert(getActivePage('/wall') === 'unknown', '/wall removed');
-  console.assert(getActivePage('/xyz') === 'unknown', 'unknown');
-  console.assert(getActivePage('/blog?q=1') === 'blog', 'query');
-  console.assert(getActivePage('/graveyard#top') === 'graveyard', 'hash');
+  console.assert(getActivePage('/')            === 'home',      'root -> home');
+  console.assert(getActivePage('/blog/hello')  === 'blog',      'blog slug');
+  console.assert(getActivePage('/graveyard')   === 'graveyard', 'graveyard');
+  console.assert(getActivePage('/now')         === 'now',       '/now -> now');
+  console.assert(getActivePage('/now/')        === 'now',       '/now/ -> now');
+  console.assert(getActivePage('/wall')        === 'unknown',   '/wall removed');
+  console.assert(getActivePage('/xyz')         === 'unknown',   'unknown');
+  console.assert(getActivePage('/blog?q=1')    === 'blog',      'query strip');
+  console.assert(getActivePage('/graveyard#t') === 'graveyard', 'hash strip');
   console.log('[nav] OK — getActivePage verified');
 }

@@ -1,0 +1,99 @@
+---
+// src/pages/now.astro
+// The Author Right Now — living signal extracted from homepage.
+// Philosophically opposite to the post ledger: impermanent, present-tense,
+// almost a sticky note on top of the library.
+//
+// No conviction gold. No decay mechanics. Lighter visual register by design.
+// Murmurs and NowLine belong here — not competing with sealed bets on the field.
+//
+// Credits: Tanya (UX spec §3 — sitemap revision, §10 — /now visual treatment)
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NowLine from '../components/NowLine.astro';
+import Murmurs from '../components/Murmurs.astro';
+import { partitionNow, computeFreshness } from '../lib/now';
+import type { NowTiered } from '../lib/now';
+import nowData from '../data/now.json';
+
+const data = nowData as NowTiered;
+const { hero } = partitionNow(data);
+
+// Use the hero item's update date if available; fall back to rightNow.updated.
+const lastUpdated = hero[0]?.item.updated ?? data.rightNow.updated;
+const freshness   = computeFreshness(lastUpdated);
+---
+
+<BaseLayout title="Now — Octopoid">
+  <main class="now-page">
+
+    <header class="now-header">
+      <h1 class="now-title">Now</h1>
+      <span class="now-freshness" title={freshness.quip}>{freshness.label}</span>
+    </header>
+
+    <NowLine />
+
+    <Murmurs />
+
+    <footer class="now-footer">
+      <a href="/" class="now-back">← back to the field</a>
+    </footer>
+
+  </main>
+</BaseLayout>
+
+<style>
+  /* Lighter background than the main site — this page is impermanent by nature */
+  .now-page {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .now-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .now-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Freshness quip: secondary, ephemeral — matches the page's register */
+  .now-freshness {
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.28);
+    font-style: italic;
+    letter-spacing: 0.03em;
+    cursor: default;
+  }
+
+  .now-footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .now-back {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.28);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 200ms ease;
+  }
+
+  .now-back:hover { color: rgba(255, 255, 255, 0.6); }
+
+  @media (max-width: 640px) {
+    .now-page { padding: 1.5rem 1rem 3rem; }
+  }
+</style>

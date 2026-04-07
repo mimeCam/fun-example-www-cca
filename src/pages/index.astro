@@ -1,47 +1,38 @@
 ---
 // src/pages/index.astro
-// Homepage "The Field" — the single screen. Everything lives here.
-// NowLine (hero + season) → decay cards in time bands → murmurs (wall fold) → graveyard link.
-// Shadow depth is the primary age signal. Hover revives any card.
+// Homepage "The Field" — one job: show living posts with conviction scores
+// and death clocks. Decay is felt. The sealed bet is present on every card.
 //
-// First-Visit Clarity Engine: strip visual noise, amplify decay contrast,
-// deliver one onboarding microinteraction in under 5 seconds.
+// NowLine + Murmurs extracted to /now (Tanya §3 — sitemap revision).
+// GraveyardTeaser removed — graveyard is a nav link, not a homepage section.
+// Band labels removed — DeathClock communicates age, no label needed (Tanya §8).
 //
 // TODO: add pagination once post count grows beyond ~20
 //
-// Credits: Tanya (UX spec §3 — The Field layout), Mike (consolidation plan)
+// Credits: Tanya (UX spec §8 — The Field layout), Mike (consolidation plan)
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
 import EndangeredBand from '../components/EndangeredBand.astro';
 import FirstVisitHint from '../components/FirstVisitHint.astro';
-import NowLine from '../components/NowLine.astro';
-import Murmurs from '../components/Murmurs.astro';
-import GraveyardTeaser from '../components/GraveyardTeaser.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
 import { endangeredClientScript } from '../lib/endangered';
-import { getEntombedCount, getNewestEntombed } from '../lib/graveyardStats';
 
-const posts = await getCollection('blog');
+const posts        = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
+
+// Endangered posts surface in EndangeredBand — absence from main feed is the drama.
 const endangered = displayPosts.filter(p => p.endangered);
-// Tanya P0: endangered posts must not appear in main feed bands — absence = drama.
-// groupIntoBands already excludes entombed; we also exclude endangered here.
-const feedPosts = displayPosts.filter(p => !p.endangered);
-const bands = groupIntoBands(feedPosts);
-const entombedCount = getEntombedCount(displayPosts);
-const newestEntombed = getNewestEntombed(displayPosts);
+const feedPosts  = displayPosts.filter(p => !p.endangered);
+const bands      = groupIntoBands(feedPosts);
 const allEntombed = displayPosts.every(p => p.entombed);
 ---
 
 <BaseLayout title="Persona Blog">
   <script set:html={endangeredClientScript()} />
   <main class="feed">
-
-    <NowLine graveyardCount={entombedCount} />
-    <GraveyardTeaser entombedCount={entombedCount} newestSlug={newestEntombed?.slug} />
 
     {allEntombed && (
       <div class="empty-state">
@@ -60,14 +51,12 @@ const allEntombed = displayPosts.every(p => p.entombed);
 
     {bands.recent.posts.length > 0 && (
       <section class="band band--recent" data-band="recent" aria-label={bands.recent.hint}>
-        <h2 class="band-label">{bands.recent.label}</h2>
         {bands.recent.posts.map(post => <DecayCard post={post} />)}
       </section>
     )}
 
     {bands.archive.posts.length > 0 && (
       <section class="band band--archive" data-band="archive" aria-label={bands.archive.hint}>
-        <h2 class="band-label">{bands.archive.label}</h2>
         {bands.archive.posts.map(post => <DecayCard post={post} />)}
         {bands.archive.overflow > 0 && (
           <p class="archive-hint">
@@ -78,8 +67,6 @@ const allEntombed = displayPosts.every(p => p.entombed);
     )}
 
     {endangered.length > 0 && <EndangeredBand posts={endangered} />}
-
-    <Murmurs />
 
     <FirstVisitHint />
   </main>
@@ -92,18 +79,9 @@ const allEntombed = displayPosts.every(p => p.entombed);
     margin: 0 auto;
   }
 
-  /* Generous spacing between bands — spacing IS the label */
+  /* Spacing between bands — gap is the visual separator, not labels */
   .band { margin-bottom: 3rem; }
   .band + .band { margin-top: 4rem; }
-
-  .band-label {
-    font-size: 0.65rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    opacity: 0.35;
-    margin: 0 0 0.75rem;
-    font-weight: 400;
-  }
 
   .band--archive { opacity: 0.6; }
 

@@ -1,89 +1,96 @@
 ---
 // src/pages/blog/[slug].astro
-// Blog detail page — renders a single post with mood atmosphere.
-// Uses Astro's getStaticPaths for SSG; zero client JS.
+// Blog detail page — "The Sealed Bet" (Tanya §9).
+// Above-fold: ConvictionHero (score + clock/grace state).
+// Below fold: post content, KeepButton (single CTA), GhostEchoes, AuditTrail.
+//
+// ConvictionHero replaces ConvictionDeclaration above fold (Mike §Modules).
+// ConvictionDeclaration stays in codebase — still used by ConvictionAuditTrail context.
+// ConvictionPanel merged into ConvictionHero's wager display — removed from below fold.
+// ReadingPulse removed (Tanya §16 — zero reader value).
 //
 // DONE: reading progress "erosion bar" — see SiteNav.astro + inline script below
-// DONE: share + revival sheet — see RevivalShareSheet.astro + revivalShare.ts
-// DONE: prev/next post navigation at bottom — see PostNav.astro + postNav.ts
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
 import PostNav from '../../components/PostNav.astro';
+import ConvictionHero from '../../components/ConvictionHero.astro';
+import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
+import GhostEchoes from '../../components/GhostEchoes.astro';
+import RevivalMoment from '../../components/RevivalMoment.astro';
+import KeepButton from '../../components/KeepButton.astro';
 import { allPostDisplayData } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
-import RevivalMoment from '../../components/RevivalMoment.astro';
-import RevivalCounter from '../../components/RevivalCounter.astro';
-import KeepButton from '../../components/KeepButton.astro';
-import ReadingPulse from '../../components/ReadingPulse.astro';
-import ConvictionPanel from '../../components/ConvictionPanel.astro';
-import ConvictionDeclaration from '../../components/ConvictionDeclaration.astro';
-import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
-import GhostEchoes from '../../components/GhostEchoes.astro';
-import DeathClockBanner from '../../components/DeathClockBanner.astro';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
 import { daysUntilEntombment, clockUrgency, CLOCK_MAX_DAYS } from '../../lib/death-clock';
-import { decayFactor } from '../../lib/decay-engine';
-// PresenceBand removed — presence indicator now lives in SiteNav (Tanya §2)
+import { decayFactor, dominantConviction } from '../../lib/decay-engine';
+import { getGraceState } from '../../lib/cold-start';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog');
+  const posts  = await getCollection('blog');
   const sorted = allPostDisplayData(posts);
   return posts.map(post => ({
     params: { slug: post.slug },
-    props: { post, nav: getPostNav(post.slug, sorted) },
+    props:  { post, nav: getPostNav(post.slug, sorted) },
   }));
 }
 
 const { post, nav } = Astro.props;
-const { Content } = await post.render();
-const readingTime = getReadingTime(post.body);
-const pubDate = formatPubDate(post.data.pubDate);
+const { Content }   = await post.render();
+const readingTime   = getReadingTime(post.body);
+const pubDate       = formatPubDate(post.data.pubDate);
+const pubDateISO    = post.data.pubDate.toISOString();
+const lifespan      = post.data.lifespan ?? 365;
 
-const convictions = post.data.convictions ?? [];
-const hasConvictions = convictions.length > 0;
+const convictions      = post.data.convictions ?? [];
+const convictionVerdicts = convictions.map((c: { verdict: string }) => c.verdict as Parameters<typeof dominantConviction>[0][number]);
+const dominantVerdict  = dominantConviction(convictionVerdicts);
 
-// Death Clock — prerendered at build time; accurate to within a day (sufficient for the banner).
-const revivalCount   = safeRevivalCount(post.slug);
-const readingSeconds = safeReadingSeconds(post.slug);
-const daysRemaining  = daysUntilEntombment(
-  post.data.pubDate.toISOString(), revivalCount, readingSeconds, CLOCK_MAX_DAYS,
-);
-const postUrgency   = clockUrgency(daysRemaining);
-const showBanner    = postUrgency === 'critical' || postUrgency === 'dying';
-const postDecay     = decayFactor(post.data.pubDate.toISOString(), post.data.lifespan ?? 365, new Date(), revivalCount);
-const latestConviction = convictions.length > 0 ? convictions[convictions.length - 1].verdict : null;
+// Collective memory — safe reads (DB may not be seeded in fresh deploys)
+const revivalCount   = safeRead(() => getRevivalCount(post.slug));
+const readingSeconds = safeRead(() => getReadingSeconds(post.slug));
 
-function safeRevivalCount(slug: string): number {
-  try { return getRevivalCount(slug); } catch { return 0; }
+// Decay + clock state
+const postDecay      = decayFactor(pubDateISO, lifespan, new Date(), revivalCount, readingSeconds, dominantVerdict);
+const daysRemaining  = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS);
+const postUrgency    = clockUrgency(daysRemaining);
+
+// Grace state — discriminated union drives ConvictionHero's clock section
+const graceState     = safeRead(() => getGraceState(post.slug, pubDateISO, postDecay, daysRemaining));
+
+function safeRead<T>(fn: () => T, fallback?: T): T {
+  try { return fn(); } catch { return fallback as T; }
 }
-function safeReadingSeconds(slug: string): number {
-  try { return getReadingSeconds(slug); } catch { return 0; }
-}
+
+// safeRead for graceState needs a typed fallback
+const safeGraceState = graceState ?? { warming: false, decayFactor: postDecay, daysRemaining };
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={post.data.pubDate.toISOString()} ogSlug={post.slug}>
+<BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={pubDateISO} ogSlug={post.slug}>
   <main class="post-detail">
     <nav class="post-nav-row" aria-label="Post navigation">
       <a href="/" class="back-link">← back to field</a>
-      {hasConvictions && (
-        <a href="#convictions" class="beliefs-link" aria-label="View author belief audit">
-          [⚖ beliefs]
-        </a>
-      )}
+      <a href="#conviction-audit" class="audit-link" aria-label="View conviction audit trail">
+        [audit ↓]
+      </a>
     </nav>
 
-    <!-- ConvictionDeclaration: above-fold sealed wager — reader understands stakes immediately -->
-    <ConvictionDeclaration slug={post.slug} revivalCount={revivalCount} />
-
     <header class="post-header">
-      <time datetime={post.data.pubDate.toISOString()}>{pubDate}</time>
+      <time datetime={pubDateISO}>{pubDate}</time>
       <h1>{post.data.title}</h1>
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
+
+    <!-- ConvictionHero: above-fold sealed wager. The first impression. -->
+    <ConvictionHero
+      slug={post.slug}
+      graceState={safeGraceState}
+      revivalCount={revivalCount}
+      conviction={dominantVerdict}
+    />
 
     <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
       <article class="post-body">
@@ -91,64 +98,43 @@ function safeReadingSeconds(slug: string): number {
       </article>
     </RevivalMoment>
 
-    <!-- Revival footer: the natural "end of article" moment to act -->
+    <!-- Single CTA: end-of-article is the natural moment to act -->
     <div class="revival-footer">
-      <RevivalCounter
-        slug={post.slug}
-        initialCount={revivalCount}
-        decayFactor={postDecay}
-        lifespan={post.data.lifespan ?? 365}
-      />
       <KeepButton
         slug={post.slug}
         count={revivalCount}
         urgency={postUrgency}
-        conviction={latestConviction}
+        conviction={dominantVerdict}
         decayFactor={postDecay}
-        lifespan={post.data.lifespan ?? 365}
+        lifespan={lifespan}
       />
     </div>
 
+    <!-- Sparkline: only when revival history exists -->
     <GhostEchoes slug={post.slug} />
 
-    {hasConvictions && <ConvictionPanel convictions={convictions} />}
-
-    <!-- ConvictionAuditTrail: hash-chained timeline — zero JS, <details> collapse -->
+    <!-- Audit trail: collapsed by default, for power readers -->
     <ConvictionAuditTrail slug={post.slug} />
 
   </main>
 
-  {showBanner && (
-    <DeathClockBanner slug={post.slug} daysRemaining={daysRemaining} urgency={postUrgency} />
-  )}
-
-  <ReadingPulse slug={post.slug} />
-
   <PostNav nav={nav} />
 
-  <!-- Erosion Bar: scroll-driven progress as a CSS custom property -->
+  <!-- Erosion bar: scroll-driven progress as a CSS custom property -->
   <script>
     (function erosionScroll() {
       const bar = document.querySelector('.erosion-bar');
       if (!bar) return;
-
       let ticking = false;
-
       function update() {
-        const scrollTop = window.scrollY;
         const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = scrollMax > 0 ? 1 - Math.min(scrollTop / scrollMax, 1) : 1;
+        const progress  = scrollMax > 0 ? 1 - Math.min(window.scrollY / scrollMax, 1) : 1;
         document.documentElement.style.setProperty('--erosion-progress', String(progress));
         ticking = false;
       }
-
-      window.addEventListener('scroll', function onScroll() {
-        if (!ticking) {
-          requestAnimationFrame(update);
-          ticking = true;
-        }
+      window.addEventListener('scroll', function () {
+        if (!ticking) { requestAnimationFrame(update); ticking = true; }
       }, { passive: true });
-
       update();
     })();
   </script>
@@ -161,28 +147,31 @@ function safeReadingSeconds(slug: string): number {
     padding: 3rem 1.5rem 6rem;
   }
 
-  /* Back-link nav row — Tanya §3: "← back to field" + "[⚖ beliefs]" */
+  /* Nav row — back + audit link (Tanya §9: quiet nav, not prominent) */
   .post-nav-row {
     display: flex;
     align-items: center;
     gap: 1.25rem;
     margin-bottom: 2rem;
   }
+
   .back-link,
-  .beliefs-link {
+  .audit-link {
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.35);
     text-decoration: none;
     letter-spacing: 0.03em;
     transition: color 180ms ease;
   }
-  .back-link:hover,
-  .beliefs-link:hover { color: rgba(255, 255, 255, 0.7); }
-  .beliefs-link { margin-left: auto; }
 
-  .post-header {
-    margin-bottom: 2.5rem;
-  }
+  .back-link:hover,
+  .audit-link:hover { color: rgba(255, 255, 255, 0.7); }
+
+  .audit-link { margin-left: auto; }
+
+  /* Post header: date → title → badge (Tanya §9 — above-fold layout) */
+  .post-header { margin-bottom: 2rem; }
+
   .post-header time {
     display: block;
     font-size: 0.8rem;
@@ -190,26 +179,31 @@ function safeReadingSeconds(slug: string): number {
     margin-bottom: 0.5rem;
     letter-spacing: 0.04em;
   }
+
   .post-header h1 {
-    font-size: 2rem;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
     font-weight: 700;
     line-height: 1.2;
     margin-bottom: 0.75rem;
+    letter-spacing: -0.03em;
     color: var(--mood-accent, inherit);
   }
+
+  /* Article body */
   .post-body {
     font-size: 1.1rem;
     line-height: 1.75;
     color: rgba(255, 255, 255, 0.88);
   }
-  .post-body :global(p) {
-    margin-bottom: 1.4em;
-  }
+
+  .post-body :global(p)  { margin-bottom: 1.4em; }
+
   .post-body :global(a) {
     color: var(--mood-accent, currentColor);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+
   .post-body :global(h2) {
     font-size: 1.5rem;
     font-weight: 600;
@@ -217,6 +211,7 @@ function safeReadingSeconds(slug: string): number {
     line-height: 1.3;
     color: rgba(255, 255, 255, 0.94);
   }
+
   .post-body :global(h3) {
     font-size: 1.2rem;
     font-weight: 600;
@@ -224,6 +219,7 @@ function safeReadingSeconds(slug: string): number {
     line-height: 1.4;
     color: rgba(255, 255, 255, 0.90);
   }
+
   .post-body :global(blockquote) {
     border-left: 2px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
     padding: 0.25em 1em;
@@ -231,6 +227,7 @@ function safeReadingSeconds(slug: string): number {
     color: rgba(255, 255, 255, 0.7);
     font-style: italic;
   }
+
   .post-body :global(pre) {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -241,41 +238,30 @@ function safeReadingSeconds(slug: string): number {
     font-size: 0.9rem;
     line-height: 1.6;
   }
+
   .post-body :global(code) {
     font-size: 0.88em;
     background: rgba(255, 255, 255, 0.06);
     padding: 0.15em 0.4em;
     border-radius: 4px;
   }
-  .post-body :global(pre code) {
-    background: none;
-    padding: 0;
-  }
+
+  .post-body :global(pre code) { background: none; padding: 0; }
+
   .post-body :global(img) {
     max-width: 100%;
     height: auto;
     border-radius: var(--radius, 12px);
     margin: 1.5em 0;
   }
-  /* Revival footer — end-of-article action zone */
+
+  /* Revival footer: centered single CTA (Tanya §9 — one primary action) */
   .revival-footer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
     margin: 3rem 0 2rem;
     padding-top: 2rem;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  /* Variant blocks: hidden by default, revealed by inline script */
-  .post-body :global(.variant) {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.6s ease-in;
-  }
-  .post-body :global(.variant[data-active="true"]) {
-    display: block;
-    opacity: 1;
   }
 </style>

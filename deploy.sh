@@ -4,36 +4,37 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v29 — Conviction Ledger (hash-chained audit trail) (2026-04-07)
+# Architecture v30 — Cold-Start Grace + /now Page + ConvictionHero (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Conviction Ledger: append-only hash-chained author wager system):
-#   conviction-ledger.ts — NEW: append-only SHA-256 hash-chained SQLite ledger
-#     for author conviction scores; single write path; seal/revival/death/
-#     resurrection events; ConvictionAlreadySealedError hard-guards double-seal;
-#     verifyChain() O(n) integrity scan; getLockedScore() feeds decay engine;
-#     uses same revivals.db in /app/data/ (SQLITE_VOLUME) — no new DB.
-#   api/conviction-seal.ts — NEW: POST endpoint; author seals conviction score
-#     at publish time; guards: ADMIN_SECRET env var, slug existence, score 1–10;
-#     double-seal returns 409; body: {slug, score, authorNote, adminSecret}.
-#   api/conviction-audit.ts — NEW: GET public endpoint; full chain verification
-#     + conviction timeline per slug; readers can verify integrity themselves.
-#   ConvictionDeclaration.astro — NEW: above-fold sealed wager display on post
-#     pages; pure SSR, zero client JS; lock icon signals broken chain.
-#   ConvictionAuditTrail.astro — NEW: collapsible hash-chain timeline below
-#     GhostEchoes; <details> native collapse, zero JS, color-coded by event type.
-#   cli/seal-conviction.mjs — NEW: CLI tool to seal conviction via API;
-#     ADMIN_SECRET env var required; errors loudly on double-seal.
-#   api/entomb.ts — UPDATED: appends 'death' event to conviction ledger
-#     (best-effort, non-blocking) with final revival count.
-#   api/revive.ts — UPDATED: appends 'revival' event to conviction ledger
-#     (best-effort, non-blocking) with reader seconds.
-#   blog/[slug].astro — UPDATED: includes ConvictionDeclaration (above-fold)
-#     and ConvictionAuditTrail (below ConvictionPanel).
-#   Infrastructure: ADMIN_SECRET env var now required in container for
-#     conviction-seal endpoint. No new services, volumes, or npm packages.
+# Sprint (latest — Cold-Start Grace System, /now page, ConvictionHero):
+#   lib/cold-start.ts — NEW: Cold-Start Grace System; suspends decay clock
+#     until READER_THRESHOLD (50) unique readers are seen OR GRACE_DAYS (90)
+#     elapse; GraceState discriminated union (warming/active); fingerprints
+#     visitors via SHA-256(ip+ua); writes reader_events table into same
+#     revivals.db (SQLITE_VOLUME at /app/data/) — no new DB or volume.
+#   api/cold-start-status.ts — NEW: GET (grace snapshot) + POST (record reader
+#     visit) endpoint; idempotent per visitor per slug; no auth required.
+#   components/ConvictionHero.astro — NEW: above-fold conviction hero replaces
+#     ConvictionDeclaration in the prime slot; shows score stamp (amber
+#     monospace), wager quote, warming state or death-clock ring, chain hash;
+#     pure SSR, zero client JS.
+#   pages/now.astro — NEW: /now page — living author signal (NowLine +
+#     Murmurs) extracted from homepage (Tanya §3 sitemap revision); lighter
+#     visual register, no conviction gold, no decay mechanics.
+#   components/SiteNav.astro — UPDATED: nav now surfaces /now and /graveyard
+#     as explicit links (Tanya §12); amber underline on active page; presence
+#     indicator pushed right via margin-left:auto.
+#   lib/nav.ts — UPDATED: 'now' added as first-class PageId; /now prefix
+#     mapped in PAGE_PREFIXES; test assertions updated.
+#   pages/index.astro — UPDATED: NowLine + Murmurs extracted to /now; homepage
+#     now focuses solely on living posts with conviction scores + death clocks.
+#   pages/blog/[slug].astro — UPDATED: ConvictionHero replaces
+#     ConvictionDeclaration in above-fold position.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     ADMIN_SECRET already required from v29 sprint.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Death Clock (SVG ring countdown, 6-tier urgency, CSS-only animation),
