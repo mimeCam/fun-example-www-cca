@@ -11,10 +11,12 @@ export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import AuditReceipt from '../../components/AuditReceipt.astro';
+import AuditReceipt  from '../../components/AuditReceipt.astro';
+import TrustBadge    from '../../components/TrustBadge.astro';
 import ConvictionTimeline from '../../components/ConvictionTimeline.astro';
 import { assembleAuditPayload } from '../../lib/audit-verifier';
-import { verifyAnchor } from '../../lib/anchor-verifier';
+import { verifyAnchor }         from '../../lib/anchor-verifier';
+import { getTstForSeal }        from '../../lib/timestamp-store';
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect('/404');
@@ -30,6 +32,9 @@ const payload = assembleAuditPayload(slug, post.data.title);
 const anchorVerification = payload.seal
   ? await verifyAnchor(slug).catch(() => null)
   : null;
+
+// RFC 3161 TST data — null for pre-stamp posts (graceful degradation).
+const tstData = payload.seal ? getTstForSeal(slug) : null;
 
 const pageTitle       = `Conviction Audit — ${post.data.title}`;
 const pageDescription = payload.seal
@@ -57,11 +62,15 @@ const pageDescription = payload.seal
       </p>
     </header>
 
+    <!-- RFC 3161 trust badge — shown when TST is available -->
+    {tstData && <div class="audit-trust-row"><TrustBadge tst={tstData} slug={slug} /></div>}
+
     <!-- The receipt — visual proof block -->
     <AuditReceipt
       seal={payload.seal}
       postTitle={payload.postTitle}
       anchorVerification={anchorVerification}
+      tstData={tstData}
     />
 
     <!-- Event timeline — chronological history -->
@@ -83,6 +92,9 @@ const pageDescription = payload.seal
     margin: 0 auto;
     padding: 3rem 1.5rem 6rem;
   }
+
+  /* RFC 3161 trust badge row */
+  .audit-trust-row { margin-bottom: 1rem; }
 
   /* Back nav */
   .audit-nav {

@@ -20,7 +20,9 @@ import {
   updateAnchor,
   ConvictionAlreadySealedError,
 } from '../../lib/conviction-ledger';
-import { anchorConviction } from '../../lib/conviction-anchor';
+import { anchorConviction }     from '../../lib/conviction-anchor';
+import { stamp, hashContent }   from '../../lib/rfc3161-client';
+import { storeTst }             from '../../lib/timestamp-store';
 
 export const prerender = false;
 
@@ -97,14 +99,26 @@ export const POST: APIRoute = async ({ request }) => {
       } catch { /* GitHub down or PAT invalid — anchor pending, seal still valid */ }
     }
 
+    // RFC 3161 trusted timestamp — fail-open: HMAC seal is valid without it.
+    let tstToken: string | null = null;
+    try {
+      const preimage  = `${slug}:${entry.conviction_score}:${entry.timestamp}`;
+      const tst       = await stamp(hashContent(preimage));
+      storeTst(entry.hash, tst.token, tst.tsaName);
+      tstToken = tst.token;
+    } catch (tstErr) {
+      console.warn('[conviction-seal] RFC 3161 stamp failed (seal still valid):', tstErr);
+    }
+
     // Broadcast conviction:sealed so live-conviction-hero.ts can update open tabs.
     broadcastNamed('conviction:sealed', { slug, score: entry.conviction_score });
     return json({
-      hash: entry.hash,
-      sealedAt: entry.timestamp,
-      score: entry.conviction_score,
+      hash:       entry.hash,
+      sealedAt:   entry.timestamp,
+      score:      entry.conviction_score,
       authorNote: entry.author_note,
       anchorUrl,
+      tst_token:  tstToken,
     });
   } catch (err) {
     if (err instanceof ConvictionAlreadySealedError) {

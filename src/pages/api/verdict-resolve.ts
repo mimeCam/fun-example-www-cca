@@ -19,7 +19,9 @@ import { resolveVerdict, VerdictAlreadySealedError } from '../../lib/verdict-res
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
 import { computeBattingAverage } from '../../lib/batting-average';
 import { getAnchorGistId } from '../../lib/conviction-ledger';
-import { anchorVerdict } from '../../lib/conviction-anchor';
+import { anchorVerdict }          from '../../lib/conviction-anchor';
+import { stamp, hashContent }     from '../../lib/rfc3161-client';
+import { storeTst }               from '../../lib/timestamp-store';
 
 export const prerender = false;
 
@@ -103,6 +105,15 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    // RFC 3161 trusted timestamp on the verdict close event — fail-open.
+    try {
+      const preimage = `${slug}:${record.verdict}:${record.originalScore}:${record.sealedAt}`;
+      const tst      = await stamp(hashContent(preimage));
+      storeTst(record.hash, tst.token, tst.tsaName);
+    } catch (tstErr) {
+      console.warn('[verdict-resolve] RFC 3161 stamp failed (verdict still valid):', tstErr);
+    }
+
     // Broadcast verdict:declared — non-blocking, fire-and-forget (never rejects POST).
     try {
       const batting = computeBattingAverage();
@@ -113,7 +124,7 @@ export const POST: APIRoute = async ({ request }) => {
       broadcastNamed('verdict:declared', { slug, verdict, newBattingAvg, correct, wrong, pending, sealedAt: record.sealedAt });
     } catch { /* broadcast failure must never reject the POST */ }
 
-    return json({ ok: true, verdict: record.verdict, hmac: record.hmac_seal, sealedAt: record.sealedAt });
+    return json({ ok: true, verdict: record.verdict, hmac: record.hmac_seal, sealedAt: record.sealedAt, hash: record.hash });
   } catch (err) {
     if (err instanceof VerdictAlreadySealedError) {
       return json({ ok: false, alreadySealed: true, error: 'Verdict already sealed' }, 409);

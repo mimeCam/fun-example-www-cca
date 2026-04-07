@@ -1,0 +1,80 @@
+---
+// src/components/TrustBadge.astro
+// RFC 3161 trust badge — shown on post pages and verdict ceremony pages.
+// Two visual states:
+//   verified  (green lock) — FreeTSA issued + genTime parsed — links to /audit
+//   pending   (gray clock) — no TST yet (pre-seal or TSA was offline at seal time)
+//
+// Pure SSR. Zero client JS. Tanya §design-tokens applied (amber/green/muted).
+//
+// Credits: Mike (arch §TrustBadge), Tanya (design tokens §3)
+
+import type { TstData } from '../lib/timestamp-store';
+import { verifyToken }  from '../lib/rfc3161-verifier';
+
+interface Props {
+  tst:  TstData | null;
+  slug: string;
+}
+
+const { tst, slug } = Astro.props;
+
+const verification = tst ? verifyToken(tst.tst_token) : null;
+const isVerified   = verification?.verified ?? false;
+
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+---
+
+{isVerified && verification?.timestamp ? (
+  <a href={`/audit/${slug}`} class="trust-badge trust-badge--verified" title="RFC 3161 timestamp — click for full proof">
+    <span class="badge-icon" aria-hidden="true">⏱</span>
+    <span class="badge-text">
+      Timestamped · {verification.tsaName} · {fmtDate(verification.timestamp)}
+    </span>
+  </a>
+) : (
+  <span class="trust-badge trust-badge--pending" title="RFC 3161 timestamp pending">
+    <span class="badge-icon" aria-hidden="true">◷</span>
+    <span class="badge-text">timestamp pending</span>
+  </span>
+)}
+
+<style>
+  .trust-badge {
+    display:     inline-flex;
+    align-items: center;
+    gap:         0.35rem;
+    font-size:   0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding:     0.22rem 0.6rem;
+    border-radius: 999px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  /* ── Verified — green glow ── */
+  .trust-badge--verified {
+    background: rgba(82, 200, 120, 0.08);
+    border:     1px solid rgba(82, 200, 120, 0.25);
+    color:      #52C878;
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+
+  .trust-badge--verified:hover {
+    background:   rgba(82, 200, 120, 0.14);
+    border-color: rgba(82, 200, 120, 0.40);
+  }
+
+  /* ── Pending — muted gray ── */
+  .trust-badge--pending {
+    background: rgba(255, 255, 255, 0.03);
+    border:     1px dashed rgba(255, 255, 255, 0.12);
+    color:      rgba(255, 255, 255, 0.28);
+  }
+
+  .badge-icon { font-size: 0.72rem; line-height: 1; }
+  .badge-text { line-height: 1; }
+</style>

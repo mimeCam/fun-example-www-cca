@@ -9,16 +9,20 @@
 //
 // Credits: Mike (spec — AuditReceipt + Conviction Anchor), Tanya (§5 — honest copy)
 
-import type { RedactedSeal } from '../lib/audit-verifier';
+import type { RedactedSeal }    from '../lib/audit-verifier';
 import type { AnchorVerification } from '../lib/anchor-verifier';
+import type { TstData }          from '../lib/timestamp-store';
+import { verifyToken }           from '../lib/rfc3161-verifier';
 
 interface Props {
-  seal: RedactedSeal | null;
-  postTitle: string;
+  seal:               RedactedSeal | null;
+  postTitle:          string;
   anchorVerification?: AnchorVerification | null;
+  tstData?:           TstData | null;
 }
 
-const { seal, postTitle, anchorVerification = null } = Astro.props;
+const { seal, postTitle, anchorVerification = null, tstData = null } = Astro.props;
+const tstVerification = tstData ? verifyToken(tstData.tst_token) : null;
 
 const ANCHOR_BADGE: Record<string, { label: string; cls: string }> = {
   'verified':    { label: '✓ Verified externally',  cls: 'anchor-badge--verified'   },
@@ -88,6 +92,25 @@ function fmtDate(ts: number): string {
         </div>
       </div>
 
+      <!-- RFC 3161 trusted timestamp row -->
+      {tstData && tstVerification && (
+        <div class="receipt-row">
+          <span class="receipt-label">RFC 3161 TST</span>
+          <div class="receipt-anchor-cell">
+            {tstVerification.verified && tstVerification.timestamp ? (
+              <span class="receipt-tst-verified">
+                ⏱ {tstVerification.tsaName} · {new Date(tstVerification.timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+              </span>
+            ) : (
+              <span class="receipt-anchor-pending">⏳ parsing token…</span>
+            )}
+            <code class="receipt-tst-token" title="Base64 TimeStampToken — copy for offline verification">
+              {tstData.tst_token.slice(0, 32)}…
+            </code>
+          </div>
+        </div>
+      )}
+
       <!-- Verify command — native <details>, zero JS -->
       <details class="receipt-verify">
         <summary class="receipt-verify-toggle">
@@ -95,13 +118,23 @@ function fmtDate(ts: number): string {
         </summary>
         <div class="receipt-verify-body">
           <p class="verify-explain">
-            If you hold <code>ADMIN_SECRET</code>, run this command to confirm the
-            HMAC matches what the server signed at publish time:
+            HMAC verification (requires <code>ADMIN_SECRET</code>):
           </p>
           <pre class="verify-cmd"><code>{seal.verifyInstruction}</code></pre>
-          <p class="verify-explain verify-explain--note">
-            The formula is public: <code>slug:score:timestamp_ms</code> — HMAC-signed
-            by the server. You're checking the signature is authentic, not the key.
+          {tstData && (
+            <>
+              <p class="verify-explain" style="margin-top:0.65rem">
+                RFC 3161 verification (public — no secret needed):
+              </p>
+              <pre class="verify-cmd"><code>{"echo '" + tstData.tst_token + "' \\\n  | base64 -d > token.tsr\nopenssl ts -verify -in token.tsr \\\n  -data <(echo -n \"" + seal.slug + ":" + seal.score + ":" + seal.sealedAt + "\") \\\n  -CAfile freetsa-ca.pem"}</code></pre>
+              <p class="verify-explain verify-explain--note">
+                Anyone can run this without any private key. The TSA cert is at
+                <a href="https://freetsa.org/files/cacert.pem" target="_blank" rel="noopener" class="verify-link">freetsa.org/files/cacert.pem</a>.
+              </p>
+            </>
+          )}
+          <p class="verify-explain verify-explain--note" style={tstData ? '' : undefined}>
+            HMAC formula: <code>slug:score:timestamp_ms</code> — server-signed at publish time.
           </p>
         </div>
       </details>
@@ -282,6 +315,27 @@ function fmtDate(ts: number): string {
     line-height: 1.5;
     white-space: pre;
   }
+
+  /* ── RFC 3161 TST row elements ── */
+  .receipt-tst-verified {
+    font-size:  0.8rem;
+    color:      #52C878;
+    font-weight: 500;
+  }
+
+  .receipt-tst-token {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size:   0.65rem;
+    color:       rgba(255, 255, 255, 0.25);
+    letter-spacing: 0.01em;
+    word-break:  break-all;
+  }
+
+  .verify-link {
+    color: rgba(245, 166, 35, 0.65);
+    text-decoration: none;
+  }
+  .verify-link:hover { color: #F5A623; }
 
   /* ── Unsealed note ── */
   .receipt-unsealed-note {

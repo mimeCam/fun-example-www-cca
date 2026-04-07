@@ -17,12 +17,14 @@ import { getLockedScore } from './conviction-ledger';
 export type VerdictOutcome = 'still-true' | 'evolved' | 'wrong' | 'abandoned';
 
 export interface VerdictRecord {
-  post_slug: string;
-  verdict: VerdictOutcome;
+  post_slug:    string;
+  verdict:      VerdictOutcome;
   originalScore: number;
-  note: string;
-  hmac_seal: string;
-  sealedAt: number;
+  note:         string;
+  hmac_seal:    string;
+  sealedAt:     number;
+  /** Chain hash of the verdict row — needed by RFC 3161 TST store. */
+  hash:         string;
 }
 
 export class VerdictAlreadySealedError extends Error {
@@ -90,11 +92,12 @@ function computeHmac(slug: string, verdict: string, score: number, ts: number, s
 function insertVerdictRow(
   slug: string, verdict: VerdictOutcome, score: number, note: string,
   ts: number, hmac: string,
-): void {
+): string {
   const prevHash = prevHashForSlug(slug);
-  const hash = computeChainHash(slug, ts, prevHash);
+  const hash     = computeChainHash(slug, ts, prevHash);
   db().prepare(VERDICT_INSERT_SQL)
     .run(slug, score, note, JSON.stringify({ verdict, note }), ts, prevHash, hash, hmac);
+  return hash;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,28 +117,30 @@ export function resolveVerdict(
 ): VerdictRecord {
   if (hasExistingVerdict(slug)) throw new VerdictAlreadySealedError(slug);
   const originalScore = getLockedScore(slug) ?? 0;
-  const ts = Date.now();
+  const ts   = Date.now();
   const hmac = computeHmac(slug, verdict, originalScore, ts, secret);
-  insertVerdictRow(slug, verdict, originalScore, note, ts, hmac);
-  return { post_slug: slug, verdict, originalScore, note, hmac_seal: hmac, sealedAt: ts };
+  const hash = insertVerdictRow(slug, verdict, originalScore, note, ts, hmac);
+  return { post_slug: slug, verdict, originalScore, note, hmac_seal: hmac, sealedAt: ts, hash };
 }
 
 /** Build a VerdictRecord from a raw conviction_ledger row. */
 export function rowToVerdictRecord(row: {
-  post_slug: string;
+  post_slug:        string;
   conviction_score: number | null;
-  payload_json: string | null;
-  timestamp: number;
-  hmac_seal: string | null;
+  payload_json:     string | null;
+  timestamp:        number;
+  hmac_seal:        string | null;
+  hash?:            string;
 }): VerdictRecord {
   const payload = row.payload_json ? JSON.parse(row.payload_json) as Record<string, unknown> : {};
   return {
-    post_slug: row.post_slug,
-    verdict: (payload.verdict as VerdictOutcome) ?? 'wrong',
+    post_slug:     row.post_slug,
+    verdict:       (payload.verdict as VerdictOutcome) ?? 'wrong',
     originalScore: row.conviction_score ?? 0,
-    note: (payload.note as string) ?? '',
-    hmac_seal: row.hmac_seal ?? '',
-    sealedAt: row.timestamp,
+    note:          (payload.note as string) ?? '',
+    hmac_seal:     row.hmac_seal ?? '',
+    sealedAt:      row.timestamp,
+    hash:          row.hash ?? '',
   };
 }
 
@@ -151,7 +156,7 @@ export function rowToVerdictRecord(row: {
 export function getVerdictRecord(slug: string): VerdictRecord | null {
   const row = db()
     .prepare(
-      "SELECT post_slug, conviction_score, payload_json, timestamp, hmac_seal " +
+      "SELECT post_slug, conviction_score, payload_json, timestamp, hmac_seal, hash " +
       "FROM conviction_ledger WHERE post_slug = ? AND event_type = 'verdict' LIMIT 1",
     )
     .get(slug) as Parameters<typeof rowToVerdictRecord>[0] | undefined;
