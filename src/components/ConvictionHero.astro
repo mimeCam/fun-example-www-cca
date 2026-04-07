@@ -17,18 +17,21 @@
 
 import { getSealEntry, verifyChain } from '../lib/conviction-ledger';
 import DeathClock from './DeathClock.astro';
+import TensionBadge from './TensionBadge.astro';
 import { clockUrgency } from '../lib/death-clock';
 import type { GraceState } from '../lib/cold-start';
 import type { ConvictionVerdict } from '../lib/decay-engine';
+import type { TensionResult } from '../lib/tension-score';
 
 interface Props {
-  slug:         string;
-  graceState:   GraceState;
-  revivalCount?: number;
-  conviction?:  ConvictionVerdict | null;
+  slug:           string;
+  graceState:     GraceState;
+  revivalCount?:  number;
+  conviction?:    ConvictionVerdict | null;
+  tensionResult?: TensionResult | null;
 }
 
-const { slug, graceState, revivalCount = 0, conviction = null } = Astro.props;
+const { slug, graceState, revivalCount = 0, conviction = null, tensionResult = null } = Astro.props;
 
 let sealEntry  = null;
 let chainValid = true;
@@ -54,6 +57,12 @@ const sealedAt   = sealEntry
 // Clock: only meaningful when not warming.
 const clockDays       = graceState.warming ? 1 : graceState.daysRemaining;
 const clockUrgencyVal = clockUrgency(clockDays);
+
+// Deadline ISO — drives the live JS countdown when < 48 h remain.
+// Approximate: integer days × 86 400 s. Enough for h:mm precision.
+const deadlineISO = (!graceState.warming && clockDays > 0)
+  ? new Date(Date.now() + clockDays * 86_400_000).toISOString()
+  : null;
 ---
 
 {!sealEntry && (
@@ -86,7 +95,7 @@ const clockUrgencyVal = clockUrgency(clockDays);
     </div>
   </div>
 
-  <!-- Row 2: Clock (or warming state) + footer metadata -->
+  <!-- Row 2: Clock (or warming state) · TensionBadge (embedded) · footer metadata -->
   <div class="ch-status-row">
     {graceState.warming ? (
       <div class="ch-warming" aria-label={`Warming up: ${graceState.readerCount} of ${graceState.threshold} readers`}>
@@ -97,7 +106,7 @@ const clockUrgencyVal = clockUrgency(clockDays);
         )}
       </div>
     ) : (
-      <div class="ch-clock-wrap">
+      <div class="ch-clock-wrap" data-deadline-iso={deadlineISO ?? undefined}>
         <DeathClock
           daysRemaining={graceState.daysRemaining}
           urgency={clockUrgencyVal}
@@ -105,6 +114,14 @@ const clockUrgencyVal = clockUrgency(clockDays);
         />
       </div>
     )}
+
+    <!-- TensionBadge embedded in the status row (Mike §Key Design Decisions #2) -->
+    <TensionBadge
+      tensionResult={tensionResult}
+      revivalCount={revivalCount}
+      slug={slug}
+      embedded={true}
+    />
 
     <div class="ch-meta">
       <span class:list={['ch-chain', chainValid ? 'ch-chain--ok' : 'ch-chain--broken']}>
@@ -346,3 +363,15 @@ const clockUrgencyVal = clockUrgency(clockDays);
     .ch-warming { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
   }
 </style>
+
+<!-- Live countdown: ticks h:mm inside DeathClock when < 48 h remain.
+     Imported as a named module so it stays unit-testable (Mike §Key Design Decisions #4).
+     No-op on posts > 48 h away — scheduleForWrap skips them silently. -->
+<script>
+  import { wireLiveCountdown } from '../lib/live-conviction-hero';
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireLiveCountdown);
+  } else {
+    wireLiveCountdown();
+  }
+</script>

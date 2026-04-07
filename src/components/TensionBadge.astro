@@ -17,10 +17,11 @@ import type { TensionResult } from '../lib/tension-score';
 interface Props {
   tensionResult: TensionResult | null;
   revivalCount: number;
-  slug: string;   // used by SSE patch
+  slug: string;      // used by SSE patch
+  embedded?: boolean; // true when rendered inside ConvictionHero status row
 }
 
-const { tensionResult, revivalCount, slug } = Astro.props;
+const { tensionResult, revivalCount, slug, embedded = false } = Astro.props;
 
 // Don't render the badge when there's no tension data (< 3 stances).
 // Silence is the feature — no empty-state placeholder.
@@ -44,7 +45,11 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
 
 {show && (
   <span
-    class:list={['tension-badge', tensionResult && `tension-badge--${tensionResult.label}`]}
+    class:list={[
+      'tension-badge',
+      tensionResult && `tension-badge--${tensionResult.label}`,
+      embedded && 'tension-badge--embedded',
+    ]}
     data-tension-badge
     data-slug={slug}
     data-label={tensionResult?.label}
@@ -56,7 +61,7 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
   </span>
 )}
 
-{revivalCount > 0 && (
+{!embedded && revivalCount > 0 && (
   <span
     class="tension-memory"
     data-revival-memory
@@ -96,6 +101,13 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
     color: #6ee7b7;
     background: rgba(110, 231, 183, 0.08);
     border-color: rgba(110, 231, 183, 0.40);
+  }
+
+  /* ── Embedded variant: tighter pill for ConvictionHero row ── */
+  .tension-badge--embedded {
+    font-size: 10px;
+    padding: 2px 7px;
+    letter-spacing: 0.05em;
   }
 
   /* ── Pulsing glow for contested posts ──────────────────────── */
