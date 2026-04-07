@@ -4,20 +4,24 @@
 // Returns a discriminated union — no nullable fields, no boolean flags.
 //
 // Scoring rules (updated 2026-04-07):
-//   correct → VerdictRecord with verdict='still-true'
-//   wrong   → VerdictRecord with verdict='wrong' or 'abandoned'
-//   neutral → VerdictRecord with verdict='evolved' (excluded from pct denominator)
-//   pending → sealed, no VerdictRecord yet
-//   pct     → correct / (correct + wrong)   — pending never penalise
+//   correct   → VerdictRecord with verdict='still-true' AND dispute state != 'contested'
+//   wrong     → VerdictRecord with verdict='wrong' or 'abandoned'
+//   neutral   → VerdictRecord with verdict='evolved' (excluded from pct denominator)
+//   contested → verdict sealed but disputed by ≥33% of disagree-stakers → treated as pending
+//   pending   → sealed, no VerdictRecord yet
+//   pct       → correct / (correct + wrong)   — pending and contested never penalise
 //
 // Sealed verdict events are the only canonical source (Mike §verdict-resolution).
 // Frontmatter inference is retired; runtime verdicts drive the batting average.
+// Dispute state is the external anchor that prevents author self-grading (Mike §Dispute).
 //
-// Credits: Mike (architecture spec §verdict-resolution), Tanya (UX §3 verdict page)
+// Credits: Mike (architecture spec §verdict-resolution, §Verdict-Dispute-Engine),
+//          Tanya (UX §3 verdict page), Elon (fatal-flaw diagnosis)
 
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
+import { getDisputeState } from './verdict-dispute';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,12 +92,17 @@ function verdictTally(outcome: string): VerdictTally {
   return 'neutral'; // 'evolved' — excluded from denominator
 }
 
+function isContested(slug: string): boolean {
+  try { return getDisputeState(slug).status === 'contested'; } catch { return false; }
+}
+
 function tallyVerdicts(verdictEvents: VerdictEventRow[], totalSealed: number): Counts {
   const c: Counts = { correct: 0, wrong: 0, pending: 0 };
   const resolvedSlugs = new Set<string>();
   for (const v of verdictEvents) {
     if (resolvedSlugs.has(v.post_slug)) continue; // first-write-wins
     resolvedSlugs.add(v.post_slug);
+    if (isContested(v.post_slug)) continue; // contested → treated as pending
     const payload = v.payload_json ? JSON.parse(v.payload_json) as Record<string, unknown> : {};
     const t = verdictTally((payload.verdict as string) ?? '');
     if (t === 'correct') c.correct++;

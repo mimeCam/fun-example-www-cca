@@ -4,15 +4,49 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v41 — Prediction Vault (2026-04-07)
+# Architecture v42 — Verdict Dispute Engine (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
 #   The Verdict Wall surfaces every post on trial, sorted by tension.
 #   The Prediction Vault tracks every falsifiable claim across all posts;
 #   verdicts are sealed by admin via HMAC proof — reality decides outcomes.
+#   The Verdict Dispute Engine lets readers who staked 'disagree' formally
+#   challenge an author's sealed verdict; ≥33% dispute ratio marks it
+#   'contested' and excludes it from the batting average until resolved.
 #
-# Sprint (latest — Prediction Vault):
+# Sprint (latest — Verdict Dispute Engine):
+#   lib/verdict-dispute.ts — NEW: dispute state machine; recordDispute()
+#     writes to verdict_disputes table (same revivals.db WAL singleton);
+#     getDisputeState() → no-verdict / no-stancers / clean / contested;
+#     disputeAlreadyRecorded() idempotency guard; UNIQUE index on
+#     (post_slug, session_id). Auto-creates verdict_disputes table on first
+#     use — zero schema migrations needed.
+#   pages/api/verdict-dispute.ts — NEW: POST /api/verdict-dispute; gated by
+#     X-Session-Id header + stance check (only 'disagree' stakers may file);
+#     idempotent (double-submit returns current state); returns state/ratio/
+#     total/disputes. prerender=false.
+#   components/DisputeChallenge.astro — NEW: "Challenge Moment" UI; renders
+#     inert HTML, client script gates visibility (localStorage stance check);
+#     shown only to readers who staked 'disagree' + verdict sealed + not yet
+#     disputed; fetch POST on click → reveals outcome + updates tally badge.
+#   components/DisputeTally.astro — NEW: public dispute ratio badge; always
+#     visible when verdict sealed; colour-coded grey → amber → terra cotta
+#     (contested); live-updated by DisputeChallenge client script.
+#   lib/batting-average.ts — UPDATED: contested verdicts (dispute ratio ≥33%)
+#     treated as pending — excluded from correct/wrong denominator; prevents
+#     author self-grading; isContested() helper wraps getDisputeState().
+#   lib/stance-ledger.ts — UPDATED: getStanceForSession() added — point lookup
+#     returning the recorded stance for a session (used by verdict-dispute API).
+#   pages/blog/[slug].astro — UPDATED: DisputeChallenge + DisputeTally
+#     components rendered; getDisputeState() called server-side; audit-receipt-
+#     nudge row reflowed to flex to accommodate tally badge inline.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     verdict_disputes table auto-created in revivals.db (SQLITE_VOLUME).
+#     ADMIN_SECRET still required for seal-prediction + conviction-seal.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Prediction Vault):
 #   lib/prediction-engine.ts — NEW: pure prediction logic; derivePredictionStatus()
 #     (pending / overdue / correct / incorrect / partial); flattenPredictions()
 #     flattens all post predictions with real-time status; computeStats() accuracy

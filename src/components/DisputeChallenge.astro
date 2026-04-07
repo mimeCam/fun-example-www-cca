@@ -1,0 +1,216 @@
+---
+// src/components/DisputeChallenge.astro
+// "Challenge Moment" — lets readers who disagreed formally dispute the author's verdict.
+// Renders inert HTML; client script gates visibility by checking localStorage stance.
+// Eligible: reader staked 'disagree' + verdict is sealed + hasn't disputed yet.
+// On submit: POST /api/verdict-dispute → reveal outcome + update tally badge.
+// Credits: Mike (napkin plan §Challenge-Moment), Tanya (§StanceDrawer interaction pattern)
+
+import type { DisputeState } from '../lib/verdict-dispute';
+
+interface Props {
+  slug:          string;
+  verdictSealed: boolean;
+  disputeState:  DisputeState;
+}
+
+const { slug, verdictSealed, disputeState } = Astro.props;
+
+const stateLabel =
+  disputeState.status === 'contested' ? 'CONTESTED'
+  : disputeState.status === 'clean'   ? 'VERIFIED'
+  : '';
+
+const ratioText =
+  (disputeState.status === 'contested' || disputeState.status === 'clean')
+    ? `${disputeState.disputes} of ${disputeState.total} disagree-stakers challenged`
+    : '';
+---
+
+{verdictSealed && (
+  <section
+    class="dispute-challenge"
+    id="dispute-challenge"
+    data-slug={slug}
+    data-verdict-sealed="true"
+    aria-label="Challenge this verdict"
+    style="display:none"
+  >
+    <div class="dispute-challenge__inner">
+      <p class="dispute-challenge__eyebrow">Author sealed a verdict.</p>
+      <p class="dispute-challenge__headline">You disagreed. Do you contest this outcome?</p>
+      <p class="dispute-challenge__body">
+        If 1 in 3 dissenting readers challenge this verdict, it becomes
+        <strong>contested</strong> — excluded from the batting average until the author responds.
+      </p>
+
+      <button
+        class="dispute-challenge__btn"
+        id="dispute-submit-btn"
+        data-slug={slug}
+        type="button"
+        aria-label="File a formal dispute against this verdict"
+      >
+        Challenge Verdict
+      </button>
+
+      <div class="dispute-challenge__feedback" id="dispute-feedback" aria-live="polite"></div>
+
+      {ratioText && (
+        <p class="dispute-challenge__tally">{ratioText} · {stateLabel}</p>
+      )}
+    </div>
+  </section>
+)}
+
+<script>
+(function mountDisputeChallenge() {
+  const section = document.getElementById('dispute-challenge');
+  if (!section) return;
+
+  const slug = section.dataset.slug ?? '';
+  const STANCE_KEY = `stance-${slug}`;
+  const DISPUTE_KEY = `dispute-${slug}`;
+
+  function getSessionId() {
+    try { return localStorage.getItem('_sid'); } catch { return null; }
+  }
+
+  function hasDisagreed() {
+    try { return localStorage.getItem(STANCE_KEY) === 'disagree'; } catch { return false; }
+  }
+
+  function alreadyDisputed() {
+    try { return localStorage.getItem(DISPUTE_KEY) === '1'; } catch { return false; }
+  }
+
+  // Gate: only show if reader disagreed and hasn't filed a dispute yet
+  if (!hasDisagreed() || alreadyDisputed()) return;
+  section.style.display = '';
+
+  const btn = document.getElementById('dispute-submit-btn');
+  const feedback = document.getElementById('dispute-feedback');
+  if (!btn || !feedback) return;
+
+  btn.addEventListener('click', async function handleDispute() {
+    btn.setAttribute('disabled', 'true');
+    btn.textContent = 'Filing…';
+
+    const sessionId = getSessionId();
+    if (!sessionId) {
+      feedback.textContent = 'Session not found — try refreshing.';
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Challenge Verdict';
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/verdict-dispute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Id': sessionId,
+        },
+        body: JSON.stringify({ slug }),
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        localStorage.setItem(DISPUTE_KEY, '1');
+        btn.textContent = 'Challenged ✓';
+        feedback.textContent = data.state?.status === 'contested'
+          ? 'Verdict is now contested — the author must respond.'
+          : 'Your dispute is recorded. Challenge threshold not yet reached.';
+        // Refresh DisputeTally badge if present
+        const tally = document.getElementById(`dispute-tally-${slug}`);
+        if (tally && data.state) {
+          tally.setAttribute('data-state', data.state.status);
+          tally.setAttribute('data-disputes', data.state.disputes ?? 0);
+          tally.setAttribute('data-total', data.state.total ?? 0);
+        }
+      } else {
+        feedback.textContent = data.error ?? 'Could not file dispute.';
+        btn.removeAttribute('disabled');
+        btn.textContent = 'Challenge Verdict';
+      }
+    } catch {
+      feedback.textContent = 'Network error — try again.';
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Challenge Verdict';
+    }
+  });
+})();
+</script>
+
+<style>
+  .dispute-challenge {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: oklch(13% 0.01 30 / 0.7);
+    border: 1px solid oklch(60% 0.15 40 / 0.3);
+    border-radius: 12px;
+  }
+
+  .dispute-challenge__inner { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .dispute-challenge__eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: oklch(65% 0.15 40);
+    margin: 0;
+  }
+
+  .dispute-challenge__headline {
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+  }
+
+  .dispute-challenge__body {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .dispute-challenge__btn {
+    margin-top: 0.5rem;
+    align-self: flex-start;
+    padding: 0.55rem 1.25rem;
+    background: oklch(60% 0.18 40);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 200ms ease, opacity 200ms ease;
+  }
+
+  .dispute-challenge__btn:hover:not(:disabled) {
+    background: oklch(65% 0.2 40);
+  }
+
+  .dispute-challenge__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .dispute-challenge__feedback {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    min-height: 1.2em;
+  }
+
+  .dispute-challenge__tally {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin: 0.25rem 0 0;
+    letter-spacing: 0.03em;
+  }
+</style>

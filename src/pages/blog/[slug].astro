@@ -23,6 +23,8 @@ import KeepButton from '../../components/KeepButton.astro';
 import StanceDrawer from '../../components/StanceDrawer.astro';
 import DeadlineClock from '../../components/DeadlineClock.astro';
 import PredictionCard from '../../components/PredictionCard.astro';
+import DisputeChallenge from '../../components/DisputeChallenge.astro';
+import DisputeTally from '../../components/DisputeTally.astro';
 import { flattenPredictions } from '../../lib/prediction-engine';
 // TensionBadge is now rendered inside ConvictionHero (embedded in status row).
 import { allPostDisplayData, extractMeta } from '../../lib/postMeta';
@@ -36,6 +38,7 @@ import { getGraceState } from '../../lib/cold-start';
 import { getStanceDistribution } from '../../lib/stance-ledger';
 import { computeTension } from '../../lib/tension-score';
 import { getSealEntry } from '../../lib/conviction-ledger';
+import { getDisputeState } from '../../lib/verdict-dispute';
 import { canonicalUrl } from '../../config/seo.config';
 import {
   buildArticleSchema,
@@ -92,6 +95,8 @@ const tensionResult = stanceDist ? computeTension(stanceDist) : null;
 const postPredictions = flattenPredictions([post], new Date());
 
 const sealEntry       = safeRead(() => getSealEntry(post.slug));
+const disputeState    = safeRead(() => getDisputeState(post.slug), { status: 'no-verdict' as const });
+const verdictSealed   = disputeState.status !== 'no-verdict';
 const postMeta        = extractMeta(post);
 const convictionState = buildConvictionState(
   sealEntry?.conviction_score ?? null,
@@ -187,14 +192,23 @@ const jsonLd      = [
       />
     </div>
 
+    <!-- DisputeChallenge: visible only to readers who staked 'disagree' (client-gated).
+         Allows formal challenge of the author's sealed verdict (Mike §Challenge-Moment). -->
+    <DisputeChallenge
+      slug={post.slug}
+      verdictSealed={verdictSealed}
+      disputeState={disputeState}
+    />
+
     <!-- Sparkline: only when revival history exists -->
     <GhostEchoes slug={post.slug} />
 
-    <!-- Audit receipt link: quiet pointer to /audit/[slug] (Mike's spec §Integration) -->
+    <!-- Audit receipt link + dispute tally: public accountability numbers -->
     <div class="audit-receipt-nudge" id="conviction-audit">
       <a href={`/audit/${post.slug}`} class="audit-receipt-link">
         View conviction receipt →
       </a>
+      <DisputeTally slug={post.slug} disputeState={disputeState} />
     </div>
 
     <!-- Audit trail: collapsed by default, for power readers -->
@@ -257,8 +271,11 @@ const jsonLd      = [
   .audit-link { margin-left: auto; }
   .audit-link--receipt { margin-left: 0; }
 
-  /* Quiet "View conviction receipt" pointer above the audit trail */
+  /* Quiet "View conviction receipt" pointer + dispute tally above audit trail */
   .audit-receipt-nudge {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin: 1.5rem 0 0.5rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);

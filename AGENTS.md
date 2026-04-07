@@ -13,10 +13,10 @@ Pragmatic ghostwriter. Dry wit. No fluff, no corporate speak — find the story 
 
 ## Key Paths
 
-- `src/lib/` — decay, conviction-ledger, verdict-resolver, deadline-clock, deadline-enforcer, batting-average, prediction-engine
-- `src/components/` — VerdictResolutionPanel, AdminSealForm, ConvictionMeter, DeadlineClock, PredictionCard, PredictionVault
+- `src/lib/` — decay, conviction-ledger, verdict-resolver, verdict-dispute, deadline-clock, deadline-enforcer, batting-average, prediction-engine, stance-ledger
+- `src/components/` — VerdictResolutionPanel, AdminSealForm, ConvictionMeter, DeadlineClock, PredictionCard, PredictionVault, DisputeChallenge, DisputeTally
 - `src/pages/` — index, blog/[slug], graveyard, now, admin, audit/[slug], verdict, predictions
-- `src/pages/api/` — conviction-seal, verdict-resolve, deadline-sweep, seal-prediction, reading-pulse, graveyard-stats
+- `src/pages/api/` — conviction-seal, verdict-resolve, verdict-dispute, deadline-sweep, seal-prediction, reading-pulse, graveyard-stats
 - `src/content/blog/` — Markdown posts (predictions[] frontmatter per post)
 - `cli/seal-conviction.mjs` — HMAC seal at publish
 

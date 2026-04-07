@@ -1,0 +1,85 @@
+---
+// src/components/DisputeTally.astro
+// Public badge showing the dispute ratio for a sealed verdict.
+// Always visible when a verdict is sealed — transparency by default.
+// Colour-coded: grey (clean) → amber (approaching threshold) → terra cotta (contested).
+// Credits: Mike (napkin plan §DisputeTally, design decision #6 — ratio is public)
+
+import type { DisputeState } from '../lib/verdict-dispute';
+
+interface Props {
+  slug:         string;
+  disputeState: DisputeState;
+}
+
+const { slug, disputeState } = Astro.props;
+
+const visible =
+  disputeState.status === 'clean' || disputeState.status === 'contested';
+
+const label = visible
+  ? `${disputeState.disputes}/${disputeState.total} disputed`
+  : '';
+
+const stateClass =
+  disputeState.status === 'contested' ? 'disputed-tally--contested'
+  : disputeState.status === 'clean' && (disputeState as { ratio: number }).ratio >= 0.2
+    ? 'dispute-tally--warning'
+    : 'dispute-tally--clean';
+---
+
+{visible && (
+  <span
+    class={`dispute-tally ${stateClass}`}
+    id={`dispute-tally-${slug}`}
+    data-slug={slug}
+    data-state={disputeState.status}
+    data-disputes={(disputeState as { disputes: number }).disputes}
+    data-total={(disputeState as { total: number }).total}
+    title="Reader dispute ratio for this verdict"
+    aria-label={`${label} — ${disputeState.status}`}
+  >
+    {label}
+    {disputeState.status === 'contested' && (
+      <span class="dispute-tally__badge">CONTESTED</span>
+    )}
+  </span>
+)}
+
+<style>
+  .dispute-tally {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 99px;
+    border: 1px solid transparent;
+  }
+
+  .dispute-tally--clean {
+    color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .dispute-tally--warning {
+    color: oklch(75% 0.14 60);
+    border-color: oklch(60% 0.12 60 / 0.35);
+  }
+
+  .disputed-tally--contested {
+    color: oklch(72% 0.18 35);
+    border-color: oklch(55% 0.16 35 / 0.45);
+    background: oklch(18% 0.04 35 / 0.5);
+  }
+
+  .dispute-tally__badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(72% 0.18 35);
+  }
+</style>

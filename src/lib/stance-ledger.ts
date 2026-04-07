@@ -92,6 +92,14 @@ export function stanceAlreadyRecorded(slug: string, sessionId: string): boolean 
   return row !== undefined;
 }
 
+/** Return the recorded stance for a session, or null if none recorded yet. */
+export function getStanceForSession(slug: string, sessionId: string): StanceValue | null {
+  const row = db()
+    .prepare('SELECT stance FROM reader_stances WHERE post_slug = ? AND session_id = ?')
+    .get(slug, sessionId) as { stance: StanceValue } | undefined;
+  return row?.stance ?? null;
+}
+
 /** Aggregate stance counts for a single slug. */
 export function getStanceDistribution(slug: string): StanceDistribution {
   const rows = db()
