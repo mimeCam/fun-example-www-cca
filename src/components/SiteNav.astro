@@ -10,11 +10,25 @@
 // Credits: Tanya (UX spec §12 — Navigation), Elon (strip nav links)
 
 import { getActivePage } from '../lib/nav';
+import { computeBattingAverage } from '../lib/batting-average';
 
-const path        = Astro.url.pathname;
-const pageId      = getActivePage(path);
-const isBlogPost  = pageId === 'blog';
+const path          = Astro.url.pathname;
+const pageId        = getActivePage(path);
+const isBlogPost    = pageId === 'blog';
 const presenceScope = isBlogPost ? 'slug' : 'global';
+
+// Narrow to live variant — hide chip entirely when cold (Tanya §2)
+const avgRaw  = computeBattingAverage();
+const avgLive = avgRaw.status === 'live' && avgRaw.total > 0 ? avgRaw : null;
+
+function chipMod(pct: number): string {
+  if (pct >= 80) return 'batting-chip--strong';
+  if (pct >= 60) return 'batting-chip--mid';
+  return 'batting-chip--weak';
+}
+
+const chipClass = avgLive ? chipMod(avgLive.pct) : '';
+const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
 ---
 
 <nav class:list={['site-nav', { 'has-erosion': isBlogPost }]} aria-label="Site">
@@ -31,18 +45,29 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
     </a>
   </div>
 
-  <div
-    class="presence-indicator"
-    id="presence-band"
-    data-scope={presenceScope}
-    aria-live="polite"
-    aria-atomic="true"
-    role="status"
-  >
-    <span class="presence-dot" id="presence-dot" aria-hidden="true" style="display:none"></span>
-    <span class="presence-text" id="presence-text"></span>
-    <span class="presence-count" id="presence-count" aria-hidden="true">0</span>
-    <span class="presence-fallback" id="presence-fallback" style="display:none"></span>
+  <!-- Right cluster: batting chip + presence indicator — always right-aligned -->
+  <div class="nav-right">
+    {avgLive && (
+      <div class:list={['batting-chip', chipClass]} aria-label={chipLabel} title={chipLabel}>
+        <span class="batting-pct">{avgLive.pct}%</span>
+        <span class="batting-check" aria-hidden="true">✓</span>
+        <span class="batting-tooltip" aria-hidden="true">{chipLabel}</span>
+      </div>
+    )}
+
+    <div
+      class="presence-indicator"
+      id="presence-band"
+      data-scope={presenceScope}
+      aria-live="polite"
+      aria-atomic="true"
+      role="status"
+    >
+      <span class="presence-dot" id="presence-dot" aria-hidden="true" style="display:none"></span>
+      <span class="presence-text" id="presence-text"></span>
+      <span class="presence-count" id="presence-count" aria-hidden="true">0</span>
+      <span class="presence-fallback" id="presence-fallback" style="display:none"></span>
+    </div>
   </div>
 
   {isBlogPost && <div class="erosion-bar" aria-hidden="true" />}
@@ -101,6 +126,92 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
     border-bottom-color: #F5A623;
   }
 
+  /* ── Batting average chip (Tanya §2 — right-aligned, left of presence) ── */
+
+  /* Right cluster: chip + presence always flush-right */
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .batting-chip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(245, 166, 35, 0.22);
+    background: rgba(245, 166, 35, 0.08);
+    cursor: default;
+    flex-shrink: 0;
+  }
+
+  .batting-pct {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    line-height: 1;
+  }
+
+  .batting-check {
+    font-size: 0.6rem;
+    line-height: 1;
+  }
+
+  /* Strong (≥80%): full amber + glow */
+  .batting-chip--strong {
+    box-shadow: 0 0 10px rgba(245, 166, 35, 0.18);
+  }
+  .batting-chip--strong .batting-pct,
+  .batting-chip--strong .batting-check { color: #F5A623; }
+
+  /* Mid (60–79%): amber at 60% opacity, no glow */
+  .batting-chip--mid .batting-pct,
+  .batting-chip--mid .batting-check { color: rgba(245, 166, 35, 0.6); }
+
+  /* Weak (<60%): muted white, no amber */
+  .batting-chip--weak {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .batting-chip--weak .batting-pct,
+  .batting-chip--weak .batting-check { color: rgba(255, 255, 255, 0.35); }
+
+  /* CSS tooltip — 8px below chip, appears on hover (Tanya §2 — hover spec) */
+  .batting-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    white-space: nowrap;
+    font-size: 0.68rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(245, 166, 35, 0.1);
+    border: 1px solid rgba(245, 166, 35, 0.18);
+    color: rgba(255, 255, 255, 0.65);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 150ms ease, transform 150ms ease;
+    z-index: 20;
+  }
+
+  .batting-chip:hover .batting-tooltip {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Mobile: pct only, no checkmark, no tooltip (Tanya §2 — mobile) */
+  @media (max-width: 640px) {
+    .batting-check    { display: none; }
+    .batting-tooltip  { display: none; }
+    .batting-chip     { padding: 4px 8px; }
+  }
+
   /* ── Presence indicator (right side) ── */
 
   .presence-indicator {
@@ -109,7 +220,7 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
     gap: 8px;
     opacity: 0;
     transition: opacity 0.4s ease;
-    margin-left: auto;
+    /* margin-left: auto moved to batting-chip; presence sits right of chip */
   }
 
   .presence-indicator.presence-active { opacity: 1; }

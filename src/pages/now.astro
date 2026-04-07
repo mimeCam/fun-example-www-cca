@@ -9,15 +9,19 @@
 //
 // Credits: Tanya (UX spec §3 — sitemap revision, §10 — /now visual treatment)
 
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 import NowLine from '../components/NowLine.astro';
 import Murmurs from '../components/Murmurs.astro';
 import { partitionNow, computeFreshness } from '../lib/now';
 import type { NowTiered } from '../lib/now';
 import nowData from '../data/now.json';
+import { computeBattingAverage } from '../lib/batting-average';
 
-const data = nowData as NowTiered;
+const data  = nowData as NowTiered;
 const { hero } = partitionNow(data);
+const avg   = computeBattingAverage();
 
 // Use the hero item's update date if available; fall back to rightNow.updated.
 const lastUpdated = hero[0]?.item.updated ?? data.rightNow.updated;
@@ -38,6 +42,11 @@ const freshness   = computeFreshness(lastUpdated);
 
     <footer class="now-footer">
       <a href="/" class="now-back">← back to the field</a>
+      {avg.status === 'live' && avg.total > 0 && (
+        <a href="/" class="now-record" aria-label={`Current conviction record: ${avg.pct}%`}>
+          Current conviction record: {avg.pct}% — see the field →
+        </a>
+      )}
     </footer>
 
   </main>
@@ -92,6 +101,19 @@ const freshness   = computeFreshness(lastUpdated);
   }
 
   .now-back:hover { color: rgba(255, 255, 255, 0.6); }
+
+  /* Conviction record whisper — Tanya §7: no amber, 0.68rem, 0.25 opacity */
+  .now-record {
+    display: block;
+    margin-top: 0.6rem;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    transition: color 200ms ease;
+  }
+
+  .now-record:hover { color: rgba(255, 255, 255, 0.5); }
 
   @media (max-width: 640px) {
     .now-page { padding: 1.5rem 1rem 3rem; }

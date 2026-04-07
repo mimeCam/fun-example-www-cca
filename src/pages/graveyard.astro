@@ -20,6 +20,8 @@ import GraveyardLedger from '../components/GraveyardLedger.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { getResurrectionRate, getTotalReadingSecondsEntombed } from '../lib/graveyardStats';
 import { getGraveyardSummary } from '../lib/graveyard-ledger';
+import ConvictionMeter from '../components/ConvictionMeter.astro';
+import { computeBattingAverage } from '../lib/batting-average';
 import '../styles/graveyard.css';
 
 const PAGE_SIZE = 20;
@@ -45,6 +47,7 @@ const summary             = getGraveyardSummary(all);
 
 const hasPrev = safePage > 1;
 const hasNext = safePage < totalPages;
+const avg     = computeBattingAverage();
 ---
 
 <BaseLayout
@@ -52,6 +55,8 @@ const hasNext = safePage < totalPages;
   description={`${entombed.length} ${entombed.length === 1 ? 'post has' : 'posts have'} died here. The Death Clock proved itself.`}
 >
   <main class="graveyard graveyard-page">
+
+    <ConvictionMeter avg={avg} />
 
     <!-- Hall of Records: survivor stats, most contested, forever lost — Mike §4.5 -->
     {entombed.length > 0 && <GraveyardLedger summary={summary} />}
@@ -128,7 +133,8 @@ const hasNext = safePage < totalPages;
     margin: 0 auto;
   }
 
-  /* ── Epitaph stats: numbers floating on the dark page — Tanya §3.2 */
+  /* ── Epitaph stats: numbers floating on the dark page — Tanya §5 ── */
+  /* Mobile-first: vertical stack; desktop: horizontal monument row */
   .graveyard-epitaph {
     display: flex;
     flex-direction: column;
@@ -137,6 +143,16 @@ const hasNext = safePage < totalPages;
     text-align: center;
     margin-bottom: 4rem;
     padding-top: 1.5rem;
+  }
+
+  /* Desktop: three numbers side by side, monument inscription (Tanya §5) */
+  @media (min-width: 641px) {
+    .graveyard-epitaph {
+      flex-direction: row;
+      justify-content: center;
+      gap: 4rem;
+      align-items: flex-start;
+    }
   }
 
   .epitaph-stat {

@@ -4,35 +4,36 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v30 — Cold-Start Grace + /now Page + ConvictionHero (2026-04-07)
+# Architecture v31 — ConvictionMeter / Batting Average / /api/conviction-stats (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Cold-Start Grace System, /now page, ConvictionHero):
-#   lib/cold-start.ts — NEW: Cold-Start Grace System; suspends decay clock
-#     until READER_THRESHOLD (50) unique readers are seen OR GRACE_DAYS (90)
-#     elapse; GraceState discriminated union (warming/active); fingerprints
-#     visitors via SHA-256(ip+ua); writes reader_events table into same
-#     revivals.db (SQLITE_VOLUME at /app/data/) — no new DB or volume.
-#   api/cold-start-status.ts — NEW: GET (grace snapshot) + POST (record reader
-#     visit) endpoint; idempotent per visitor per slug; no auth required.
-#   components/ConvictionHero.astro — NEW: above-fold conviction hero replaces
-#     ConvictionDeclaration in the prime slot; shows score stamp (amber
-#     monospace), wager quote, warming state or death-clock ring, chain hash;
-#     pure SSR, zero client JS.
-#   pages/now.astro — NEW: /now page — living author signal (NowLine +
-#     Murmurs) extracted from homepage (Tanya §3 sitemap revision); lighter
-#     visual register, no conviction gold, no decay mechanics.
-#   components/SiteNav.astro — UPDATED: nav now surfaces /now and /graveyard
-#     as explicit links (Tanya §12); amber underline on active page; presence
-#     indicator pushed right via margin-left:auto.
-#   lib/nav.ts — UPDATED: 'now' added as first-class PageId; /now prefix
-#     mapped in PAGE_PREFIXES; test assertions updated.
-#   pages/index.astro — UPDATED: NowLine + Murmurs extracted to /now; homepage
-#     now focuses solely on living posts with conviction scores + death clocks.
-#   pages/blog/[slug].astro — UPDATED: ConvictionHero replaces
-#     ConvictionDeclaration in above-fold position.
+# Sprint (latest — Sitewide Conviction Batting Average):
+#   lib/batting-average.ts — NEW: pure read-only aggregator over conviction_ledger
+#     in revivals.db (SQLITE_VOLUME at /app/data/); returns BattingAverage
+#     discriminated union (cold | live); scoring: correct ≥7 + died, wrong ≤4
+#     + died, pending = sealed + still alive, neutral 5-6 excluded from pct;
+#     pct = correct ÷ (correct + wrong); safe at build time (returns cold
+#     if DB absent). No new DB, volume, or npm package.
+#   pages/api/conviction-stats.ts — NEW: GET /api/conviction-stats — sitewide
+#     batting average as JSON with chainIntegrity flag (verifyChain per sealed
+#     slug) and computedAt timestamp; Cache-Control: no-store; 503 on error.
+#   components/ConvictionMeter.astro — NEW: sitewide batting average chip placed
+#     between <SiteNav> and page content on /, /now, /graveyard; four threshold
+#     states (amber ≥70%, yellow 50–69%, slate <50%, grey cold); collapsible
+#     "How is this calculated?" disclosure; pure SSR, zero client JS.
+#   pages/index.astro — UPDATED: added prerender = false; ConvictionMeter
+#     rendered above the post feed; archive overflow copy refined.
+#   pages/now.astro — UPDATED: added prerender = false; conviction record
+#     whisper link in footer (Tanya §7 — 0.68rem, 0.25 opacity, no amber).
+#   pages/graveyard.astro — UPDATED: ConvictionMeter above the Hall of Records;
+#     graveyard-epitaph responsive fix (desktop: horizontal monument row via
+#     flex-direction:row at min-width:641px — Tanya §5).
+#   components/ConvictionHero.astro — UPDATED: graceful unsealed state renders
+#     amber dashed placeholder instead of returning early (Mike §4); score/note
+#     now optional chained; ch-note no longer truncated (Tanya §4 Refinement B).
+#   components/SiteNav.astro — UPDATED: further nav refinements.
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
 #     ADMIN_SECRET already required from v29 sprint.
 #

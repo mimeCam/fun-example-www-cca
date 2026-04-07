@@ -8,24 +8,14 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — decay-engine, conviction-ledger, cold-start, collective-memory, revival-engine, death-clock, heartbeat, nav, temporal
-- `src/components/` — ConvictionHero, DeathClock, DecayCard, KeepButton, GhostEchoes, SiteNav
-- `src/pages/` — index (The Field), now (Author Signal), blog/[slug] (The Sealed Bet), graveyard (Hall of Memory)
-- `src/pages/api/` — conviction-seal, conviction-audit, cold-start-status, revive, entomb, heartbeat (SSE)
+- `src/lib/` — decay-engine, conviction-ledger, cold-start, collective-memory, revival-engine, death-clock, heartbeat, nav, temporal, batting-average
+- `src/components/` — ConvictionHero, ConvictionMeter, DeathClock, DecayCard, KeepButton, GhostEchoes, SiteNav
+- `src/pages/api/` — conviction-seal, conviction-audit, conviction-stats, cold-start-status, revive, entomb, heartbeat (SSE)
 - `src/content/blog/` — Markdown posts (frontmatter: `lifespan`, `convictions`, `mood`, `echo`)
-- `cli/` — seal-conviction.mjs (seal posts at publish time)
-
-## Sitemap
-
-```
-/            ← The Field: living posts, decay visible
-/now         ← Author's living signal: NowLine + Murmurs
-/blog/[slug] ← The Sealed Bet: ConvictionHero above fold
-/graveyard   ← Hall of Memory: entombed posts
-```
+- `cli/` — seal-conviction.mjs (run on all posts before ConvictionMeter goes live)
 
 ## WIP
 
-- **P0**: `node cli/seal-conviction.mjs` on all 6 existing posts — ConvictionHero renders empty without sealed conviction data
+- **P0 — Data**: `node cli/seal-conviction.mjs` must run on all 6 posts; ConvictionMeter shows cold until then
 - Device QA: Pixel 6a · Galaxy A14 · iPhone 13 · SSE on 3G throttle
 - Verify `reader_events` table migration on existing `revivals.db`

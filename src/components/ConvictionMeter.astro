@@ -1,0 +1,249 @@
+---
+// src/components/ConvictionMeter.astro
+// Sitewide conviction batting average — the author's credibility made visible.
+// Zero client JS. Pure SSR. Data is passed in; no fetching inside this component.
+//
+// Placement: between <SiteNav> and page content on /, /now, /graveyard.
+// Color thresholds (Tanya §2): amber ≥70%, yellow 50–69%, slate <50%, grey cold.
+//
+// Credits: Mike (spec §2 — component design, pct formula),
+//          Tanya (UX §2 — chip spec, threshold states, plain-English copy)
+
+import type { BattingAverage } from '../lib/batting-average';
+
+interface Props {
+  avg: BattingAverage;
+}
+
+const { avg } = Astro.props;
+
+// Derive CSS modifier class from pct threshold — Tanya §2 threshold table.
+function meterMod(a: BattingAverage): string {
+  if (a.status === 'cold') return 'cm--cold';
+  if (a.pct >= 70) return 'cm--amber';
+  if (a.pct >= 50) return 'cm--yellow';
+  return 'cm--slate';
+}
+
+// Plain-English tagline copy.
+function tagline(a: BattingAverage): string {
+  if (a.status === 'cold') return '';
+  const resolved = a.correct + a.wrong;
+  if (resolved === 0) return `${a.total} sealed ${a.total === 1 ? 'prediction' : 'predictions'} in play — none resolved yet.`;
+  return `Called ${a.correct} of ${resolved} resolved ${resolved === 1 ? 'prediction' : 'predictions'} correctly.`;
+}
+
+const mod    = meterMod(avg);
+const line   = tagline(avg);
+const isLive = avg.status === 'live';
+---
+
+<aside class:list={['conviction-meter', mod]} aria-label="Author conviction batting average">
+
+  {avg.status === 'cold' && (
+    <span class="cm-cold">No sealed predictions yet.</span>
+  )}
+
+  {isLive && (
+    <div class="cm-body">
+      <div class="cm-headline">
+        <span class="cm-pct" aria-label={`${avg.pct} percent accuracy`}>{avg.pct}%</span>
+        <div class="cm-pills" aria-label="Breakdown">
+          <span class="cm-pill cm-pill--correct" title="Predictions that proved right">✓ {avg.correct} correct</span>
+          <span class="cm-pill cm-pill--wrong"   title="Predictions that proved wrong">✗ {avg.wrong} wrong</span>
+          <span class="cm-pill cm-pill--pending" title="Active predictions, not yet resolved">⏳ {avg.pending} pending</span>
+        </div>
+      </div>
+
+      <p class="cm-tagline">{line}</p>
+
+      <details class="cm-disclosure">
+        <summary class="cm-disclosure-toggle">How is this calculated?</summary>
+        <div class="cm-disclosure-body">
+          <p>
+            Before publishing each post, a conviction score (1–10) is locked into a
+            SHA-256 hash chain. The score cannot be changed retroactively — the chain
+            would break if anyone tried.
+          </p>
+          <p>
+            A prediction is <strong>correct</strong> when it scores 7 or higher and the
+            post eventually dies — the author stood by a strong belief and time bore it
+            out. It is <strong>wrong</strong> when it scores 4 or lower at death.
+            Scores 5–6 are genuinely ambiguous and excluded from the calculation.
+            <em>Pending</em> posts are live bets still in play; they never count against
+            the average until resolved.
+          </p>
+          <p>
+            The number above is <code>correct ÷ (correct + wrong)</code>.
+            Pending predictions are not in the denominator — an open bet is honest, not
+            a failure. Verify the chain yourself at
+            <a href="/api/conviction-audit?slug=" class="cm-audit-link">
+              /api/conviction-audit
+            </a>.
+          </p>
+        </div>
+      </details>
+    </div>
+  )}
+
+</aside>
+
+<style>
+  .conviction-meter {
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 0 0 2rem;
+    border: 1px solid transparent;
+  }
+
+  /* ── Color variants — Tanya §2 threshold table ── */
+
+  .cm--cold {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .cm--amber {
+    background: rgba(245, 166, 35, 0.05);
+    border-color: rgba(245, 166, 35, 0.15);
+    box-shadow: 0 0 20px rgba(245, 166, 35, 0.06);
+  }
+
+  .cm--yellow {
+    background: rgba(245, 200, 35, 0.04);
+    border-color: rgba(245, 200, 35, 0.12);
+  }
+
+  .cm--slate {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── Cold label ── */
+
+  .cm-cold {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.25);
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Live body ── */
+
+  .cm-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .cm-headline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Large pct digit — the single most important number on the page */
+  .cm-pct {
+    font-size: 1.75rem;
+    font-weight: 700;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .cm--amber  .cm-pct { color: #F5A623; }
+  .cm--yellow .cm-pct { color: rgba(245, 200, 35, 0.85); }
+  .cm--slate  .cm-pct { color: rgba(255, 255, 255, 0.45); }
+
+  /* Pill badges: correct / wrong / pending */
+  .cm-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .cm-pill {
+    font-size: 0.65rem;
+    font-family: ui-monospace, monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .cm-pill--correct { background: rgba(80, 200, 100, 0.1);  color: rgba(100, 210, 120, 0.8); }
+  .cm-pill--wrong   { background: rgba(220, 80,  80,  0.1); color: rgba(230, 100, 100, 0.75); }
+  .cm-pill--pending { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.35); }
+
+  /* One-line tagline — plain English, no jargon */
+  .cm-tagline {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.45);
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+
+  /* Collapsible "How is this calculated?" */
+  .cm-disclosure { border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.65rem; }
+
+  .cm-disclosure-toggle {
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    transition: color 150ms ease;
+  }
+
+  .cm-disclosure-toggle::-webkit-details-marker { display: none; }
+  .cm-disclosure-toggle::before { content: '▸ '; font-size: 0.55rem; }
+  details[open] .cm-disclosure-toggle::before { content: '▾ '; }
+
+  .cm-disclosure-toggle:hover { color: rgba(255, 255, 255, 0.55); }
+
+  .cm-disclosure-body {
+    padding-top: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .cm-disclosure-body p {
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.38);
+    margin: 0;
+  }
+
+  .cm-disclosure-body strong { color: rgba(255, 255, 255, 0.55); font-weight: 600; }
+  .cm-disclosure-body em     { font-style: italic; }
+
+  .cm-disclosure-body code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.68rem;
+    color: rgba(245, 166, 35, 0.65);
+    padding: 0 3px;
+  }
+
+  .cm-audit-link {
+    color: rgba(255, 255, 255, 0.35);
+    text-underline-offset: 2px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.65rem;
+    transition: color 150ms ease;
+  }
+
+  .cm-audit-link:hover { color: rgba(255, 255, 255, 0.6); }
+
+  /* ── Mobile ── */
+
+  @media (max-width: 640px) {
+    .conviction-meter { padding: 0.85rem 1rem; }
+    .cm-pct           { font-size: 1.4rem; }
+    .cm-headline      { gap: 0.65rem; }
+  }
+</style>

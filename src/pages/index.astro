@@ -11,17 +11,22 @@
 //
 // Credits: Tanya (UX spec §8 — The Field layout), Mike (consolidation plan)
 
+export const prerender = false;
+
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
 import EndangeredBand from '../components/EndangeredBand.astro';
 import FirstVisitHint from '../components/FirstVisitHint.astro';
+import ConvictionMeter from '../components/ConvictionMeter.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
 import { endangeredClientScript } from '../lib/endangered';
+import { computeBattingAverage } from '../lib/batting-average';
 
 const posts        = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
+const avg          = computeBattingAverage();
 
 // Endangered posts surface in EndangeredBand — absence from main feed is the drama.
 const endangered = displayPosts.filter(p => p.endangered);
@@ -33,6 +38,7 @@ const allEntombed = displayPosts.every(p => p.entombed);
 <BaseLayout title="Persona Blog">
   <script set:html={endangeredClientScript()} />
   <main class="feed">
+    <ConvictionMeter avg={avg} />
 
     {allEntombed && (
       <div class="empty-state">
@@ -60,7 +66,7 @@ const allEntombed = displayPosts.every(p => p.entombed);
         {bands.archive.posts.map(post => <DecayCard post={post} />)}
         {bands.archive.overflow > 0 && (
           <p class="archive-hint">
-            + {bands.archive.overflow} more fading into memory
+            + {bands.archive.overflow} older bets, still alive
           </p>
         )}
       </section>

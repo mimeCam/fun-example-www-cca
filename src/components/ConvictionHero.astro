@@ -43,22 +43,27 @@ try {
   /* DB not ready at build time — render nothing */
 }
 
-// No conviction sealed yet: component is invisible.
-if (!sealEntry) return;
-
-const score      = sealEntry.conviction_score!;
-const note       = sealEntry.author_note!;
-const barPct     = (score / 10) * 100;
-const shortHash  = sealEntry.hash.slice(0, 8);
-const sealedAt   = new Date(sealEntry.timestamp).toLocaleDateString('en-US', {
-  month: 'short', day: 'numeric', year: 'numeric',
-});
+const score      = sealEntry?.conviction_score ?? null;
+const note       = sealEntry?.author_note ?? null;
+const barPct     = score !== null ? (score / 10) * 100 : 0;
+const shortHash  = sealEntry?.hash.slice(0, 8) ?? '';
+const sealedAt   = sealEntry
+  ? new Date(sealEntry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  : '';
 
 // Clock: only meaningful when not warming.
-const clockDays    = graceState.warming ? 1 : graceState.daysRemaining;
+const clockDays       = graceState.warming ? 1 : graceState.daysRemaining;
 const clockUrgencyVal = clockUrgency(clockDays);
 ---
 
+{!sealEntry && (
+  <div class="ch-unsealed" aria-label="Conviction score not yet sealed">
+    <span class="ch-unsealed-icon">◇</span>
+    <span class="ch-unsealed-label">Conviction score not yet sealed</span>
+  </div>
+)}
+
+{sealEntry && score !== null && (
 <section
   class:list={['conviction-hero', !chainValid && 'ch--broken']}
   aria-label="Author conviction — sealed before publication"
@@ -116,8 +121,35 @@ const clockUrgencyVal = clockUrgency(clockDays);
     </div>
   </div>
 </section>
+)}
 
 <style>
+  /* Unsealed state: amber dashed border — explicit "not yet sealed" (Mike §4) */
+  .ch-unsealed {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.25rem;
+    margin: 0 0 2.5rem;
+    border: 1px dashed rgba(245, 166, 35, 0.3);
+    border-radius: 8px;
+    background: rgba(245, 166, 35, 0.03);
+  }
+
+  .ch-unsealed-icon {
+    font-size: 0.85rem;
+    color: rgba(245, 166, 35, 0.35);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .ch-unsealed-label {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.02em;
+    font-style: italic;
+  }
+
   /* Container — amber tint signals: this is a sealed bet, not content */
   .conviction-hero {
     background: rgba(245, 166, 35, 0.06);
@@ -162,7 +194,7 @@ const clockUrgencyVal = clockUrgency(clockDays);
     font-weight: 700;
     font-family: ui-monospace, 'Cascadia Code', monospace;
     color: #F5A623;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.01em;
     line-height: 1;
   }
 
@@ -204,16 +236,23 @@ const clockUrgencyVal = clockUrgency(clockDays);
 
   .ch--broken .ch-bar-fill { background: #4A4845; }
 
+  /* Wager note: full text on desktop (Tanya §4 Refinement B — truncated wager = broken promise) */
   .ch-note {
     font-size: 0.88rem;
     line-height: 1.55;
     color: rgba(255, 255, 255, 0.65);
     font-style: italic;
     margin: 0;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+  }
+
+  /* Mobile only: clamp to 3 lines to preserve card density */
+  @media (max-width: 640px) {
+    .ch-note {
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
   }
 
   .ch-sealed-at {
