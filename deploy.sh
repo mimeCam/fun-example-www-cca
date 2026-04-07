@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v46 — Verdict Ceremony (2026-04-07)
+# Architecture v47 — Conviction River (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -26,8 +26,39 @@
 #   Live SSE layer reveals Act III (batting average) in real-time if visitor
 #   is present at the exact moment the verdict is written. VerdictCard CTA
 #   links directly to the ceremony when a verdict exists.
+#   Conviction River: every prediction lives as a node on a scrollable
+#   temporal canvas at /map — SSR-rendered positions, client 60s decay tick,
+#   verdict-coloured rings; entombed posts excluded. No SSE, no new DB schema.
 #
-# Sprint (latest — Verdict Ceremony):
+# Sprint (latest — Conviction River):
+#   pages/map.astro — NEW: SSR Conviction River page at /map; fetches all
+#     non-entombed posts via allPostDisplayData(); builds RiverPost[] via
+#     buildRiverPosts(); positions each node as % along temporal axis (publish
+#     → deadline). Year markers generated server-side. prerender=false.
+#   lib/river-data.ts — NEW: server adapter PostDisplayData[] → RiverPost[];
+#     toRiverPost() maps slug/title/url/publishedAt/deadline/decayOpacity/
+#     decayBlur/decaySat/verdict/daysRemaining; riverClientScript() returns
+#     self-contained IIFE for 60s decay tick (rAF loop, no external deps).
+#   components/RiverNode.astro — NEW: individual prediction node; CSS vars
+#     (--decay-opacity/--decay-blur/--decay-sat) control live appearance;
+#     verdict ring colour: emerald(still-true)/rose(wrong)/ash(abandoned)/
+#     amber(unaudited)/cold(null). SSR-only.
+#   components/RiverLegend.astro — NEW: river legend panel; explains verdict
+#     colour ring codes and decay visual system. SSR-only.
+#   styles/river.css — NEW: Conviction River layout; horizontal scroll canvas,
+#     year markers, node positioning, verdict ring palette, decay animation
+#     vars, empty state, responsive behaviour.
+#   lib/client/river.ts — NEW: client-side decay tick module (60s rAF loop);
+#     reads data-posts JSON from #river-data element; patches CSS vars per
+#     node; no SSE, no fetch — pure wall-clock math.
+#   lib/nav.ts — UPDATED: 'map' added to PageId + PAGE_PREFIXES.
+#   components/SiteNav.astro — UPDATED: /map nav link added.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor — gist scope only).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Verdict Ceremony):
 #   pages/verdict/[slug].astro — NEW: SSR ceremony page at /verdict/[slug]/;
 #     assembles SealEntry + VerdictRecord + BattingAverage from DB; 404 for
 #     unknown slugs; renders pending state when seal exists but no verdict yet.
