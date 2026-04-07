@@ -3,7 +3,6 @@
 // Single source of truth for site identity, canonical URLs, and OG defaults.
 //
 // JSON-LD structured data: see src/lib/json-ld.ts — all schema builders live there.
-// TODO: add per-mood OG image URL builder once dynamic OG endpoint ships
 
 export interface SiteMeta {
   title: string;
@@ -78,7 +77,12 @@ export function siteDefaults(): Readonly<SiteMeta> {
   return SITE;
 }
 
-/** Build the dynamic OG image URL for a blog post slug. */
+/** Build the dynamic OG image URL for a blog post slug or 'home' for the sitewide card. */
 export function ogImageUrl(slug: string): string {
   return canonicalUrl(`/api/og/${slug}.png`);
+}
+
+/** Convenience alias for the sitewide accountability OG card. */
+export function homeOgImageUrl(): string {
+  return ogImageUrl('home');
 }

@@ -39,7 +39,7 @@ const allEntombed = displayPosts.every(p => p.entombed);
 const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
 ---
 
-<BaseLayout title="Persona Blog" jsonLd={jsonLd}>
+<BaseLayout title="Persona Blog" ogSlug="home" jsonLd={jsonLd}>
   <script set:html={endangeredClientScript()} />
   <main class="feed">
     <ConvictionMeter avg={avg} />

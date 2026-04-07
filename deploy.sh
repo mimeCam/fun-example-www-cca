@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v42 — Verdict Dispute Engine (2026-04-07)
+# Architecture v43 — Accountability OG Image Pipeline (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -14,8 +14,32 @@
 #   The Verdict Dispute Engine lets readers who staked 'disagree' formally
 #   challenge an author's sealed verdict; ≥33% dispute ratio marks it
 #   'contested' and excludes it from the batting average until resolved.
+#   OG cards now lead with accountability: batting average is the hero.
 #
-# Sprint (latest — Verdict Dispute Engine):
+# Sprint (latest — Accountability OG Image Pipeline):
+#   lib/og/accountabilityData.ts — NEW: discriminated-union data contract
+#     (cold | post | home variants); buildPostAccountabilityData() +
+#     buildHomeAccountabilityData() builders isolate DB access from layout.
+#   lib/og/accountabilityLayout.ts — NEW: Satori JSX tree (1200×630);
+#     accountability-first design — batting % hero in amber; cold/post/home
+#     variants; design tokens locked to Tanya's colour system.
+#   lib/og/renderOGImage.ts — UPDATED: renderAccountabilityImage() export
+#     added (new pipeline); toSVG() generalised to accept any element tree;
+#     legacy renderOGImage() retained for decay-aesthetic cards.
+#   pages/api/og/[slug].png.ts — UPDATED: uses accountability pipeline
+#     (batting avg hero) instead of decay-aesthetic layout for per-post cards.
+#   pages/api/og/home.png.ts — NEW: GET /api/og/home.png; sitewide
+#     accountability OG card; linked from homepage <meta og:image>.
+#     Pipeline: buildHomeAccountabilityData() → accountabilityLayout() → PNG.
+#   config/seo.config.ts — UPDATED: homeOgImageUrl() convenience alias added;
+#     ogImageUrl() doc updated to mention 'home' slug.
+#   pages/index.astro — UPDATED: og:image points to /api/og/home.png via
+#     homeOgImageUrl() so social shares lead with batting average.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Verdict Dispute Engine):
 #   lib/verdict-dispute.ts — NEW: dispute state machine; recordDispute()
 #     writes to verdict_disputes table (same revivals.db WAL singleton);
 #     getDisputeState() → no-verdict / no-stancers / clean / contested;

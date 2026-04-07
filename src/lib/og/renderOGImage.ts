@@ -8,30 +8,33 @@ import { Resvg } from '@resvg/resvg-js';
 import { ogFonts } from './ogFonts';
 import { ogLayout } from './ogLayout';
 import type { OGImageData } from './ogLayout';
+import { accountabilityLayout } from './accountabilityLayout';
+import type { AccountabilityOGData } from './accountabilityData';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-/** Render a satori element tree to an SVG string. */
-async function toSVG(data: OGImageData): Promise<string> {
-  const element = ogLayout(data);
+/** Render any satori element tree to an SVG string. */
+async function toSVG(element: Record<string, unknown>): Promise<string> {
   return satori(element as React.ReactNode, {
     width: WIDTH, height: HEIGHT, fonts: ogFonts(),
   });
 }
 
-/** Convert an SVG string to a PNG Uint8Array via resvg WASM. */
+/** Convert an SVG string to a PNG Uint8Array via resvg. */
 function toPNG(svg: string): Uint8Array {
-  const resvg = new Resvg(svg, {
-    fitTo: { mode: 'width', value: WIDTH },
-  });
+  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: WIDTH } });
   return resvg.render().asPng();
 }
 
-/** Full pipeline: OGImageData → PNG buffer. */
+/** Legacy decay-aesthetic pipeline: OGImageData → PNG buffer. */
 export async function renderOGImage(data: OGImageData): Promise<Uint8Array> {
-  const svg = await toSVG(data);
-  return toPNG(svg);
+  return toPNG(await toSVG(ogLayout(data)));
+}
+
+/** Accountability-first pipeline: AccountabilityOGData → PNG buffer. */
+export async function renderAccountabilityImage(data: AccountabilityOGData): Promise<Uint8Array> {
+  return toPNG(await toSVG(accountabilityLayout(data)));
 }
 
 export type { OGImageData };
