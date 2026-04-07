@@ -4,36 +4,36 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v28 — Pact Ritual (PactPanel + keep-pact.ts) (2026-04-06)
+# Architecture v29 — Conviction Ledger (hash-chained audit trail) (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Pact Ritual: ceremonial pre-flight interceptor for KeepButton):
-#   PactPanel.astro — NEW: pre-flight ceremony panel that intercepts the
-#     KeepButton click before revival fires; absolutely-positioned below button;
-#     shows contextual pact copy (decay × conviction matrix), an optional
-#     why-chip selector (still-relevant / changed-thinking / others-need-this),
-#     a mini SVG decay ring with days-remaining counter, and a "Seal the Pact"
-#     CTA; @starting-style entrance animation + reduced-motion fallback;
-#     aria-hidden toggled correctly; zero CLS (out-of-flow absolute).
-#   keep-pact.ts — NEW: pact ritual orchestration lib; wires KeepButton click
-#     → PactPanel open → pact:confirmed CustomEvent dispatched on window;
-#     session-storage gate (pact-sealed:<slug>) prevents re-opening after seal;
-#     Escape / outside-click dismiss; chip toggle; applyKeptState() pre-marks
-#     button on page load when session already sealed; zero new endpoints or
-#     npm deps — pure vanilla TS.
-#   KeepButton.astro — UPDATED: wraps button in .pact-wrapper div for absolute
-#     PactPanel anchor; accepts new decayFactor + lifespan props; renders
-#     <PactPanel> when decayFactor provided; data-pact-trigger attribute signals
-#     keep-pact.ts wiring; inline fallback script unchanged for feed cards.
-#   revival-counter.ts — UPDATED: wireKeepButton() now listens for window
-#     'pact:confirmed' event (detail.slug guard) instead of direct button click;
-#     btn.dataset.wired = 'revival-counter' blocks KeepButton.astro fallback.
-#   blog/[slug].astro — UPDATED: passes decayFactor + lifespan props to
-#     KeepButton, activating the pact ritual on post detail pages.
-#   Pure frontend + TypeScript changes — no new services, volumes, env vars,
-#     npm packages, API endpoints, or runtime infrastructure required.
+# Sprint (latest — Conviction Ledger: append-only hash-chained author wager system):
+#   conviction-ledger.ts — NEW: append-only SHA-256 hash-chained SQLite ledger
+#     for author conviction scores; single write path; seal/revival/death/
+#     resurrection events; ConvictionAlreadySealedError hard-guards double-seal;
+#     verifyChain() O(n) integrity scan; getLockedScore() feeds decay engine;
+#     uses same revivals.db in /app/data/ (SQLITE_VOLUME) — no new DB.
+#   api/conviction-seal.ts — NEW: POST endpoint; author seals conviction score
+#     at publish time; guards: ADMIN_SECRET env var, slug existence, score 1–10;
+#     double-seal returns 409; body: {slug, score, authorNote, adminSecret}.
+#   api/conviction-audit.ts — NEW: GET public endpoint; full chain verification
+#     + conviction timeline per slug; readers can verify integrity themselves.
+#   ConvictionDeclaration.astro — NEW: above-fold sealed wager display on post
+#     pages; pure SSR, zero client JS; lock icon signals broken chain.
+#   ConvictionAuditTrail.astro — NEW: collapsible hash-chain timeline below
+#     GhostEchoes; <details> native collapse, zero JS, color-coded by event type.
+#   cli/seal-conviction.mjs — NEW: CLI tool to seal conviction via API;
+#     ADMIN_SECRET env var required; errors loudly on double-seal.
+#   api/entomb.ts — UPDATED: appends 'death' event to conviction ledger
+#     (best-effort, non-blocking) with final revival count.
+#   api/revive.ts — UPDATED: appends 'revival' event to conviction ledger
+#     (best-effort, non-blocking) with reader seconds.
+#   blog/[slug].astro — UPDATED: includes ConvictionDeclaration (above-fold)
+#     and ConvictionAuditTrail (below ConvictionPanel).
+#   Infrastructure: ADMIN_SECRET env var now required in container for
+#     conviction-seal endpoint. No new services, volumes, or npm packages.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Death Clock (SVG ring countdown, 6-tier urgency, CSS-only animation),
@@ -111,6 +111,7 @@ docker run \
   --memory 768m \
   --volume "${DATA_VOLUME}:/app/dist/server/data" \
   --volume "${SQLITE_VOLUME}:/app/data" \
+  --env ADMIN_SECRET="${ADMIN_SECRET:-}" \
   "${IMAGE_NAME}"
 
 # ── 5. Health check with retry ───────────────────────────────────────────────

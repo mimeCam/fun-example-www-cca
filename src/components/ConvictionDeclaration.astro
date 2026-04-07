@@ -1,0 +1,212 @@
+---
+// src/components/ConvictionDeclaration.astro
+// Above-fold sealed conviction wager display.
+// Pure SSR — zero client JS required for static display.
+// Lock icon signals "broken chain" if verifyChain() fails.
+//
+// Credits: Mike (spec), Tanya (above-fold placement, score bar palette)
+
+import { getSealEntry, verifyChain } from '../lib/conviction-ledger';
+
+interface Props {
+  slug: string;
+  revivalCount?: number;
+}
+
+const { slug, revivalCount = 0 } = Astro.props;
+
+let sealEntry = null;
+let chainValid = true;
+
+try {
+  sealEntry = getSealEntry(slug);
+  if (sealEntry) {
+    const { valid } = verifyChain(slug);
+    chainValid = valid;
+  }
+} catch {
+  // DB not ready at build time — degrade gracefully, render nothing
+}
+
+if (!sealEntry) return;
+
+const score     = sealEntry.conviction_score!;
+const note      = sealEntry.author_note!;
+const barPct    = (score / 10) * 100;
+const shortHash = sealEntry.hash.slice(0, 8);
+const sealedAt  = new Date(sealEntry.timestamp).toLocaleDateString('en-US', {
+  month: 'long', day: 'numeric', year: 'numeric',
+});
+---
+
+<aside
+  class={`conviction-declaration${chainValid ? '' : ' conviction--broken'}`}
+  role="region"
+  aria-label="Sealed conviction wager"
+>
+  <div class="cd-header">
+    <span class="cd-lock" aria-hidden="true" title={chainValid ? 'Chain intact' : 'Chain broken'}>
+      {chainValid ? '🔒' : '⛓️'}
+    </span>
+    <span class="cd-title">
+      {chainValid ? 'conviction sealed' : 'chain broken'}
+    </span>
+    <time
+      class="cd-date"
+      datetime={new Date(sealEntry.timestamp).toISOString()}
+      title="Sealed at publication"
+    >
+      {sealedAt}
+    </time>
+  </div>
+
+  <div class="cd-score" aria-label={`Conviction score: ${score} out of 10`}>
+    <div
+      class="cd-score-bar"
+      role="progressbar"
+      aria-valuenow={score}
+      aria-valuemin={1}
+      aria-valuemax={10}
+    >
+      <div class="cd-score-fill" style={`width: ${barPct}%`}></div>
+    </div>
+    <span class="cd-score-label">{score}<span class="cd-score-denom">/10</span></span>
+  </div>
+
+  <blockquote class="cd-note">
+    <p>"{note}"</p>
+  </blockquote>
+
+  <div class="cd-footer">
+    <span class={`cd-validity${chainValid ? ' cd-validity--ok' : ' cd-validity--broken'}`}>
+      {chainValid ? '✓ chain verified' : '✗ chain broken'}
+    </span>
+    {revivalCount > 0 && (
+      <span class="cd-revivals" aria-label={`${revivalCount} revivals`}>
+        {revivalCount} {revivalCount === 1 ? 'revival' : 'revivals'}
+      </span>
+    )}
+    <span class="cd-hash" title={`Full hash: ${sealEntry.hash}`}>#{shortHash}</span>
+  </div>
+</aside>
+
+<style>
+  .conviction-declaration {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 0 0 2.5rem;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .conviction--broken {
+    border-color: rgba(220, 90, 90, 0.25);
+    background: rgba(220, 90, 90, 0.03);
+  }
+
+  /* Header row */
+  .cd-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+  }
+
+  .cd-lock { font-size: 0.85rem; }
+
+  .cd-title {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.38);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .cd-date {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.28);
+  }
+
+  /* Score bar */
+  .cd-score {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    margin-bottom: 1rem;
+  }
+
+  .cd-score-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  /* Amber → orange gradient matching Tanya's decay-fading → decay-dying palette */
+  .cd-score-fill {
+    height: 100%;
+    background: linear-gradient(90deg, hsl(44, 55%, 60%), hsl(25, 60%, 57%));
+    border-radius: 2px;
+  }
+
+  .cd-score-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.72);
+    min-width: 2.25rem;
+    text-align: right;
+    letter-spacing: -0.01em;
+  }
+
+  .cd-score-denom {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.38);
+  }
+
+  /* Author wager note */
+  .cd-note {
+    margin: 0 0 0.875rem;
+    padding: 0;
+    border: none;
+  }
+
+  .cd-note p {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* Footer row: chain status + hash prefix */
+  .cd-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .cd-validity {
+    font-size: 0.67rem;
+    letter-spacing: 0.03em;
+  }
+
+  .cd-validity--ok     { color: rgba(100, 200, 120, 0.65); }
+  .cd-validity--broken { color: rgba(220, 90, 90, 0.75); }
+
+  .cd-revivals {
+    font-size: 0.67rem;
+    color: rgba(255, 255, 255, 0.28);
+  }
+
+  .cd-hash {
+    margin-left: auto;
+    font-size: 0.63rem;
+    font-family: monospace;
+    color: rgba(255, 255, 255, 0.18);
+    letter-spacing: 0.02em;
+    cursor: default;
+  }
+</style>

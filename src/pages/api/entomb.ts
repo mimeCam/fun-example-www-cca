@@ -11,7 +11,8 @@
 
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { entombPost } from '../../lib/collectiveMemory';
+import { entombPost, getRevivalCount } from '../../lib/collectiveMemory';
+import { appendResonance } from '../../lib/conviction-ledger';
 
 export const prerender = false;
 
@@ -32,6 +33,12 @@ export const POST: APIRoute = async ({ request }) => {
 
   entombPost(slug);
   _confirmed.add(slug);
+
+  // Append death event to conviction ledger (non-blocking)
+  try {
+    const finalRevivalCount = getRevivalCount(slug);
+    appendResonance(slug, 'death', { revivalCount: finalRevivalCount });
+  } catch { /* ledger append is best-effort */ }
 
   return jsonOk({ ok: true, cached: false });
 };

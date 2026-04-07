@@ -1,0 +1,253 @@
+---
+// src/components/ConvictionAuditTrail.astro
+// Collapsible hash-chain timeline at the bottom of each post.
+// Uses <details> — native collapse, zero JS, zero Lighthouse CLS impact.
+// Color-coded by event type: gold (seal), green (revival), red (death), purple (resurrection).
+//
+// Credits: Mike (spec), Tanya (placement — below GhostEchoes, before PostNav)
+
+import { verifyChain } from '../lib/conviction-ledger';
+import type { LedgerEntry } from '../lib/conviction-ledger';
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+
+let entries: LedgerEntry[] = [];
+let chainValid = true;
+let brokenAt: number | undefined;
+
+try {
+  const result = verifyChain(slug);
+  entries = result.entries;
+  chainValid = result.valid;
+  brokenAt  = result.brokenAt;
+} catch {
+  // DB unavailable at build time — render nothing
+}
+
+if (!entries.length) return;
+
+const EVENT_LABEL: Record<string, string> = {
+  seal: 'Sealed',
+  revival: 'Revival',
+  death: 'Death',
+  resurrection: 'Resurrection',
+};
+
+function fmtDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
+function fmtMinutes(seconds: number): string {
+  const m = Math.round(seconds / 60);
+  return m === 1 ? '1 min read' : `${m} min read`;
+}
+
+function isRowBroken(i: number): boolean {
+  return !chainValid && brokenAt !== undefined && i >= brokenAt;
+}
+---
+
+<details class="audit-trail">
+  <summary class="audit-toggle" aria-label="Toggle conviction audit trail">
+    <span class="audit-icon" aria-hidden="true">⛓</span>
+    <span class="audit-label">conviction audit trail</span>
+    <span class="audit-count">{entries.length}</span>
+    {!chainValid && (
+      <span class="audit-warn" aria-label="Chain integrity failure" title="One or more hashes do not match">⚠</span>
+    )}
+  </summary>
+
+  <ol class="audit-list" aria-label="Conviction timeline">
+    {entries.map((entry, i) => {
+      const broken = isRowBroken(i);
+      return (
+        <li class={[
+          'audit-entry',
+          `entry--${entry.event_type}`,
+          broken ? 'entry--broken' : '',
+        ].filter(Boolean).join(' ')}>
+
+          <div class="entry-row">
+            <span class="entry-badge">{EVENT_LABEL[entry.event_type] ?? entry.event_type}</span>
+            <time class="entry-time" datetime={new Date(entry.timestamp).toISOString()}>
+              {fmtDate(entry.timestamp)}
+            </time>
+            {entry.conviction_score !== null && (
+              <span class="entry-score">{entry.conviction_score}/10</span>
+            )}
+          </div>
+
+          {entry.author_note && (
+            <p class="entry-note">"{entry.author_note}"</p>
+          )}
+
+          {(entry.revival_count > 0 || entry.reader_seconds > 0) && (
+            <div class="entry-stats">
+              {entry.revival_count > 0 && (
+                <span>+{entry.revival_count} revival{entry.revival_count !== 1 ? 's' : ''}</span>
+              )}
+              {entry.reader_seconds > 0 && <span>{fmtMinutes(entry.reader_seconds)}</span>}
+            </div>
+          )}
+
+          <div class="entry-hash">
+            <code class="hash-prefix" title={`Full hash: ${entry.hash}`}>
+              #{entry.hash.slice(0, 8)}
+            </code>
+            <span
+              class={`hash-check ${broken ? 'hash-check--fail' : 'hash-check--ok'}`}
+              aria-label={broken ? 'Hash mismatch' : 'Hash verified'}
+            >
+              {broken ? '✗' : '✓'}
+            </span>
+          </div>
+
+        </li>
+      );
+    })}
+  </ol>
+</details>
+
+<style>
+  .audit-trail {
+    margin: 2rem 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 1rem;
+  }
+
+  /* Strip default disclosure triangle */
+  .audit-trail summary           { list-style: none; }
+  .audit-trail summary::-webkit-details-marker { display: none; }
+
+  .audit-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.28);
+    user-select: none;
+    transition: color 200ms ease;
+    width: fit-content;
+  }
+
+  .audit-toggle:hover { color: rgba(255, 255, 255, 0.55); }
+
+  .audit-icon  { font-size: 0.85rem; }
+  .audit-label { text-transform: uppercase; }
+
+  .audit-count {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px;
+    padding: 0.05em 0.35em;
+    font-size: 0.68rem;
+    opacity: 0.7;
+  }
+
+  .audit-warn {
+    color: rgba(220, 90, 90, 0.8);
+    font-size: 0.8rem;
+  }
+
+  /* Timeline list — left ruled line gives chain feel */
+  .audit-list {
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0 0 0 1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .audit-entry {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 0.82rem;
+  }
+
+  .audit-entry:last-child { border-bottom: none; }
+
+  /* Broken rows fade out — they cannot be trusted */
+  .entry--broken { opacity: 0.45; }
+
+  /* Entry header row */
+  .entry-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+
+  /* Event type badge */
+  .entry-badge {
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.15em 0.55em;
+    border-radius: 3px;
+  }
+
+  /* Palette — matches Tanya's decay spectrum semantics */
+  .entry--seal         .entry-badge { background: rgba(212, 175, 55, 0.14); color: hsl(44, 60%, 65%); }
+  .entry--revival      .entry-badge { background: rgba(100, 200, 120, 0.11); color: rgba(100, 210, 130, 0.85); }
+  .entry--death        .entry-badge { background: rgba(220, 90, 90, 0.11); color: rgba(220, 100, 100, 0.85); }
+  .entry--resurrection .entry-badge { background: rgba(150, 100, 220, 0.11); color: rgba(180, 145, 240, 0.85); }
+
+  .entry-time {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.32);
+    margin-left: auto;
+  }
+
+  .entry-score {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.48);
+  }
+
+  /* Author wager note */
+  .entry-note {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.45);
+    font-style: italic;
+    margin: 0.2rem 0 0.35rem;
+    line-height: 1.45;
+  }
+
+  /* Cumulative stats row */
+  .entry-stats {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.67rem;
+    color: rgba(255, 255, 255, 0.28);
+    margin-bottom: 0.35rem;
+  }
+
+  /* Hash row */
+  .entry-hash {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .hash-prefix {
+    font-family: monospace;
+    font-size: 0.61rem;
+    color: rgba(255, 255, 255, 0.17);
+    letter-spacing: 0.02em;
+    background: none;
+    padding: 0;
+    cursor: default;
+  }
+
+  .hash-check--ok   { font-size: 0.63rem; color: rgba(100, 200, 120, 0.48); }
+  .hash-check--fail { font-size: 0.63rem; color: rgba(220, 90, 90, 0.75); }
+</style>

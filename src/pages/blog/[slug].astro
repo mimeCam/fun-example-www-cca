@@ -20,6 +20,8 @@ import RevivalCounter from '../../components/RevivalCounter.astro';
 import KeepButton from '../../components/KeepButton.astro';
 import ReadingPulse from '../../components/ReadingPulse.astro';
 import ConvictionPanel from '../../components/ConvictionPanel.astro';
+import ConvictionDeclaration from '../../components/ConvictionDeclaration.astro';
+import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
 import DeathClockBanner from '../../components/DeathClockBanner.astro';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
@@ -74,6 +76,9 @@ function safeReadingSeconds(slug: string): number {
       )}
     </nav>
 
+    <!-- ConvictionDeclaration: above-fold sealed wager — reader understands stakes immediately -->
+    <ConvictionDeclaration slug={post.slug} revivalCount={revivalCount} />
+
     <header class="post-header">
       <time datetime={post.data.pubDate.toISOString()}>{pubDate}</time>
       <h1>{post.data.title}</h1>
@@ -107,6 +112,9 @@ function safeReadingSeconds(slug: string): number {
     <GhostEchoes slug={post.slug} />
 
     {hasConvictions && <ConvictionPanel convictions={convictions} />}
+
+    <!-- ConvictionAuditTrail: hash-chained timeline — zero JS, <details> collapse -->
+    <ConvictionAuditTrail slug={post.slug} />
 
   </main>
 

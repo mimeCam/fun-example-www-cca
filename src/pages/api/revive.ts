@@ -20,6 +20,8 @@ import { getConstellation } from '../../lib/constellationLookup';
 import { checkRevival } from '../../lib/revivalGuard';
 import { FP_HEADER } from '../../lib/visitorFingerprint';
 import { decayFactorWithCount } from '../../lib/decay-engine';
+import { appendResonance } from '../../lib/conviction-ledger';
+import { getReadingSeconds } from '../../lib/collectiveMemory';
 
 export const prerender = false;
 
@@ -92,6 +94,12 @@ export const POST: APIRoute = async ({ request }) => {
 
   const constellation = await getConstellation(slug);
   const resonance = constellation.length > 0 ? constellation : undefined;
+  // Append resonance to conviction ledger (non-blocking — never break revival on ledger failure)
+  try {
+    const readerSeconds = getReadingSeconds(slug);
+    appendResonance(slug, 'revival', { revivalCount: count, readerSeconds });
+  } catch { /* ledger append is best-effort */ }
+
   broadcast({ slug, count, ts: Date.now(), decayAfterRevival, resonance });
   // Notify honest presence subscribers on this slug
   presenceRevive(slug);
