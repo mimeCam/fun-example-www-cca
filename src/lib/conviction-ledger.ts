@@ -1,10 +1,14 @@
 // src/lib/conviction-ledger.ts
-// Append-only hash-chained ledger for author conviction scores.
+// Append-only ledger for author conviction scores.
 // One event schema. One hash function. One write path. No polymorphism.
 // Credits: Mike (architecture spec), DevBrain (SQLite audit trail patterns)
+//
+// HMAC seal (2026-04-07): dropped SHA-256 chain display (Elon's call — it was
+// blockchain cosplay with no external anchor). Replaced with HMAC-based seal:
+// proves the server wrote it, nothing more, nothing less.
 
 import Database from 'better-sqlite3';
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 
@@ -26,12 +30,7 @@ export interface LedgerEntry {
   timestamp: number;
   prev_hash: string;
   hash: string;
-}
-
-export interface ChainVerification {
-  valid: boolean;
-  entries: LedgerEntry[];
-  brokenAt?: number;
+  hmac_seal: string | null;
 }
 
 export class ConvictionAlreadySealedError extends Error {
@@ -81,6 +80,13 @@ function initTable(d: Database.Database): void {
     ) STRICT;
     CREATE INDEX IF NOT EXISTS idx_ledger_slug ON conviction_ledger(post_slug, id);
   `);
+  // Migrate: add hmac_seal column for honest server-side seal verification.
+  // Nullable — old rows have null, new seals carry the HMAC.
+  try {
+    d.exec(`ALTER TABLE conviction_ledger ADD COLUMN hmac_seal TEXT DEFAULT NULL`);
+  } catch {
+    // Column already exists — safe to ignore.
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +109,14 @@ function prevHashForSlug(slug: string): string {
     .prepare('SELECT hash FROM conviction_ledger WHERE post_slug = ? ORDER BY id DESC LIMIT 1')
     .get(slug) as { hash: string } | undefined;
   return row?.hash ?? GENESIS_HASH;
+}
+
+/** HMAC seal: proves the server wrote this entry at this time.
+ *  Not a blockchain — just an honest server signature. */
+function hmacSeal(slug: string, score: number, timestamp: number, secret: string): string {
+  return createHmac('sha256', secret)
+    .update(`${slug}:${score}:${timestamp}`)
+    .digest('hex');
 }
 
 // ---------------------------------------------------------------------------
@@ -132,14 +146,15 @@ function runInsert(
   ts: number,
   prevHash: string,
   hash: string,
+  hmac: string | null,
 ): void {
   db().prepare(`
     INSERT INTO conviction_ledger
       (post_slug, event_type, conviction_score, author_note, revival_count,
-       reader_seconds, payload_json, timestamp, prev_hash, hash)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       reader_seconds, payload_json, timestamp, prev_hash, hash, hmac_seal)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(slug, eventType, score, authorNote, revivalCount, readerSeconds,
-         payloadJson, ts, prevHash, hash);
+         payloadJson, ts, prevHash, hash, hmac);
 }
 
 function insertEvent(
@@ -150,9 +165,10 @@ function insertEvent(
   revivalCount: number,
   readerSeconds: number,
   payload: object | null,
+  hmac: string | null = null,
 ): LedgerEntry {
   const { ts, prevHash, hash, payloadJson } = buildChainParams(slug, eventType, score, payload);
-  runInsert(slug, eventType, score, authorNote, revivalCount, readerSeconds, payloadJson, ts, prevHash, hash);
+  runInsert(slug, eventType, score, authorNote, revivalCount, readerSeconds, payloadJson, ts, prevHash, hash, hmac);
   return db().prepare('SELECT * FROM conviction_ledger WHERE hash = ?').get(hash) as LedgerEntry;
 }
 
@@ -163,14 +179,22 @@ function insertEvent(
 /**
  * Seal the conviction score at publish time.
  * Idempotent-guarded: throws ConvictionAlreadySealedError if already sealed.
- * This is the hard wall — no bypass path.
+ * Attaches HMAC proof using ADMIN_SECRET (server-side only — never in HTML).
  */
 export function sealConviction(slug: string, score: number, authorNote: string): LedgerEntry {
   const existing = db()
     .prepare("SELECT id FROM conviction_ledger WHERE post_slug = ? AND event_type = 'seal'")
     .get(slug);
   if (existing) throw new ConvictionAlreadySealedError(slug);
-  return insertEvent(slug, 'seal', score, authorNote, 0, 0, null);
+  // Compute HMAC if ADMIN_SECRET is set; null otherwise (CLI fallback).
+  const secret = process.env.ADMIN_SECRET ?? '';
+  const ts = Date.now();
+  const hmac = secret ? hmacSeal(slug, score, ts, secret) : null;
+  // Use a fixed timestamp so HMAC and chain hash share the same ts.
+  const prevHash = prevHashForSlug(slug);
+  const hash = computeHash(slug, 'seal', score, ts, prevHash);
+  runInsert(slug, 'seal', score, authorNote, 0, 0, null, ts, prevHash, hash, hmac);
+  return db().prepare('SELECT * FROM conviction_ledger WHERE hash = ?').get(hash) as LedgerEntry;
 }
 
 /**
@@ -191,21 +215,14 @@ export function appendResonance(
 // Public reads
 // ---------------------------------------------------------------------------
 
-/** Verify the hash chain for a slug. O(n) scan — fast for <100 entries per post. */
-export function verifyChain(slug: string): ChainVerification {
-  const entries = db()
+/**
+ * Returns all ledger entries for a slug in chronological order.
+ * Used by ConvictionAuditTrail — no chain verification (dropped: Elon §blockchain cosplay).
+ */
+export function getEntriesForSlug(slug: string): LedgerEntry[] {
+  return db()
     .prepare('SELECT * FROM conviction_ledger WHERE post_slug = ? ORDER BY id ASC')
     .all(slug) as LedgerEntry[];
-  if (!entries.length) return { valid: true, entries };
-
-  let prevHash = GENESIS_HASH;
-  for (let i = 0; i < entries.length; i++) {
-    const e = entries[i];
-    const expected = computeHash(e.post_slug, e.event_type, e.conviction_score, e.timestamp, prevHash);
-    if (expected !== e.hash || e.prev_hash !== prevHash) return { valid: false, entries, brokenAt: i };
-    prevHash = e.hash;
-  }
-  return { valid: true, entries };
 }
 
 /**

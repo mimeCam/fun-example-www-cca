@@ -1,12 +1,12 @@
 // src/pages/api/conviction-audit.ts
-// GET endpoint — public chain verification + full conviction timeline.
-// Readers can verify the chain themselves. Integrity check on every read.
+// GET endpoint — public conviction timeline for a post.
+// Chain verification dropped (Elon §blockchain cosplay); returns honest entry list.
 //
 // Query: ?slug=the-decay-theory
-// Response: { valid, sealedScore, sealedAt, authorNote, entries[], brokenAt? }
+// Response: { sealedScore, sealedAt, authorNote, entries[] }
 
 import type { APIRoute } from 'astro';
-import { verifyChain } from '../../lib/conviction-ledger';
+import { getEntriesForSlug } from '../../lib/conviction-ledger';
 import type { LedgerEntry } from '../../lib/conviction-ledger';
 
 export const prerender = false;
@@ -32,19 +32,13 @@ function formatEntry(e: LedgerEntry): Record<string, unknown> {
   };
 }
 
-function buildResponse(
-  valid: boolean,
-  entries: LedgerEntry[],
-  brokenAt?: number,
-): Record<string, unknown> {
+function buildResponse(entries: LedgerEntry[]): Record<string, unknown> {
   const seal = entries.find(e => e.event_type === 'seal');
   return {
-    valid,
     sealedScore: seal?.conviction_score ?? null,
     sealedAt: seal ? new Date(seal.timestamp).toISOString() : null,
     authorNote: seal?.author_note ?? null,
     entries: entries.map(formatEntry),
-    ...(brokenAt !== undefined ? { brokenAt } : {}),
   };
 }
 
@@ -53,8 +47,8 @@ export const GET: APIRoute = ({ url }) => {
   if (!slug) return json({ error: 'Missing slug' }, 400);
 
   try {
-    const { valid, entries, brokenAt } = verifyChain(slug);
-    return json(buildResponse(valid, entries, brokenAt));
+    const entries = getEntriesForSlug(slug);
+    return json(buildResponse(entries));
   } catch {
     return json({ error: 'Ledger unavailable' }, 503);
   }

@@ -9,8 +9,7 @@
 // Credits: Mike (spec §3 — endpoint design), conviction-audit.ts (patterns)
 
 import type { APIRoute } from 'astro';
-import { computeBattingAverage, getSealedSlugs } from '../../lib/batting-average';
-import { verifyChain } from '../../lib/conviction-ledger';
+import { computeBattingAverage } from '../../lib/batting-average';
 
 export const prerender = false;
 
@@ -21,15 +20,8 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-function checkChains(slugs: string[]): boolean {
-  return slugs.every(slug => {
-    try { return verifyChain(slug).valid; }
-    catch { return false; }
-  });
-}
-
-function buildPayload(avg: ReturnType<typeof computeBattingAverage>, chainOk: boolean): Record<string, unknown> {
-  const base = { chainIntegrity: chainOk, computedAt: new Date().toISOString() };
+function buildPayload(avg: ReturnType<typeof computeBattingAverage>): Record<string, unknown> {
+  const base = { computedAt: new Date().toISOString() };
   if (avg.status === 'cold') return { status: 'cold', total: 0, ...base };
   return {
     status: avg.status,
@@ -44,10 +36,8 @@ function buildPayload(avg: ReturnType<typeof computeBattingAverage>, chainOk: bo
 
 export const GET: APIRoute = () => {
   try {
-    const avg      = computeBattingAverage();
-    const slugs    = getSealedSlugs();
-    const chainOk  = slugs.length ? checkChains(slugs) : true;
-    return json(buildPayload(avg, chainOk));
+    const avg = computeBattingAverage();
+    return json(buildPayload(avg));
   } catch {
     return json({ error: 'Stats unavailable' }, 503);
   }

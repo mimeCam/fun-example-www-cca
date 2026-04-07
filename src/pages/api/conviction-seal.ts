@@ -3,11 +3,16 @@
 // Called once per post via cli/seal-conviction.mjs. Double-seal returns 409.
 // Guards: ADMIN_SECRET env var, slug existence, score range 1-10.
 //
-// Body: { slug, score, authorNote, adminSecret }
+// Auth paths (both supported):
+//   1. Body: { slug, score, authorNote, adminSecret }  — CLI / curl
+//   2. Cookie: admin_token=<hmac>                       — Admin web UI
+//
 // Response: { hash, sealedAt, score, authorNote }
 
 import type { APIRoute } from 'astro';
+import { createHmac } from 'crypto';
 import { getCollection } from 'astro:content';
+import { broadcastNamed } from '../../lib/heartbeat';
 import {
   sealConviction,
   getSealEntry,
@@ -18,6 +23,11 @@ export const prerender = false;
 
 function adminSecret(): string {
   return process.env.ADMIN_SECRET ?? '';
+}
+
+/** Derive the deterministic admin token from the secret. */
+function expectedToken(secret: string): string {
+  return createHmac('sha256', secret).update('admin-session').digest('hex');
 }
 
 function validScore(score: unknown): score is number {
@@ -36,21 +46,31 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-function badRequest(msg: string): Response {
-  return json({ error: msg }, 400);
+function badRequest(msg: string): Response { return json({ error: msg }, 400); }
+function forbidden(): Response { return json({ error: 'Forbidden' }, 403); }
+
+/** Check cookie-based auth (admin web UI). */
+function cookieAuthed(request: Request): boolean {
+  const secret = adminSecret();
+  if (!secret) return false;
+  const cookie = request.headers.get('Cookie') ?? '';
+  const match = cookie.match(/(?:^|;\s*)admin_token=([^;]+)/);
+  return match ? match[1] === expectedToken(secret) : false;
 }
 
-function forbidden(): Response {
-  return json({ error: 'Forbidden' }, 403);
+/** Check body-based auth (CLI / curl). */
+function bodyAuthed(secret: unknown): boolean {
+  const s = adminSecret();
+  return !!s && secret === s;
 }
 
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return badRequest('Invalid JSON');
 
-  const { slug, score, authorNote, adminSecret: secret } = body;
+  const { slug, score, authorNote, adminSecret: bodySecret } = body;
 
-  if (!adminSecret() || secret !== adminSecret()) return forbidden();
+  if (!cookieAuthed(request) && !bodyAuthed(bodySecret)) return forbidden();
   if (!slug || typeof slug !== 'string') return badRequest('Missing slug');
   if (!validScore(score)) return badRequest('score must be integer 1–10');
   if (!authorNote || typeof authorNote !== 'string' || !authorNote.trim()) {
@@ -60,6 +80,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     const entry = sealConviction(slug, score, authorNote.trim());
+    // Broadcast conviction:sealed so live-conviction-hero.ts can update open tabs.
+    broadcastNamed('conviction:sealed', { slug, score: entry.conviction_score });
     return json({
       hash: entry.hash,
       sealedAt: entry.timestamp,

@@ -1,0 +1,349 @@
+---
+// src/components/AdminSealForm.astro
+// Per-post conviction seal form for the /admin dashboard.
+// Two states: sealed (read-only display) or unsealed (form + live preview).
+// POSTs JSON to /api/conviction-seal — auth via cookie (no secret in HTML).
+//
+// Credits: Mike (arch §AdminSealForm), Tanya (UX §9 ConvictionHero visual hierarchy)
+
+interface Props {
+  slug:     string;
+  title:    string;
+  sealed:   boolean;
+  score:    number | null;
+  sealedAt: string | null;
+}
+
+const { slug, title, sealed, score, sealedAt } = Astro.props;
+---
+
+<div class={`asf-card ${sealed ? 'asf--sealed' : 'asf--open'}`} data-slug={slug}>
+
+  <div class="asf-header">
+    <span class="asf-slug">{slug}</span>
+    <span class={`asf-status ${sealed ? 'asf-status--sealed' : 'asf-status--open'}`}>
+      {sealed ? `sealed ${sealedAt}` : '◇ unsealed'}
+    </span>
+  </div>
+
+  <h3 class="asf-title">{title}</h3>
+
+  {sealed && score !== null && (
+    <div class="asf-sealed-row">
+      <span class="asf-score-stamp">{score}<span class="asf-score-denom">/10</span></span>
+      <div class="asf-bar-track">
+        <div class="asf-bar-fill" style={`width:${(score / 10) * 100}%`}></div>
+      </div>
+    </div>
+  )}
+
+  {!sealed && (
+    <form class="asf-form" data-seal-form>
+      <!-- Live preview mimics ConvictionHero above-fold layout -->
+      <div class="asf-preview" aria-label="Seal preview">
+        <span class="asf-preview-score">—<span class="asf-preview-denom">/10</span></span>
+        <div class="asf-preview-bar">
+          <div class="asf-preview-fill" style="width:0%"></div>
+        </div>
+        <p class="asf-preview-note asf-preview-empty">author note appears here…</p>
+      </div>
+
+      <div class="asf-fields">
+        <label class="asf-label" for={`score-${slug}`}>
+          Conviction score
+          <span class="asf-score-val">5</span>/10
+        </label>
+        <input
+          id={`score-${slug}`}
+          name="score"
+          type="range"
+          min="1" max="10" value="5" step="1"
+          class="asf-slider"
+        />
+
+        <label class="asf-label" for={`note-${slug}`}>Author note</label>
+        <textarea
+          id={`note-${slug}`}
+          name="authorNote"
+          rows="3"
+          maxlength="280"
+          placeholder="One sentence: what you believed when you sealed this."
+          class="asf-textarea"
+        ></textarea>
+      </div>
+
+      <div class="asf-actions">
+        <button type="submit" class="asf-submit">Seal conviction</button>
+        <span class="asf-feedback" aria-live="polite"></span>
+      </div>
+    </form>
+  )}
+
+</div>
+
+<style>
+  .asf-card {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .asf--open {
+    border-color: rgba(245, 166, 35, 0.2);
+    background: rgba(245, 166, 35, 0.03);
+  }
+
+  .asf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+
+  .asf-slug {
+    font-size: 0.65rem;
+    font-family: ui-monospace, monospace;
+    color: rgba(255, 255, 255, 0.22);
+    letter-spacing: 0.03em;
+  }
+
+  .asf-status {
+    font-size: 0.67rem;
+    letter-spacing: 0.02em;
+  }
+
+  .asf-status--sealed { color: rgba(100, 200, 120, 0.65); }
+  .asf-status--open   { color: rgba(245, 166, 35, 0.5); }
+
+  .asf-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 1rem;
+  }
+
+  /* Sealed display */
+  .asf-sealed-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .asf-score-stamp {
+    font-size: 1.75rem;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+    color: #F5A623;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .asf-score-denom {
+    font-size: 0.9rem;
+    color: rgba(245, 166, 35, 0.45);
+  }
+
+  .asf-bar-track {
+    flex: 1;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .asf-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #D4880A, #F5A623);
+    border-radius: 2px;
+  }
+
+  /* Live preview */
+  .asf-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: rgba(245, 166, 35, 0.05);
+    border: 1px solid rgba(245, 166, 35, 0.12);
+    border-left: 3px solid rgba(245, 166, 35, 0.35);
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+  }
+
+  .asf-preview-score {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+    color: #F5A623;
+    flex-shrink: 0;
+  }
+
+  .asf-preview-denom {
+    font-size: 0.8rem;
+    color: rgba(245, 166, 35, 0.45);
+  }
+
+  .asf-preview-bar {
+    width: 60px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .asf-preview-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #D4880A, #F5A623);
+    border-radius: 2px;
+    transition: width 120ms ease;
+  }
+
+  .asf-preview-note {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .asf-preview-empty { color: rgba(255, 255, 255, 0.18); }
+
+  /* Form fields */
+  .asf-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .asf-label {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.38);
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .asf-score-val {
+    font-family: ui-monospace, monospace;
+    color: rgba(245, 166, 35, 0.7);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .asf-slider {
+    width: 100%;
+    accent-color: #F5A623;
+    cursor: pointer;
+  }
+
+  .asf-textarea {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.5;
+    transition: border-color 150ms ease;
+  }
+
+  .asf-textarea:focus { border-color: rgba(245, 166, 35, 0.35); }
+
+  .asf-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .asf-submit {
+    background: rgba(245, 166, 35, 0.14);
+    border: 1px solid rgba(245, 166, 35, 0.3);
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.83rem;
+    color: rgba(245, 166, 35, 0.9);
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+
+  .asf-submit:hover   { background: rgba(245, 166, 35, 0.22); }
+  .asf-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .asf-feedback {
+    font-size: 0.75rem;
+    color: rgba(100, 200, 120, 0.75);
+  }
+
+  .asf-feedback--error { color: rgba(220, 90, 90, 0.8); }
+</style>
+
+<script>
+  // Wire up each unsealed form: live preview + submit.
+  document.querySelectorAll<HTMLElement>('[data-seal-form]').forEach(form => {
+    const card     = form.closest<HTMLElement>('[data-slug]')!;
+    const slug     = card.dataset.slug!;
+    const slider   = form.querySelector<HTMLInputElement>('input[type=range]')!;
+    const textarea = form.querySelector<HTMLTextAreaElement>('textarea')!;
+    const scoreVal = form.querySelector<HTMLElement>('.asf-score-val')!;
+    const prevScore = form.querySelector<HTMLElement>('.asf-preview-score')!;
+    const prevDenom = form.querySelector<HTMLElement>('.asf-preview-denom')!;
+    const prevFill  = form.querySelector<HTMLElement>('.asf-preview-fill')!;
+    const prevNote  = form.querySelector<HTMLElement>('.asf-preview-note')!;
+    const feedback  = form.querySelector<HTMLElement>('.asf-feedback')!;
+    const submitBtn = form.querySelector<HTMLButtonElement>('.asf-submit')!;
+
+    function syncPreview(): void {
+      const s = Number(slider.value);
+      scoreVal.textContent = String(s);
+      prevScore.textContent = String(s);
+      prevScore.appendChild(prevDenom);
+      prevFill.style.width = `${(s / 10) * 100}%`;
+      const note = textarea.value.trim();
+      prevNote.textContent = note || 'author note appears here…';
+      prevNote.classList.toggle('asf-preview-empty', !note);
+    }
+
+    slider.addEventListener('input', syncPreview);
+    textarea.addEventListener('input', syncPreview);
+
+    async function submitSeal(e: SubmitEvent): Promise<void> {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      feedback.textContent = 'Sealing…';
+      feedback.className = 'asf-feedback';
+
+      const res = await fetch('/api/conviction-seal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          score: Number(slider.value),
+          authorNote: textarea.value.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        feedback.textContent = '✓ Sealed';
+        setTimeout(() => location.reload(), 800);
+      } else {
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        feedback.textContent = data.error ?? `Error ${res.status}`;
+        feedback.className = 'asf-feedback asf-feedback--error';
+        submitBtn.disabled = false;
+      }
+    }
+
+    form.addEventListener('submit', submitSeal as EventListener);
+    syncPreview();
+  });
+</script>

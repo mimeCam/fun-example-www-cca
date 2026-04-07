@@ -15,7 +15,7 @@
 // Credits: Mike (spec §Modules, §Key Design Decisions),
 //          Tanya (UX §9 — The Sealed Bet layout)
 
-import { getSealEntry, verifyChain } from '../lib/conviction-ledger';
+import { getSealEntry } from '../lib/conviction-ledger';
 import DeathClock from './DeathClock.astro';
 import TensionBadge from './TensionBadge.astro';
 import { clockUrgency } from '../lib/death-clock';
@@ -33,15 +33,10 @@ interface Props {
 
 const { slug, graceState, revivalCount = 0, conviction = null, tensionResult = null } = Astro.props;
 
-let sealEntry  = null;
-let chainValid = true;
+let sealEntry = null;
 
 try {
   sealEntry = getSealEntry(slug);
-  if (sealEntry) {
-    const { valid } = verifyChain(slug);
-    chainValid = valid;
-  }
 } catch {
   /* DB not ready at build time — render nothing */
 }
@@ -74,7 +69,7 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
 
 {sealEntry && score !== null && (
 <section
-  class:list={['conviction-hero', !chainValid && 'ch--broken']}
+  class="conviction-hero"
   aria-label="Author conviction — sealed before publication"
 >
   <!-- Row 1: Score stamp + wager quote -->
@@ -124,9 +119,6 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     />
 
     <div class="ch-meta">
-      <span class:list={['ch-chain', chainValid ? 'ch-chain--ok' : 'ch-chain--broken']}>
-        {chainValid ? '✓ chain intact' : '✗ chain broken'}
-      </span>
       {revivalCount > 0 && (
         <span class="ch-revivals">
           {revivalCount} {revivalCount === 1 ? 'revival' : 'revivals'}
@@ -181,14 +173,6 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
-  /* Broken chain: amber drains to slate — stamp no longer presses as hard */
-  .ch--broken {
-    background: rgba(74, 72, 69, 0.08);
-    border-color: rgba(74, 72, 69, 0.25);
-    border-left-color: rgba(74, 72, 69, 0.4);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-
   /* Score row: stamp number left, bar+quote right */
   .ch-score-row {
     display: flex;
@@ -215,8 +199,6 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     line-height: 1;
   }
 
-  .ch--broken .ch-score-digit { color: #6B6560; }
-
   .ch-score-denom {
     font-size: 1rem;
     font-weight: 400;
@@ -224,8 +206,6 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     align-self: flex-end;
     padding-bottom: 0.3rem;
   }
-
-  .ch--broken .ch-score-denom { color: rgba(107, 101, 96, 0.45); }
 
   /* Wager column: bar track + quote + sealed date */
   .ch-wager {
@@ -250,8 +230,6 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     background: linear-gradient(90deg, #D4880A, #F5A623);
     border-radius: 2px;
   }
-
-  .ch--broken .ch-bar-fill { background: #4A4845; }
 
   /* Wager note: full text on desktop (Tanya §4 Refinement B — truncated wager = broken promise) */
   .ch-note {

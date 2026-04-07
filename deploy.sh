@@ -4,33 +4,40 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v33 — Live ConvictionHero Countdown + TensionBadge Embedding (2026-04-07)
+# Architecture v34 — HMAC Seal + Admin Web UI (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
-#   reader attention revives them. Honest Presence shows real-time reader
-#   counts per slug (and global scope) via SSE. Zero phantoms.
+#   reader attention revives them. Author conviction sealed with HMAC proof.
+#   Admin dashboard at /admin for cookie-authenticated seal management.
 #
-# Sprint (latest — Live Countdown + TensionBadge Embedding):
-#   lib/live-conviction-hero.ts — NEW: pure client-side h:mm live countdown
-#     for DeathClock when < 48 h remain; pure setInterval on ISO deadline
-#     attribute; no SSE, no hydration island; skips posts with > 48 h silently;
-#     wireLiveCountdown() exported for DOMContentLoaded hook; no new deps.
-#   components/ConvictionHero.astro — UPDATED: tensionResult prop added so
-#     TensionBadge renders inline in the ch-status-row (visual unification,
-#     Mike §Key Design Decisions #2); deadlineISO computed from daysRemaining
-#     and stamped onto .ch-clock-wrap as data-deadline-iso; live countdown
-#     script imported via <script> tag (wireLiveCountdown).
-#   components/TensionBadge.astro — UPDATED: embedded prop added (default
-#     false); tighter pill variant (.tension-badge--embedded, 10 px font,
-#     2 px/7 px padding); revival-memory span hidden when embedded to avoid
-#     duplicate counts in ConvictionHero status row.
-#   lib/tension-score.ts — UPDATED: MIN_STANCES lowered from 3 → 1 so badge
-#     appears after the very first reader stance instead of waiting for three.
-#   pages/blog/[slug].astro — UPDATED: standalone TensionBadge + tension-row
-#     div removed; tensionResult now flows into ConvictionHero directly;
-#     tension-row CSS block removed.
+# Sprint (latest — HMAC Seal + Admin Web UI):
+#   pages/admin.astro — NEW: protected conviction seal dashboard at /admin.
+#     GET shows login form (no cookie) or post list (valid cookie).
+#     POST validates ADMIN_SECRET → sets HttpOnly admin_token cookie → redirect.
+#     Cookie auth: HMAC-SHA256(ADMIN_SECRET, 'admin-session'); 1-hour TTL.
+#   components/AdminSealForm.astro — NEW: per-post seal form with live preview
+#     mirroring ConvictionHero layout; POSTs JSON to /api/conviction-seal
+#     using cookie auth (no secret in HTML); shows sealed state read-only.
+#   lib/conviction-ledger.ts — UPDATED: dropped SHA-256 chain display
+#     (blockchain cosplay with no external anchor); replaced with HMAC-based
+#     seal: proves the server wrote it, nothing more. Added hmac_seal column
+#     (auto-migrated on boot; null for old rows). Removed verifyChain /
+#     ChainVerification; added getEntriesForSlug for honest audit trail.
+#   pages/api/conviction-seal.ts — UPDATED: dual auth paths — body secret
+#     (CLI/curl) and cookie admin_token (admin web UI). Broadcasts
+#     conviction:sealed SSE event via broadcastNamed on successful seal.
+#   pages/api/conviction-audit.ts — UPDATED: removed chain verification;
+#     returns plain entry list (valid/brokenAt fields dropped from response).
+#   pages/api/conviction-stats.ts — UPDATED: removed per-slug chain checks;
+#     chainIntegrity field dropped from response.
+#   components/ConvictionHero.astro — UPDATED: removed ch--broken chain state,
+#     ch-chain span, and all broken-chain CSS; cleaner render path.
+#   components/ConvictionDeclaration.astro — UPDATED: chain verification UI
+#     removed; aligned with HMAC-only audit model.
+#   components/ConvictionAuditTrail.astro — UPDATED: uses getEntriesForSlug
+#     instead of verifyChain; chain-integrity row removed from display.
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
-#     SQLITE_VOLUME already mounts revivals.db; schema auto-migrates on boot.
-#     ADMIN_SECRET already required from v29 sprint.
+#     SQLITE_VOLUME mounts revivals.db; hmac_seal column auto-migrates on boot.
+#     ADMIN_SECRET required (cookie auth derives token from it).
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
 #           Death Clock (SVG ring countdown, 6-tier urgency, CSS-only animation),
