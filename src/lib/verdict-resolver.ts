@@ -140,6 +140,25 @@ export function rowToVerdictRecord(row: {
 }
 
 // ---------------------------------------------------------------------------
+// Public read — single-slug lookup for the ceremony page
+// ---------------------------------------------------------------------------
+
+/**
+ * Retrieve the sealed verdict record for a slug.
+ * Returns null if the verdict has not been resolved yet.
+ * Read-only: never writes; safe to call from any SSR route.
+ */
+export function getVerdictRecord(slug: string): VerdictRecord | null {
+  const row = db()
+    .prepare(
+      "SELECT post_slug, conviction_score, payload_json, timestamp, hmac_seal " +
+      "FROM conviction_ledger WHERE post_slug = ? AND event_type = 'verdict' LIMIT 1",
+    )
+    .get(slug) as Parameters<typeof rowToVerdictRecord>[0] | undefined;
+  return row ? rowToVerdictRecord(row) : null;
+}
+
+// ---------------------------------------------------------------------------
 // Isolated-run sanity check
 // ---------------------------------------------------------------------------
 

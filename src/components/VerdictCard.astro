@@ -147,10 +147,17 @@ const cardStyle = `--state-color: ${stateColor};`;
 
   <!-- Row 4: CTA -->
   <div class="vc-actions">
-    {!post.entombed && (
+    {!post.entombed && !post.runtimeVerdict && (
       <a href={`/blog/${post.slug}/`} class="vc-cta">Take Stance →</a>
     )}
-    {post.entombed && (
+    {post.runtimeVerdict && (
+      <a
+        href={`/verdict/${post.slug}/`}
+        class="vc-cta vc-cta--verdict"
+        aria-label="View verdict ceremony"
+      >Verdict sealed ◈</a>
+    )}
+    {post.entombed && !post.runtimeVerdict && (
       <a href={`/graveyard`} class="vc-cta vc-cta--ghost">View in graveyard →</a>
     )}
     <a
@@ -337,7 +344,8 @@ const cardStyle = `--state-color: ${stateColor};`;
 
   .vc-cta:hover { opacity: 0.7; }
 
-  .vc-cta--ghost { color: rgba(255, 255, 255, 0.35); }
+  .vc-cta--ghost    { color: rgba(255, 255, 255, 0.35); }
+  .vc-cta--verdict  { color: #10b981; } /* emerald — loop closed */
 
   .vc-audit-link {
     font-size: 0.62rem;

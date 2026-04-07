@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v45 — Conviction Anchor (2026-04-07)
+# Architecture v46 — Verdict Ceremony (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -21,8 +21,42 @@
 #   GitHub Gist — independently verifiable, immutable revision history; the
 #   author cannot quietly delete the record. Fail-open: local DB is the source
 #   of truth; GitHub is corroboration only. PAT scope: gist only.
+#   Verdict Ceremony: each sealed verdict now has a permanent public ceremony
+#   page at /verdict/[slug] — three-act proof the accountability loop closed.
+#   Live SSE layer reveals Act III (batting average) in real-time if visitor
+#   is present at the exact moment the verdict is written. VerdictCard CTA
+#   links directly to the ceremony when a verdict exists.
 #
-# Sprint (latest — Conviction Anchor):
+# Sprint (latest — Verdict Ceremony):
+#   pages/verdict/[slug].astro — NEW: SSR ceremony page at /verdict/[slug]/;
+#     assembles SealEntry + VerdictRecord + BattingAverage from DB; 404 for
+#     unknown slugs; renders pending state when seal exists but no verdict yet.
+#     prerender=false. Links to /audit/[slug]/ for full audit trail.
+#   components/VerdictCeremony.astro — NEW: three-act ceremony component;
+#     Act I (original conviction: score, HMAC fingerprint, Gist anchor link);
+#     Act II (verdict outcome badge, author note, HMAC stamp, resolved date);
+#     Act III (sitewide batting average — starts visually cold; @starting-style
+#     reveals it on load when already resolved; verdict-reveal.ts patches it
+#     live if visitor is present at verdict time). SSR-only — no polymorphism.
+#   lib/client/verdict-reveal.ts — NEW: ceremony-page SSE listener; reuses
+#     window.__heartbeat EventSource (Mike arch §3 — one connection); on
+#     'verdict:declared' event for this slug: reveals Act III via class toggle,
+#     patches data-vc-pct / data-vc-correct / data-vc-wrong / data-vc-pending;
+#     race guard prevents double-reveal if SSR already served resolved state.
+#   lib/verdict-resolver.ts — UPDATED: getVerdictRecord(slug) added — read-only
+#     single-slug lookup for the ceremony page; queries conviction_ledger WHERE
+#     event_type='verdict'; returns null if verdict not yet sealed. Safe to call
+#     from any SSR route; never writes.
+#   components/VerdictCard.astro — UPDATED: Row 4 CTA logic branched on
+#     runtimeVerdict; sealed posts show 'Verdict sealed ◈' link to ceremony page
+#     (emerald colour — loop closed); entombed posts without verdict show graveyard
+#     link; unsealed living posts show 'Take Stance →' as before.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor — gist scope only).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Conviction Anchor):
 #   lib/conviction-anchor.ts — NEW: GitHub Gist integration; anchorConviction()
 #     creates a public Gist (one per post) at seal time containing slug/score/
 #     hmac/sealedAt JSON; anchorVerdict() PATCHes the same Gist appending a

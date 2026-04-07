@@ -1,0 +1,537 @@
+---
+// src/components/VerdictCeremony.astro
+// Three-act public verdict ceremony — the permanent proof the loop closed.
+// Flat composition: each act is structurally independent, no shared base.
+//
+// Act I  — The Original Conviction: locked score, HMAC fingerprint, Gist anchor.
+// Act II — The Verdict: outcome badge, author note, timestamp, server proof stamp.
+// Act III— The Reckoning: sitewide batting average (cold → live CSS transition).
+//
+// SSR renders the full resolved state when the verdict is already sealed.
+// verdict-reveal.ts layers on live SSE updates for visitors present at the moment.
+//
+// Credits: Mike (arch §verdict-ceremony three-act spec — no polymorphism),
+//          Tanya (UX §3 color semantics, @starting-style reveal, cold-start-honest)
+
+import type { LedgerEntry } from '../lib/conviction-ledger';
+import type { VerdictRecord } from '../lib/verdict-resolver';
+import type { BattingAverage } from '../lib/batting-average';
+
+interface Props {
+  slug:    string;
+  title:   string;
+  seal:    LedgerEntry | null;
+  verdict: VerdictRecord | null;
+  avg:     BattingAverage;
+  anchorUrl?: string | null;
+}
+
+const { slug, title, seal, verdict, avg, anchorUrl = null } = Astro.props;
+
+// ── Act I helpers ─────────────────────────────────────────────────────────────
+const sealScore    = seal?.conviction_score ?? null;
+const sealedAt     = seal?.timestamp        ?? null;
+const sealHmacHint = seal?.hmac_seal ? seal.hmac_seal.slice(0, 12) : null;
+
+// ── Act II helpers ────────────────────────────────────────────────────────────
+const VERDICT_LABELS: Record<string, string> = {
+  'still-true': 'Still True',
+  'evolved':    'Evolved',
+  'wrong':      'Wrong',
+  'abandoned':  'Abandoned',
+};
+
+const VERDICT_COLORS: Record<string, string> = {
+  'still-true': '#10b981',
+  'evolved':    '#f59e0b',
+  'wrong':      '#f87171',
+  'abandoned':  '#6b7280',
+};
+
+const VERDICT_ICONS: Record<string, string> = {
+  'still-true': '✓',
+  'evolved':    '↗',
+  'wrong':      '✗',
+  'abandoned':  '—',
+};
+
+const verdictOutcome  = verdict?.verdict           ?? null;
+const verdictLabel    = verdictOutcome ? (VERDICT_LABELS[verdictOutcome] ?? verdictOutcome) : null;
+const verdictColor    = verdictOutcome ? (VERDICT_COLORS[verdictOutcome] ?? '#6b7280')      : null;
+const verdictIcon     = verdictOutcome ? (VERDICT_ICONS[verdictOutcome]  ?? '◈')            : null;
+const verdictNote     = verdict?.note              ?? null;
+const verdictSealedAt = verdict?.sealedAt          ?? null;
+const verdictHmacHint = verdict?.hmac_seal ? verdict.hmac_seal.slice(0, 12) : null;
+
+// ── Act III helpers ───────────────────────────────────────────────────────────
+const avgLive    = avg.status === 'live' ? avg : null;
+const isResolved = !!verdict;
+
+// ── Shared formatting ─────────────────────────────────────────────────────────
+function fmtTs(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+}
+---
+
+<section
+  class:list={['verdict-ceremony', isResolved && 'verdict-ceremony--resolved']}
+  data-verdict-slug={slug}
+  data-verdict-state={isResolved ? 'resolved' : 'pending'}
+  aria-label={`Verdict ceremony for "${title}"`}
+>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       Act I — The Original Conviction
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="vc-act vc-act1">
+    <p class="vc-act-eyebrow" aria-hidden="true">Act I — The Original Conviction</p>
+
+    {seal ? (
+      <div class="vc-conviction-block">
+
+        <!-- Score: the large amber number -->
+        <div class="vc-score-display" aria-label={`Conviction score: ${sealScore} out of 10`}>
+          <span class="vc-score-num">{sealScore}</span>
+          <span class="vc-score-denom" aria-hidden="true">/10</span>
+          <span class="vc-score-label" aria-hidden="true">conviction score</span>
+        </div>
+
+        <!-- Metadata: sealed date + HMAC fingerprint -->
+        <dl class="vc-meta-list">
+          {sealedAt && (
+            <div class="vc-meta-row">
+              <dt>Sealed</dt>
+              <dd>{fmtTs(sealedAt)}</dd>
+            </div>
+          )}
+          {sealHmacHint && (
+            <div class="vc-meta-row">
+              <dt>Fingerprint</dt>
+              <dd
+                class="vc-fingerprint"
+                title="HMAC-SHA256 server proof — first 12 hex chars. Retroactive edits invalidate this signature."
+              >{sealHmacHint}…</dd>
+            </div>
+          )}
+          {anchorUrl && (
+            <div class="vc-meta-row">
+              <dt>Anchor</dt>
+              <dd>
+                <a href={anchorUrl} class="vc-anchor-link" target="_blank" rel="noopener noreferrer">
+                  Verify on GitHub Gist ↗
+                </a>
+              </dd>
+            </div>
+          )}
+        </dl>
+
+        <p class="vc-act1-note">
+          Score locked before publication via server-signed HMAC. Retroactive edits invalidate the seal.
+        </p>
+
+      </div>
+    ) : (
+      <p class="vc-unsealed-msg">This post has not been sealed yet.</p>
+    )}
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       Act II — The Verdict
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="vc-act vc-act2">
+    <p class="vc-act-eyebrow" aria-hidden="true">Act II — The Verdict</p>
+
+    {verdict ? (
+      <div class="vc-verdict-block">
+
+        <!-- Outcome badge — the centrepiece of Act II -->
+        <div
+          class="vc-outcome-badge"
+          style={`color: ${verdictColor};`}
+          aria-label={`Verdict: ${verdictLabel}`}
+        >
+          <span class="vc-outcome-icon" aria-hidden="true">{verdictIcon}</span>
+          <span class="vc-outcome-label">{verdictLabel}</span>
+        </div>
+
+        <!-- Author note — optional prose from the author at verdict time -->
+        {verdictNote && (
+          <blockquote class="vc-verdict-note">
+            <p>{verdictNote}</p>
+          </blockquote>
+        )}
+
+        <!-- Verdict metadata: resolved date + HMAC stamp -->
+        <dl class="vc-meta-list">
+          {verdictSealedAt && (
+            <div class="vc-meta-row">
+              <dt>Resolved</dt>
+              <dd>{fmtTs(verdictSealedAt)}</dd>
+            </div>
+          )}
+          {verdictHmacHint && (
+            <div class="vc-meta-row">
+              <dt>Verdict proof</dt>
+              <dd
+                class="vc-fingerprint"
+                title="HMAC-SHA256 verdict proof — confirms the server sealed this outcome."
+              >{verdictHmacHint}…</dd>
+            </div>
+          )}
+        </dl>
+
+      </div>
+    ) : (
+      <div class="vc-verdict-pending" aria-label="Verdict pending">
+        <span class="vc-pending-glyph" aria-hidden="true">◌</span>
+        <p class="vc-pending-msg">The loop is still open. No verdict sealed yet.</p>
+      </div>
+    )}
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       Act III — The Reckoning
+       Starts visually muted (cold). On verdict:declared SSE event, or when
+       SSR serves a resolved verdict, revealed via vc-act3--revealed class.
+       @starting-style provides the enter animation (Baseline 2023 — no JS).
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div
+    class:list={['vc-act', 'vc-act3', isResolved && 'vc-act3--revealed']}
+    aria-label="Sitewide batting average reckoning"
+  >
+    <p class="vc-act-eyebrow" aria-hidden="true">Act III — The Reckoning</p>
+
+    {avgLive ? (
+      <div class="vc-avg-live">
+
+        <div class="vc-avg-headline">
+          <span
+            class="vc-avg-pct"
+            data-vc-pct
+            aria-label={`${avgLive.pct} percent accuracy`}
+          >{avgLive.pct}%</span>
+          <span class="vc-avg-desc" aria-hidden="true">sitewide accuracy</span>
+        </div>
+
+        <div class="vc-avg-pills" aria-label="Accuracy breakdown">
+          <span class="vc-pill vc-pill--correct">
+            ✓ <span data-vc-correct>{avgLive.correct}</span> correct
+          </span>
+          <span class="vc-pill vc-pill--wrong">
+            ✗ <span data-vc-wrong>{avgLive.wrong}</span> wrong
+          </span>
+          <span class="vc-pill vc-pill--pending">
+            ⏳ <span data-vc-pending>{avgLive.pending}</span> pending
+          </span>
+        </div>
+
+        <p class="vc-avg-note">
+          Called {avgLive.correct} of {avgLive.correct + avgLive.wrong} resolved
+          {avgLive.correct + avgLive.wrong === 1 ? 'prediction' : 'predictions'} correctly.
+          <a href="/verdict" class="vc-wall-link">See the full wall →</a>
+        </p>
+
+      </div>
+    ) : (
+      <div class="vc-avg-cold">
+        <span class="vc-avg-pct vc-avg-pct--cold" aria-label="No verdicts yet">—%</span>
+        <p class="vc-cold-msg">No verdicts sealed before this one. The ledger opens here.</p>
+      </div>
+    )}
+
+  </div>
+
+</section>
+
+<style>
+  /* ── Ceremony shell ──────────────────────────────────────────────── */
+  .verdict-ceremony {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #151210;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ── Acts ─────────────────────────────────────────────────────────── */
+  .vc-act {
+    padding: 1.75rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .vc-act:last-child { border-bottom: none; }
+
+  .vc-act-eyebrow {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(245, 166, 35, 0.45);
+    margin: 0 0 1.25rem;
+  }
+
+  /* ── Act I: conviction score ──────────────────────────────────────── */
+  .vc-score-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .vc-score-num {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    letter-spacing: -0.03em;
+    color: #f59e0b;
+  }
+
+  .vc-score-denom {
+    font-size: 1.35rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.22);
+    font-family: ui-monospace, monospace;
+  }
+
+  .vc-score-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.18);
+    margin-left: 0.2rem;
+  }
+
+  /* ── Shared metadata list ─────────────────────────────────────────── */
+  .vc-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+  }
+
+  .vc-meta-row {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.72rem;
+    align-items: baseline;
+  }
+
+  .vc-meta-row dt {
+    color: rgba(255, 255, 255, 0.25);
+    min-width: 8rem;
+    flex-shrink: 0;
+  }
+
+  .vc-meta-row dd {
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+    font-family: ui-monospace, monospace;
+  }
+
+  .vc-fingerprint {
+    color: rgba(245, 166, 35, 0.5);
+    font-size: 0.7rem;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    cursor: help;
+    letter-spacing: 0.04em;
+  }
+
+  .vc-anchor-link {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.7rem;
+    font-family: inherit;
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+
+  .vc-anchor-link:hover { color: rgba(255, 255, 255, 0.75); }
+
+  .vc-act1-note {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.2);
+    font-style: italic;
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .vc-unsealed-msg {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.28);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ── Act II: verdict outcome ──────────────────────────────────────── */
+  .vc-outcome-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 1rem;
+  }
+
+  .vc-outcome-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .vc-outcome-label {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .vc-verdict-note {
+    border-left: 2px solid rgba(255, 255, 255, 0.1);
+    padding-left: 0.85rem;
+    margin: 0 0 1rem;
+  }
+
+  .vc-verdict-note p {
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+    margin: 0;
+  }
+
+  .vc-verdict-pending {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .vc-pending-glyph {
+    font-size: 1.4rem;
+    color: rgba(255, 255, 255, 0.15);
+    line-height: 1;
+  }
+
+  .vc-pending-msg {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.28);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ── Act III: batting average — cold → live ──────────────────────── */
+  /*
+     Cold (default): visually muted, honest about empty state.
+     Revealed (resolved): full opacity, full saturation.
+     @starting-style: provides the enter animation when already resolved on load.
+     Tanya §cold-start-honest: show —% not 0%.
+  */
+  .vc-act3 {
+    opacity: 0.5;
+    filter: saturate(0.3);
+    transition: opacity 800ms ease, filter 800ms ease;
+  }
+
+  .vc-act3--revealed {
+    opacity: 1;
+    filter: saturate(1);
+  }
+
+  @starting-style {
+    .vc-act3--revealed {
+      opacity: 0;
+      filter: saturate(0);
+    }
+  }
+
+  .vc-avg-headline {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .vc-avg-pct {
+    font-size: 2.75rem;
+    font-weight: 800;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: #f59e0b;
+  }
+
+  .vc-avg-pct--cold {
+    font-size: 2.25rem;
+    color: rgba(255, 255, 255, 0.18);
+  }
+
+  .vc-avg-desc {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.18);
+  }
+
+  .vc-avg-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.7rem;
+  }
+
+  .vc-pill {
+    font-size: 0.65rem;
+    font-family: ui-monospace, monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .vc-pill--correct { background: rgba(16,  185, 129, 0.1); color: rgba(16,  185, 129, 0.8); }
+  .vc-pill--wrong   { background: rgba(248, 113, 113, 0.1); color: rgba(248, 113, 113, 0.75); }
+  .vc-pill--pending { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.3); }
+
+  .vc-avg-note {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .vc-cold-msg {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.25);
+    font-style: italic;
+    margin: 0.5rem 0 0;
+  }
+
+  .vc-wall-link {
+    color: rgba(245, 166, 35, 0.5);
+    text-decoration: none;
+    margin-left: 0.4rem;
+    font-size: 0.68rem;
+    transition: color 150ms ease;
+  }
+
+  .vc-wall-link:hover { color: rgba(245, 166, 35, 0.9); }
+
+  /* ── Mobile ───────────────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .vc-act          { padding: 1.25rem 1rem; }
+    .vc-score-num    { font-size: 2.5rem; }
+    .vc-outcome-label { font-size: 1.5rem; }
+    .vc-avg-pct      { font-size: 2rem; }
+    .vc-meta-row dt  { min-width: 6rem; }
+  }
+
+  /* ── Reduced motion ───────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .vc-act3, .vc-act3--revealed { transition: none; }
+  }
+</style>
+
+<script>
+  import { initVerdictReveal } from '../lib/client/verdict-reveal';
+  initVerdictReveal();
+</script>

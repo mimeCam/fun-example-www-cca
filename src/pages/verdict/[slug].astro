@@ -1,0 +1,193 @@
+---
+// src/pages/verdict/[slug].astro
+// The Verdict Ceremony — permanent, tamper-evident proof the accountability loop closed.
+// SSR mandatory: verdict state is live DB data, never static.
+//
+// Route: /verdict/[slug]
+// Linked from: VerdictCard (when runtimeVerdict is set), blog post audit trail.
+//
+// Data assembly:
+//   - SealEntry from conviction-ledger (locked score + HMAC + Gist anchor)
+//   - VerdictRecord from verdict-resolver (outcome + note + HMAC)
+//   - BattingAverage from batting-average (discriminated union: cold | live)
+//
+// 404 if post slug not found in content collection.
+// Renders pending state if seal exists but verdict not yet sealed.
+//
+// Credits: Mike (arch §verdict-ceremony page spec),
+//          Tanya (UX §3 ceremony layout — museum aesthetic, amber/emerald palette)
+
+export const prerender = false;
+
+import { getCollection }    from 'astro:content';
+import BaseLayout           from '../../layouts/BaseLayout.astro';
+import VerdictCeremony      from '../../components/VerdictCeremony.astro';
+import { getSealEntry, getAnchorData } from '../../lib/conviction-ledger';
+import { getVerdictRecord }  from '../../lib/verdict-resolver';
+import { computeBattingAverage } from '../../lib/batting-average';
+import type { VerdictOutcome } from '../../lib/verdict-resolver';
+
+// ── Route param ───────────────────────────────────────────────────────────────
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/404');
+
+// ── Content lookup ────────────────────────────────────────────────────────────
+const posts = await getCollection('blog');
+const post  = posts.find(p => p.slug === slug);
+if (!post) return Astro.redirect('/404');
+
+// ── DB reads — all safe (return null on empty DB) ─────────────────────────────
+const seal    = safeRead(() => getSealEntry(slug));
+const verdict = safeRead(() => getVerdictRecord(slug));
+const avg     = safeRead(() => computeBattingAverage()) ?? { status: 'cold' as const, total: 0 };
+const anchor  = seal ? safeRead(() => getAnchorData(slug)) : null;
+
+// ── Page meta ─────────────────────────────────────────────────────────────────
+const VERDICT_LABELS: Record<VerdictOutcome, string> = {
+  'still-true': 'Still True',
+  'evolved':    'Evolved',
+  'wrong':      'Wrong',
+  'abandoned':  'Abandoned',
+};
+
+function pageTitle(): string {
+  if (verdict) return `Verdict: ${VERDICT_LABELS[verdict.verdict]} — ${post.data.title}`;
+  return `Verdict Pending — ${post.data.title}`;
+}
+
+function pageDesc(): string {
+  if (!seal) return `No conviction sealed yet for "${post.data.title}".`;
+  if (!verdict) return `Conviction sealed at ${seal.conviction_score}/10. Verdict not yet resolved for "${post.data.title}".`;
+  return `Loop closed. Verdict: ${verdict.verdict}. Original conviction: ${seal.conviction_score}/10. "${post.data.title}"`;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Graceful DB read: returns null if DB unavailable (cold boot, SSG, etc.). */
+function safeRead<T>(fn: () => T): T | null {
+  try { return fn(); } catch { return null; }
+}
+---
+
+<BaseLayout title={pageTitle()} description={pageDesc()} ogSlug={slug}>
+
+  <main class="ceremony-page">
+
+    <!-- Back navigation -->
+    <nav class="ceremony-nav" aria-label="Page navigation">
+      <a href={`/blog/${slug}/`} class="ceremony-nav-link">← back to post</a>
+      <a href="/verdict"         class="ceremony-nav-link ceremony-nav-link--right">verdict wall ↗</a>
+    </nav>
+
+    <!-- Page heading -->
+    <header class="ceremony-header">
+      <p class="ceremony-eyebrow">The Verdict</p>
+      <h1 class="ceremony-title">{post.data.title}</h1>
+      {!verdict && seal && (
+        <p class="ceremony-subtitle">
+          The conviction is sealed. The verdict has not been resolved yet.
+        </p>
+      )}
+      {!verdict && !seal && (
+        <p class="ceremony-subtitle">
+          This post has not entered the accountability loop yet.
+        </p>
+      )}
+    </header>
+
+    <!-- The ceremony — three acts -->
+    <VerdictCeremony
+      slug={slug}
+      title={post.data.title}
+      seal={seal}
+      verdict={verdict}
+      avg={avg}
+      anchorUrl={anchor?.url ?? null}
+    />
+
+    <!-- Footer: audit trail link -->
+    <footer class="ceremony-footer">
+      <a href={`/audit/${slug}/`} class="ceremony-audit-link">
+        View full conviction audit trail →
+      </a>
+    </footer>
+
+  </main>
+
+</BaseLayout>
+
+<style>
+  .ceremony-page {
+    max-width: 38rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+  }
+
+  /* ── Navigation ───────────────────────────────────────────────────── */
+  .ceremony-nav {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .ceremony-nav-link {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 150ms ease;
+  }
+
+  .ceremony-nav-link:hover           { color: rgba(255, 255, 255, 0.65); }
+  .ceremony-nav-link--right          { margin-left: auto; }
+
+  /* ── Header ───────────────────────────────────────────────────────── */
+  .ceremony-header { margin-bottom: 2rem; }
+
+  .ceremony-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(245, 166, 35, 0.6);
+    margin: 0 0 0.4rem;
+  }
+
+  .ceremony-title {
+    font-size: clamp(1.35rem, 3vw, 1.8rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 0.65rem;
+  }
+
+  .ceremony-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.35);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ── Footer ───────────────────────────────────────────────────────── */
+  .ceremony-footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .ceremony-audit-link {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.28);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 150ms ease;
+  }
+
+  .ceremony-audit-link:hover { color: rgba(255, 255, 255, 0.6); }
+
+  @media (max-width: 640px) {
+    .ceremony-page { padding: 2rem 1rem 4rem; }
+  }
+</style>
