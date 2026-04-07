@@ -16,6 +16,7 @@ import { getCollection } from 'astro:content';
 import { createHmac } from 'crypto';
 import { getSealEntry } from '../lib/conviction-ledger';
 import { getVerdictRecord } from '../lib/collectiveMemory';
+import { getDeadlineStatus } from '../lib/deadline-enforcer';
 import AdminSealForm from '../components/AdminSealForm.astro';
 import VerdictResolutionPanel from '../components/VerdictResolutionPanel.astro';
 
@@ -73,6 +74,11 @@ type PostStatus = {
   verdictSealed: boolean; verdict: string | null; verdictNote: string | null; verdictSealedAt: string | null;
 };
 
+type DeadlineRow = {
+  slug: string; title: string;
+  deadline: Date; daysRemaining: number; status: string;
+};
+
 async function buildPostStatuses(): Promise<PostStatus[]> {
   const posts = await getCollection('blog');
   return posts.map(p => {
@@ -96,7 +102,27 @@ async function buildPostStatuses(): Promise<PostStatus[]> {
   });
 }
 
+function buildDeadlineRow(slug: string, title: string, deadline: Date): DeadlineRow | null {
+  const ds = getDeadlineStatus(slug, deadline);
+  if (ds.status === 'no-deadline' || ds.status === 'auto-resolved') return null;
+  const days = 'daysRemaining' in ds ? ds.daysRemaining : -1;
+  if (days > 30) return null; // only surface < 30 days
+  return { slug, title, deadline, daysRemaining: days, status: ds.status };
+}
+
+async function buildDeadlineRows(): Promise<DeadlineRow[]> {
+  const all = await getCollection('blog');
+  const rows = all.flatMap(p => {
+    const dl = p.data.resolution_deadline as Date | undefined;
+    if (!dl) return [];
+    const row = buildDeadlineRow(p.slug, p.data.title as string, dl);
+    return row ? [row] : [];
+  });
+  return rows.sort((a, b) => a.daysRemaining - b.daysRemaining);
+}
+
 const posts = authed ? await buildPostStatuses() : [];
+const deadlineRows = authed ? await buildDeadlineRows() : [];
 const sealedCount = posts.filter(p => p.sealed).length;
 ---
 
@@ -204,6 +230,64 @@ const sealedCount = posts.filter(p => p.sealed).length;
       border-left: 2px solid rgba(255, 255, 255, 0.05);
       padding-left: 0.75rem;
     }
+
+    /* Upcoming deadlines panel */
+    .deadlines-panel {
+      margin-bottom: 2.5rem;
+      border: 1px solid rgba(245, 166, 35, 0.18);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      background: rgba(245, 166, 35, 0.03);
+    }
+
+    .deadlines-heading {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(245, 166, 35, 0.55);
+      margin-bottom: 0.75rem;
+    }
+
+    .deadline-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.8rem;
+    }
+
+    .deadline-row:last-child { border-bottom: none; }
+
+    .deadline-row-title {
+      color: rgba(255, 255, 255, 0.7);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .deadline-row-days {
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem;
+      color: rgba(245, 166, 35, 0.8);
+      white-space: nowrap;
+    }
+
+    .deadline-row-days--overdue { color: rgba(220, 70, 70, 0.9); }
+
+    .deadline-row-status {
+      font-size: 0.68rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    .deadlines-empty {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.22);
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -232,6 +316,24 @@ const sealedCount = posts.filter(p => p.sealed).length;
         {loginError && <span class="login-error">{loginError}</span>}
         <button type="submit" class="login-btn">Enter</button>
       </form>
+    )}
+
+    {authed && deadlineRows.length >= 0 && (
+      <div class="deadlines-panel">
+        <p class="deadlines-heading">⏳ Resolution Deadlines — next 30 days</p>
+        {deadlineRows.length === 0
+          ? <p class="deadlines-empty">No active deadlines in the next 30 days.</p>
+          : deadlineRows.map(row => (
+              <div class="deadline-row">
+                <a href={`/blog/${row.slug}`} class="deadline-row-title">{row.title}</a>
+                <span class={`deadline-row-days${row.daysRemaining < 0 ? ' deadline-row-days--overdue' : ''}`}>
+                  {row.daysRemaining < 0 ? `${Math.abs(row.daysRemaining)}d overdue` : `${row.daysRemaining}d left`}
+                </span>
+                <span class="deadline-row-status">{row.status}</span>
+              </div>
+            ))
+        }
+      </div>
     )}
 
     {authed && (

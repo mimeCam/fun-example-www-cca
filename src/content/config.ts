@@ -39,6 +39,11 @@ const blog = defineCollection({
       verdict: verdictEnum.default('unaudited'),
       note: z.string().optional(),   // brief update — why it changed
     })).max(5).optional(),
+    // --- Resolution deadline (Mike §deadline-enforcer) ---
+    // ISO date the author publicly commits to sealing a verdict by.
+    // If deadline passes with no sealed verdict → auto-sealed as 'abandoned' by /api/deadline-sweep.
+    // Absence = no commitment. Presence = public accountability contract.
+    resolution_deadline: z.date().optional(),
   }),
 });
 

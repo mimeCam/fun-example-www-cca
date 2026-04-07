@@ -4,15 +4,70 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v39 — Verdict Resolution (2026-04-07)
+# Architecture v40 — Deadline Clock (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
 #   The Verdict Wall surfaces every post on trial, sorted by tension.
-#   Authors now seal a final verdict per post; batting average is driven
-#   by runtime verdict events — not post-mortem score thresholds.
+#   Authors may now attach a public resolution_deadline to any post;
+#   the DeadlineClock widget renders a live countdown with urgency bands.
+#   Expired-unsealed posts are auto-sealed as 'abandoned' by /api/deadline-sweep.
 #
-# Sprint (latest — Verdict Resolution):
+# Sprint (latest — Deadline Clock):
+#   lib/deadline-clock.ts — NEW: pure time math for resolution deadline display;
+#     buildDeadlineDisplay(publishDate, deadline, now) → label/urgencyBand/
+#     daysRemaining/percentConsumed. Zero DB, zero side-effects.
+#   lib/deadline-enforcer.ts — NEW: classify deadline status (no-deadline /
+#     pending / imminent / critical / expired-unsealed / auto-resolved);
+#     findExpiredUnsealed() probe; autoSealExpired() writes 'abandoned' verdict
+#     via resolveVerdict(). Reads conviction_ledger — no schema changes.
+#   components/DeadlineClock.astro — NEW: deadline countdown widget; 5 urgency
+#     bands (safe/watch/warning/critical/overdue); CSS pulse on critical/overdue;
+#     progress bar (percentConsumed); sealed/overdue states. SSR-only.
+#   pages/api/deadline-sweep.ts — NEW: POST /api/deadline-sweep; Bearer auth;
+#     sweeps all expired-unsealed posts; returns {ok, swept, skipped, errors};
+#     idempotent — already-sealed posts are skipped. prerender=false.
+#   content/config.ts — UPDATED: resolution_deadline: z.date().optional() added
+#     to blog schema. Absence = no commitment. Presence = public accountability.
+#   pages/admin.astro — UPDATED: deadline status surfaced per post in admin view.
+#   pages/blog/[slug].astro — UPDATED: DeadlineClock rendered in post header.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db. ADMIN_SECRET still required.
+#     deploy.sh: POST /api/deadline-sweep called post-start to auto-seal expired.
+#
+# Sprint (prev — Verdict Resolution):
+#   lib/verdict-resolver.ts — NEW: runtime verdict sealing; resolveVerdict()
+#     writes event_type='verdict' into conviction_ledger; HMAC-SHA256 proof;
+#     VerdictAlreadySealedError idempotency guard; rowToVerdictRecord() mapper.
+#   pages/api/verdict-resolve.ts — NEW: POST /api/verdict-resolve; cookie +
+#     body auth (mirrors conviction-seal); broadcasts 'verdict:declared' SSE
+#     event with newBattingAvg; 409 on double-seal; prerender=false.
+#   components/VerdictResolutionPanel.astro — NEW: per-post admin panel; two
+#     states — sealed (read-only badge + note) / open (verdict dropdown + note
+#     textarea); fetch-based submit with live feedback; reload on success.
+#   lib/verdict-ceremony.ts — NEW: client-side SSE listener for
+#     'verdict:declared'; piggybacks on window.__presenceES (no new connection);
+#     animates [data-conviction-pct] meter, flashes verdict badge on card,
+#     shows ephemeral notification toast. Injected as IIFE via BaseLayout.
+#   lib/batting-average.ts — UPDATED: scoring rewritten to use verdict events
+#     (event_type='verdict') instead of score+death thresholds; first-write-wins
+#     per slug; pending = totalSealed − resolvedSlugs.size.
+#   lib/collectiveMemory.ts — UPDATED: getVerdictRecord(slug) + getAllVerdicts()
+#     read from conviction_ledger WHERE event_type='verdict'.
+#   lib/conviction-ledger.ts — UPDATED: 'verdict' added to LedgerEventType.
+#   lib/postMeta.ts — UPDATED: runtimeVerdict / verdictSealedAt / verdictHmac
+#     fields added to PostDisplayData; resolveConviction() prefers runtime verdict
+#     over frontmatter; safeAllVerdicts() graceful fallback; allPostDisplayData()
+#     passes verdicts map into getPostDisplayData().
+#   pages/admin.astro — UPDATED: VerdictResolutionPanel rendered per post in an
+#     .admin-post-group; header stat shows X/Y verdicts alongside seal count.
+#   layouts/BaseLayout.astro — UPDATED: verdictCeremonyScript injected.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (conviction_ledger gains verdict rows).
+#     ADMIN_SECRET still required for both conviction-seal and verdict-resolve.
+#     deploy.sh: POST /api/deadline-sweep called after start (auto-seals expired).
+#
+# Sprint (prev — Verdict Resolution):
 #   lib/verdict-resolver.ts — NEW: runtime verdict sealing; resolveVerdict()
 #     writes event_type='verdict' into conviction_ledger; HMAC-SHA256 proof;
 #     VerdictAlreadySealedError idempotency guard; rowToVerdictRecord() mapper.
@@ -225,7 +280,24 @@ else
   exit 1
 fi
 
-# ── 6. Prune dangling images from previous builds ────────────────────────────
+# ── 6. Deadline sweep — auto-seal any expired-unsealed posts ─────────────────
+# POST /api/deadline-sweep seals posts whose resolution_deadline has passed but
+# whose verdict was never sealed by the author (auto-verdict: 'abandoned').
+# Idempotent — already-sealed posts are skipped. Skipped silently if no secret.
+if [ -n "${ADMIN_SECRET:-}" ]; then
+  echo "==> [deploy] Running deadline sweep…"
+  # Give the Node process a moment to fully bind before hitting the endpoint.
+  sleep 3
+  SWEEP_RESPONSE=$(curl --silent --show-error --max-time 15 \
+    --request POST \
+    --header "Authorization: Bearer ${ADMIN_SECRET}" \
+    "http://localhost:${HOST_PORT}/api/deadline-sweep" || echo '{"error":"curl failed"}')
+  echo "==> [deploy] Deadline sweep response: ${SWEEP_RESPONSE}"
+else
+  echo "==> [deploy] Skipping deadline sweep (ADMIN_SECRET not set)"
+fi
+
+# ── 7. Prune dangling images from previous builds ────────────────────────────
 echo "==> [deploy] Pruning dangling images…"
 docker image prune -f || true
 

@@ -21,6 +21,7 @@ import GhostEchoes from '../../components/GhostEchoes.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import KeepButton from '../../components/KeepButton.astro';
 import StanceDrawer from '../../components/StanceDrawer.astro';
+import DeadlineClock from '../../components/DeadlineClock.astro';
 // TensionBadge is now rendered inside ConvictionHero (embedded in status row).
 import { allPostDisplayData, extractMeta } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
@@ -134,6 +135,17 @@ const jsonLd      = [
       conviction={dominantVerdict}
       tensionResult={tensionResult}
     />
+
+    <!-- DeadlineClock: renders only when author has set a resolution_deadline.
+         Maps to DeadlineStatus discriminated union — no booleans, no nullable flags.
+         Auto-seal via POST /api/deadline-sweep (Mike §deadline-enforcer). -->
+    {post.data.resolution_deadline && (
+      <DeadlineClock
+        slug={post.slug}
+        publishDate={post.data.pubDate}
+        deadline={post.data.resolution_deadline}
+      />
+    )}
 
     <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
       <article class="post-body">

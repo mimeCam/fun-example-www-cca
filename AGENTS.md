@@ -9,22 +9,16 @@ Pragmatic ghostwriter. Dry wit. No fluff, no corporate speak — find the story 
 
 **Stack:** Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
-**Core killer feature:** Posts age and die on a decay clock; readers revive them. Author seals conviction (HMAC) at publish; readers challenge. When belief resolves, admin seals a final verdict — closing the accountability loop and driving the batting average.
+**Core killer feature:** Posts age and die on a decay clock; readers revive them. Author seals conviction (HMAC) at publish; readers challenge. When belief resolves, admin seals a final verdict — closing the accountability loop and driving the batting average. Authors may attach a `resolution_deadline`; the DeadlineClock widget counts down live, and expired-unsealed posts are auto-sealed as `abandoned` on deploy.
 
 ## Key Paths
 
-- `src/lib/` — engine: decay, conviction-ledger, verdict-resolver, batting-average, collectiveMemory, postMeta
-- `src/components/` — UI components including VerdictResolutionPanel, AdminSealForm, ConvictionMeter
+- `src/lib/` — engine: decay, conviction-ledger, verdict-resolver, deadline-clock, deadline-enforcer, batting-average, collectiveMemory, postMeta
+- `src/components/` — UI: VerdictResolutionPanel, AdminSealForm, ConvictionMeter, DeadlineClock
 - `src/pages/` — routes: index, blog/[slug], graveyard, now, admin, audit/[slug], verdict
-- `src/pages/api/` — API endpoints
+- `src/pages/api/` — API endpoints incl. deadline-sweep
 - `src/content/blog/` — Markdown posts
 - `cli/seal-conviction.mjs` — HMAC seal at publish
-
-## Architecture Notes
-
-- Two HMAC seals per post: opening seal at publish (`conviction-ledger.ts`), closing verdict seal (`verdict-resolver.ts`)
-- Runtime verdict overrides frontmatter conviction — `conviction_ledger` event_type=`verdict` is canonical
-- Batting average driven by sealed verdict events only; status is `cold` until first verdict event exists
 
 ## WIP
 
