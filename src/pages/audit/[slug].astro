@@ -14,6 +14,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import AuditReceipt from '../../components/AuditReceipt.astro';
 import ConvictionTimeline from '../../components/ConvictionTimeline.astro';
 import { assembleAuditPayload } from '../../lib/audit-verifier';
+import { verifyAnchor } from '../../lib/anchor-verifier';
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect('/404');
@@ -23,6 +24,12 @@ const post  = posts.find(p => p.slug === slug);
 if (!post) return Astro.redirect('/404');
 
 const payload = assembleAuditPayload(slug, post.data.title);
+
+// Live Gist verification — runs only here, never in hot paths.
+// Fail-safe: if GitHub is unreachable, status is 'unreachable' not an error.
+const anchorVerification = payload.seal
+  ? await verifyAnchor(slug).catch(() => null)
+  : null;
 
 const pageTitle       = `Conviction Audit — ${post.data.title}`;
 const pageDescription = payload.seal
@@ -51,7 +58,11 @@ const pageDescription = payload.seal
     </header>
 
     <!-- The receipt — visual proof block -->
-    <AuditReceipt seal={payload.seal} postTitle={payload.postTitle} />
+    <AuditReceipt
+      seal={payload.seal}
+      postTitle={payload.postTitle}
+      anchorVerification={anchorVerification}
+    />
 
     <!-- Event timeline — chronological history -->
     <ConvictionTimeline timeline={payload.timeline} slug={slug} />

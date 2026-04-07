@@ -176,11 +176,10 @@ function coldLayout(d: ColdData): El {
 }
 
 function postLayout(d: PostData): El {
-  const badge = d.isSealed
-    ? { label: 'SEALED', color: C.sealed }
-    : { label: 'OPEN', color: C.amber };
+  const sealLabel = d.isSealed ? (d.anchored ? '⚓ ANCHORED' : 'SEALED') : 'OPEN';
+  const sealColor = d.isSealed ? C.sealed : C.amber;
   return outerContainer([
-    header(d.siteName, badge),
+    header(d.siteName, { label: sealLabel, color: sealColor }),
     heroBlock(d.battingPct, 'batting average'),
     titleBlock(d.title, d.description),
     footerBar(postFooterParts(d)),

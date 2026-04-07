@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v44 — Live Conviction Meter (2026-04-07)
+# Architecture v45 — Conviction Anchor (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -17,8 +17,44 @@
 #   OG cards now lead with accountability: batting average is the hero.
 #   Live Conviction Meter: batting average animates in real-time as verdicts
 #   are sealed — no page reload needed; SSE stream reused (no extra connection).
+#   Conviction Anchor: every conviction seal and verdict is posted to a public
+#   GitHub Gist — independently verifiable, immutable revision history; the
+#   author cannot quietly delete the record. Fail-open: local DB is the source
+#   of truth; GitHub is corroboration only. PAT scope: gist only.
 #
-# Sprint (latest — Live Conviction Meter):
+# Sprint (latest — Conviction Anchor):
+#   lib/conviction-anchor.ts — NEW: GitHub Gist integration; anchorConviction()
+#     creates a public Gist (one per post) at seal time containing slug/score/
+#     hmac/sealedAt JSON; anchorVerdict() PATCHes the same Gist appending a
+#     verdict block; GitHub revision history makes the original seal immutable.
+#     Fail-open contract: callers catch errors; local seal is the source of truth.
+#     PAT scope required: gist only — never a broader token.
+#   lib/anchor-verifier.ts — NEW: live cross-verification at audit page render
+#     time; fetches raw Gist JSON, compares hmac to local DB; returns
+#     verified / mismatch / unreachable / no-anchor — mismatch surfaces visibly
+#     as a red flag on the audit page; not suppressed.
+#   lib/conviction-ledger.ts — UPDATED: three new anchor columns auto-migrated
+#     (anchor_gist_id, anchor_url, anchor_raw_url); updateAnchor() / getAnchorData()
+#     / getAnchorGistId() accessors added; nullable — pre-anchor era rows carry null.
+#   lib/audit-verifier.ts — UPDATED: anchorUrl added to RedactedSeal; assembleAuditPayload()
+#     reads getAnchorData() and threads anchorUrl into the seal struct.
+#   pages/api/conviction-seal.ts — UPDATED: calls anchorConviction() post-seal
+#     when GITHUB_PAT env var present; persists receipt via updateAnchor();
+#     anchorUrl included in JSON response. Fail-open — GitHub errors don't abort seal.
+#   pages/api/verdict-resolve.ts — UPDATED: calls anchorVerdict() on existing
+#     Gist (via getAnchorGistId()) when GITHUB_PAT present; fail-open.
+#   components/AuditReceipt.astro — UPDATED: external anchor row added; shows
+#     Gist link when anchored, '⏳ anchor pending' otherwise; anchor-verification
+#     badge (verified / mismatch / unreachable / pending) colour-coded.
+#   pages/audit/[slug].astro — UPDATED: calls verifyAnchor(slug) at render time
+#     and passes AnchorVerification to AuditReceipt.
+#   Infrastructure: no new services or volumes. One new optional env var:
+#     GITHUB_PAT — gist-scoped PAT; omit to skip anchoring (fail-open).
+#     SQLITE_VOLUME mounts revivals.db (anchor columns auto-migrated on first run).
+#     ADMIN_SECRET still required. deploy.sh passes GITHUB_PAT from .env.
+#     POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Live Conviction Meter):
 #   lib/client/live-conviction.ts — NEW: client-side SSE listener for
 #     'verdict:declared' events; reuses window.__heartbeat EventSource (Mike
 #     arch §3 — one connection, no duplicates); rAF counter animation tweens
@@ -364,6 +400,8 @@ docker build \
 
 # ── 4. Run the new container ─────────────────────────────────────────────────
 echo "==> [deploy] Starting container: ${CONTAINER_NAME} on port ${HOST_PORT}"
+GITHUB_PAT_VAL="$(grep -oP '^GITHUB_PAT=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')"
+
 docker run \
   --detach \
   --init \
@@ -374,6 +412,7 @@ docker run \
   --volume "${DATA_VOLUME}:/app/dist/server/data" \
   --volume "${SQLITE_VOLUME}:/app/data" \
   --env ADMIN_SECRET="$(grep -oP '^ADMIN_SECRET=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')" \
+  ${GITHUB_PAT_VAL:+--env GITHUB_PAT="${GITHUB_PAT_VAL}"} \
   "${IMAGE_NAME}"
 
 # ── 5. Health check with retry ───────────────────────────────────────────────

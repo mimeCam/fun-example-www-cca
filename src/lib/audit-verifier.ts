@@ -6,7 +6,7 @@
 //
 // Credits: Mike (architecture spec — Conviction Audit Trail napkin plan)
 
-import { getEntriesForSlug, getSealEntry } from './conviction-ledger';
+import { getEntriesForSlug, getSealEntry, getAnchorData } from './conviction-ledger';
 import type { LedgerEntry, LedgerEventType } from './conviction-ledger';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +20,7 @@ export interface RedactedSeal {
   sealedAt: number;           // Unix ms
   hashPrefix: string;         // first 16 hex chars — enough for human verification
   verifyInstruction: string;  // openssl command readers can run themselves
+  anchorUrl: string | null;   // public Gist URL — null if pre-anchor era or PAT absent
 }
 
 /** One event in the public timeline. Flat struct — no subclassing. */
@@ -47,6 +48,7 @@ const EVENT_LABEL: Record<LedgerEventType, string> = {
   revival:       '💚 Revival',
   death:         '💀 Death',
   resurrection:  '🌱 Resurrection',
+  verdict:       '⚖️ Verdict',
 };
 
 /** Build the openssl verify command shown to power users. */
@@ -55,7 +57,7 @@ function buildVerifyInstruction(slug: string, score: number, ts: number): string
 }
 
 /** Strip hmac_seal from a LedgerEntry and produce a RedactedSeal. */
-export function redactedSeal(entry: LedgerEntry): RedactedSeal {
+export function redactedSeal(entry: LedgerEntry, anchorUrl: string | null = null): RedactedSeal {
   const score = entry.conviction_score ?? 0;
   return {
     slug:              entry.post_slug,
@@ -63,6 +65,7 @@ export function redactedSeal(entry: LedgerEntry): RedactedSeal {
     sealedAt:          entry.timestamp,
     hashPrefix:        entry.hash.slice(0, 16),
     verifyInstruction: buildVerifyInstruction(entry.post_slug, score, entry.timestamp),
+    anchorUrl,
   };
 }
 
@@ -85,12 +88,13 @@ export function formatTimeline(entries: LedgerEntry[]): TimelineEvent[] {
  * Returns seal: null when the post has not been sealed — honest, not hidden.
  */
 export function assembleAuditPayload(slug: string, postTitle: string): AuditPayload {
-  const entries  = safeRead(() => getEntriesForSlug(slug), []);
-  const sealRow  = safeRead(() => getSealEntry(slug), null);
+  const entries    = safeRead(() => getEntriesForSlug(slug), []);
+  const sealRow    = safeRead(() => getSealEntry(slug), null);
+  const anchorData = safeRead(() => getAnchorData(slug), null);
   return {
     slug,
     postTitle,
-    seal:     sealRow ? redactedSeal(sealRow) : null,
+    seal:     sealRow ? redactedSeal(sealRow, anchorData?.url ?? null) : null,
     timeline: formatTimeline(entries),
   };
 }

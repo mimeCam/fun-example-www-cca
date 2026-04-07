@@ -18,6 +18,8 @@ import { broadcastNamed } from '../../lib/heartbeat';
 import { resolveVerdict, VerdictAlreadySealedError } from '../../lib/verdict-resolver';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
 import { computeBattingAverage } from '../../lib/batting-average';
+import { getAnchorGistId } from '../../lib/conviction-ledger';
+import { anchorVerdict } from '../../lib/conviction-anchor';
 
 export const prerender = false;
 
@@ -89,6 +91,17 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const secret = adminSecret();
     const record = resolveVerdict(slug, verdict, String(note ?? '').trim(), secret);
+
+    // Append verdict to the conviction Gist — fail-open.
+    const pat = process.env.GITHUB_PAT;
+    if (pat) {
+      const gistId = getAnchorGistId(slug);
+      if (gistId) {
+        try {
+          await anchorVerdict(gistId, slug, record.verdict, record.hmac_seal, record.sealedAt, pat);
+        } catch { /* GitHub down — verdict is sealed locally; anchor pending */ }
+      }
+    }
 
     // Broadcast verdict:declared — non-blocking, fire-and-forget (never rejects POST).
     try {

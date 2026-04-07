@@ -87,6 +87,17 @@ function initTable(d: Database.Database): void {
   } catch {
     // Column already exists — safe to ignore.
   }
+  // Migrate: anchor columns for external Gist tamper-evidence (2026-04-07).
+  // Nullable — rows sealed before this feature ships carry null (pre-anchor era).
+  try {
+    d.exec(`ALTER TABLE conviction_ledger ADD COLUMN anchor_gist_id TEXT DEFAULT NULL`);
+  } catch { /* already exists */ }
+  try {
+    d.exec(`ALTER TABLE conviction_ledger ADD COLUMN anchor_url TEXT DEFAULT NULL`);
+  } catch { /* already exists */ }
+  try {
+    d.exec(`ALTER TABLE conviction_ledger ADD COLUMN anchor_raw_url TEXT DEFAULT NULL`);
+  } catch { /* already exists */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -242,4 +253,31 @@ export function getSealEntry(slug: string): LedgerEntry | null {
     .prepare("SELECT * FROM conviction_ledger WHERE post_slug = ? AND event_type = 'seal'")
     .get(slug) as LedgerEntry | undefined;
   return row ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Anchor read/write — external Gist tamper-evidence
+// ---------------------------------------------------------------------------
+
+/** Persist Gist anchor data on the conviction seal row (identified by chain hash). */
+export function updateAnchor(hash: string, gistId: string, url: string, rawUrl: string): void {
+  db().prepare(`
+    UPDATE conviction_ledger
+    SET anchor_gist_id = ?, anchor_url = ?, anchor_raw_url = ?
+    WHERE hash = ?
+  `).run(gistId, url, rawUrl, hash);
+}
+
+/** Return anchor data for the seal row of a slug, or null if not yet anchored. */
+export function getAnchorData(slug: string): { gistId: string; url: string; rawUrl: string } | null {
+  const row = db()
+    .prepare("SELECT anchor_gist_id, anchor_url, anchor_raw_url FROM conviction_ledger WHERE post_slug = ? AND event_type = 'seal'")
+    .get(slug) as { anchor_gist_id: string | null; anchor_url: string | null; anchor_raw_url: string | null } | undefined;
+  if (!row?.anchor_gist_id || !row.anchor_url) return null;
+  return { gistId: row.anchor_gist_id, url: row.anchor_url, rawUrl: row.anchor_raw_url ?? '' };
+}
+
+/** Convenience read: returns just the Gist ID for verdict append calls. */
+export function getAnchorGistId(slug: string): string | null {
+  return getAnchorData(slug)?.gistId ?? null;
 }

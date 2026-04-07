@@ -7,7 +7,8 @@
 //   1. Body: { slug, score, authorNote, adminSecret }  — CLI / curl
 //   2. Cookie: admin_token=<hmac>                       — Admin web UI
 //
-// Response: { hash, sealedAt, score, authorNote }
+// Response: { hash, sealedAt, score, authorNote, anchorUrl }
+//   anchorUrl is null when GITHUB_PAT is absent or GitHub is unreachable (fail-open).
 
 import type { APIRoute } from 'astro';
 import { createHmac } from 'crypto';
@@ -16,8 +17,10 @@ import { broadcastNamed } from '../../lib/heartbeat';
 import {
   sealConviction,
   getSealEntry,
+  updateAnchor,
   ConvictionAlreadySealedError,
 } from '../../lib/conviction-ledger';
+import { anchorConviction } from '../../lib/conviction-anchor';
 
 export const prerender = false;
 
@@ -80,6 +83,20 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     const entry = sealConviction(slug, score, authorNote.trim());
+
+    // Anchor to GitHub Gist — fail-open: local seal is the source of truth.
+    let anchorUrl: string | null = null;
+    const pat = process.env.GITHUB_PAT;
+    if (pat && entry.hmac_seal) {
+      try {
+        const receipt = await anchorConviction(
+          slug, entry.conviction_score!, entry.hmac_seal, entry.timestamp, pat,
+        );
+        updateAnchor(entry.hash, receipt.gistId, receipt.url, receipt.rawUrl);
+        anchorUrl = receipt.url;
+      } catch { /* GitHub down or PAT invalid — anchor pending, seal still valid */ }
+    }
+
     // Broadcast conviction:sealed so live-conviction-hero.ts can update open tabs.
     broadcastNamed('conviction:sealed', { slug, score: entry.conviction_score });
     return json({
@@ -87,6 +104,7 @@ export const POST: APIRoute = async ({ request }) => {
       sealedAt: entry.timestamp,
       score: entry.conviction_score,
       authorNote: entry.author_note,
+      anchorUrl,
     });
   } catch (err) {
     if (err instanceof ConvictionAlreadySealedError) {

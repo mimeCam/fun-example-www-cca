@@ -9,6 +9,7 @@ import type { FreshnessTag } from '../decay-engine';
 import { computeBattingAverage, getSealedSlugs } from '../batting-average';
 import { flattenPredictions, computeStats } from '../prediction-engine';
 import type { Prediction } from '../prediction-engine';
+import { getAnchorData } from '../conviction-ledger';
 
 // ---------------------------------------------------------------------------
 // Public types — discriminated union, one variant per context
@@ -19,7 +20,7 @@ export type AccountabilityOGData =
   | {
       variant: 'post';
       title: string; description?: string; siteName: string;
-      isSealed: boolean; battingPct: number;
+      isSealed: boolean; anchored: boolean; battingPct: number;
       correct: number; pending: number; overdue: number;
       freshness: FreshnessTag;
     }
@@ -54,12 +55,14 @@ function coldPost(input: PostInput, siteName: string): AccountabilityOGData {
 function livePost(input: PostInput, siteName: string, pct: number): AccountabilityOGData {
   const sealed  = getSealedSlugs();
   const stats   = postPredictionStats(input);
+  const anchor  = getAnchorData(input.slug);
   return {
     variant:    'post',
     title:       input.title,
     description: input.description,
     siteName,
     isSealed:    sealed.includes(input.slug),
+    anchored:    anchor !== null,
     battingPct:  pct,
     correct:     stats.correct,
     pending:     stats.pending,
