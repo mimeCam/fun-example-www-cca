@@ -1,16 +1,18 @@
 ---
 // src/pages/index.astro
-// Homepage "The Field" — one job: show living posts with conviction scores
-// and death clocks. Decay is felt. The sealed bet is present on every card.
+// Homepage "The Score" — conviction hero above the fold, living posts below.
+// Replaces the blog-feed-first layout with a batting-average-first experience.
 //
-// NowLine + Murmurs extracted to /now (Tanya §3 — sitemap revision).
-// GraveyardTeaser removed — graveyard is a nav link, not a homepage section.
-// Band labels removed — DeathClock communicates age, no label needed (Tanya §8).
-// FirstVisitHint removed — decay visuals are self-explanatory (Tanya §remove list).
+// Zone 1: BattingAverageHero — the single number that tells the whole story.
+// Zone 2: DecayCard feed — the evidence. Filterable by verdict via ?verdict= param.
+// Zone 3: Deferred until ≥15 posts (River timeline too sparse at 6 posts — Tanya §18).
+//
+// Filter logic: SSR-time — no client re-fetch, no flash of wrong content (Mike §2).
+// OG image: /api/og/batting-average.png — 5 min cache (short enough to show live score).
 //
 // TODO: add pagination once post count grows beyond ~20
 //
-// Credits: Tanya (UX spec §8 — The Field layout), Mike (consolidation plan)
+// Credits: Mike (arch spec — index.astro rewrite), Tanya (UX §18 — homepage layout)
 
 export const prerender = false;
 
@@ -18,97 +20,147 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
 import EndangeredBand from '../components/EndangeredBand.astro';
-import ConvictionMeter from '../components/ConvictionMeter.astro';
+import BattingAverageHero from '../components/BattingAverageHero.astro';
+import RiverFilter from '../components/RiverFilter.astro';
+import type { VerdictFilter } from '../components/RiverFilter.astro';
 import { allPostDisplayData } from '../lib/postMeta';
-import { groupIntoBands } from '../lib/timeBands';
+import type { PostDisplayData } from '../lib/postMeta';
 import { endangeredClientScript } from '../lib/endangered';
 import { computeBattingAverage } from '../lib/batting-average';
 import { buildWebSiteSchema, serializeJsonLd } from '../lib/json-ld';
+
+// ---------------------------------------------------------------------------
+// Verdict filter — read from URL param at SSR time
+// ---------------------------------------------------------------------------
+
+const RAW_FILTER = Astro.url.searchParams.get('verdict') ?? 'all';
+const VALID_FILTERS: VerdictFilter[] = ['all', 'correct', 'wrong', 'pending'];
+const currentFilter: VerdictFilter = VALID_FILTERS.includes(RAW_FILTER as VerdictFilter)
+  ? (RAW_FILTER as VerdictFilter)
+  : 'all';
+
+// ---------------------------------------------------------------------------
+// Data assembly
+// ---------------------------------------------------------------------------
 
 const posts        = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
 const avg          = computeBattingAverage();
 
-// Endangered posts surface in EndangeredBand — absence from main feed is the drama.
-const endangered  = displayPosts.filter(p => p.endangered);
-const feedPosts   = displayPosts.filter(p => !p.endangered);
-const bands       = groupIntoBands(feedPosts);
-const allEntombed = displayPosts.every(p => p.entombed);
+// ---------------------------------------------------------------------------
+// Post filtering helpers — one responsibility each
+// ---------------------------------------------------------------------------
 
-// JSON-LD: WebSite schema — site-wide rich results (Mike §diagram).
+function effectiveVerdict(p: PostDisplayData): string | null {
+  return p.runtimeVerdict ?? p.conviction;
+}
+
+function matchesFilter(p: PostDisplayData, filter: VerdictFilter): boolean {
+  if (filter === 'all')     return true;
+  const v = effectiveVerdict(p);
+  if (filter === 'correct') return v === 'still-true';
+  if (filter === 'wrong')   return v === 'wrong' || v === 'abandoned';
+  if (filter === 'pending') return v === null || v === 'unaudited' || v === 'evolved';
+  return true;
+}
+
+function applyFilter(posts: PostDisplayData[], filter: VerdictFilter): PostDisplayData[] {
+  return posts.filter(p => matchesFilter(p, filter));
+}
+
+// ---------------------------------------------------------------------------
+// Post partitioning
+// ---------------------------------------------------------------------------
+
+const endangered      = displayPosts.filter(p => p.endangered);
+const livePosts       = displayPosts.filter(p => !p.endangered && !p.entombed);
+const filteredPosts   = applyFilter(livePosts, currentFilter);
+const allEntombed     = displayPosts.every(p => p.entombed);
+const emptyAfterFilter = filteredPosts.length === 0 && livePosts.length > 0;
+
+// ---------------------------------------------------------------------------
+// JSON-LD + meta
+// ---------------------------------------------------------------------------
+
 const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
 ---
 
-<BaseLayout title="Persona Blog" ogSlug="home" jsonLd={jsonLd}>
+<BaseLayout
+  title="Persona Blog"
+  description="Public predictions, sealed before publication. Batting average updated live."
+  ogSlug="batting-average"
+  jsonLd={jsonLd}
+>
   <script set:html={endangeredClientScript()} />
-  <main class="feed">
-    <ConvictionMeter avg={avg} />
+
+  {/* Zone 1 — Conviction Hero (above the fold) */}
+  <BattingAverageHero avg={avg} />
+
+  {/* Zone 2 — Living Posts (below fold, the evidence) */}
+  <main class="feed" id="bets">
+
+    <h2 class="feed-label">living bets</h2>
+
+    <RiverFilter currentFilter={currentFilter} avg={avg} />
 
     {allEntombed && (
       <div class="empty-state">
         <p>Everything has faded.</p>
-        <a href="/graveyard" class="graveyard-cta">
-          Visit the graveyard to bring something back
-        </a>
+        <a href="/graveyard" class="graveyard-cta">Visit the graveyard to bring something back</a>
       </div>
     )}
 
-    {bands.now.posts.length > 0 && (
-      <section class="band" data-band="now" aria-label={bands.now.hint}>
-        {bands.now.posts.map(post => <DecayCard post={post} />)}
-      </section>
+    {emptyAfterFilter && (
+      <p class="filter-empty">
+        {currentFilter === 'wrong'
+          ? 'No wrong calls yet \u2014 the bets are still running.'
+          : `No ${currentFilter} bets right now.`}
+      </p>
     )}
 
-    {bands.recent.posts.length > 0 && (
-      <section class="band band--recent" data-band="recent" aria-label={bands.recent.hint}>
-        {bands.recent.posts.map(post => <DecayCard post={post} />)}
-      </section>
-    )}
-
-    {bands.archive.posts.length > 0 && (
-      <section class="band band--archive" data-band="archive" aria-label={bands.archive.hint}>
-        {bands.archive.posts.map(post => <DecayCard post={post} />)}
-        {bands.archive.overflow > 0 && (
-          <p class="archive-hint">
-            + {bands.archive.overflow} older bets, still alive
-          </p>
-        )}
-      </section>
-    )}
+    {filteredPosts.map(post => <DecayCard post={post} />)}
 
     {endangered.length > 0 && <EndangeredBand posts={endangered} />}
   </main>
 </BaseLayout>
 
 <style>
+  /* ── Feed section — Zone 2, below the hero ── */
   .feed {
-    padding: 1.5rem 1.5rem 3rem;
+    padding: 0 1.5rem 4rem;
     max-width: 40rem;
     margin: 0 auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 2.5rem;
   }
 
-  /* Spacing between bands — gap is the visual separator, not labels */
-  .band { margin-bottom: 3rem; }
-  .band + .band { margin-top: 4rem; }
-
-  .band--archive { opacity: 0.6; }
-
-  .time-traveling .band { transition: opacity 0.3s ease; }
-  .time-traveling .decay-card { will-change: transform; }
-
-  .archive-hint {
-    text-align: center;
+  /* "living bets" — whispered label (Tanya §18) */
+  .feed-label {
     font-size: 0.65rem;
-    opacity: 0.3;
-    margin-top: 0.5rem;
-    font-style: italic;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.25);
+    margin: 0 0 1.5rem;
   }
 
+  /* Filter empty state — always a message, never a blank screen (Tanya §19) */
+  .filter-empty {
+    font-size: 0.82rem;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.38);
+    padding: 2rem 0;
+    margin: 0;
+    text-align: center;
+  }
+
+  /* All posts entombed — graveyard CTA */
   .empty-state {
     text-align: center;
     padding: 4rem 1rem;
-    opacity: 0.4;
+    color: rgba(255, 255, 255, 0.4);
   }
+
   .empty-state p {
     font-size: 0.9rem;
     font-style: italic;
@@ -123,9 +175,10 @@ const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
     opacity: 0.7;
     transition: opacity 200ms ease;
   }
+
   .graveyard-cta:hover { opacity: 1; }
 
   @media (max-width: 640px) {
-    .feed { padding: 1.25rem 1rem 3rem; }
+    .feed { padding: 0 1rem 3rem; padding-top: 2rem; }
   }
 </style>

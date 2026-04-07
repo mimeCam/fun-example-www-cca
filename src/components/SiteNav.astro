@@ -1,13 +1,14 @@
 ---
 // src/components/SiteNav.astro
-// Minimal sticky nav — logo (left) · /now · /graveyard (right cluster).
-// Three items max (Tanya §12). Active page underlined in amber (conviction gold).
+// Minimal sticky nav — logo · posts · verdict · now (3 links, Tanya §17).
+// Batting chip right-aligned; ghost text "0 bets sealed" when cold (Tanya §17).
+// Presence dot only — text/count removed (Tanya §23: dot alone is the signal).
 // Erosion bar retained on blog post detail pages only.
 //
 // Presence elements use the same IDs as the old PresenceBand so
 // presence-unified.ts hydrates them automatically.
 //
-// Credits: Tanya (UX spec §12 — Navigation), Elon (strip nav links)
+// Credits: Tanya (UX spec §17 — Navigation surgery), Elon (strip nav links)
 
 import { getActivePage } from '../lib/nav';
 import { computeBattingAverage } from '../lib/batting-average';
@@ -48,6 +49,9 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   </a>
 
   <div class="nav-links">
+    <a href="/" class:list={['nav-link', pageId === 'home' && 'nav-link--active']}>
+      posts
+    </a>
     <a
       href="/verdict"
       class:list={[
@@ -58,28 +62,22 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     >
       verdict
     </a>
-    <a href="/graveyard" class:list={['nav-link', pageId === 'graveyard' && 'nav-link--active']}>
-      graveyard
-    </a>
     <a href="/now" class:list={['nav-link', pageId === 'now' && 'nav-link--active']}>
       now
     </a>
-    <a href="/predictions" class:list={['nav-link', pageId === 'predictions' && 'nav-link--active']}>
-      predictions
-    </a>
-    <a href="/map" class:list={['nav-link', pageId === 'map' && 'nav-link--active']}>
-      river
-    </a>
   </div>
 
-  <!-- Right cluster: batting chip + presence indicator — always right-aligned -->
+  <!-- Right cluster: batting chip + presence dot — always right-aligned -->
+  <!-- Cold state: ghost text "0 bets sealed" instead of chip (Tanya §17) -->
   <div class="nav-right">
-    {avgLive && (
-      <div class:list={['batting-chip', chipClass]} aria-label={chipLabel} title={chipLabel}>
+    {avgLive ? (
+      <a href="/verdict" class:list={['batting-chip', chipClass]} aria-label={chipLabel} title="See prediction timeline →">
         <span class="batting-pct">{avgLive.pct}%</span>
         <span class="batting-check" aria-hidden="true">✓</span>
-        <span class="batting-tooltip" aria-hidden="true">{chipLabel}</span>
-      </div>
+        <span class="batting-tooltip" aria-hidden="true">See prediction timeline →</span>
+      </a>
+    ) : (
+      <span class="batting-chip--ghost" aria-label="No bets sealed yet">0 bets sealed</span>
     )}
 
     <div
@@ -91,9 +89,6 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
       role="status"
     >
       <span class="presence-dot" id="presence-dot" aria-hidden="true" style="display:none"></span>
-      <span class="presence-text" id="presence-text"></span>
-      <span class="presence-count" id="presence-count" aria-hidden="true">0</span>
-      <span class="presence-fallback" id="presence-fallback" style="display:none"></span>
     </div>
   </div>
 
@@ -179,8 +174,14 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     border-radius: 6px;
     border: 1px solid rgba(245, 166, 35, 0.22);
     background: rgba(245, 166, 35, 0.08);
-    cursor: default;
+    text-decoration: none;
+    cursor: pointer;
     flex-shrink: 0;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .batting-chip:hover {
+    border-color: rgba(245, 166, 35, 0.4);
   }
 
   .batting-pct {
@@ -266,20 +267,14 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     animation: nav-breathe 3.5s ease-in-out infinite;
   }
 
-  .presence-text {
+  /* Ghost chip — cold state hint (Tanya §17: "hints the mechanism exists") */
+  .batting-chip--ghost {
     font-size: 0.65rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.45);
-  }
-
-  .presence-count { display: none; }
-
-  .presence-fallback {
-    font-size: 0.63rem;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    color: rgba(255, 255, 255, 0.22);
     letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.35);
-    font-style: italic;
+    pointer-events: none;
+    user-select: none;
   }
 
   @keyframes nav-breathe {

@@ -1,0 +1,139 @@
+---
+// src/components/RiverFilter.astro
+// Verdict filter tabs for the homepage conviction feed.
+// State lives in URL param ?verdict= — filtered views are shareable and crawlable.
+// Graceful degradation: hidden until avg.correct + avg.wrong > 0 (Elon cold-start rule).
+// No DB reads; no client-side re-fetch. SSR filters the post list; no flash of wrong content.
+//
+// Filter values: all | correct | wrong | pending
+// Filter matching: correct→still-true, wrong→wrong|abandoned, pending→null|unaudited|evolved
+//
+// Credits: Mike (arch spec — RiverFilter), Tanya (UX §19 — verdict filter spec)
+
+import type { BattingAverage } from '../lib/batting-average';
+
+export type VerdictFilter = 'all' | 'correct' | 'wrong' | 'pending';
+
+interface Props {
+  currentFilter: VerdictFilter;
+  avg: BattingAverage;
+}
+
+const { currentFilter, avg } = Astro.props;
+
+// Hidden until at least one bet is resolved (Elon: "filter on empty set is not a sprint priority")
+const hasResolved = avg.status === 'live' && (avg.correct + avg.wrong) > 0;
+
+const TABS: { id: VerdictFilter; label: string; icon: string }[] = [
+  { id: 'all',     label: 'all bets',  icon: '' },
+  { id: 'correct', label: 'correct',   icon: '✓' },
+  { id: 'wrong',   label: 'wrong',     icon: '✗' },
+  { id: 'pending', label: 'pending',   icon: '◌' },
+];
+
+function tabHref(id: VerdictFilter): string {
+  return id === 'all' ? '/' : `/?verdict=${id}`;
+}
+---
+
+{hasResolved && (
+  <nav class="rf" aria-label="Filter bets by outcome">
+    <span class="rf-label">filter:</span>
+    {TABS.map(tab => (
+      <a
+        href={tabHref(tab.id)}
+        class:list={['rf-tab', `rf-tab--${tab.id}`, currentFilter === tab.id && 'rf-tab--active']}
+        aria-current={currentFilter === tab.id ? 'page' : undefined}
+      >
+        {tab.icon && <span class="rf-icon" aria-hidden="true">{tab.icon}</span>}
+        {tab.label}
+      </a>
+    ))}
+  </nav>
+)}
+
+<style>
+  /* ── Filter row — sits between Zone 1 hero and Zone 2 posts ── */
+  .rf {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0 0 1.5rem;
+    max-width: 40rem;
+    margin: 0 auto;
+  }
+
+  .rf-label {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.25);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-right: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  /* ── Pill default state ── */
+  .rf-tab {
+    font-size: 0.72rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.38);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .rf-tab:hover {
+    color: rgba(255, 255, 255, 0.65);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .rf-icon { font-size: 0.65rem; }
+
+  /* ── Active: all ── */
+  .rf-tab--all.rf-tab--active {
+    background: rgba(245, 166, 35, 0.08);
+    border-color: rgba(245, 166, 35, 0.22);
+    color: rgba(245, 166, 35, 0.8);
+  }
+
+  /* ── Active: correct (green) ── */
+  .rf-tab--correct.rf-tab--active {
+    background: rgba(80, 200, 100, 0.1);
+    border-color: rgba(80, 200, 100, 0.25);
+    color: rgba(100, 210, 120, 0.85);
+  }
+
+  /* ── Active: wrong (red) — intellectual honesty on display ── */
+  .rf-tab--wrong.rf-tab--active {
+    background: rgba(220, 80, 80, 0.1);
+    border-color: rgba(220, 80, 80, 0.25);
+    color: rgba(230, 100, 100, 0.85);
+  }
+
+  /* ── Active: pending ── */
+  .rf-tab--pending.rf-tab--active {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* ── Mobile: horizontally scrollable strip ── */
+  @media (max-width: 640px) {
+    .rf {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 1rem;
+    }
+    .rf::-webkit-scrollbar { display: none; }
+  }
+</style>

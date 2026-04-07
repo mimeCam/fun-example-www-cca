@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v47 — Conviction River (2026-04-07)
+# Architecture v48 — Batting Average Hero (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -26,11 +26,46 @@
 #   Live SSE layer reveals Act III (batting average) in real-time if visitor
 #   is present at the exact moment the verdict is written. VerdictCard CTA
 #   links directly to the ceremony when a verdict exists.
-#   Conviction River: every prediction lives as a node on a scrollable
-#   temporal canvas at /map — SSR-rendered positions, client 60s decay tick,
-#   verdict-coloured rings; entombed posts excluded. No SSE, no new DB schema.
+#   Batting Average Hero: homepage rebuilt conviction-first — the single %
+#   number is the above-fold hero (Zone 1); living posts with verdict filter
+#   tabs (all/correct/wrong/pending) sit below (Zone 2). Dedicated OG share
+#   card at /api/og/batting-average.png (5 min cache).
 #
-# Sprint (latest — Conviction River):
+# Sprint (latest — Batting Average Hero):
+#   components/BattingAverageHero.astro — NEW: Zone 1 conviction hero section;
+#     full-height above fold; large amber pct, pill badges (correct/wrong/
+#     pending), HMAC anchor badge, share button (clipboard API + prompt
+#     fallback); cold state (em dash + "no verdicts sealed yet"); data-cm-pct
+#     wires into existing initLiveConviction() for zero-reload live updates.
+#     SSR-only.
+#   components/RiverFilter.astro — NEW: verdict filter tabs for the homepage
+#     feed; state lives in URL param ?verdict= (shareable + crawlable); hidden
+#     until avg.correct + avg.wrong > 0 (Elon cold-start rule); SSR filters
+#     post list — no client re-fetch, no flash of wrong content. Exports
+#     VerdictFilter type (all | correct | wrong | pending).
+#   lib/og/battingAverageLayout.ts — NEW: dedicated Satori JSX tree for 1200×630
+#     batting average share card; amber pct hero, progress bar, stats row
+#     (correct/wrong/pending), HMAC badge; cold variant (em dash). Pure function;
+#     zero side-effects; independent of accountabilityLayout.
+#   pages/api/og/batting-average.png.ts — NEW: GET /api/og/batting-average.png;
+#     dedicated batting average OG share card; 5 min cache (public, max-age=300);
+#     pipeline: computeBattingAverage() → battingAverageLayout() → PNG.
+#   lib/og/renderOGImage.ts — UPDATED: renderBattingAverageImage() export added;
+#     used by batting-average.png.ts.
+#   pages/index.astro — UPDATED: homepage rewrite; Zone 1 = BattingAverageHero;
+#     Zone 2 = DecayCard feed with RiverFilter (SSR verdict filtering via
+#     ?verdict= param); ogSlug='batting-average' → og:image from
+#     /api/og/batting-average.png; band layout removed; endangered posts remain.
+#   components/SiteNav.astro — UPDATED: navigation surgery (Tanya §17); 3 links
+#     (posts · verdict · now); graveyard/predictions/map links removed; batting
+#     chip now an <a> linking to /verdict; ghost chip cold state ("0 bets sealed")
+#     when no verdicts exist; presence dot only — text/count spans removed.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor — gist scope only).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Conviction River):
 #   pages/map.astro — NEW: SSR Conviction River page at /map; fetches all
 #     non-entombed posts via allPostDisplayData(); builds RiverPost[] via
 #     buildRiverPosts(); positions each node as % along temporal axis (publish

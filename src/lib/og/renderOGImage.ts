@@ -10,6 +10,8 @@ import { ogLayout } from './ogLayout';
 import type { OGImageData } from './ogLayout';
 import { accountabilityLayout } from './accountabilityLayout';
 import type { AccountabilityOGData } from './accountabilityData';
+import { battingAverageLayout } from './battingAverageLayout';
+import type { BattingAverage } from '../batting-average';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -35,6 +37,11 @@ export async function renderOGImage(data: OGImageData): Promise<Uint8Array> {
 /** Accountability-first pipeline: AccountabilityOGData → PNG buffer. */
 export async function renderAccountabilityImage(data: AccountabilityOGData): Promise<Uint8Array> {
   return toPNG(await toSVG(accountabilityLayout(data)));
+}
+
+/** Batting average share card pipeline: BattingAverage → PNG buffer. */
+export async function renderBattingAverageImage(avg: BattingAverage, siteName: string): Promise<Uint8Array> {
+  return toPNG(await toSVG(battingAverageLayout(avg, siteName)));
 }
 
 export type { OGImageData };
