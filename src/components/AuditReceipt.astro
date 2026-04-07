@@ -22,7 +22,7 @@ interface Props {
 }
 
 const { seal, postTitle, anchorVerification = null, tstData = null } = Astro.props;
-const tstVerification = tstData ? verifyToken(tstData.tst_token) : null;
+const tstVerification = tstData ? await verifyToken(tstData.tst_token) : null;
 
 const ANCHOR_BADGE: Record<string, { label: string; cls: string }> = {
   'verified':    { label: '✓ Verified externally',  cls: 'anchor-badge--verified'   },

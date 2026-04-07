@@ -38,6 +38,7 @@ import { getGraceState } from '../../lib/cold-start';
 import { getStanceDistribution } from '../../lib/stance-ledger';
 import { computeTension } from '../../lib/tension-score';
 import { getSealEntry } from '../../lib/conviction-ledger';
+import { getTstForSeal } from '../../lib/timestamp-store';
 import { getDisputeState } from '../../lib/verdict-dispute';
 import { canonicalUrl } from '../../config/seo.config';
 import {
@@ -95,6 +96,7 @@ const tensionResult = stanceDist ? computeTension(stanceDist) : null;
 const postPredictions = flattenPredictions([post], new Date());
 
 const sealEntry       = safeRead(() => getSealEntry(post.slug));
+const tstData         = safeRead(() => getTstForSeal(post.slug));
 const disputeState    = safeRead(() => getDisputeState(post.slug), { status: 'no-verdict' as const });
 const verdictSealed   = disputeState.status !== 'no-verdict';
 const postMeta        = extractMeta(post);
@@ -144,6 +146,7 @@ const jsonLd      = [
       revivalCount={revivalCount}
       conviction={dominantVerdict}
       tensionResult={tensionResult}
+      tst={tstData}
     />
 
     <!-- DeadlineClock: renders only when author has set a resolution_deadline.

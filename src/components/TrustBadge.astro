@@ -19,7 +19,7 @@ interface Props {
 
 const { tst, slug } = Astro.props;
 
-const verification = tst ? verifyToken(tst.tst_token) : null;
+const verification = tst ? await verifyToken(tst.tst_token) : null;
 const isVerified   = verification?.verified ?? false;
 
 function fmtDate(d: Date): string {

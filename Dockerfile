@@ -40,6 +40,10 @@ COPY --from=builder /app/node_modules ./node_modules
 # Blog markdown needed at runtime for content collection queries
 COPY --from=builder /app/src/content/blog/ ./src/content/blog/
 
+# FreeTSA root CA cert — read at runtime by rfc3161-verifier.ts via
+# readFileSync(resolve(process.cwd(), 'src/assets/freetsa-ca.der'))
+COPY --from=builder /app/src/assets/ ./src/assets/
+
 # Ensure data directories exist for collective memory DB and server data.
 RUN mkdir -p /app/dist/server/data \
  && mkdir -p /app/data

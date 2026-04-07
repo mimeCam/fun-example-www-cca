@@ -18,10 +18,12 @@
 import { getSealEntry } from '../lib/conviction-ledger';
 import DeathClock from './DeathClock.astro';
 import TensionBadge from './TensionBadge.astro';
+import TrustBadge from './TrustBadge.astro';
 import { clockUrgency } from '../lib/death-clock';
 import type { GraceState } from '../lib/cold-start';
 import type { ConvictionVerdict } from '../lib/decay-engine';
 import type { TensionResult } from '../lib/tension-score';
+import type { TstData } from '../lib/timestamp-store';
 
 interface Props {
   slug:           string;
@@ -29,9 +31,10 @@ interface Props {
   revivalCount?:  number;
   conviction?:    ConvictionVerdict | null;
   tensionResult?: TensionResult | null;
+  tst?:           TstData | null;
 }
 
-const { slug, graceState, revivalCount = 0, conviction = null, tensionResult = null } = Astro.props;
+const { slug, graceState, revivalCount = 0, conviction = null, tensionResult = null, tst = null } = Astro.props;
 
 let sealEntry = null;
 
@@ -71,12 +74,14 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
   class="conviction-hero"
   aria-label="Author conviction — sealed before publication"
 >
-  <!-- Layer 1: Label row — answers "what is this?" and "was this pre-read?" in one line (Tanya §post-detail) -->
+  <!-- Layer 1: Label row — answers "what is this?" and "was this pre-read?" in one line (Tanya §post-detail)
+       TrustBadge right-aligned: "⚡ CONVICTION · SEALED BEFORE FIRST READ  [⏱ FreeTSA · Apr 3 2026]" -->
   <div class="ch-label-row" aria-hidden="true">
     <span class="ch-label-icon">⚡</span>
     <span class="ch-label-text">CONVICTION</span>
     <span class="ch-label-sep">·</span>
     <span class="ch-label-sub">SEALED BEFORE FIRST READ</span>
+    <span class="ch-label-trust"><TrustBadge tst={tst} slug={slug} /></span>
   </div>
 
   <!-- Layer 2: Score stamp + progress bar + wager quote -->
@@ -183,6 +188,9 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     gap: 0.4rem;
     margin-bottom: 1rem;
   }
+
+  /* TrustBadge: pushed to right end of label row (Tanya §TrustBadge placement) */
+  .ch-label-trust { margin-left: auto; }
 
   .ch-label-icon {
     font-size: 0.65rem;

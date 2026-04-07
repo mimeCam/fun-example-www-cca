@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v49 — RFC 3161 Trusted Timestamps (2026-04-07)
+# Architecture v50 — Full CMS Trust Verification (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -35,39 +35,44 @@
 #   signed timestamp token (TST) is stored alongside the HMAC proof in
 #   conviction_ledger; the audit page surfaces the TST for independent
 #   openssl verification. Fail-open: HMAC seal remains valid without TSA.
+#   Full CMS Trust Verification: rfc3161-verifier.ts upgraded from byte-scanner
+#   to full pkijs CMS SignedData validation — "verified: true" now means the
+#   TSA signature cryptographically checks out against the bundled FreeTSA root
+#   CA cert (src/assets/freetsa-ca.der). TrustBadge on conviction hero now
+#   shows a live cryptographic badge. New GET /api/trust-verify/:slug endpoint
+#   for admin tooling. Fail-open unchanged.
 #
-# Sprint (latest — RFC 3161 Trusted Timestamps):
-#   lib/rfc3161-client.ts — NEW: RFC 3161 TSA client; manually builds
-#     TimeStampReq DER (no extra npm dep); POSTs SHA-256 hash to FreeTSA.org;
-#     parses TimeStampResp, extracts base64 TimeStampToken; 10s AbortSignal
-#     timeout; exports stamp(contentHash) + hashContent(preimage).
-#   lib/rfc3161-verifier.ts — NEW: TST parser; byte-level scan for
-#     GeneralizedTime tag (0x18 len=15) → Date; verified=true when genTime
-#     found; exports verifyToken(base64Token). TODO: full CMS sig check via pkijs.
-#   lib/timestamp-store.ts — NEW: SQLite store for TST tokens; auto-migrates
-#     tst_token / tst_at / tsa_name columns onto conviction_ledger (same
-#     revivals.db WAL singleton, zero schema migrations); exports storeTst() /
-#     getTstForSeal() / getTstForVerdict(). Separate DB connection — WAL handles
-#     concurrent writes safely.
-#   lib/verdict-resolver.ts — UPDATED: insertVerdictRow() returns chain hash;
-#     resolveVerdict() surfaces hash in VerdictRecord; rowToVerdictRecord()
-#     reads hash column; getVerdictRecord() SELECT includes hash column.
-#   pages/api/conviction-seal.ts — UPDATED: after HMAC seal + GitHub Gist
-#     anchor, calls stamp(hashContent(preimage)) → storeTst(); fail-open —
-#     FreeTSA error is logged but never rejects the seal; tst_token included in
-#     JSON response.
-#   pages/api/verdict-resolve.ts — UPDATED: after HMAC verdict seal + Gist
-#     anchor, calls stamp(hashContent(preimage)) → storeTst(); fail-open.
-#     hash field added to JSON response.
-#   components/AuditReceipt.astro — UPDATED: RFC 3161 TST row added; shows
-#     FreeTSA.org genTime when stamped, '⏳ TST pending' otherwise; openssl
-#     verify command displayed for independent cryptographic validation.
-#   pages/audit/[slug].astro — UPDATED: getTstForSeal() / getTstForVerdict()
-#     called at render time; TstData passed to AuditReceipt.
-#   Infrastructure: no new services, volumes, env vars, or npm packages.
-#     FreeTSA.org is a public TSA — no credentials needed. Fail-open: TSA
-#     outage does not break sealing. SQLITE_VOLUME mounts revivals.db (tst_*
-#     columns auto-migrated on first run). ADMIN_SECRET still required.
+# Sprint (latest — Full CMS Trust Verification):
+#   lib/rfc3161-verifier.ts — UPGRADED: full pkijs CMS SignedData verification;
+#     pkijs.setEngine() one-time WebCrypto init; parseSignedData() + verifyCmsSignature()
+#     validate against bundled FreeTSA CA cert; extractTstGenTime() reads genTime
+#     from TSTInfo.eContent; assertGenTimesMatch() cross-checks byte-scanner vs
+#     pkijs (±1 s); verifyToken() now async; verified=true = CMS sig valid.
+#     src/assets/freetsa-ca.der — NEW: bundled FreeTSA root CA cert (DER format);
+#     read once at runtime by getFreeTsaCert() singleton; enables offline
+#     CMS chain verification without external network call.
+#   pages/api/trust-verify/[slug].ts — NEW: GET /api/trust-verify/:slug; live
+#     RFC 3161 re-verification endpoint; returns { verified, timestamp, tsaName,
+#     slug }; 200 with verified=false when no TST exists. For admin tooling.
+#     prerender=false.
+#   components/AuditReceipt.astro — UPDATED: await verifyToken() (now async);
+#     no UX change — openssl command still shown for independent validation.
+#   components/TrustBadge.astro — UPDATED: await verifyToken() (now async);
+#     badge now reflects genuine CMS sig validation, not just parseability.
+#   components/ConvictionHero.astro — UPDATED: TrustBadge imported; tst prop
+#     accepted; TrustBadge rendered right-aligned in conviction label row
+#     (Tanya §TrustBadge placement — pushed to row end via margin-left:auto).
+#   pages/blog/[slug].astro — UPDATED: getTstForSeal() called; tstData passed
+#     to ConvictionHero so TrustBadge is live on post pages.
+#   package.json — UPDATED: pkijs@^3.4.0 added (MIT, ~180 KB; used by
+#     Let's Encrypt tooling; zero native deps — pure JS/WebCrypto).
+#   Dockerfile — UPDATED: COPY --from=builder /app/src/assets/ ./src/assets/
+#     added to server stage so freetsa-ca.der is available at runtime
+#     (readFileSync resolves against process.cwd() = /app).
+#   Infrastructure: no new services, volumes, env vars, or networks.
+#     pkijs installed via npm ci (package.json updated). freetsa-ca.der bundled
+#     in image via Dockerfile src/assets copy. SQLITE_VOLUME mounts revivals.db
+#     (tst_* columns already migrated). ADMIN_SECRET still required.
 #     GITHUB_PAT optional (Conviction Anchor — gist scope only).
 #     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
 #
