@@ -15,7 +15,9 @@ export const prerender = false;
 import { getCollection } from 'astro:content';
 import { createHmac } from 'crypto';
 import { getSealEntry } from '../lib/conviction-ledger';
+import { getVerdictRecord } from '../lib/collectiveMemory';
 import AdminSealForm from '../components/AdminSealForm.astro';
+import VerdictResolutionPanel from '../components/VerdictResolutionPanel.astro';
 
 // ---------------------------------------------------------------------------
 // Auth helpers
@@ -66,12 +68,16 @@ if (Astro.request.method === 'POST') {
 // Dashboard data — only loaded when authed
 // ---------------------------------------------------------------------------
 
-type PostStatus = { slug: string; title: string; sealed: boolean; score: number | null; sealedAt: string | null };
+type PostStatus = {
+  slug: string; title: string; sealed: boolean; score: number | null; sealedAt: string | null;
+  verdictSealed: boolean; verdict: string | null; verdictNote: string | null; verdictSealedAt: string | null;
+};
 
 async function buildPostStatuses(): Promise<PostStatus[]> {
   const posts = await getCollection('blog');
   return posts.map(p => {
-    const entry = getSealEntry(p.slug);
+    const entry   = getSealEntry(p.slug);
+    const vRecord = entry ? getVerdictRecord(p.slug) : null;
     return {
       slug: p.slug,
       title: p.data.title as string,
@@ -79,6 +85,12 @@ async function buildPostStatuses(): Promise<PostStatus[]> {
       score: entry?.conviction_score ?? null,
       sealedAt: entry
         ? new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : null,
+      verdictSealed: !!vRecord,
+      verdict: vRecord?.verdict ?? null,
+      verdictNote: vRecord?.note ?? null,
+      verdictSealedAt: vRecord
+        ? new Date(vRecord.sealedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         : null,
     };
   });
@@ -181,7 +193,16 @@ const sealedCount = posts.filter(p => p.sealed).length;
     .post-list {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.5rem;
+    }
+
+    /* Conviction seal + verdict panel grouped per post */
+    .admin-post-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border-left: 2px solid rgba(255, 255, 255, 0.05);
+      padding-left: 0.75rem;
     }
   </style>
 </head>
@@ -190,7 +211,10 @@ const sealedCount = posts.filter(p => p.sealed).length;
     <div class="admin-header">
       <span class="admin-title">Conviction Seal — Admin</span>
       {authed && (
-        <span class="admin-stat">{sealedCount}/{posts.length} sealed</span>
+        <span class="admin-stat">
+          {sealedCount}/{posts.length} sealed ·{' '}
+          {posts.filter(p => p.verdictSealed).length}/{posts.filter(p => p.sealed).length} verdicts
+        </span>
       )}
     </div>
 
@@ -213,13 +237,24 @@ const sealedCount = posts.filter(p => p.sealed).length;
     {authed && (
       <div class="post-list">
         {posts.map(post => (
-          <AdminSealForm
-            slug={post.slug}
-            title={post.title}
-            sealed={post.sealed}
-            score={post.score}
-            sealedAt={post.sealedAt}
-          />
+          <div class="admin-post-group">
+            <AdminSealForm
+              slug={post.slug}
+              title={post.title}
+              sealed={post.sealed}
+              score={post.score}
+              sealedAt={post.sealedAt}
+            />
+            <VerdictResolutionPanel
+              slug={post.slug}
+              title={post.title}
+              convictionSealed={post.sealed}
+              verdictSealed={post.verdictSealed}
+              verdict={post.verdict as any}
+              verdictNote={post.verdictNote}
+              verdictSealedAt={post.verdictSealedAt}
+            />
+          </div>
         ))}
       </div>
     )}

@@ -3,14 +3,17 @@
 // Single responsibility: the ledger writes; this module only reads and counts.
 // Returns a discriminated union — no nullable fields, no boolean flags.
 //
-// Scoring rules (Mike §1):
-//   correct → sealed + died with score ≥ 7
-//   wrong   → sealed + died with score ≤ 4
-//   pending → sealed, still alive
-//   neutral → sealed + died with score 5–6 (excluded from pct denominator)
+// Scoring rules (updated 2026-04-07):
+//   correct → VerdictRecord with verdict='still-true'
+//   wrong   → VerdictRecord with verdict='wrong' or 'abandoned'
+//   neutral → VerdictRecord with verdict='evolved' (excluded from pct denominator)
+//   pending → sealed, no VerdictRecord yet
 //   pct     → correct / (correct + wrong)   — pending never penalise
 //
-// Credits: Mike (architecture spec §1), Tanya (UX §2 — chip threshold states)
+// Sealed verdict events are the only canonical source (Mike §verdict-resolution).
+// Frontmatter inference is retired; runtime verdicts drive the batting average.
+//
+// Credits: Mike (architecture spec §verdict-resolution), Tanya (UX §3 verdict page)
 
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
@@ -24,13 +27,10 @@ export type BattingAverage =
   | { status: 'cold'; total: 0 }
   | { status: 'live'; total: number; correct: number; wrong: number; pending: number; pct: number };
 
-interface SealRow     { post_slug: string; conviction_score: number }
-interface SlugRow     { post_slug: string }
-interface Counts      { correct: number; wrong: number; pending: number }
-type Verdict = 'correct' | 'wrong' | 'pending' | 'neutral';
-
-const CORRECT_MIN = 7;
-const WRONG_MAX   = 4;
+interface SealRow        { post_slug: string }
+interface VerdictEventRow { post_slug: string; payload_json: string | null }
+interface Counts          { correct: number; wrong: number; pending: number }
+type VerdictTally = 'correct' | 'wrong' | 'neutral';
 
 // ---------------------------------------------------------------------------
 // DB — lazy singleton, read-only mirror of conviction-ledger's revivals.db
@@ -57,38 +57,41 @@ function avgDb(): Database.Database | null {
 // Queries — each does exactly one thing
 // ---------------------------------------------------------------------------
 
-function fetchSeals(d: Database.Database): SealRow[] {
+function fetchSealSlugs(d: Database.Database): SealRow[] {
   return d
-    .prepare("SELECT post_slug, conviction_score FROM conviction_ledger WHERE event_type = 'seal'")
+    .prepare("SELECT post_slug FROM conviction_ledger WHERE event_type = 'seal'")
     .all() as SealRow[];
 }
 
-function fetchDeadSlugs(d: Database.Database): Set<string> {
-  const rows = d
-    .prepare("SELECT DISTINCT post_slug FROM conviction_ledger WHERE event_type = 'death'")
-    .all() as SlugRow[];
-  return new Set(rows.map(r => r.post_slug));
+function fetchVerdictEvents(d: Database.Database): VerdictEventRow[] {
+  return d
+    .prepare("SELECT post_slug, payload_json FROM conviction_ledger WHERE event_type = 'verdict' ORDER BY id ASC")
+    .all() as VerdictEventRow[];
 }
 
 // ---------------------------------------------------------------------------
 // Pure computation — no DB, no side effects
 // ---------------------------------------------------------------------------
 
-function verdict(score: number, died: boolean): Verdict {
-  if (!died)             return 'pending';
-  if (score >= CORRECT_MIN) return 'correct';
-  if (score <= WRONG_MAX)   return 'wrong';
-  return 'neutral';
+function verdictTally(outcome: string): VerdictTally {
+  if (outcome === 'still-true') return 'correct';
+  if (outcome === 'wrong' || outcome === 'abandoned') return 'wrong';
+  return 'neutral'; // 'evolved' — excluded from denominator
 }
 
-function tally(seals: SealRow[], dead: Set<string>): Counts {
+function tallyVerdicts(verdictEvents: VerdictEventRow[], totalSealed: number): Counts {
   const c: Counts = { correct: 0, wrong: 0, pending: 0 };
-  for (const s of seals) {
-    const v = verdict(s.conviction_score, dead.has(s.post_slug));
-    if (v === 'correct') c.correct++;
-    else if (v === 'wrong') c.wrong++;
-    else if (v === 'pending') c.pending++;
+  const resolvedSlugs = new Set<string>();
+  for (const v of verdictEvents) {
+    if (resolvedSlugs.has(v.post_slug)) continue; // first-write-wins
+    resolvedSlugs.add(v.post_slug);
+    const payload = v.payload_json ? JSON.parse(v.payload_json) as Record<string, unknown> : {};
+    const t = verdictTally((payload.verdict as string) ?? '');
+    if (t === 'correct') c.correct++;
+    else if (t === 'wrong') c.wrong++;
+    // neutral excluded from counts
   }
+  c.pending = Math.max(0, totalSealed - resolvedSlugs.size);
   return c;
 }
 
@@ -97,8 +100,8 @@ function toPercent(correct: number, wrong: number): number {
   return denom > 0 ? Math.round((correct / denom) * 100) : 0;
 }
 
-function buildLive(seals: SealRow[], dead: Set<string>): BattingAverage {
-  const { correct, wrong, pending } = tally(seals, dead);
+function buildLive(seals: SealRow[], verdictEvents: VerdictEventRow[]): BattingAverage {
+  const { correct, wrong, pending } = tallyVerdicts(verdictEvents, seals.length);
   return { status: 'live', total: seals.length, correct, wrong, pending, pct: toPercent(correct, wrong) };
 }
 
@@ -111,9 +114,11 @@ export function computeBattingAverage(): BattingAverage {
   try {
     const d = avgDb();
     if (!d) return { status: 'cold', total: 0 };
-    const seals = fetchSeals(d);
+    const seals = fetchSealSlugs(d);
     if (!seals.length) return { status: 'cold', total: 0 };
-    return buildLive(seals, fetchDeadSlugs(d));
+    const verdictEvents = fetchVerdictEvents(d);
+    if (!verdictEvents.length) return { status: 'cold', total: 0 };
+    return buildLive(seals, verdictEvents);
   } catch { return { status: 'cold', total: 0 }; }
 }
 
@@ -122,6 +127,6 @@ export function getSealedSlugs(): string[] {
   try {
     const d = avgDb();
     if (!d) return [];
-    return fetchSeals(d).map(s => s.post_slug);
+    return fetchSealSlugs(d).map(s => s.post_slug);
   } catch { return []; }
 }

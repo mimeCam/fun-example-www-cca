@@ -8,6 +8,7 @@ import { sessionTokenScript } from '../lib/sessionToken';
 import { decayEngineClientScript } from '../lib/decay-engine';
 import { revivalEngineScript } from '../lib/revival-engine';
 import { presenceUnifiedScript } from '../lib/presence-unified';
+import { verdictCeremonyScript } from '../lib/verdict-ceremony';
 import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
@@ -24,6 +25,7 @@ const sessionScript = sessionTokenScript();
 const decayScript = decayEngineClientScript();
 const revivalScript = revivalEngineScript();
 const presenceScript = presenceUnifiedScript();
+const ceremonyScript = verdictCeremonyScript();
 
 interface Props {
   title: string;
@@ -52,6 +54,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <script set:html={decayScript} />
     <script set:html={revivalScript} />
     <script set:html={presenceScript} />
+    <script set:html={ceremonyScript} />
     <style>
       :root {
         transition: --mood-from 60s ease, --mood-to 60s ease,

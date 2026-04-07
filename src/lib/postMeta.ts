@@ -8,7 +8,8 @@ import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
 import { decayFactor, freshnessTag, decayStyleString, revivalBonus, dominantConviction } from './decay-engine';
 import type { FreshnessTag, ConvictionVerdict } from './decay-engine';
-import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost, getAllCausesOfDeath } from './collectiveMemory';
+import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost, getAllCausesOfDeath, getAllVerdicts } from './collectiveMemory';
+import type { VerdictRecord, VerdictOutcome } from './verdict-resolver';
 import type { CauseOfDeath } from './cause-of-death';
 import { getAllStanceDistributions } from './stance-ledger';
 import { computeTension } from './tension-score';
@@ -82,6 +83,11 @@ export interface PostDisplayData extends PostMeta {
   clockUrgency: ClockUrgency;  // 6-tier urgency for DeathClock ring rendering
   tensionResult: TensionResult | null;  // null until ≥3 stances recorded
   causeOfDeath: CauseOfDeath | null;   // null for living posts; set at entombment
+  // Runtime verdict — sealed by author at /admin post publish. Wins over frontmatter.
+  // frontmatter `conviction` field is legacy; runtime verdict takes precedence.
+  runtimeVerdict: VerdictOutcome | null;  // null until author seals verdict
+  verdictSealedAt: number | null;         // unix ms timestamp of verdict seal
+  verdictHmac: string | null;             // HMAC proof of server-side seal
 }
 
 /** Max decay window in days. Reads lifespan frontmatter field; falls back to 365. */
@@ -95,6 +101,15 @@ function postConviction(post: CollectionEntry<'blog'>): ConvictionVerdict | null
   return dominantConviction(verdicts);
 }
 
+/** Resolve the active conviction: runtime verdict wins over frontmatter. */
+function resolveConviction(
+  post: CollectionEntry<'blog'>,
+  verdictRecord: VerdictRecord | null,
+): ConvictionVerdict | null {
+  if (verdictRecord) return verdictRecord.verdict as ConvictionVerdict;
+  return postConviction(post);
+}
+
 /** Bundles metadata + decay visuals for a single post. */
 export function getPostDisplayData(
   post: CollectionEntry<'blog'>,
@@ -105,10 +120,11 @@ export function getPostDisplayData(
   entombedAt: Date | null = null,
   tensionResult: TensionResult | null = null,
   causeOfDeath: CauseOfDeath | null = null,
+  verdictRecord: VerdictRecord | null = null,
 ): PostDisplayData {
   const meta = extractMeta(post);
   const maxDays = resolveMaxDays(post);
-  const conviction = postConviction(post);
+  const conviction = resolveConviction(post, verdictRecord);
   const factor = decayFactor(meta.pubDateISO, maxDays, now, revivals, readingSeconds, conviction);
   const warm = revivalBonus(revivals) > 0.15;
   const lastRevivalDays = lastRevivalDaysAgo(risenAt, now);
@@ -136,6 +152,9 @@ export function getPostDisplayData(
     clockUrgency: computeClockUrgency(daysLeft),
     tensionResult,
     causeOfDeath,
+    runtimeVerdict: verdictRecord?.verdict ?? null,
+    verdictSealedAt: verdictRecord?.sealedAt ?? null,
+    verdictHmac: verdictRecord?.hmac_seal ?? null,
   };
 }
 
@@ -157,6 +176,7 @@ export function allPostDisplayData(
   const tombedAt = safeEntombedTimestamps();
   const stances  = safeTensionScores();
   const causes   = safeCausesOfDeath();
+  const verdicts = safeAllVerdicts();
   const sorted   = [...posts].sort(byNewest);
   const result   = sorted.map(p =>
     getPostDisplayData(
@@ -167,6 +187,7 @@ export function allPostDisplayData(
       tombedAt.get(p.slug) ?? null,
       stances.get(p.slug) ?? null,
       causes.get(p.slug) ?? null,
+      verdicts.get(p.slug) ?? null,
     ),
   );
   recordNewlyEntombed(result, now);
@@ -225,6 +246,12 @@ function safeTensionScores(): Map<string, TensionResult> {
     dists.forEach((dist, slug) => map.set(slug, computeTension(dist)));
     return map;
   } catch { return new Map(); }
+}
+
+/** Graceful fallback for runtime verdicts — empty map if conviction_ledger has no verdict events. */
+function safeAllVerdicts(): Map<string, VerdictRecord> {
+  try { return getAllVerdicts(); }
+  catch { return new Map(); }
 }
 
 /** Graceful write: record entombment; swallows errors during SSG builds. */

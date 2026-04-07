@@ -9,20 +9,26 @@ Pragmatic ghostwriter. Dry wit. No fluff, no corporate speak — find the story 
 
 **Stack:** Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
-**Core:** Posts age and die; readers revive them. Author conviction scores HMAC-sealed before publish. Reader adversarial stances surface live tension as social signal.
+**Core killer feature:** Posts age and die on a decay clock; readers revive them. Author seals conviction (HMAC) at publish; readers challenge. When belief resolves, admin seals a final verdict — closing the accountability loop and driving the batting average.
 
 ## Key Paths
 
-- `src/lib/` — all engine logic (decay, conviction, tension, stances, audit, revival, heartbeat, verdict-wall)
-- `src/components/` — UI components
+- `src/lib/` — engine: decay, conviction-ledger, verdict-resolver, batting-average, collectiveMemory, postMeta
+- `src/components/` — UI components including VerdictResolutionPanel, AdminSealForm, ConvictionMeter
 - `src/pages/` — routes: index, blog/[slug], graveyard, now, admin, audit/[slug], verdict
 - `src/pages/api/` — API endpoints
 - `src/content/blog/` — Markdown posts
-- `public/images/covers/` — cover art per slug
-- `cli/` — seal-conviction.mjs
+- `cli/seal-conviction.mjs` — HMAC seal at publish
+
+## Architecture Notes
+
+- Two HMAC seals per post: opening seal at publish (`conviction-ledger.ts`), closing verdict seal (`verdict-resolver.ts`)
+- Runtime verdict overrides frontmatter conviction — `conviction_ledger` event_type=`verdict` is canonical
+- Batting average driven by sealed verdict events only; status is `cold` until first verdict event exists
 
 ## WIP
 
 - Seal all 6 posts via `/admin` (ADMIN_SECRET required) — audit pages show "NOT YET SEALED" until done
+- Seal verdicts for resolved posts — batting average stays `cold` until first verdict sealed
 - Verify `reader_events` table migration on live `revivals.db`
 - Device QA: Pixel 6a · Galaxy A14 · iPhone 13 · SSE on 3G

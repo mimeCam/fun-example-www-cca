@@ -16,7 +16,7 @@ import { mkdirSync } from 'fs';
 // Types
 // ---------------------------------------------------------------------------
 
-export type LedgerEventType = 'seal' | 'revival' | 'death' | 'resurrection';
+export type LedgerEventType = 'seal' | 'revival' | 'death' | 'resurrection' | 'verdict';
 
 export interface LedgerEntry {
   id: number;

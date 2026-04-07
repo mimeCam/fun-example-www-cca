@@ -9,6 +9,8 @@ import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 import type { CauseOfDeath } from './cause-of-death';
+import { rowToVerdictRecord } from './verdict-resolver';
+import type { VerdictRecord } from './verdict-resolver';
 
 const RATE_WINDOW_MS = 30_000;
 const READING_RATE_MS = 25_000; // Accept a pulse every 25s (client fires every 30s)
@@ -515,4 +517,47 @@ function getDailyCount(key: string): number {
     .get(key) as { count: number; day: string } | undefined;
   if (!row || row.day !== day) return 0;
   return row.count;
+}
+
+// ---------------------------------------------------------------------------
+// Verdict records — reads from conviction_ledger (event_type = 'verdict')
+// ---------------------------------------------------------------------------
+
+type VerdictRow = {
+  post_slug: string;
+  conviction_score: number | null;
+  payload_json: string | null;
+  timestamp: number;
+  hmac_seal: string | null;
+};
+
+const VERDICT_SELECT = `
+  SELECT post_slug, conviction_score, payload_json, timestamp, hmac_seal
+  FROM conviction_ledger WHERE event_type = 'verdict'
+`;
+
+/**
+ * Returns the sealed verdict record for a slug, or null if none exists.
+ * First-write-wins: only the earliest verdict event counts.
+ */
+export function getVerdictRecord(slug: string): VerdictRecord | null {
+  const row = db()
+    .prepare(`${VERDICT_SELECT} AND post_slug = ? ORDER BY id ASC LIMIT 1`)
+    .get(slug) as VerdictRow | undefined;
+  return row ? rowToVerdictRecord(row) : null;
+}
+
+/**
+ * Returns a slug-keyed map of all sealed verdict records.
+ * Used by allPostDisplayData() for a single batch read.
+ */
+export function getAllVerdicts(): Map<string, VerdictRecord> {
+  const rows = db()
+    .prepare(`${VERDICT_SELECT} ORDER BY id ASC`)
+    .all() as VerdictRow[];
+  const map = new Map<string, VerdictRecord>();
+  for (const row of rows) {
+    if (!map.has(row.post_slug)) map.set(row.post_slug, rowToVerdictRecord(row));
+  }
+  return map;
 }

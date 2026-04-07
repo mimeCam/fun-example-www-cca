@@ -1,0 +1,254 @@
+---
+// src/components/VerdictResolutionPanel.astro
+// Per-post verdict resolution panel for /admin dashboard.
+// Two states: sealed (read-only) or open (form with verdict dropdown + note).
+// POSTs JSON to /api/verdict-resolve — auth via cookie.
+// Plain HTML form fallback; JS upgrades to fetch for instant feedback.
+//
+// Credits: Mike (arch §VerdictResolutionPanel), Tanya (UX §3 verdict page)
+
+import type { VerdictOutcome } from '../lib/verdict-resolver';
+
+interface Props {
+  slug: string;
+  title: string;
+  convictionSealed: boolean;  // verdict requires a prior conviction seal
+  verdictSealed: boolean;
+  verdict?: VerdictOutcome | null;
+  verdictNote?: string | null;
+  verdictSealedAt?: string | null;
+}
+
+const { slug, title, convictionSealed, verdictSealed, verdict, verdictNote, verdictSealedAt } = Astro.props;
+
+const VERDICT_LABELS: Record<VerdictOutcome, string> = {
+  'still-true': '✓ Still true',
+  'evolved':    '↻ Evolved',
+  'wrong':      '✗ Wrong',
+  'abandoned':  '○ Abandoned',
+};
+
+const VERDICT_COLORS: Record<VerdictOutcome, string> = {
+  'still-true': 'rgba(100,210,120,0.8)',
+  'evolved':    'rgba(245,166,35,0.75)',
+  'wrong':      'rgba(230,100,100,0.8)',
+  'abandoned':  'rgba(255,255,255,0.35)',
+};
+---
+
+<div class={`vrp-card ${verdictSealed ? 'vrp--sealed' : convictionSealed ? 'vrp--open' : 'vrp--blocked'}`} data-slug={slug}>
+
+  <div class="vrp-header">
+    <span class="vrp-slug">{slug}</span>
+    <span class={`vrp-status ${verdictSealed ? 'vrp-status--sealed' : convictionSealed ? 'vrp-status--open' : 'vrp-status--blocked'}`}>
+      {verdictSealed ? `verdict ${verdictSealedAt}` : convictionSealed ? '◇ awaiting verdict' : '⚠ conviction not sealed'}
+    </span>
+  </div>
+
+  <h3 class="vrp-title">{title}</h3>
+
+  {verdictSealed && verdict && (
+    <div class="vrp-sealed-row">
+      <span class="vrp-verdict-badge" style={`color: ${VERDICT_COLORS[verdict]}`}>
+        {VERDICT_LABELS[verdict]}
+      </span>
+      {verdictNote && <p class="vrp-note">"{verdictNote}"</p>}
+    </div>
+  )}
+
+  {!verdictSealed && convictionSealed && (
+    <form class="vrp-form" data-verdict-form>
+      <div class="vrp-fields">
+        <label class="vrp-label" for={`verdict-${slug}`}>Verdict</label>
+        <select id={`verdict-${slug}`} name="verdict" class="vrp-select" required>
+          <option value="">— choose outcome —</option>
+          <option value="still-true">✓ Still true</option>
+          <option value="evolved">↻ Evolved</option>
+          <option value="wrong">✗ Wrong</option>
+          <option value="abandoned">○ Abandoned</option>
+        </select>
+
+        <label class="vrp-label" for={`vnote-${slug}`}>Author note <span class="vrp-optional">(optional)</span></label>
+        <textarea
+          id={`vnote-${slug}`}
+          name="note"
+          rows="2"
+          maxlength="280"
+          placeholder="One sentence: what happened to this belief."
+          class="vrp-textarea"
+        ></textarea>
+      </div>
+
+      <div class="vrp-actions">
+        <button type="submit" class="vrp-submit">Seal verdict</button>
+        <span class="vrp-feedback" aria-live="polite"></span>
+      </div>
+    </form>
+  )}
+
+  {!verdictSealed && !convictionSealed && (
+    <p class="vrp-blocked-msg">Seal conviction first before resolving verdict.</p>
+  )}
+
+</div>
+
+<style>
+  .vrp-card {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    padding: 1.1rem 1.35rem;
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .vrp--open    { border-color: rgba(245, 166, 35, 0.15); background: rgba(245, 166, 35, 0.02); }
+  .vrp--sealed  { border-color: rgba(100, 210, 120, 0.15); background: rgba(100, 210, 120, 0.02); }
+  .vrp--blocked { opacity: 0.55; }
+
+  .vrp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+  }
+
+  .vrp-slug {
+    font-size: 0.63rem;
+    font-family: ui-monospace, monospace;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.03em;
+  }
+
+  .vrp-status { font-size: 0.65rem; letter-spacing: 0.02em; }
+  .vrp-status--sealed  { color: rgba(100, 210, 120, 0.65); }
+  .vrp-status--open    { color: rgba(245, 166, 35, 0.5); }
+  .vrp-status--blocked { color: rgba(255, 255, 255, 0.25); }
+
+  .vrp-title {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.85rem;
+  }
+
+  .vrp-sealed-row { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  .vrp-verdict-badge {
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .vrp-note {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.45);
+    font-style: italic;
+  }
+
+  .vrp-blocked-msg {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.25);
+    font-style: italic;
+  }
+
+  .vrp-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .vrp-label {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.02em;
+  }
+
+  .vrp-optional { color: rgba(255,255,255,0.2); }
+
+  .vrp-select {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 150ms ease;
+  }
+
+  .vrp-select:focus { border-color: rgba(245, 166, 35, 0.35); }
+
+  .vrp-textarea {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.83rem;
+    color: rgba(255, 255, 255, 0.78);
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.5;
+    transition: border-color 150ms ease;
+  }
+
+  .vrp-textarea:focus { border-color: rgba(245, 166, 35, 0.35); }
+
+  .vrp-actions { display: flex; align-items: center; gap: 0.85rem; }
+
+  .vrp-submit {
+    background: rgba(245, 166, 35, 0.1);
+    border: 1px solid rgba(245, 166, 35, 0.25);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    color: rgba(245, 166, 35, 0.88);
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+
+  .vrp-submit:hover    { background: rgba(245, 166, 35, 0.18); }
+  .vrp-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .vrp-feedback { font-size: 0.72rem; color: rgba(100, 210, 120, 0.75); }
+  .vrp-feedback--error { color: rgba(220, 90, 90, 0.8); }
+</style>
+
+<script>
+  // Wire up each unsealed verdict form with fetch-based submission.
+  document.querySelectorAll<HTMLElement>('[data-verdict-form]').forEach(form => {
+    const card    = form.closest<HTMLElement>('[data-slug]')!;
+    const slug    = card.dataset.slug!;
+    const select  = form.querySelector<HTMLSelectElement>('select')!;
+    const note    = form.querySelector<HTMLTextAreaElement>('textarea')!;
+    const submit  = form.querySelector<HTMLButtonElement>('.vrp-submit')!;
+    const fb      = form.querySelector<HTMLElement>('.vrp-feedback')!;
+
+    async function sealVerdict(e: SubmitEvent): Promise<void> {
+      e.preventDefault();
+      if (!select.value) { fb.textContent = 'Choose a verdict first.'; return; }
+      submit.disabled = true;
+      fb.textContent = 'Sealing…';
+      fb.className = 'vrp-feedback';
+
+      const res = await fetch('/api/verdict-resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, verdict: select.value, note: note.value.trim() }),
+      });
+
+      if (res.ok) {
+        fb.textContent = '✓ Verdict sealed';
+        setTimeout(() => location.reload(), 900);
+      } else {
+        const data = await res.json().catch(() => ({})) as { error?: string; alreadySealed?: boolean };
+        fb.textContent = data.alreadySealed ? 'Already sealed' : (data.error ?? `Error ${res.status}`);
+        fb.className = 'vrp-feedback vrp-feedback--error';
+        submit.disabled = false;
+      }
+    }
+
+    form.addEventListener('submit', sealVerdict as EventListener);
+  });
+</script>

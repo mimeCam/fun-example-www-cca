@@ -4,13 +4,46 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v38 — Verdict Wall (2026-04-07)
+# Architecture v39 — Verdict Resolution (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
 #   The Verdict Wall surfaces every post on trial, sorted by tension.
+#   Authors now seal a final verdict per post; batting average is driven
+#   by runtime verdict events — not post-mortem score thresholds.
 #
-# Sprint (latest — Verdict Wall):
+# Sprint (latest — Verdict Resolution):
+#   lib/verdict-resolver.ts — NEW: runtime verdict sealing; resolveVerdict()
+#     writes event_type='verdict' into conviction_ledger; HMAC-SHA256 proof;
+#     VerdictAlreadySealedError idempotency guard; rowToVerdictRecord() mapper.
+#   pages/api/verdict-resolve.ts — NEW: POST /api/verdict-resolve; cookie +
+#     body auth (mirrors conviction-seal); broadcasts 'verdict:declared' SSE
+#     event with newBattingAvg; 409 on double-seal; prerender=false.
+#   components/VerdictResolutionPanel.astro — NEW: per-post admin panel; two
+#     states — sealed (read-only badge + note) / open (verdict dropdown + note
+#     textarea); fetch-based submit with live feedback; reload on success.
+#   lib/verdict-ceremony.ts — NEW: client-side SSE listener for
+#     'verdict:declared'; piggybacks on window.__presenceES (no new connection);
+#     animates [data-conviction-pct] meter, flashes verdict badge on card,
+#     shows ephemeral notification toast. Injected as IIFE via BaseLayout.
+#   lib/batting-average.ts — UPDATED: scoring rewritten to use verdict events
+#     (event_type='verdict') instead of score+death thresholds; first-write-wins
+#     per slug; pending = totalSealed − resolvedSlugs.size.
+#   lib/collectiveMemory.ts — UPDATED: getVerdictRecord(slug) + getAllVerdicts()
+#     read from conviction_ledger WHERE event_type='verdict'.
+#   lib/conviction-ledger.ts — UPDATED: 'verdict' added to LedgerEventType.
+#   lib/postMeta.ts — UPDATED: runtimeVerdict / verdictSealedAt / verdictHmac
+#     fields added to PostDisplayData; resolveConviction() prefers runtime verdict
+#     over frontmatter; safeAllVerdicts() graceful fallback; allPostDisplayData()
+#     passes verdicts map into getPostDisplayData().
+#   pages/admin.astro — UPDATED: VerdictResolutionPanel rendered per post in an
+#     .admin-post-group; header stat shows X/Y verdicts alongside seal count.
+#   layouts/BaseLayout.astro — UPDATED: verdictCeremonyScript injected.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (conviction_ledger gains verdict rows).
+#     ADMIN_SECRET still required for both conviction-seal and verdict-resolve.
+#
+# Sprint (prev — Verdict Wall):
 #   pages/verdict.astro — NEW: SSR Verdict Wall (/verdict); every post on
 #     trial sorted by tension score. Hero + stats bar + filter tabs (all /
 #     living / endangered / revived / fossil) + 2-col card grid. ?filter=
