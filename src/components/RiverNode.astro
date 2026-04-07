@@ -1,0 +1,52 @@
+---
+// src/components/RiverNode.astro
+// One prediction bubble on the Conviction River timeline.
+// Width proportional to prediction lifespan; position set by xPct/wPct from SSR.
+// Decay CSS vars set inline here; river.ts updates them on 60s tick.
+//
+// Credits: Mike (architecture §6 — RiverNode), Tanya (§4 color tokens, §6 corner radius)
+
+import type { RiverPost } from '../lib/river-data';
+
+interface Props {
+  post:  RiverPost;
+  xPct:  number;   // left% on the canvas
+  wPct:  number;   // width% on the canvas (clamped to 80px min via CSS)
+}
+
+const { post, xPct, wPct } = Astro.props;
+
+const overdue = post.daysRemaining <= 0;
+const label   = overdue
+  ? `${post.title} — overdue by ${Math.abs(post.daysRemaining)} days`
+  : `${post.title} — ${post.daysRemaining} days remaining`;
+
+const VERDICT_LABELS: Record<string, string> = {
+  'still-true': 'Still true',
+  'wrong':      'Wrong',
+  'abandoned':  'Abandoned',
+  'unaudited':  'Unaudited',
+};
+
+const pipLabel = post.verdict ? VERDICT_LABELS[post.verdict] ?? 'Pending' : 'Pending';
+---
+
+<a
+  href={post.url}
+  class:list={[
+    'river-node',
+    post.verdict  && `river-node--${post.verdict}`,
+    overdue       && 'river-node--overdue',
+  ]}
+  data-slug={post.slug}
+  aria-label={label}
+  style={`left:${xPct.toFixed(2)}%;width:max(80px,${wPct.toFixed(2)}%);--decay-opacity:${post.decayOpacity};--decay-blur:${post.decayBlur}px;--decay-sat:${post.decaySat}`}
+>
+  <span class="river-node__title">{post.title}</span>
+  <span
+    class:list={['river-node__pip', post.verdict && `river-node__pip--${post.verdict}`]}
+    aria-label={pipLabel}
+    title={pipLabel}
+    aria-hidden="true"
+  />
+</a>

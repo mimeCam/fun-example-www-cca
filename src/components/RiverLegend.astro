@@ -1,0 +1,41 @@
+---
+// src/components/RiverLegend.astro
+// River axis: year markers + "Now" amber hairline.
+// Rendered inside .river-canvas — shares its absolute positioning context.
+// The verdict color key is separate, rendered outside the scroll area in map.astro.
+//
+// Credits: Mike (architecture §7 — RiverLegend), Tanya (§4.1 conviction gold)
+
+interface YearMark {
+  label: string;
+  pct:   number;
+}
+
+interface Props {
+  yearMarkers: YearMark[];
+  nowPct:      number;
+}
+
+const { yearMarkers, nowPct } = Astro.props;
+---
+
+<!-- "Now" amber hairline — river.ts keeps left% stable; SSR sets initial value -->
+<div
+  class="river-now"
+  id="river-now"
+  style={`left:${nowPct.toFixed(2)}%`}
+  aria-hidden="true"
+>
+  <span class="river-now__label">now</span>
+</div>
+
+<!-- Year axis tick marks -->
+{yearMarkers.map(m => (
+  <div
+    class="river-axis-mark"
+    style={`left:${m.pct.toFixed(2)}%`}
+    aria-hidden="true"
+  >
+    <span class="river-axis-mark__label">{m.label}</span>
+  </div>
+))}

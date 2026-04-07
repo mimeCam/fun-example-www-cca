@@ -1,0 +1,125 @@
+---
+// src/pages/map.astro
+// Conviction River — every prediction as a living node on a scrollable
+// temporal canvas. SSR fetches + computes decay; client ticks every 60s.
+//
+// Empty state: renders gracefully with zero posts.
+// No new DB schema. No new dependencies. No SSE.
+//
+// Credits: Mike (architecture §2 — Conviction River),
+//          Tanya (§1 — core proposition), Elon (cold-start diagnosis)
+
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import RiverNode from '../components/RiverNode.astro';
+import RiverLegend from '../components/RiverLegend.astro';
+import { allPostDisplayData } from '../lib/postMeta';
+import { buildRiverPosts, riverClientScript } from '../lib/river-data';
+import '../styles/river.css';
+
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+
+const posts       = await getCollection('blog');
+const displayData = allPostDisplayData(posts);
+const riverPosts  = buildRiverPosts(displayData.filter(p => !p.entombed));
+
+// ---------------------------------------------------------------------------
+// Timespan math — shared between SSR position calc and year markers
+// ---------------------------------------------------------------------------
+
+const DAY_MS = 86_400_000;
+const nowMs  = Date.now();
+
+const tMin   = riverPosts.length ? Math.min(...riverPosts.map(p => p.publishedAt)) : nowMs;
+const tMax   = riverPosts.length ? Math.max(...riverPosts.map(p => p.deadline))    : nowMs + DAY_MS * 365;
+const tRange = Math.max(tMax - tMin, DAY_MS);
+
+function toPct(ms: number): number {
+  return Math.max(0, Math.min(100, ((ms - tMin) / tRange) * 100));
+}
+
+function buildYearMarkers(): { label: string; pct: number }[] {
+  const marks: { label: string; pct: number }[] = [];
+  const startYear = new Date(tMin).getFullYear();
+  const endYear   = new Date(tMax).getFullYear() + 1;
+  for (let y = startYear; y <= endYear; y++) {
+    const ms = new Date(`${y}-01-01`).getTime();
+    if (ms >= tMin && ms <= tMax + DAY_MS) marks.push({ label: String(y), pct: toPct(ms) });
+  }
+  return marks;
+}
+
+const yearMarkers = buildYearMarkers();
+const nowPct      = toPct(nowMs);
+
+// Serialise for the client decay tick (only slug + timestamps needed)
+const postsJson = JSON.stringify(
+  riverPosts.map(p => ({ slug: p.slug, publishedAt: p.publishedAt, deadline: p.deadline }))
+);
+---
+
+<BaseLayout
+  title="Conviction River — All Predictions on One Canvas"
+  description="Every prediction, every decay state, one scrollable timeline. The full intellectual accountability record."
+>
+  <main class="river-page">
+
+    <header class="river-header">
+      <p class="river-eyebrow">conviction river</p>
+      <h1 class="river-title">All Predictions</h1>
+    </header>
+
+    {riverPosts.length === 0 ? (
+
+      <div class="river-empty" role="status">
+        <p>No predictions sealed yet.</p>
+        <a href="/">← See the batting average</a>
+      </div>
+
+    ) : (
+
+      <>
+        <!-- Scrollable timeline -->
+        <div
+          class="river-viewport"
+          role="region"
+          aria-label="Prediction timeline — scroll horizontally to explore"
+        >
+          <!-- Hidden JSON carrier for river.ts decay tick -->
+          <div id="river-data" data-posts={postsJson} style="display:none" aria-hidden="true" />
+
+          <!-- Positioning canvas: nodes + legend share the same absolute context -->
+          <div class="river-canvas" role="list" aria-label="Predictions">
+            {riverPosts.map(post => (
+              <RiverNode
+                post={post}
+                xPct={toPct(post.publishedAt)}
+                wPct={Math.max(0, toPct(post.deadline) - toPct(post.publishedAt))}
+              />
+            ))}
+
+            <RiverLegend yearMarkers={yearMarkers} nowPct={nowPct} />
+          </div>
+        </div>
+
+        <!-- Verdict key — outside scroll container, right-aligned -->
+        <div class="river-key" aria-label="Verdict color key">
+          <span class="river-key__item river-key__item--still-true">still true</span>
+          <span class="river-key__item river-key__item--wrong">wrong</span>
+          <span class="river-key__item river-key__item--abandoned">abandoned</span>
+          <span class="river-key__item river-key__item--unaudited">pending</span>
+        </div>
+      </>
+
+    )}
+
+  </main>
+</BaseLayout>
+
+<!-- Inline IIFE: SSR pages' <script> imports aren't bundled by Vite client build.
+     Pattern matches decayEngineClientScript() in decay-engine.ts. -->
+<script set:html={riverClientScript()} />
