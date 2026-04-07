@@ -4,40 +4,50 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v35 — Cause-of-Death Labels (2026-04-07)
+# Architecture v36 — Cover Images (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
-#   Admin dashboard at /admin for cookie-authenticated seal management.
-#   Graveyard now records WHY each post died: editorial verdict on death.
+#   Cover images now decay visually alongside their post: saturation collapses,
+#   opacity fades, blur ghosts — same physics as the decay ring.
 #
-# Sprint (latest — Cause-of-Death Labels):
-#   lib/cause-of-death.ts — NEW: pure cause-of-death classifier (no DB,
-#     no side effects — testable in isolation). Five verdicts in priority
-#     order: SUPERSEDED (author retired) → UNSEALED (no conviction stake) →
-#     REJECTED (tension >0.7) → ABANDONED (sealed but silence) → DECAYED
-#     (default: time won). Exports causeLabel / causeDescription /
-#     causeCSSClass helpers for rendering.
-#   lib/collectiveMemory.ts — UPDATED: migrateCauseOfDeath() adds
-#     cause_of_death TEXT column to revivals table (auto-migrated on boot;
-#     safe to run repeatedly). setCauseOfDeath() uses COALESCE — first-write
-#     wins, historical honesty preserved. getAllCausesOfDeath() batch-reads
-#     all non-null verdicts in one query for SSR graveyard page.
-#   lib/postMeta.ts — UPDATED: causeOfDeath field added to PostDisplayData;
-#     allPostDisplayData() now calls safeCausesOfDeath() (graceful fallback
-#     to empty map if column not yet created).
-#   pages/api/entomb.ts — UPDATED: buildCauseData() gathers engagement
-#     snapshot (conviction seal, revival count, reading seconds, tension
-#     score, authorRetired flag); computeCauseOfDeath() classifies; result
-#     persisted via setCauseOfDeath() at entombment (fire-and-forget).
-#   components/TombstoneCard.astro — UPDATED: renders cause-of-death badge
-#     alongside tier badge (tomb-badges flex row); five earthy desaturated
-#     oklch colours; tooltip via title= with full editorial description.
-#   pages/graveyard.astro — UPDATED: findDominantCause() tallies causes
-#     across entombed posts; most-common cause displayed as a stat in the
-#     graveyard header alongside resurrection rate and reading-time stats.
+# Sprint (latest — Cover Images):
+#   content/config.ts — UPDATED: coverImage field added to blog schema
+#     (optional, path relative to /public, e.g. /images/covers/hello-world.svg).
+#   lib/postMeta.ts — UPDATED: coverImage field added to PostMeta interface;
+#     extractMeta() now passes it through from frontmatter.
+#   lib/og/ogLayout.ts — UPDATED: split-panel layout activated when
+#     coverImageUrl is present — text left (720px), image right (480px);
+#     image opacity degrades with decay (min 0.45). Falls back to gradient
+#     layout when no image provided.
+#   pages/api/og/[slug].png.ts — UPDATED: toCoverImageUrl() converts
+#     /public-relative path to absolute URL for Satori image fetch.
+#   pages/blog/[slug].astro — UPDATED: full-bleed 16/6 hero rendered above
+#     post header; fallback gradient band uses --mood-accent-rgb when no image.
+#   components/DecayCard.astro — UPDATED: cover-wrap slot (16/7 ratio) above
+#     title; decay filter cascade on .cover-img (saturate/opacity/blur driven
+#     by --decay-factor); fallback .cover-gradient for imageless posts.
+#     Card padding moved from .post-card to inner children (bleed fix).
+#   components/TombstoneCard.astro — UPDATED: ghost cover in graveyard —
+#     saturate(0.08) opacity(0.25) blur(0.5px) + luminosity blend; renders
+#     only when post.coverImage is set. Tombstone padding moved to inner wrapper.
+#   lib/tension-score.ts — UPDATED: MIN_STANCES raised 1→10 (reduces false
+#     high-tension signals on short-read posts).
+#   public/images/covers/ — NEW: cover image assets directory;
+#     building-in-public.svg + the-decay-theory.svg ship with this sprint.
+#   Dockerfile — FIXED: COPY public/ ./public/ added to builder stage so
+#     cover assets reach dist/client/ and are served at runtime.
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
-#     SQLITE_VOLUME mounts revivals.db; cause_of_death column auto-migrates
-#     on boot via initTables(). ADMIN_SECRET still required for admin UI.
+#     SQLITE_VOLUME mounts revivals.db. ADMIN_SECRET still required.
+#
+# Sprint (prev — Cause-of-Death Labels):
+#   lib/cause-of-death.ts — NEW: pure cause-of-death classifier (no DB,
+#     no side effects). Five verdicts: SUPERSEDED → UNSEALED → REJECTED →
+#     ABANDONED → DECAYED. causeLabel / causeDescription / causeCSSClass.
+#   lib/collectiveMemory.ts — cause_of_death TEXT column; COALESCE first-write.
+#   lib/postMeta.ts — causeOfDeath field; safeCausesOfDeath() graceful fallback.
+#   pages/api/entomb.ts — buildCauseData() snapshot; fire-and-forget persist.
+#   components/TombstoneCard.astro — cause-of-death badge, oklch colours.
+#   pages/graveyard.astro — findDominantCause() stat in graveyard header.
 #
 # Sprint (prev — HMAC Seal + Admin Web UI):
 #   pages/admin.astro — NEW: protected conviction seal dashboard at /admin.

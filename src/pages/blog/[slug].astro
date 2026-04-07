@@ -87,6 +87,10 @@ const tensionResult = stanceDist ? computeTension(stanceDist) : null;
     </nav>
 
     <header class="post-header">
+      {post.data.coverImage
+        ? <div class="post-cover-wrap"><img src={post.data.coverImage} alt="" class="post-cover-img" aria-hidden="true" loading="eager" decoding="async" /></div>
+        : <div class="post-cover-gradient" aria-hidden="true" />
+      }
       <time datetime={pubDateISO}>{pubDate}</time>
       <h1>{post.data.title}</h1>
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
@@ -183,8 +187,39 @@ const tensionResult = stanceDist ? computeTension(stanceDist) : null;
 
   .audit-link { margin-left: auto; }
 
-  /* Post header: date → title → badge (Tanya §9 — above-fold layout) */
+  /* Post header: cover → date → title → badge (Tanya §9 — above-fold layout) */
   .post-header { margin-bottom: 2rem; }
+
+  /* Cover image: full-bleed hero with decay filters — same physics as DecayCard */
+  .post-cover-wrap {
+    width: calc(100% + 3rem);          /* bleed past the 1.5rem padding on each side */
+    margin-left: -1.5rem;
+    margin-bottom: 1.75rem;
+    aspect-ratio: 16 / 6;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .post-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Fallback gradient: mood-tinted band when no image provided */
+  .post-cover-gradient {
+    width: calc(100% + 3rem);
+    margin-left: -1.5rem;
+    margin-bottom: 1.75rem;
+    aspect-ratio: 16 / 6;
+    background: linear-gradient(
+      180deg,
+      rgba(var(--mood-accent-rgb, 120,120,120), 0.12) 0%,
+      transparent 100%
+    );
+    border-radius: 12px 12px 0 0;
+  }
 
   .post-header time {
     display: block;

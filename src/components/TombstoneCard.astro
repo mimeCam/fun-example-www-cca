@@ -1,7 +1,8 @@
 ---
 // src/components/TombstoneCard.astro
 // Epitaph card for the /graveyard page.
-// Layout: "HERE LIES · title · description · Born/Faded · stats · resurrect"
+// Layout: "HERE LIES · cover ghost · title · description · Born/Faded · stats · resurrect"
+// Cover image renders near-monochrome — a ghost of the post's living self.
 // Monochrome locked via --color-grave-* tokens, not CSS opacity on the element.
 // Resurrection requires a deliberate click — no hover-revival (Mike, Tanya §3.3).
 //
@@ -62,6 +63,11 @@ function calcSurvivalDays(p: PostDisplayData): number {
   style={`--tomb-age:${tombAge}`}
   aria-label={`${post.title} — forgotten ${forgotten} ${daysLabel}`}
 >
+  {post.coverImage && (
+    <div class="tomb-cover-wrap" aria-hidden="true">
+      <img src={post.coverImage} alt="" class="tomb-cover-img" loading="lazy" decoding="async" />
+    </div>
+  )}
   <div class="tombstone-inner">
 
     <div class="tomb-header-row">
@@ -123,21 +129,41 @@ function calcSurvivalDays(p: PostDisplayData): number {
 </article>
 
 <style>
-  /* Card shell: stone-like — angular radius, inset shadow, --tomb-age tints surface */
+  /* Card shell: stone-like — angular top radius (sits in ground — Tanya §6) */
+  /* --tomb-age: 0.0 (new) → 1.0 (ancient) — drives stone surface darkness */
   .tombstone {
-    /* --tomb-age: 0.0 (new) → 1.0 (ancient) — drives stone surface darkness */
     background: oklch(calc(12% + var(--tomb-age, 0.5) * 6%) 0.01 50 / 0.95);
     border: 1px solid var(--color-grave-border);
-    border-radius: var(--radius-grave, 6px);
-    box-shadow: var(--shadow-grave-card);
-    padding: 20px 24px;
+    border-radius: 8px 8px 0 0;   /* Tanya: tombstones sit in the ground */
+    box-shadow: none;              /* Tanya: the dead cast no shadow */
+    padding: 0;
+    overflow: hidden;
   }
 
-  /* Inner wrapper carries the breathing animation from graveyard.css */
+  /* Ghost cover image — monochrome, barely visible. Friction is the point. */
+  .tomb-cover-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 5;
+    overflow: hidden;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .tomb-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    /* Full desaturation — the image is a memory, not a fact */
+    filter: saturate(0.08) opacity(0.25) blur(0.5px);
+    mix-blend-mode: luminosity;
+  }
+
+  /* Inner wrapper: padding lives here so cover image bleeds edge-to-edge */
   .tombstone-inner {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding: 20px 24px;
   }
 
   /* Row: "here lies" left, tier badge right */

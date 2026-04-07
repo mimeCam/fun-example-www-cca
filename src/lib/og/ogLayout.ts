@@ -3,7 +3,9 @@
 // Encodes live decay state into visual properties — faded posts look faded.
 // No side effects. No DOM. No React. Just a data structure satori consumes.
 //
-// Layout: 1200×630 with gradient bg, decay overlay, title, footer badges.
+// Layout: 1200×630.
+//   • No coverImage → gradient bg, decay overlay, title, footer badges.
+//   • coverImage    → split panel: text left (60%), image right (40%).
 // Mood accent tints the background. Decay controls opacity + saturation.
 
 import type { FreshnessTag } from '../decay';
@@ -24,6 +26,7 @@ export interface OGImageData {
   revivalCount: number;
   pubDate: string;
   siteName: string;
+  coverImageUrl?: string;  // absolute URL — rendered as right-panel background
 }
 
 // ---------------------------------------------------------------------------
@@ -88,6 +91,9 @@ export function ogLayout(data: OGImageData): Record<string, unknown> {
   const bgTo = desaturate(mood.gradient_to, data.decay * 0.7);
   const footer = footerParts(data).join('  ·  ');
 
+  if (data.coverImageUrl) {
+    return splitPanel(bgFrom, bgTo, data, footer, mood.accent);
+  }
   return container(bgFrom, bgTo, data, footer, mood.accent);
 }
 
@@ -214,6 +220,72 @@ function accentDot(
         backgroundColor: accent,
         opacity: String(1 - decay * 0.6),
       },
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Split-panel layout — used when coverImageUrl is present (Mike's plan)
+// ---------------------------------------------------------------------------
+
+/** Right image panel — desaturated proportional to decay. */
+function imagePanel(url: string, decay: number): Record<string, unknown> {
+  // CSS filter isn't supported in Satori — simulate via opacity overlay.
+  const imgOpacity = Math.max(0.45, 1 - decay * 0.55);
+  return {
+    type: 'div',
+    props: {
+      style: {
+        width: '480px', height: '630px',
+        backgroundImage: `url(${url})`,
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        opacity: String(imgOpacity),
+        flexShrink: 0,
+      },
+    },
+  };
+}
+
+/** Left text panel — same content as the gradient layout, narrower. */
+function textPanel(
+  bgFrom: string, bgTo: string,
+  data: OGImageData, footer: string, accent: string,
+): Record<string, unknown> {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'space-between',
+        width: '720px', height: '630px', padding: '60px',
+        background: `linear-gradient(135deg, ${bgFrom}, ${bgTo})`,
+        fontFamily: 'sans-serif',
+      },
+      children: [
+        siteLabel(data.siteName, data.decay),
+        titleBlock(data),
+        footerBar(footer, data.decay, accent),
+      ],
+    },
+  };
+}
+
+/** Split-panel root — text left, image right. */
+function splitPanel(
+  bgFrom: string, bgTo: string,
+  data: OGImageData, footer: string, accent: string,
+): Record<string, unknown> {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex', flexDirection: 'row',
+        width: '1200px', height: '630px', overflow: 'hidden',
+      },
+      children: [
+        textPanel(bgFrom, bgTo, data, footer, accent),
+        imagePanel(data.coverImageUrl!, data.decay),
+      ],
     },
   };
 }

@@ -2,8 +2,6 @@
 // Shared post metadata extraction — single source of truth for RSS, OG cards,
 // and any future feature that needs structured post data at build time.
 // Pure functions, zero dependencies beyond Astro content collections.
-//
-// TODO: add coverImage once content schema supports it
 
 import type { CollectionEntry } from 'astro:content';
 import { canonicalUrl, siteDefaults } from '../config/seo.config';
@@ -31,6 +29,7 @@ export interface PostMeta {
   pubDateISO: string;
   readingTime: number;
   badge?: string;
+  coverImage?: string;  // path relative to /public — e.g. /images/covers/hello-world.jpg
 }
 
 /** Extracts structured metadata from a blog collection entry. */
@@ -44,6 +43,7 @@ export function extractMeta(post: CollectionEntry<'blog'>): PostMeta {
     pubDateISO: post.data.pubDate.toISOString(),
     readingTime: getReadingTime(post.body),
     badge: post.data.badge,
+    coverImage: post.data.coverImage,
   };
 }
 

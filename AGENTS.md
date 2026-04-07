@@ -25,11 +25,12 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
 ## Key Paths
 
-- `src/lib/` — decay-engine, conviction-ledger, tension-score, live-conviction-hero, stance-ledger, revival-engine, heartbeat (SSE), cause-of-death
+- `src/lib/` — decay-engine, conviction-ledger, tension-score, live-conviction-hero, stance-ledger, revival-engine, heartbeat (SSE), cause-of-death, og/ogLayout
 - `src/components/` — ConvictionHero, AdminSealForm, DeathClock, StanceDrawer, DecayCard, TombstoneCard
-- `src/pages/` — admin.astro (conviction seal dashboard), blog/[slug], graveyard, now
-- `src/pages/api/` — conviction-seal, conviction-audit, revive, entomb, stance, heartbeat
-- `src/content/blog/` — Markdown posts
+- `src/pages/` — admin.astro, blog/[slug], graveyard, now
+- `src/pages/api/` — conviction-seal, conviction-audit, revive, entomb, stance, heartbeat, og/[slug].png
+- `src/content/blog/` — Markdown posts (add `coverImage` frontmatter to link cover art)
+- `public/images/covers/` — post cover images `[slug].{svg,jpg,png,webp}`
 - `cli/` — seal-conviction.mjs
 
 ## WIP
@@ -37,4 +38,3 @@ Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 - **P0.5** — Run seal on all 6 posts via `/admin` (ADMIN_SECRET env required)
 - Verify `reader_events` table migration on live `revivals.db`
 - Device QA: Pixel 6a · Galaxy A14 · iPhone 13 · SSE on 3G
-- `coverImage` field in post schema (TODO in postMeta.ts)

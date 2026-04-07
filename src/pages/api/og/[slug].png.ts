@@ -38,7 +38,16 @@ function buildOGData(post: any, slug: string): OGImageData {
     revivalCount: revivals,
     pubDate: pubISO,
     siteName: siteDefaults().siteName,
+    coverImageUrl: toCoverImageUrl(post.data.coverImage),
   };
+}
+
+/** Convert a /public-relative cover path to an absolute URL for Satori. */
+function toCoverImageUrl(coverImage?: string): string | undefined {
+  if (!coverImage) return undefined;
+  const { siteUrl } = siteDefaults();
+  const base = siteUrl.replace(/\/+$/, '');
+  return `${base}${coverImage}`;
 }
 
 /** Revival count with graceful fallback for build environments. */

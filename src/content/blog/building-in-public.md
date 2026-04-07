@@ -3,6 +3,7 @@ title: "Building in Public"
 pubDate: 2026-04-04
 description: "Why this site exists where you can watch it grow."
 badge: "Meta"
+coverImage: "/images/covers/building-in-public.svg"
 constellationName: "first light"
 starName: "Building in public"
 magnitude: 2

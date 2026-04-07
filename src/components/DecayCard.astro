@@ -4,9 +4,8 @@
 // Opacity fades, blur increases, saturation drops. Hover revives.
 // Uses CSS class .decay-card from decay.css for hover revival.
 //
-// Props: PostDisplayData from postMeta.ts — one call gives everything.
-//
-// TODO: add cover image slot once content schema supports it
+// coverImage: rendered above the title with CSS decay filters.
+// Fallback gradient renders when no image is provided.
 // DONE: prev/next linking lives in PostNav.astro (blog detail pages)
 
 import PostBadge from './PostBadge.astro';
@@ -49,6 +48,10 @@ const conviction = post.conviction ?? null;
   aria-label={`${post.title} — hold Space or Enter to revive`}
 >
   <BloomParticles />
+  {post.coverImage
+    ? <div class="cover-wrap"><img src={post.coverImage} alt="" class="cover-img" aria-hidden="true" loading="lazy" decoding="async" /></div>
+    : <div class="cover-gradient" aria-hidden="true" />
+  }
   <a href={href} class="post-link">
     <time datetime={post.pubDateISO} class="post-date">{formattedDate}</time>
     <h2 class="post-title">{post.title}</h2>
@@ -80,13 +83,57 @@ const conviction = post.conviction ?? null;
   .post-card {
     position: relative;
     overflow: hidden;
-    padding: 1.5rem 1.75rem;
-    border-radius: var(--radius, 12px);
+    padding: 0;                         /* cover image bleeds edge-to-edge */
+    border-radius: var(--radius, 16px); /* Tanya: 16px cards */
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
     max-width: 40rem;
     margin: 0 auto 1.25rem;
   }
+
+  /* ── Cover image: physics layer — decay filters applied from CSS vars ── */
+  .cover-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    overflow: hidden;
+    border-radius: var(--radius, 16px) var(--radius, 16px) 0 0;
+  }
+
+  .cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    /* Decay filter cascade: saturation collapses, opacity fades, blur ghosts */
+    filter:
+      saturate(calc(1 - var(--decay-factor, 0) * 0.8))
+      opacity(calc(1 - var(--decay-factor, 0) * 0.55))
+      blur(calc(var(--decay-factor, 0) * 2px));
+    transition: filter 600ms ease;
+    will-change: filter;
+  }
+
+  /* Fallback gradient — same slot, same height, mood-tinted */
+  .cover-gradient {
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    background: linear-gradient(
+      135deg,
+      rgba(var(--mood-accent-rgb, 120,120,120), calc(0.12 - var(--decay-factor, 0) * 0.08)),
+      rgba(0, 0, 0, 0.15)
+    );
+    border-radius: var(--radius, 16px) var(--radius, 16px) 0 0;
+  }
+
+  /* Body: inner padding lives here now (removed from .post-card) */
+  .post-link,
+  .post-excerpt,
+  .card-footer {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+
+  .post-link { padding-top: 1.25rem; }
 
   .post-link {
     text-decoration: none;
@@ -118,7 +165,7 @@ const conviction = post.conviction ?? null;
   }
 
   .post-excerpt {
-    margin: 0.5rem 0 0;
+    margin: 0.4rem 0 0;
     font-size: 0.88rem;
     line-height: 1.55;
     opacity: 0.7;
@@ -129,6 +176,7 @@ const conviction = post.conviction ?? null;
     align-items: center;
     gap: 0.625rem;
     margin-top: 1rem;
+    padding-bottom: 1.5rem;
   }
 
   .card-footer-meta {

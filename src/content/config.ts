@@ -1,8 +1,6 @@
 // src/content/config.ts
 // Astro content collection schema — single source of truth for all frontmatter.
 // Add new fields here; Zod validates at build time, broken posts fail loudly.
-//
-// TODO: add author, tags, coverImage fields as the blog evolves
 
 import { defineCollection, z } from 'astro:content';
 
@@ -21,6 +19,7 @@ const blog = defineCollection({
     badge: z.string().optional(), // editorial tone phrase — see openloop/badge-guide.md
     mood: z.string().optional(),  // article atmosphere — see lib/mood-engine.ts for valid values
     lifespan: z.number().positive().optional(), // post lifespan in days (default: 365)
+    coverImage: z.string().optional(),          // path relative to /public, e.g. /images/covers/hello-world.jpg
     echo: z.object({
       text: z.string(),   // curated sentence from the echoed post
       from: z.string(),   // slug of the source post (e.g. "hello-world")

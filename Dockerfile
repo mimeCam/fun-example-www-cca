@@ -15,6 +15,11 @@ RUN npm ci --prefer-offline 2>/dev/null || npm install
 COPY astro.config.mjs tsconfig.json ./
 COPY src/ ./src/
 
+# Static assets — public/ is copied to dist/client/ by astro build.
+# Cover images (public/images/covers/*.svg) must be present here so the
+# OG split-panel layout and blog hero images are served at runtime.
+COPY public/ ./public/
+
 # Build hybrid output → dist/
 RUN npm run build
 

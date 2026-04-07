@@ -21,7 +21,7 @@ export interface TensionResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MIN_STANCES = 1;
+const MIN_STANCES = 10;
 const DOMINANCE_THRESHOLD = 0.75;
 
 // ---------------------------------------------------------------------------
