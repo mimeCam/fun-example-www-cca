@@ -3,8 +3,11 @@
 // No DB calls — consumes PostDisplayData[] + StanceDistribution map.
 // Pure functions, O(n log n), no side effects, trivially testable.
 //
+// VerdictFilter now uses conviction outcome (correct/wrong/pending) per
+// Tanya §VerdictPage — single filter row, equal visual weight for wrong.
+//
 // Credits: Michael Koch (arch spec — Verdict Wall napkin plan),
-//          Tanya Donska (UX spec — filter states, sort order)
+//          Tanya Donska (UX spec — filter states, sort order, outcome filter)
 
 import type { PostDisplayData } from './postMeta';
 import type { StanceDistribution } from './stance-ledger';
@@ -14,8 +17,9 @@ import type { TensionLabel } from './tension-score';
 // Types
 // ---------------------------------------------------------------------------
 
-export type VerdictState  = 'living' | 'endangered' | 'revived' | 'fossil';
-export type VerdictFilter = 'all' | 'living' | 'endangered' | 'revived' | 'fossil';
+export type VerdictState     = 'living' | 'endangered' | 'revived' | 'fossil';
+export type ConvictionOutcome = 'correct' | 'wrong' | 'pending';
+export type VerdictFilter    = 'all' | ConvictionOutcome;
 
 export interface VerdictPost extends PostDisplayData {
   verdictState:  VerdictState;
@@ -30,6 +34,11 @@ export interface VerdictPost extends PostDisplayData {
 
 export interface VerdictWallStats {
   total:      number;
+  // conviction-outcome counts (drive filter tabs — Tanya §VerdictPage)
+  correct:    number;
+  wrong:      number;
+  pending:    number;
+  // decay-state counts (still used for stats bar + VerdictCard badge)
   living:     number;
   endangered: number;
   revived:    number;
@@ -52,6 +61,18 @@ function resolveState(p: PostDisplayData): VerdictState {
   if (p.recentlyRisen) return 'revived';
   if (p.endangered)    return 'endangered';
   return 'living';
+}
+
+/**
+ * Maps runtime verdict → conviction outcome for filter matching.
+ * Mirrors index.astro matchesFilter logic — single source of truth.
+ * 'correct' = still-true; 'wrong' = wrong|abandoned; 'pending' = everything else.
+ */
+function resolveOutcome(p: PostDisplayData): ConvictionOutcome {
+  const v = p.runtimeVerdict ?? p.conviction;
+  if (v === 'still-true') return 'correct';
+  if (v === 'wrong' || v === 'abandoned') return 'wrong';
+  return 'pending';
 }
 
 // ---------------------------------------------------------------------------
@@ -123,10 +144,15 @@ function toVerdictPost(
 
 /** Aggregate wall-level counts from enriched posts. */
 function buildStats(posts: VerdictPost[]): VerdictWallStats {
-  const s: VerdictWallStats =
-    { total: posts.length, living: 0, endangered: 0, revived: 0, fossil: 0, contested: 0 };
+  const s: VerdictWallStats = {
+    total: posts.length,
+    correct: 0, wrong: 0, pending: 0,
+    living: 0, endangered: 0, revived: 0, fossil: 0,
+    contested: 0,
+  };
   for (const p of posts) {
     s[p.verdictState]++;
+    s[resolveOutcome(p)]++;
     if (p.tensionResult?.label === 'contested') s.contested++;
   }
   return s;
@@ -145,15 +171,15 @@ export function buildVerdictWall(
   return { posts, stats: buildStats(posts) };
 }
 
-/** Filter posts by state. 'all' returns everything. */
+/** Filter posts by conviction outcome. 'all' returns everything. */
 export function filterPosts(posts: VerdictPost[], filter: VerdictFilter): VerdictPost[] {
   if (filter === 'all') return posts;
-  return posts.filter(p => p.verdictState === filter);
+  return posts.filter(p => resolveOutcome(p) === filter);
 }
 
 /** Validates an untrusted filter string from query params. */
 export function parseFilter(raw: string | null): VerdictFilter {
-  const valid: VerdictFilter[] = ['all', 'living', 'endangered', 'revived', 'fossil'];
+  const valid: VerdictFilter[] = ['all', 'correct', 'wrong', 'pending'];
   return valid.includes(raw as VerdictFilter) ? (raw as VerdictFilter) : 'all';
 }
 
@@ -163,10 +189,13 @@ export function parseFilter(raw: string | null): VerdictFilter {
 
 export function _testVerdictWall(): void {
   const empty = buildVerdictWall([], new Map());
-  console.assert(empty.posts.length === 0, 'empty posts');
-  console.assert(empty.stats.total === 0,  'empty stats');
-  console.assert(parseFilter(null)    === 'all',  'null → all');
-  console.assert(parseFilter('xyz')   === 'all',  'unknown → all');
-  console.assert(parseFilter('fossil') === 'fossil', 'fossil passthrough');
+  console.assert(empty.posts.length === 0,  'empty posts');
+  console.assert(empty.stats.total === 0,   'empty stats');
+  console.assert(parseFilter(null)      === 'all',     'null → all');
+  console.assert(parseFilter('xyz')     === 'all',     'unknown → all');
+  console.assert(parseFilter('correct') === 'correct', 'correct passthrough');
+  console.assert(parseFilter('wrong')   === 'wrong',   'wrong passthrough');
+  console.assert(parseFilter('pending') === 'pending', 'pending passthrough');
+  console.assert(parseFilter('fossil')  === 'all',     'fossil no longer valid');
   console.log('[verdict-wall] OK');
 }

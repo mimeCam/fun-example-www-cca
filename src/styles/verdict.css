@@ -120,11 +120,39 @@
   border-color: rgba(255, 255, 255, 0.22);
 }
 
+/* Default active state — no outcome variant */
 .verdict-filter-tab--active {
   color: #f59e0b;
   border-color: rgba(245, 158, 11, 0.35);
   background: rgba(245, 158, 11, 0.07);
 }
+
+/* ── Outcome variant active states ───────────────────────────────────────────
+   Equal size, shadow, opacity — wrong gets the same visual weight as correct.
+   Wrong badge: rgba(220,80,80,0.8) calm red — not screaming (Tanya §VerdictPage).
+   ───────────────────────────────────────────────────────────────────────── */
+
+.verdict-filter-tab--correct.verdict-filter-tab--active {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.07);
+}
+
+.verdict-filter-tab--wrong.verdict-filter-tab--active {
+  color: rgba(220, 80, 80, 0.9);
+  border-color: rgba(220, 80, 80, 0.35);
+  background: rgba(220, 80, 80, 0.07);
+}
+
+.verdict-filter-tab--pending.verdict-filter-tab--active {
+  color: rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Outcome stat value colors — outcome pair in stats bar */
+.verdict-stat__value--correct { color: #10b981; }
+.verdict-stat__value--wrong   { color: rgba(220, 80, 80, 0.85); }
 
 /* ── Card grid: 2-col desktop, 1-col mobile ──────────────────────── */
 

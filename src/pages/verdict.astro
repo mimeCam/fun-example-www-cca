@@ -44,19 +44,21 @@ const pageTitle = 'Verdict Wall — All Posts on Trial';
 const pageDesc  = `${wall.stats.total} posts. ${wall.stats.contested} contested. Every belief is on the record.`;
 
 // ── Filter tab definitions ────────────────────────────────────────────────────
+// Single filter row by conviction outcome — Tanya §VerdictPage.
+// Wrong gets equal visual weight to correct (no shame treatment).
 
 interface FilterTab {
   id: VerdictFilter;
   label: string;
   count: number;
+  variant?: 'correct' | 'wrong' | 'pending';
 }
 
 const tabs: FilterTab[] = [
-  { id: 'all',        label: 'All',           count: wall.stats.total      },
-  { id: 'living',     label: 'Living',         count: wall.stats.living     },
-  { id: 'endangered', label: 'Endangered ⚠',  count: wall.stats.endangered },
-  { id: 'revived',    label: 'Revived',        count: wall.stats.revived    },
-  { id: 'fossil',     label: 'Fossil',         count: wall.stats.fossil     },
+  { id: 'all',     label: 'All',          count: wall.stats.total   },
+  { id: 'correct', label: 'Correct ✓',   count: wall.stats.correct, variant: 'correct' },
+  { id: 'wrong',   label: 'Wrong ✗',     count: wall.stats.wrong,   variant: 'wrong'   },
+  { id: 'pending', label: 'Pending ⏳',  count: wall.stats.pending, variant: 'pending' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -92,22 +94,28 @@ function tabHref(id: VerdictFilter): string {
       )}
     </header>
 
-    <!-- Stats bar -->
+    <!-- Stats bar: outcome counts + context signals -->
     <div class="verdict-stats" aria-label="Wall statistics">
       <div class="verdict-stat">
         <span class="verdict-stat__value">{wall.stats.total}</span>
         <span class="verdict-stat__label">total posts</span>
       </div>
+      {wall.stats.correct > 0 && (
+        <div class="verdict-stat">
+          <span class="verdict-stat__value verdict-stat__value--correct">{wall.stats.correct}</span>
+          <span class="verdict-stat__label">correct</span>
+        </div>
+      )}
+      {wall.stats.wrong > 0 && (
+        <div class="verdict-stat">
+          <span class="verdict-stat__value verdict-stat__value--wrong">{wall.stats.wrong}</span>
+          <span class="verdict-stat__label">wrong</span>
+        </div>
+      )}
       {wall.stats.contested > 0 && (
         <div class="verdict-stat">
           <span class="verdict-stat__value" style="color: #f59e0b;">{wall.stats.contested}</span>
           <span class="verdict-stat__label">contested</span>
-        </div>
-      )}
-      {wall.stats.fossil > 0 && (
-        <div class="verdict-stat">
-          <span class="verdict-stat__value" style="color: #4b5563;">{wall.stats.fossil}</span>
-          <span class="verdict-stat__label">entombed</span>
         </div>
       )}
       {wall.stats.endangered > 0 && (
@@ -130,12 +138,16 @@ function tabHref(id: VerdictFilter): string {
       </div>
     )}
 
-    <!-- Filter tabs -->
-    <nav class="verdict-filters" aria-label="Filter posts">
+    <!-- Filter tabs — conviction outcome, single row (Tanya §VerdictPage) -->
+    <nav class="verdict-filters" aria-label="Filter by conviction outcome">
       {tabs.filter(t => t.count > 0 || t.id === 'all').map(tab => (
         <a
           href={tabHref(tab.id)}
-          class:list={['verdict-filter-tab', filter === tab.id && 'verdict-filter-tab--active']}
+          class:list={[
+            'verdict-filter-tab',
+            filter === tab.id && 'verdict-filter-tab--active',
+            tab.variant && `verdict-filter-tab--${tab.variant}`,
+          ]}
           aria-current={filter === tab.id ? 'page' : undefined}
         >
           {tab.label}

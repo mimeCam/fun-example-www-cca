@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v51 — Track Record Page (2026-04-07)
+# Architecture v52 — Verdict Wall Outcome Filters (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -48,8 +48,36 @@
 #   sparkline — bar height = running % at each resolved verdict; 50% cognitive
 #   anchor dashed baseline). Navigation chip (batting average %) now deep-links
 #   to /track-record. No new DB tables, no new npm packages, no new services.
+#   Verdict Wall Outcome Filters: filter tabs on /verdict refactored from
+#   decay-state (living/endangered/revived/fossil) to conviction-outcome
+#   (correct/wrong/pending) — aligns the wall with the accountability model;
+#   wrong gets equal visual weight to correct (calm red, no shame treatment —
+#   Tanya §VerdictPage); VerdictWallStats gains correct/wrong/pending counts;
+#   stats bar updated to show outcome pair + contested signal; parseFilter()
+#   updated to accept new valid values; CSS adds outcome-aware active states
+#   and stat-value colour tokens.
 #
-# Sprint (latest — Track Record Page):
+# Sprint (latest — Verdict Wall Outcome Filters):
+#   lib/verdict-wall.ts — UPDATED: ConvictionOutcome type added ('correct' |
+#     'wrong' | 'pending'); VerdictFilter now aliases ConvictionOutcome | 'all'
+#     (living/endangered/revived/fossil no longer valid filter values);
+#     VerdictWallStats gains correct/wrong/pending counts alongside existing
+#     decay-state counts; resolveOutcome() maps runtimeVerdict → outcome;
+#     buildStats() tallies outcome counts; filterPosts() filters by outcome;
+#     parseFilter() valid set updated; _testVerdictWall() assertions updated.
+#   src/pages/verdict.astro — UPDATED: FilterTab gains optional variant field;
+#     tabs array rebuilt with correct/wrong/pending entries (Tanya §VerdictPage);
+#     stats bar shows correct/wrong pair + contested signal; filter nav aria
+#     label updated; tab class list includes verdict-filter-tab--{variant}.
+#   src/styles/verdict.css — UPDATED: outcome-variant active states added
+#     (.verdict-filter-tab--correct/wrong/pending.--active); stat value colour
+#     tokens (.verdict-stat__value--correct/--wrong) added.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor — gist scope only).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Track Record Page):
 #   pages/track-record.astro — NEW: SSR page at /track-record; assembles
 #     buildTrackRecord() data from existing conviction + verdict ledgers;
 #     renders BattingAverageHero (Act I) + TrackRecord (Acts II+III).

@@ -10,6 +10,7 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 - `src/lib/client/` — live-conviction (SSE), verdict-reveal, river (decay tick)
 - `src/pages/api/` — conviction-seal, verdict-resolve, trust-verify/[slug]
 - `src/pages/track-record.astro` — authoritative ledger (Act I hero · Act II table · Act III sparkline)
+- `src/pages/verdict.astro` — conviction-outcome wall (correct/wrong/pending filters, stats bar)
 - `src/pages/audit/` — conviction proof page
 - `src/content/blog/` — Markdown posts (`predictions[]` frontmatter)
 - `cli/seal-conviction.mjs` — HMAC seal at publish
@@ -19,5 +20,4 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 - Seal all 6 posts via `/admin` (ADMIN_SECRET required) — TrustBadge goes green; /track-record sparkline activates once verdicts resolve
 - Set `GITHUB_PAT` in `.env` (gist scope) to activate Conviction Anchor in /track-record ledger
 - Zone 3 (River preview on homepage): deferred until ≥15 posts
-- Verdict Wall dual filter rows: deferred
 - Paginate homepage once post count exceeds ~20
