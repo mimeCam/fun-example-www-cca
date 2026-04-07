@@ -3,12 +3,14 @@
 // /now is a first-class page (Tanya §3 — sitemap revision).
 
 /** Canonical page IDs for the sitemap. */
-export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'unknown';
+export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'verdict' | 'audit' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
   ['/blog',      'blog'],
   ['/graveyard', 'graveyard'],
   ['/now',       'now'],
+  ['/verdict',   'verdict'],
+  ['/audit',     'audit'],
 ];
 
 /** Derives the active PageId from a pathname string. SSR-safe. */
@@ -31,6 +33,8 @@ export function _testNav(): void {
   console.assert(getActivePage('/graveyard')   === 'graveyard', 'graveyard');
   console.assert(getActivePage('/now')         === 'now',       '/now -> now');
   console.assert(getActivePage('/now/')        === 'now',       '/now/ -> now');
+  console.assert(getActivePage('/verdict')      === 'verdict',   '/verdict -> verdict');
+  console.assert(getActivePage('/audit/foo')   === 'audit',     '/audit/* -> audit');
   console.assert(getActivePage('/wall')        === 'unknown',   '/wall removed');
   console.assert(getActivePage('/xyz')         === 'unknown',   'unknown');
   console.assert(getActivePage('/blog?q=1')    === 'blog',      'query strip');

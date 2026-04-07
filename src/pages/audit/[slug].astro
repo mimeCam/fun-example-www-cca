@@ -1,0 +1,146 @@
+---
+// src/pages/audit/[slug].astro
+// Public proof page for sealed convictions — "The author's past self is on record."
+// SSR mandatory: ledger is live, static page would show stale event counts.
+// Returns 404 if slug not found. Shows "NOT YET SEALED" if post exists but unsealed.
+// No client JS required — pure server-rendered HTML.
+//
+// Credits: Mike (architecture spec — Conviction Audit Trail napkin plan)
+
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AuditReceipt from '../../components/AuditReceipt.astro';
+import ConvictionTimeline from '../../components/ConvictionTimeline.astro';
+import { assembleAuditPayload } from '../../lib/audit-verifier';
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/404');
+
+const posts = await getCollection('blog');
+const post  = posts.find(p => p.slug === slug);
+if (!post) return Astro.redirect('/404');
+
+const payload = assembleAuditPayload(slug, post.data.title);
+
+const pageTitle       = `Conviction Audit — ${post.data.title}`;
+const pageDescription = payload.seal
+  ? `Sealed conviction receipt for "${post.data.title}": score ${payload.seal.score}/10, locked at ${new Date(payload.seal.sealedAt).toLocaleDateString()}.`
+  : `Conviction audit for "${post.data.title}" — not yet sealed.`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <main class="audit-page">
+
+    <!-- Back navigation -->
+    <nav class="audit-nav" aria-label="Page navigation">
+      <a href={`/blog/${slug}`} class="audit-back">← back to post</a>
+      <a href="/" class="audit-field">field ↗</a>
+    </nav>
+
+    <!-- Page heading -->
+    <header class="audit-header">
+      <p class="audit-eyebrow">Conviction Audit</p>
+      <h1 class="audit-title">{post.data.title}</h1>
+      <p class="audit-sub">
+        {payload.seal
+          ? 'The author sealed a conviction before this post was published. You are looking at the receipt.'
+          : 'This post has not been sealed yet. The conviction score will appear here once the author locks it.'}
+      </p>
+    </header>
+
+    <!-- The receipt — visual proof block -->
+    <AuditReceipt seal={payload.seal} postTitle={payload.postTitle} />
+
+    <!-- Event timeline — chronological history -->
+    <ConvictionTimeline timeline={payload.timeline} slug={slug} />
+
+    <!-- Footer nudge back to the post -->
+    <div class="audit-footer">
+      <a href={`/blog/${slug}`} class="audit-post-link">
+        Read "{post.data.title}" →
+      </a>
+    </div>
+
+  </main>
+</BaseLayout>
+
+<style>
+  .audit-page {
+    max-width: 38rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+  }
+
+  /* Back nav */
+  .audit-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .audit-back,
+  .audit-field {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.32);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 150ms ease;
+  }
+
+  .audit-back:hover,
+  .audit-field:hover { color: rgba(255, 255, 255, 0.65); }
+  .audit-field        { margin-left: auto; }
+
+  /* Page heading */
+  .audit-header { margin-bottom: 2rem; }
+
+  .audit-eyebrow {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(245, 166, 35, 0.65);
+    margin: 0 0 0.4rem;
+  }
+
+  .audit-title {
+    font-size: clamp(1.3rem, 3vw, 1.75rem);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: rgba(255, 255, 255, 0.88);
+    margin: 0 0 0.75rem;
+  }
+
+  .audit-sub {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.38);
+    margin: 0;
+    font-style: italic;
+  }
+
+  /* Footer */
+  .audit-footer {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .audit-post-link {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.35);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 150ms ease;
+  }
+
+  .audit-post-link:hover { color: rgba(255, 255, 255, 0.7); }
+
+  @media (max-width: 640px) {
+    .audit-page { padding: 2rem 1rem 4rem; }
+  }
+</style>

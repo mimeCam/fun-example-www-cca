@@ -2,18 +2,18 @@
 // src/components/ConvictionHero.astro
 // Above-fold conviction hero — the sealed bet made visceral.
 // Replaces ConvictionDeclaration in the above-fold position on post detail.
-// ConvictionDeclaration stays in codebase; ConvictionAuditTrail uses it below fold.
 //
-// Visual hierarchy (Tanya §9 — 5-second test):
-//   1. Score number (monospace, amber, 2.5rem) — the stamp
-//   2. Wager quote — what the author bet on
-//   3. Clock state — warming (grace) OR countdown ring
-//   4. Footer metadata — chain hash + revival count (quiet, tertiary)
+// 3-layer layout (Tanya §post-detail — 5-second cold reader requirement):
+//   1. Label row  — "⚡ CONVICTION · SEALED BEFORE FIRST READ"
+//   2. Hero row   — score stamp + progress bar + wager quote + sealed date
+//   3. Footer row — DeathClock · time remaining · revival count · audit link
 //
-// Pure server-rendered Astro — zero client JS, works on 3G.
+// Panel: dark indigo (oklch 18% 0.025 280) + 3px amber left border.
+// Amber = conviction claim. Indigo = the sealed document. Distinct materials.
+// Pure server-rendered — zero client JS, works on 3G.
 //
 // Credits: Mike (spec §Modules, §Key Design Decisions),
-//          Tanya (UX §9 — The Sealed Bet layout)
+//          Tanya (UX §post-detail — ConvictionHero redesign, indigo palette)
 
 import { getSealEntry } from '../lib/conviction-ledger';
 import DeathClock from './DeathClock.astro';
@@ -54,7 +54,6 @@ const clockDays       = graceState.warming ? 1 : graceState.daysRemaining;
 const clockUrgencyVal = clockUrgency(clockDays);
 
 // Deadline ISO — drives the live JS countdown when < 48 h remain.
-// Approximate: integer days × 86 400 s. Enough for h:mm precision.
 const deadlineISO = (!graceState.warming && clockDays > 0)
   ? new Date(Date.now() + clockDays * 86_400_000).toISOString()
   : null;
@@ -72,7 +71,15 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
   class="conviction-hero"
   aria-label="Author conviction — sealed before publication"
 >
-  <!-- Row 1: Score stamp + wager quote -->
+  <!-- Layer 1: Label row — answers "what is this?" and "was this pre-read?" in one line (Tanya §post-detail) -->
+  <div class="ch-label-row" aria-hidden="true">
+    <span class="ch-label-icon">⚡</span>
+    <span class="ch-label-text">CONVICTION</span>
+    <span class="ch-label-sep">·</span>
+    <span class="ch-label-sub">SEALED BEFORE FIRST READ</span>
+  </div>
+
+  <!-- Layer 2: Score stamp + progress bar + wager quote -->
   <div class="ch-score-row">
     <div class="ch-stamp" aria-label={`Conviction score: ${score} out of 10`}>
       <span class="ch-score-digit">{score}</span>
@@ -90,7 +97,7 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     </div>
   </div>
 
-  <!-- Row 2: Clock (or warming state) · TensionBadge (embedded) · footer metadata -->
+  <!-- Layer 3: DeathClock · time remaining · TensionBadge · revival count · audit link -->
   <div class="ch-status-row">
     {graceState.warming ? (
       <div class="ch-warming" aria-label={`Warming up: ${graceState.readerCount} of ${graceState.threshold} readers`}>
@@ -120,12 +127,10 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
 
     <div class="ch-meta">
       {revivalCount > 0 && (
-        <span class="ch-revivals">
-          {revivalCount} {revivalCount === 1 ? 'revival' : 'revivals'}
-        </span>
+        <span class="ch-revivals">↑ {revivalCount} {revivalCount === 1 ? 'revival' : 'revivals'}</span>
       )}
       <a href="#conviction-audit" class="ch-hash" title={`Full hash: ${sealEntry.hash}`}>
-        #{shortHash}
+        #{shortHash} ↓
       </a>
     </div>
   </div>
@@ -133,7 +138,7 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
 )}
 
 <style>
-  /* Unsealed state: amber dashed border — explicit "not yet sealed" (Mike §4) */
+  /* Unsealed state: amber dashed border — explicit "not yet sealed" */
   .ch-unsealed {
     display: flex;
     align-items: center;
@@ -159,21 +164,54 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     font-style: italic;
   }
 
-  /* Container — amber tint signals: this is a sealed bet, not content */
+  /* Container — indigo tint: sealed document, not just another amber widget.
+     Amber = conviction claim. Indigo = the container for the claim. (Tanya §design-tokens) */
   .conviction-hero {
-    background: rgba(245, 166, 35, 0.06);
-    border: 1px solid rgba(245, 166, 35, 0.18);
-    border-left: 4px solid rgba(245, 166, 35, 0.5);
+    background: oklch(18% 0.025 280);
+    border: 1px solid oklch(30% 0.04 280);
+    border-left: 3px solid rgba(245, 166, 35, 0.65);
     border-radius: 8px;
-    padding: 1.5rem 1.75rem;
+    padding: 1.25rem 1.75rem 1.5rem;
     margin: 0 0 2.5rem;
-    box-shadow:
-      0 4px 24px rgba(0, 0, 0, 0.45),
-      0 1px 4px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
-  /* Score row: stamp number left, bar+quote right */
+  /* Layer 1 — Label row: answers cold reader's first two questions in one line */
+  .ch-label-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .ch-label-icon {
+    font-size: 0.65rem;
+    line-height: 1;
+    color: #F5A623;
+  }
+
+  .ch-label-text {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #F5A623;
+  }
+
+  .ch-label-sep {
+    font-size: 0.65rem;
+    color: rgba(245, 166, 35, 0.4);
+    margin: 0 0.1rem;
+  }
+
+  .ch-label-sub {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(245, 166, 35, 0.55);
+  }
+
+  /* Layer 2 — Score row: stamp number left, bar + quote right */
   .ch-score-row {
     display: flex;
     align-items: flex-start;
@@ -181,7 +219,7 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     margin-bottom: 1.25rem;
   }
 
-  /* The stamp: monospace large digit — feels like an official grade */
+  /* Score stamp: monospace 2.2rem amber — the official grade */
   .ch-stamp {
     flex-shrink: 0;
     display: flex;
@@ -191,7 +229,7 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
   }
 
   .ch-score-digit {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 700;
     font-family: ui-monospace, 'Cascadia Code', monospace;
     color: #F5A623;
@@ -224,18 +262,17 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     overflow: hidden;
   }
 
-  /* Amber gradient fill — ruler, not decoration */
   .ch-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, #D4880A, #F5A623);
     border-radius: 2px;
   }
 
-  /* Wager note: full text on desktop (Tanya §4 Refinement B — truncated wager = broken promise) */
+  /* Wager note: human words — italic warm gray distinguishes from clinical score data */
   .ch-note {
     font-size: 0.88rem;
     line-height: 1.55;
-    color: rgba(255, 255, 255, 0.65);
+    color: oklch(72% 0.008 0);
     font-style: italic;
     margin: 0;
   }
@@ -256,16 +293,16 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     letter-spacing: 0.02em;
   }
 
-  /* Status row: clock (or warming pill) left + metadata right */
+  /* Layer 3 — Status row: clock (or warming pill) · tension · meta */
   .ch-status-row {
     display: flex;
     align-items: center;
     gap: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
-  /* Warming state — reader count as progress */
+  /* Warming state — reader count as progress pill */
   .ch-warming {
     display: flex;
     align-items: center;
@@ -295,7 +332,7 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
 
   .ch-clock-wrap { flex-shrink: 0; }
 
-  /* Footer metadata: chain status · revivals · hash */
+  /* Footer metadata: revivals · hash (smallest elements, rightmost) */
   .ch-meta {
     display: flex;
     align-items: center;
@@ -304,19 +341,13 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
     flex-shrink: 0;
   }
 
-  .ch-chain {
-    font-size: 0.65rem;
-    letter-spacing: 0.02em;
-  }
-
-  .ch-chain--ok     { color: rgba(100, 200, 120, 0.65); }
-  .ch-chain--broken { color: rgba(220, 90,  90,  0.75); }
-
+  /* Revival count: plain text, not a badge (Tanya §post-detail) */
   .ch-revivals {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.32);
   }
 
+  /* Audit link: smallest element, rightmost — for the curious, not the skimmer */
   .ch-hash {
     font-size: 0.63rem;
     font-family: ui-monospace, monospace;
@@ -329,13 +360,14 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
 
   .ch-hash:hover { color: rgba(255, 255, 255, 0.5); }
 
-  /* Mobile: stamp shrinks, wager wraps */
+  /* Mobile: stamp shrinks, revivals hidden, labels wrap */
   @media (max-width: 640px) {
-    .conviction-hero { padding: 1.25rem; }
+    .conviction-hero { padding: 1.1rem 1.25rem 1.25rem; }
 
     .ch-score-digit { font-size: 2rem; }
     .ch-score-denom { font-size: 0.875rem; }
 
+    .ch-label-sub { display: none; }  /* "SEALED BEFORE FIRST READ" wraps badly at 320px */
     .ch-revivals { display: none; }
 
     .ch-warming { flex-direction: column; align-items: flex-start; gap: 0.2rem; }

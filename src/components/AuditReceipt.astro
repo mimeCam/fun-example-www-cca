@@ -1,0 +1,273 @@
+---
+// src/components/AuditReceipt.astro
+// Visual receipt for a sealed conviction — the notary stamp made readable.
+// Shows: SEALED stamp, score, sealed-at date + Unix ms, hash prefix, verify command.
+// Pure SSR. Zero client JS — <details> handles the collapsible. Tailwind-free.
+//
+// Security: verifyInstruction comes from audit-verifier.ts which never includes hmac_seal.
+//
+// Credits: Mike (spec — AuditReceipt design), Tanya (§5 — honest copy language)
+
+import type { RedactedSeal } from '../lib/audit-verifier';
+
+interface Props {
+  seal: RedactedSeal | null;
+  postTitle: string;
+}
+
+const { seal, postTitle } = Astro.props;
+
+function fmtDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  });
+}
+---
+
+<div class="audit-receipt" aria-label="Conviction seal receipt">
+
+  <!-- Stamp header — SEALED or NOT YET SEALED -->
+  <div class:list={['receipt-stamp', seal ? 'receipt-stamp--sealed' : 'receipt-stamp--open']}>
+    <span class="stamp-glyph" aria-hidden="true">{seal ? '🔒' : '◇'}</span>
+    <span class="stamp-word">{seal ? 'SEALED' : 'NOT YET SEALED'}</span>
+  </div>
+
+  <!-- Post title -->
+  <h2 class="receipt-title">{postTitle}</h2>
+
+  {seal ? (
+    <>
+      <!-- Score row -->
+      <div class="receipt-row">
+        <span class="receipt-label">Conviction score</span>
+        <span class="receipt-value receipt-value--score">{seal.score} / 10</span>
+      </div>
+
+      <!-- Sealed at: human date + Unix ms for independent verification -->
+      <div class="receipt-row">
+        <span class="receipt-label">Sealed at</span>
+        <div class="receipt-value-stack">
+          <span class="receipt-value">{fmtDate(seal.sealedAt)}</span>
+          <span class="receipt-meta">{seal.sealedAt} ms</span>
+        </div>
+      </div>
+
+      <!-- Hash prefix: first 16 hex chars -->
+      <div class="receipt-row">
+        <span class="receipt-label">Chain hash</span>
+        <code class="receipt-hash">
+          SHA-256: {seal.hashPrefix}<span class="hash-ellipsis">…</span>
+        </code>
+      </div>
+
+      <!-- Verify command — native <details>, zero JS -->
+      <details class="receipt-verify">
+        <summary class="receipt-verify-toggle">
+          How to verify this seal independently
+        </summary>
+        <div class="receipt-verify-body">
+          <p class="verify-explain">
+            If you hold <code>ADMIN_SECRET</code>, run this command to confirm the
+            HMAC matches what the server signed at publish time:
+          </p>
+          <pre class="verify-cmd"><code>{seal.verifyInstruction}</code></pre>
+          <p class="verify-explain verify-explain--note">
+            The formula is public: <code>slug:score:timestamp_ms</code> — HMAC-signed
+            by the server. You're checking the signature is authentic, not the key.
+          </p>
+        </div>
+      </details>
+    </>
+  ) : (
+    <p class="receipt-unsealed-note">
+      This post exists but has not been sealed yet.
+      The conviction score will appear here once the author locks it before publication.
+    </p>
+  )}
+
+</div>
+
+<style>
+  .audit-receipt {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 1.75rem 2rem;
+    background: oklch(16% 0.020 270);
+    box-shadow: 0 2px 12px oklch(6% 0.01 260 / 0.6),
+                inset 0 1px 0 oklch(30% 0.02 260 / 0.5);
+  }
+
+  /* ── Stamp ── */
+  .receipt-stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .receipt-stamp--sealed {
+    background: rgba(245, 166, 35, 0.10);
+    border: 1px solid rgba(245, 166, 35, 0.30);
+    color: #F5A623;
+  }
+
+  .receipt-stamp--open {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .stamp-glyph { font-size: 0.75rem; line-height: 1; }
+
+  /* ── Title ── */
+  .receipt-title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0 0 1.25rem;
+  }
+
+  /* ── Receipt rows ── */
+  .receipt-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .receipt-row:last-of-type { border-bottom: none; }
+
+  .receipt-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.28);
+    min-width: 8rem;
+    padding-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  .receipt-value {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .receipt-value--score {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #F5A623;
+    letter-spacing: -0.01em;
+  }
+
+  .receipt-value-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .receipt-meta {
+    font-size: 0.65rem;
+    font-family: ui-monospace, monospace;
+    color: rgba(255, 255, 255, 0.25);
+    letter-spacing: 0.01em;
+  }
+
+  .receipt-hash {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .hash-ellipsis { opacity: 0.45; }
+
+  /* ── Verify collapsible ── */
+  .receipt-verify {
+    margin-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 0.85rem;
+  }
+
+  .receipt-verify summary { list-style: none; }
+  .receipt-verify summary::-webkit-details-marker { display: none; }
+
+  .receipt-verify-toggle {
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    user-select: none;
+    transition: color 150ms ease;
+  }
+
+  .receipt-verify-toggle::before { content: '▸ '; font-size: 0.55rem; }
+  details[open] .receipt-verify-toggle::before { content: '▾ '; }
+  .receipt-verify-toggle:hover { color: rgba(255, 255, 255, 0.6); }
+
+  .receipt-verify-body {
+    padding-top: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .verify-explain {
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.38);
+    margin: 0;
+  }
+
+  .verify-explain--note { color: rgba(255, 255, 255, 0.25); font-style: italic; }
+
+  .verify-explain code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.68rem;
+    color: rgba(245, 166, 35, 0.65);
+    padding: 0 3px;
+  }
+
+  .verify-cmd {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
+    padding: 0.75em 1em;
+    overflow-x: auto;
+  }
+
+  .verify-cmd code {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5;
+    white-space: pre;
+  }
+
+  /* ── Unsealed note ── */
+  .receipt-unsealed-note {
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.35);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 640px) {
+    .audit-receipt { padding: 1.25rem 1.25rem; }
+    .receipt-row   { flex-direction: column; gap: 0.3rem; }
+    .receipt-label { min-width: unset; }
+  }
+</style>

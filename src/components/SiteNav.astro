@@ -11,10 +11,21 @@
 
 import { getActivePage } from '../lib/nav';
 import { computeBattingAverage } from '../lib/batting-average';
+import { getAllStanceDistributions } from '../lib/stance-ledger';
+import { computeTension } from '../lib/tension-score';
 
 const path          = Astro.url.pathname;
 const pageId        = getActivePage(path);
 const isBlogPost    = pageId === 'blog';
+
+// Verdict link gets amber underline when any living post is contested (Tanya §2).
+let hasContested = false;
+try {
+  const allDists = getAllStanceDistributions();
+  hasContested = Array.from(allDists.values()).some(
+    d => computeTension(d).label === 'contested',
+  );
+} catch { /* DB not seeded — skip signal */ }
 const presenceScope = isBlogPost ? 'slug' : 'global';
 
 // Narrow to live variant — hide chip entirely when cold (Tanya §2)
@@ -37,11 +48,21 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   </a>
 
   <div class="nav-links">
-    <a href="/now" class:list={['nav-link', pageId === 'now' && 'nav-link--active']}>
-      now
+    <a
+      href="/verdict"
+      class:list={[
+        'nav-link',
+        pageId === 'verdict' && 'nav-link--active',
+        hasContested && pageId !== 'verdict' && 'nav-link--contested',
+      ]}
+    >
+      verdict
     </a>
     <a href="/graveyard" class:list={['nav-link', pageId === 'graveyard' && 'nav-link--active']}>
       graveyard
+    </a>
+    <a href="/now" class:list={['nav-link', pageId === 'now' && 'nav-link--active']}>
+      now
     </a>
   </div>
 
@@ -124,6 +145,12 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   .site-name.nav-link--active {
     color: rgba(255, 255, 255, 0.75);
     border-bottom-color: #F5A623;
+  }
+
+  /* Contested signal: 4px amber underline on verdict link (Tanya §2) */
+  .nav-link--contested {
+    border-bottom: 4px solid rgba(245, 166, 35, 0.55);
+    padding-bottom: 0;
   }
 
   /* ── Batting average chip (Tanya §2 — right-aligned, left of presence) ── */

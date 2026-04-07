@@ -22,7 +22,7 @@ import RevivalMoment from '../../components/RevivalMoment.astro';
 import KeepButton from '../../components/KeepButton.astro';
 import StanceDrawer from '../../components/StanceDrawer.astro';
 // TensionBadge is now rendered inside ConvictionHero (embedded in status row).
-import { allPostDisplayData } from '../../lib/postMeta';
+import { allPostDisplayData, extractMeta } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
@@ -32,6 +32,14 @@ import { decayFactor, dominantConviction } from '../../lib/decay-engine';
 import { getGraceState } from '../../lib/cold-start';
 import { getStanceDistribution } from '../../lib/stance-ledger';
 import { computeTension } from '../../lib/tension-score';
+import { getSealEntry } from '../../lib/conviction-ledger';
+import { canonicalUrl } from '../../config/seo.config';
+import {
+  buildArticleSchema,
+  buildBreadcrumbSchema,
+  buildConvictionState,
+  serializeJsonLd,
+} from '../../lib/json-ld';
 
 export async function getStaticPaths() {
   const posts  = await getCollection('blog');
@@ -75,14 +83,34 @@ const safeGraceState = graceState ?? { warming: false, decayFactor: postDecay, d
 // Tension score — computed from accumulated stances for this post
 const stanceDist    = safeRead(() => getStanceDistribution(post.slug));
 const tensionResult = stanceDist ? computeTension(stanceDist) : null;
+
+// JSON-LD: conviction + decay are already computed above — free rider, no new DB queries.
+const sealEntry       = safeRead(() => getSealEntry(post.slug));
+const postMeta        = extractMeta(post);
+const convictionState = buildConvictionState(
+  sealEntry?.conviction_score ?? null,
+  dominantVerdict,
+  sealEntry?.timestamp ?? null,
+);
+const decayState  = { lifecycle: postDecay >= 0.95 ? 'DEAD' as const : postDecay >= 0.8 ? 'ENDANGERED' as const : 'LIVING' as const, daysRemaining, decayFactor: postDecay };
+const jsonLd      = [
+  serializeJsonLd(buildArticleSchema(postMeta, convictionState, decayState)),
+  serializeJsonLd(buildBreadcrumbSchema([
+    { name: 'Home', url: canonicalUrl('/') },
+    { name: post.data.title, url: postMeta.url },
+  ])),
+];
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={pubDateISO} ogSlug={post.slug}>
+<BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={pubDateISO} ogSlug={post.slug} jsonLd={jsonLd}>
   <main class="post-detail">
     <nav class="post-nav-row" aria-label="Post navigation">
       <a href="/" class="back-link">← back to field</a>
       <a href="#conviction-audit" class="audit-link" aria-label="View conviction audit trail">
         [audit ↓]
+      </a>
+      <a href={`/audit/${post.slug}`} class="audit-link audit-link--receipt" aria-label="View conviction receipt">
+        [receipt ↗]
       </a>
     </nav>
 
@@ -127,6 +155,13 @@ const tensionResult = stanceDist ? computeTension(stanceDist) : null;
 
     <!-- Sparkline: only when revival history exists -->
     <GhostEchoes slug={post.slug} />
+
+    <!-- Audit receipt link: quiet pointer to /audit/[slug] (Mike's spec §Integration) -->
+    <div class="audit-receipt-nudge" id="conviction-audit">
+      <a href={`/audit/${post.slug}`} class="audit-receipt-link">
+        View conviction receipt →
+      </a>
+    </div>
 
     <!-- Audit trail: collapsed by default, for power readers -->
     <ConvictionAuditTrail slug={post.slug} />
@@ -186,6 +221,24 @@ const tensionResult = stanceDist ? computeTension(stanceDist) : null;
   .audit-link:hover { color: rgba(255, 255, 255, 0.7); }
 
   .audit-link { margin-left: auto; }
+  .audit-link--receipt { margin-left: 0; }
+
+  /* Quiet "View conviction receipt" pointer above the audit trail */
+  .audit-receipt-nudge {
+    margin: 1.5rem 0 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .audit-receipt-link {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 150ms ease;
+  }
+
+  .audit-receipt-link:hover { color: rgba(255, 255, 255, 0.55); }
 
   /* Post header: cover → date → title → badge (Tanya §9 — above-fold layout) */
   .post-header { margin-bottom: 2rem; }

@@ -31,9 +31,11 @@ interface Props {
   type?: 'website' | 'article';
   publishedAt?: string;
   ogSlug?: string;
+  /** Pre-serialized JSON-LD strings — passed through to SEOMeta for <script> injection. */
+  jsonLd?: string | string[];
 }
 
-const { title, description, type, publishedAt, ogSlug } = Astro.props;
+const { title, description, type, publishedAt, ogSlug, jsonLd } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
 ---
 
@@ -42,7 +44,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} />
+    <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} jsonLd={jsonLd} />
     <meta name="decay-max-days" content="365" />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <style set:html={`:root {\n${cssString}\n}`} />

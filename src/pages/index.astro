@@ -6,6 +6,7 @@
 // NowLine + Murmurs extracted to /now (Tanya §3 — sitemap revision).
 // GraveyardTeaser removed — graveyard is a nav link, not a homepage section.
 // Band labels removed — DeathClock communicates age, no label needed (Tanya §8).
+// FirstVisitHint removed — decay visuals are self-explanatory (Tanya §remove list).
 //
 // TODO: add pagination once post count grows beyond ~20
 //
@@ -17,25 +18,28 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DecayCard from '../components/DecayCard.astro';
 import EndangeredBand from '../components/EndangeredBand.astro';
-import FirstVisitHint from '../components/FirstVisitHint.astro';
 import ConvictionMeter from '../components/ConvictionMeter.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { groupIntoBands } from '../lib/timeBands';
 import { endangeredClientScript } from '../lib/endangered';
 import { computeBattingAverage } from '../lib/batting-average';
+import { buildWebSiteSchema, serializeJsonLd } from '../lib/json-ld';
 
 const posts        = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
 const avg          = computeBattingAverage();
 
 // Endangered posts surface in EndangeredBand — absence from main feed is the drama.
-const endangered = displayPosts.filter(p => p.endangered);
-const feedPosts  = displayPosts.filter(p => !p.endangered);
-const bands      = groupIntoBands(feedPosts);
+const endangered  = displayPosts.filter(p => p.endangered);
+const feedPosts   = displayPosts.filter(p => !p.endangered);
+const bands       = groupIntoBands(feedPosts);
 const allEntombed = displayPosts.every(p => p.entombed);
+
+// JSON-LD: WebSite schema — site-wide rich results (Mike §diagram).
+const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
 ---
 
-<BaseLayout title="Persona Blog">
+<BaseLayout title="Persona Blog" jsonLd={jsonLd}>
   <script set:html={endangeredClientScript()} />
   <main class="feed">
     <ConvictionMeter avg={avg} />
@@ -73,8 +77,6 @@ const allEntombed = displayPosts.every(p => p.entombed);
     )}
 
     {endangered.length > 0 && <EndangeredBand posts={endangered} />}
-
-    <FirstVisitHint />
   </main>
 </BaseLayout>
 

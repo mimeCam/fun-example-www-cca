@@ -2,8 +2,8 @@
 // Shared SEO defaults and helpers — every page resolves meta through here.
 // Single source of truth for site identity, canonical URLs, and OG defaults.
 //
+// JSON-LD structured data: see src/lib/json-ld.ts — all schema builders live there.
 // TODO: add per-mood OG image URL builder once dynamic OG endpoint ships
-// TODO: add JSON-LD structured data helpers (Article, WebSite)
 
 export interface SiteMeta {
   title: string;

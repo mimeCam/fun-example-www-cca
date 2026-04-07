@@ -61,9 +61,10 @@ const isLive = avg.status === 'live';
         <summary class="cm-disclosure-toggle">How is this calculated?</summary>
         <div class="cm-disclosure-body">
           <p>
-            Before publishing each post, a conviction score (1–10) is locked into a
-            SHA-256 hash chain. The score cannot be changed retroactively — the chain
-            would break if anyone tried.
+            Before publishing each post, a conviction score (1–10) is
+            author-locked before publication via a server-signed HMAC seal.
+            The score cannot be edited retroactively — the server's signature
+            would be invalid if tampered with.
           </p>
           <p>
             A prediction is <strong>correct</strong> when it scores 7 or higher and the
@@ -76,9 +77,9 @@ const isLive = avg.status === 'live';
           <p>
             The number above is <code>correct ÷ (correct + wrong)</code>.
             Pending predictions are not in the denominator — an open bet is honest, not
-            a failure. Verify the chain yourself at
-            <a href="/api/conviction-audit?slug=" class="cm-audit-link">
-              /api/conviction-audit
+            a failure. Inspect the seal on any post at
+            <a href="/audit/" class="cm-audit-link">
+              /audit/[slug]
             </a>.
           </p>
         </div>

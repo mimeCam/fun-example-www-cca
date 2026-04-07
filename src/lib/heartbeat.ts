@@ -18,8 +18,7 @@ export interface HeartbeatEvent {
   decayAfterRevival?: number;
   /** Constellation connections — present when revival triggers cascade. */
   resonance?: ResonanceLink[];
-  /** True for ambient-life phantom pulses (synthetic, not a real reader). */
-  phantom?: boolean;
+  // phantom flag removed — honest-zero: every pulse is a real reader action.
 }
 
 type Controller = ReadableStreamDefaultController<Uint8Array>;
@@ -27,7 +26,6 @@ type Controller = ReadableStreamDefaultController<Uint8Array>;
 /** Metadata for an SSE connection. */
 interface ConnectionMeta {
   ctrl: Controller;
-  quiet: boolean;
 }
 
 /** Active SSE connections keyed by unique id. */
@@ -85,18 +83,14 @@ function safeSend(id: string, meta: ConnectionMeta, bytes: Uint8Array): void {
   catch { connections.delete(id); }
 }
 
-/** Flush a debounced event to all connections. Skip quiet ones for phantoms. */
+/** Flush a debounced event to all connections. */
 function flush(slug: string): void {
   const entry = pending.get(slug);
   if (!entry) return;
   pending.delete(slug);
   const eventId = logEvent(entry.event);
   const bytes = sseEventFrame(eventId, entry.event);
-  const isPhantom = entry.event.phantom === true;
-  connections.forEach((meta, connId) => {
-    if (isPhantom && meta.quiet) return;
-    safeSend(connId, meta, bytes);
-  });
+  connections.forEach((meta, connId) => safeSend(connId, meta, bytes));
 }
 
 /** Start keepalive + sweep timers if not running. */
@@ -134,9 +128,8 @@ function sweepStale(): void {
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Register a new SSE connection. Quiet connections skip phantom events. */
+/** Register a new SSE connection. */
 export function register(
-  quiet = false,
   lastEventId: number | null = null,
 ): { id: string; start: (ctrl: Controller) => void; cleanup: () => void } {
   const id = `hb-${++_nextConnId}`;
@@ -144,7 +137,7 @@ export function register(
   return {
     id,
     start(ctrl: Controller) {
-      connections.set(id, { ctrl, quiet });
+      connections.set(id, { ctrl });
       if (lastEventId !== null) replaySince(ctrl, lastEventId);
     },
     cleanup() { connections.delete(id); maybeStopTimers(); },

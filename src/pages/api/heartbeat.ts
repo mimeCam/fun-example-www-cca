@@ -60,24 +60,9 @@ function sendPresence(ctrl: ReadableStreamDefaultController<Uint8Array>): void {
   } catch { /* client already gone */ }
 }
 
-/** Parse visit count from ?fvh= query param. Returns 0 if absent. */
-function parseVisitCount(url: URL): number {
-  const raw = url.searchParams.get('fvh');
-  if (!raw) return 0;
-  const n = parseInt(raw, 10);
-  return Number.isFinite(n) ? Math.max(0, n) : 0;
-}
-
-/** Is this a "quiet mode" connection (new visitor, < 3 visits)? */
-function isQuietConnection(url: URL): boolean {
-  return parseVisitCount(url) < 3;
-}
-
 export const GET: APIRoute = ({ request }) => {
-  const url = new URL(request.url);
-  const quiet = isQuietConnection(url);
   const lastEventId = parseLastEventId(request);
-  const reg = register(quiet, lastEventId);
+  const reg = register(lastEventId);
   const stream = createStream(reg);
   return new Response(stream, { headers: sseHeaders() });
 };

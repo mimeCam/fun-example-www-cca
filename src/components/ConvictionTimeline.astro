@@ -1,0 +1,163 @@
+---
+// src/components/ConvictionTimeline.astro
+// Vertical event timeline for all conviction_ledger entries on a slug.
+// CSS-only rendering. No JavaScript. Each row is an <li> with left-border chain line.
+// eventType is pattern-matched in-place — no polymorphism, no subclassing.
+//
+// Credits: Mike (spec — ConvictionTimeline design), Tanya (§design-system — color palette)
+
+import type { TimelineEvent } from '../lib/audit-verifier';
+
+interface Props {
+  timeline: TimelineEvent[];
+  slug: string;
+}
+
+const { timeline, slug } = Astro.props;
+
+function fmtDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
+// Color modifier per event type — amber/green/red/purple (Tanya design-system)
+const EVENT_MOD: Record<string, string> = {
+  seal:         'tl--seal',
+  revival:      'tl--revival',
+  death:        'tl--death',
+  resurrection: 'tl--resurrection',
+};
+---
+
+{timeline.length > 0 && (
+  <section class="conviction-timeline" aria-label="Conviction event history">
+    <h3 class="tl-heading">Event History</h3>
+    <ol class="tl-list">
+      {timeline.map((event) => (
+        <li class:list={['tl-entry', EVENT_MOD[event.eventType] ?? '']}>
+          <div class="tl-row">
+            <span class="tl-label">{event.label}</span>
+            <time
+              class="tl-time"
+              datetime={new Date(event.timestamp).toISOString()}
+            >
+              {fmtDate(event.timestamp)}
+            </time>
+          </div>
+          {event.revivalCount > 0 && (
+            <span class="tl-meta">
+              {event.revivalCount} revival{event.revivalCount !== 1 ? 's' : ''} at this point
+            </span>
+          )}
+        </li>
+      ))}
+    </ol>
+  </section>
+)}
+
+{timeline.length === 0 && (
+  <p class="tl-empty">No ledger events recorded for <code>{slug}</code> yet.</p>
+)}
+
+<style>
+  .conviction-timeline {
+    margin-top: 2rem;
+  }
+
+  .tl-heading {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.28);
+    margin: 0 0 1rem;
+  }
+
+  /* Left-rule timeline line */
+  .tl-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .tl-entry {
+    position: relative;
+    padding: 0.7rem 0 0.7rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .tl-entry:last-child { border-bottom: none; }
+
+  /* Timeline dot — positioned on the left-rule line */
+  .tl-entry::before {
+    content: '';
+    position: absolute;
+    left: -1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* Dot colors per event type */
+  .tl--seal::before        { background: rgba(245, 166, 35, 0.5);  border-color: rgba(245, 166, 35, 0.4); }
+  .tl--revival::before     { background: rgba(100, 200, 120, 0.5); border-color: rgba(100, 200, 120, 0.4); }
+  .tl--death::before       { background: rgba(220, 90, 90, 0.5);   border-color: rgba(220, 90, 90, 0.4); }
+  .tl--resurrection::before { background: rgba(150, 100, 220, 0.5); border-color: rgba(150, 100, 220, 0.4); }
+
+  .tl-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .tl-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.65);
+    flex: 1;
+  }
+
+  /* Label colors per event type */
+  .tl--seal        .tl-label { color: rgba(245, 166, 35, 0.85); }
+  .tl--revival     .tl-label { color: rgba(100, 210, 130, 0.85); }
+  .tl--death       .tl-label { color: rgba(220, 100, 100, 0.85); }
+  .tl--resurrection .tl-label { color: rgba(180, 145, 240, 0.85); }
+
+  .tl-time {
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.28);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .tl-meta {
+    display: block;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.22);
+    margin-top: 0.2rem;
+    font-style: italic;
+  }
+
+  /* Empty state */
+  .tl-empty {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.25);
+    font-style: italic;
+    margin: 1rem 0 0;
+  }
+
+  .tl-empty code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.35);
+  }
+</style>

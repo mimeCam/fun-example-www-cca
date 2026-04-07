@@ -4,40 +4,53 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v36 — Cover Images (2026-04-07)
+# Architecture v37 — Conviction Audit Trail + JSON-LD (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
-#   Cover images now decay visually alongside their post: saturation collapses,
-#   opacity fades, blur ghosts — same physics as the decay ring.
+#   Public audit receipts prove the author's past self is on record.
 #
-# Sprint (latest — Cover Images):
-#   content/config.ts — UPDATED: coverImage field added to blog schema
-#     (optional, path relative to /public, e.g. /images/covers/hello-world.svg).
-#   lib/postMeta.ts — UPDATED: coverImage field added to PostMeta interface;
-#     extractMeta() now passes it through from frontmatter.
-#   lib/og/ogLayout.ts — UPDATED: split-panel layout activated when
-#     coverImageUrl is present — text left (720px), image right (480px);
-#     image opacity degrades with decay (min 0.45). Falls back to gradient
-#     layout when no image provided.
-#   pages/api/og/[slug].png.ts — UPDATED: toCoverImageUrl() converts
-#     /public-relative path to absolute URL for Satori image fetch.
-#   pages/blog/[slug].astro — UPDATED: full-bleed 16/6 hero rendered above
-#     post header; fallback gradient band uses --mood-accent-rgb when no image.
-#   components/DecayCard.astro — UPDATED: cover-wrap slot (16/7 ratio) above
-#     title; decay filter cascade on .cover-img (saturate/opacity/blur driven
-#     by --decay-factor); fallback .cover-gradient for imageless posts.
-#     Card padding moved from .post-card to inner children (bleed fix).
-#   components/TombstoneCard.astro — UPDATED: ghost cover in graveyard —
-#     saturate(0.08) opacity(0.25) blur(0.5px) + luminosity blend; renders
-#     only when post.coverImage is set. Tombstone padding moved to inner wrapper.
-#   lib/tension-score.ts — UPDATED: MIN_STANCES raised 1→10 (reduces false
-#     high-tension signals on short-read posts).
-#   public/images/covers/ — NEW: cover image assets directory;
-#     building-in-public.svg + the-decay-theory.svg ship with this sprint.
-#   Dockerfile — FIXED: COPY public/ ./public/ added to builder stage so
-#     cover assets reach dist/client/ and are served at runtime.
+# Sprint (latest — Conviction Audit Trail + JSON-LD):
+#   pages/audit/[slug].astro — NEW: public SSR proof page per post; shows
+#     sealed conviction receipt or "NOT YET SEALED" if author hasn't locked yet.
+#     Returns 404 for unknown slugs. Zero client JS — pure server HTML.
+#   lib/audit-verifier.ts — NEW: read-only data assembly for audit pages;
+#     strips hmac_seal → RedactedSeal (hashPrefix first 16 hex chars + openssl
+#     verify command). Reads from conviction_ledger via safeRead wrappers.
+#   lib/json-ld.ts — NEW: single source of truth for all schema.org JSON-LD;
+#     buildArticleSchema (conviction + decay additionalProperty), BreadcrumbList,
+#     serializeJsonLd. No new npm deps — JSON.stringify only.
+#   components/AuditReceipt.astro — NEW: visual notary stamp; SEALED/NOT YET
+#     SEALED header, score, ISO date, hash prefix, collapsible openssl command.
+#   components/ConvictionTimeline.astro — NEW: vertical event timeline; CSS-only,
+#     eventType → amber/green/red/purple colour per Tanya design-system.
+#   components/SEOMeta.astro — UPDATED: JSON-LD script injection (jsonLd prop);
+#     article:author + article:section OG tags added.
+#   layouts/BaseLayout.astro — UPDATED: jsonLd prop threaded through to SEOMeta.
+#   pages/blog/[slug].astro — UPDATED: buildArticleSchema + BreadcrumbList injected;
+#     audit receipt link added to post nav row; getSealEntry free-rides existing
+#     conviction data (no new DB queries).
+#   components/SiteNav.astro — UPDATED: /verdict nav link with amber contested
+#     underline when any living post has tension label === 'contested'.
+#   lib/heartbeat.ts — UPDATED: phantom / quiet-connection flags removed;
+#     honest-zero policy — every pulse is a real reader action.
+#   pages/api/heartbeat.ts — UPDATED: quiet-mode logic removed; register() called
+#     without visit-count param.
+#   lib/nav.ts — UPDATED: 'verdict' page mapped in getActivePage().
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
 #     SQLITE_VOLUME mounts revivals.db. ADMIN_SECRET still required.
+#
+# Sprint (prev — Cover Images):
+#   content/config.ts — UPDATED: coverImage field added to blog schema.
+#   lib/postMeta.ts — UPDATED: coverImage field added to PostMeta interface.
+#   lib/og/ogLayout.ts — UPDATED: split-panel layout when coverImageUrl present.
+#   pages/api/og/[slug].png.ts — UPDATED: toCoverImageUrl() for Satori fetch.
+#   pages/blog/[slug].astro — UPDATED: full-bleed 16/6 hero above post header.
+#   components/DecayCard.astro — UPDATED: cover-wrap slot; decay filter cascade.
+#   components/TombstoneCard.astro — UPDATED: ghost cover in graveyard.
+#   lib/tension-score.ts — UPDATED: MIN_STANCES raised 1→10.
+#   public/images/covers/ — NEW: building-in-public.svg + the-decay-theory.svg.
+#   Dockerfile — FIXED: COPY public/ ./public/ in builder stage.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
 #
 # Sprint (prev — Cause-of-Death Labels):
 #   lib/cause-of-death.ts — NEW: pure cause-of-death classifier (no DB,

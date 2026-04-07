@@ -17,13 +17,16 @@ interface Props {
 const { slug } = Astro.props;
 ---
 
+<!-- Atmospheric overlay — focus-pull behind the drawer, pointer-events: none -->
+<div class="stance-overlay" data-stance-overlay aria-hidden="true"></div>
+
 <div
   class="stance-drawer"
   data-stance-drawer
   data-slug={slug}
   role="dialog"
   aria-modal="true"
-  aria-label="Did this land?"
+  aria-label="Your verdict on this belief"
   aria-hidden="true"
   tabindex="-1"
 >
@@ -38,29 +41,29 @@ const { slug } = Astro.props;
     </div>
 
     <header class="stance-header">
-      <span class="stance-question">Did this land?</span>
+      <span class="stance-question">Your verdict on this belief</span>
       <button class="stance-close" data-stance-close type="button" aria-label="Dismiss">✕</button>
     </header>
 
     <!-- Three stance buttons — fixed, no polymorphism (Mike's spec) -->
     <div class="stance-choices" role="group" aria-label="Choose your stance">
       <button class="stance-btn" data-stance="agree"    type="button" aria-pressed="false">
-        <span class="stance-btn-glyph" aria-hidden="true">👍</span>
+        <span class="stance-btn-glyph" aria-hidden="true">◉</span>
         <span>Agree</span>
       </button>
       <button class="stance-btn" data-stance="torn"     type="button" aria-pressed="false">
-        <span class="stance-btn-glyph" aria-hidden="true">🤷</span>
+        <span class="stance-btn-glyph" aria-hidden="true">◈</span>
         <span>Torn</span>
       </button>
       <button class="stance-btn" data-stance="disagree" type="button" aria-pressed="false">
-        <span class="stance-btn-glyph" aria-hidden="true">👎</span>
+        <span class="stance-btn-glyph" aria-hidden="true">◇</span>
         <span>Disagree</span>
       </button>
     </div>
 
     <!-- Conviction slider — appears after stance is selected -->
     <div class="stance-slider-row" data-slider-row aria-hidden="true">
-      <label class="stance-slider-label" for="stance-score">Conviction strength</label>
+      <label class="stance-slider-label" for="stance-score">How sure are you?</label>
       <div class="stance-slider-track">
         <span class="stance-slider-cap" aria-hidden="true">mild</span>
         <input
@@ -80,7 +83,7 @@ const { slug } = Astro.props;
 
     <div class="stance-actions">
       <button class="stance-submit" data-stance-submit type="button" disabled aria-disabled="true">
-        Record stance
+        Submit verdict
       </button>
       <button class="stance-skip" data-stance-skip type="button">skip</button>
     </div>
@@ -89,6 +92,25 @@ const { slug } = Astro.props;
 </div>
 
 <style>
+  /* ── Atmospheric overlay — focus-pull, purely visual ─────── */
+  .stance-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  .stance-overlay[data-open] { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stance-overlay { transition: none; }
+  }
+
   /* ── Drawer shell — fixed bottom, full-width on mobile ─────── */
   .stance-drawer {
     position: fixed;
@@ -142,7 +164,8 @@ const { slug } = Astro.props;
 
   .stance-progress-bar {
     height: 100%;
-    background: rgba(245,158,11,0.55);
+    /* teal — the timer is the reader's patience, not the author's claim (Tanya §3) */
+    background: oklch(62% 0.14 185 / 0.4);
     width: 100%;
     transform-origin: left center;
     animation: progressShrink 30s linear forwards;
@@ -241,9 +264,9 @@ const { slug } = Astro.props;
   }
 
   .stance-btn[data-stance="agree"][aria-pressed="true"] {
-    background: rgba(110,231,183,0.10);
-    border-color: rgba(110,231,183,0.35);
-    color: #6ee7b7;
+    background: oklch(25% 0.08 185 / 0.15);
+    border-color: oklch(68% 0.14 185 / 0.45);
+    color: oklch(68% 0.14 185);
   }
 
   .stance-btn[data-stance="disagree"][aria-pressed="true"] {
@@ -389,11 +412,14 @@ const { slug } = Astro.props;
       if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
     }
 
+    const overlay = document.querySelector<HTMLElement>('[data-stance-overlay]');
+
     // ── Open / Close ─────────────────────────────────────────────
     function openDrawer(): void {
       if (drawer.hasAttribute('data-open')) return;
       drawer.setAttribute('data-open', '');
       drawer.setAttribute('aria-hidden', 'false');
+      overlay?.setAttribute('data-open', '');
       document.body.style.overflow = 'hidden';
       scheduleAutoDismiss();
       attachDismissListeners();
@@ -406,6 +432,7 @@ const { slug } = Astro.props;
       cancelAutoDismiss();
       drawer.removeAttribute('data-open');
       drawer.setAttribute('aria-hidden', 'true');
+      overlay?.removeAttribute('data-open');
       document.body.style.overflow = '';
       detachDismissListeners();
       if (!submitted) resetForm();
@@ -456,7 +483,7 @@ const { slug } = Astro.props;
       const sessionId = getSessionId();
 
       setSubmitEnabled(false);
-      announce('Recording your stance…');
+      announce('Recording your verdict…');
 
       try {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -465,12 +492,21 @@ const { slug } = Astro.props;
           method: 'POST', keepalive: true, headers,
           body: JSON.stringify({ slug, stance, score }),
         });
-        announce('Stance recorded. Thank you.');
+        flashConfirmation();
+        announce('Verdict recorded.');
       } catch {
-        announce('Could not record stance — dismissed.');
+        announce('Could not record verdict — dismissed.');
+        closeDrawer(true);
       }
+    }
 
-      closeDrawer(true);
+    /** Briefly show "Verdict recorded ✓" on the submit button before closing. */
+    function flashConfirmation(): void {
+      const btn = drawer.querySelector<HTMLButtonElement>('[data-stance-submit]');
+      if (!btn) { closeDrawer(true); return; }
+      btn.textContent = 'Verdict recorded ✓';
+      btn.style.color = '#6ee7b7';
+      setTimeout(() => closeDrawer(true), 400);
     }
 
     // ── Dismiss listeners ────────────────────────────────────────
