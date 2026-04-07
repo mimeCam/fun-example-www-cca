@@ -4,16 +4,45 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v40 — Deadline Clock (2026-04-07)
+# Architecture v41 — Prediction Vault (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
 #   The Verdict Wall surfaces every post on trial, sorted by tension.
-#   Authors may now attach a public resolution_deadline to any post;
-#   the DeadlineClock widget renders a live countdown with urgency bands.
-#   Expired-unsealed posts are auto-sealed as 'abandoned' by /api/deadline-sweep.
+#   The Prediction Vault tracks every falsifiable claim across all posts;
+#   verdicts are sealed by admin via HMAC proof — reality decides outcomes.
 #
-# Sprint (latest — Deadline Clock):
+# Sprint (latest — Prediction Vault):
+#   lib/prediction-engine.ts — NEW: pure prediction logic; derivePredictionStatus()
+#     (pending / overdue / correct / incorrect / partial); flattenPredictions()
+#     flattens all post predictions with real-time status; computeStats() accuracy
+#     metrics; groupByStatus() UI ordering (Overdue → Pending → Resolved).
+#     predictions_ledger table auto-created in revivals.db (same SQLITE_VOLUME).
+#     Zero new npm deps — better-sqlite3 already in use. No schema migrations.
+#   pages/api/seal-prediction.ts — NEW: POST /api/seal-prediction; cookie + body
+#     auth (mirrors verdict-resolve.ts); HMAC-SHA256 audit proof; INSERT OR IGNORE
+#     idempotency guard; 409 on double-seal. prerender=false.
+#   components/PredictionCard.astro — NEW: per-prediction display card; compact
+#     mode for inline post rendering; status badges (pending/overdue/correct/
+#     incorrect/partial); resolution_criteria and deadline display; SSR-only.
+#   components/PredictionVault.astro — NEW: public /predictions wall; three
+#     groups — Overdue (urgent) / Pending / Resolved; accuracy stats bar.
+#   pages/predictions.astro — NEW: SSR /predictions route; getCollection + wall-
+#     clock status derivation at request time. prerender=false.
+#   content/config.ts — UPDATED: predictions: z.array(predictionSchema).optional()
+#     added to blog schema. prediction.id values are immutable post-publish.
+#   lib/batting-average.ts — UPDATED: PredictionAccuracy type +
+#     computePredictionBattingAverage() for nav chip.
+#   lib/nav.ts — UPDATED: 'predictions' added to PageId + PAGE_PREFIXES.
+#   components/SiteNav.astro — UPDATED: /predictions nav link added.
+#   pages/blog/[slug].astro — UPDATED: PredictionCard inline section renders
+#     per-post predictions; links to /predictions vault.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (predictions_ledger auto-created).
+#     ADMIN_SECRET still required for seal-prediction + conviction-seal.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Deadline Clock):
 #   lib/deadline-clock.ts — NEW: pure time math for resolution deadline display;
 #     buildDeadlineDisplay(publishDate, deadline, now) → label/urgencyBand/
 #     daysRemaining/percentConsumed. Zero DB, zero side-effects.
@@ -257,7 +286,7 @@ docker run \
   --memory 768m \
   --volume "${DATA_VOLUME}:/app/dist/server/data" \
   --volume "${SQLITE_VOLUME}:/app/data" \
-  --env ADMIN_SECRET="${ADMIN_SECRET:-}" \
+  --env ADMIN_SECRET="$(grep -oP '^ADMIN_SECRET=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')" \
   "${IMAGE_NAME}"
 
 # ── 5. Health check with retry ───────────────────────────────────────────────
@@ -284,17 +313,18 @@ fi
 # POST /api/deadline-sweep seals posts whose resolution_deadline has passed but
 # whose verdict was never sealed by the author (auto-verdict: 'abandoned').
 # Idempotent — already-sealed posts are skipped. Skipped silently if no secret.
-if [ -n "${ADMIN_SECRET:-}" ]; then
+FILE_SECRET="$(grep -oP '^ADMIN_SECRET=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')"
+if [ -n "${FILE_SECRET}" ]; then
   echo "==> [deploy] Running deadline sweep…"
   # Give the Node process a moment to fully bind before hitting the endpoint.
   sleep 3
   SWEEP_RESPONSE=$(curl --silent --show-error --max-time 15 \
     --request POST \
-    --header "Authorization: Bearer ${ADMIN_SECRET}" \
+    --header "Authorization: Bearer ${FILE_SECRET}" \
     "http://localhost:${HOST_PORT}/api/deadline-sweep" || echo '{"error":"curl failed"}')
   echo "==> [deploy] Deadline sweep response: ${SWEEP_RESPONSE}"
 else
-  echo "==> [deploy] Skipping deadline sweep (ADMIN_SECRET not set)"
+  echo "==> [deploy] Skipping deadline sweep (ADMIN_SECRET not set in .env)"
 fi
 
 # ── 7. Prune dangling images from previous builds ────────────────────────────
