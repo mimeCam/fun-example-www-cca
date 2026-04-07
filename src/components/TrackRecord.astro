@@ -1,0 +1,454 @@
+---
+// src/components/TrackRecord.astro
+// Track record component — Act II (ledger table) + Act III (running sparkline).
+// Act I (BattingAverageHero) lives on the parent page, not here.
+// CSS-only sparkline: no JS, no canvas — horizontal bar sequence, height = running pct.
+// Design: Tanya's 6-var palette, conviction gold = amber only for verified seals.
+//
+// Credits: Mike (arch spec §track-record), Tanya (UX spec — color grammar, shadow tiers)
+
+import type { TrackRecord, TrackRecordEntry, TrackRecordStatus } from '../lib/track-record';
+
+interface Props {
+  data: TrackRecord;
+}
+
+const { data } = Astro.props;
+const { entries, runningHistory, firstSealDate } = data;
+
+// ---------------------------------------------------------------------------
+// Display helpers
+// ---------------------------------------------------------------------------
+
+function fmtDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function statusLabel(e: TrackRecordEntry): string {
+  if (!e.verdict) return '○ pending';
+  if (e.verdict === 'still-true') return '✓ true';
+  if (e.verdict === 'wrong')      return '✗ wrong';
+  if (e.verdict === 'abandoned')  return '✗ abandoned';
+  if (e.verdict === 'evolved')    return '~ evolved';
+  return '○ pending';
+}
+
+function statusClass(s: TrackRecordStatus): string {
+  if (s === 'correct') return 'tr-badge--correct';
+  if (s === 'wrong')   return 'tr-badge--wrong';
+  return 'tr-badge--pending';
+}
+
+function scoreBar(score: number): string {
+  return '█'.repeat(score) + '░'.repeat(10 - score);
+}
+---
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- ACT II — Ledger table: every sealed bet, one row per post          -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<section class="tr-section tr-ledger" aria-label="Conviction ledger">
+  <header class="tr-section-header">
+    <h2 class="tr-section-title">Every sealed bet</h2>
+    <p class="tr-section-sub">Sorted by seal date · score is author conviction at publish</p>
+  </header>
+
+  {entries.length === 0 ? (
+    <div class="tr-empty">
+      <p class="tr-empty-text">No posts sealed yet. The clock is running.</p>
+    </div>
+  ) : (
+    <div class="tr-table" role="table" aria-label="Conviction ledger">
+
+      <!-- Column headers -->
+      <div class="tr-row tr-row--head" role="row">
+        <span role="columnheader" class="tr-col tr-col--num">#</span>
+        <span role="columnheader" class="tr-col tr-col--title">Post</span>
+        <span role="columnheader" class="tr-col tr-col--score">Score</span>
+        <span role="columnheader" class="tr-col tr-col--date">Sealed</span>
+        <span role="columnheader" class="tr-col tr-col--verdict">Verdict</span>
+        <span role="columnheader" class="tr-col tr-col--date">Resolved</span>
+        <span role="columnheader" class="tr-col tr-col--anchor" aria-label="Gist anchor">⚓</span>
+      </div>
+
+      <!-- Data rows -->
+      {entries.map((e, i) => (
+        <div class="tr-row" role="row">
+          <span class="tr-col tr-col--num" role="cell">{i + 1}</span>
+          <span class="tr-col tr-col--title" role="cell">
+            <a href={`/blog/${e.slug}`} class="tr-title-link">{e.title}</a>
+          </span>
+          <span class="tr-col tr-col--score" role="cell" aria-label={`${e.score} out of 10`}>
+            <span class="tr-score-num">{e.score}</span><span class="tr-score-denom">/10</span>
+            <span class="tr-score-bar" aria-hidden="true">{scoreBar(e.score)}</span>
+          </span>
+          <span class="tr-col tr-col--date" role="cell">{fmtDate(e.sealedAt)}</span>
+          <span class="tr-col tr-col--verdict" role="cell">
+            <span class={`tr-badge ${statusClass(e.status)}`}>{statusLabel(e)}</span>
+          </span>
+          <span class="tr-col tr-col--date" role="cell">
+            {e.verdictAt ? fmtDate(e.verdictAt) : <span class="tr-muted">—</span>}
+          </span>
+          <span class="tr-col tr-col--anchor" role="cell">
+            {e.anchorUrl
+              ? <a href={e.anchorUrl} target="_blank" rel="noopener noreferrer" class="tr-anchor-link" aria-label="View Gist anchor">↗</a>
+              : <span class="tr-muted" aria-label="Not yet anchored">·</span>}
+          </span>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- ACT III — Running accuracy sparkline (CSS-only, no JS)             -->
+<!-- Each bar = one resolved verdict; height = running % at that point  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+{runningHistory.length > 0 && (
+  <section class="tr-section tr-sparkline-section" aria-label="Accuracy trajectory">
+    <header class="tr-section-header">
+      <h2 class="tr-section-title">Trajectory</h2>
+      <p class="tr-section-sub">Running batting average across {runningHistory.length} resolved {runningHistory.length === 1 ? 'verdict' : 'verdicts'}</p>
+    </header>
+
+    <div class="tr-sparkline" role="img" aria-label={`Accuracy trajectory ending at ${runningHistory[runningHistory.length - 1].pct}%`}>
+      {runningHistory.map(point => (
+        <div
+          class={`tr-spark-bar tr-spark-bar--${point.status}`}
+          style={`height: ${Math.max(point.pct, 4)}%`}
+          title={`Verdict #${point.index}: ${point.pct}% (${point.status})`}
+          aria-hidden="true"
+        />
+      ))}
+      <!-- Baseline at 50% — cognitive anchor for above/below average reading -->
+      <div class="tr-spark-baseline" aria-hidden="true" />
+    </div>
+
+    <div class="tr-sparkline-labels" aria-hidden="true">
+      <span class="tr-spark-label">0%</span>
+      <span class="tr-spark-label tr-spark-label--mid">50%</span>
+      <span class="tr-spark-label tr-spark-label--top">100%</span>
+    </div>
+  </section>
+)}
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- Footer — tamper-evidence provenance line                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+{firstSealDate && (
+  <footer class="tr-footer">
+    <span class="tr-footer-text">
+      tamper-evident since {fmtDate(firstSealDate)}
+    </span>
+  </footer>
+)}
+
+<style>
+  /* ── Design tokens (mirrors Tanya's 6-var palette) ─────────────────── */
+  .tr-section,
+  .tr-footer {
+    --surface:       rgba(255, 255, 255, 0.04);
+    --border:        rgba(255, 255, 255, 0.06);
+    --text-primary:  rgba(255, 255, 255, 0.88);
+    --text-muted:    rgba(255, 255, 255, 0.38);
+    --accent:        #F5A623;
+    --correct:       rgba(16, 185, 129, 0.85);
+    --wrong:         rgba(248, 113, 113, 0.75);
+    --pending:       rgba(255, 255, 255, 0.45);
+    --radius-md:     12px;
+    --radius-sm:     6px;
+  }
+
+  /* ── Section shell ─────────────────────────────────────────────────── */
+  .tr-section {
+    max-width: 840px;
+    margin: 0 auto 3rem;
+    padding: 0 1.5rem;
+  }
+
+  .tr-section-header { margin-bottom: 1.25rem; }
+
+  .tr-section-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 0.25rem;
+  }
+
+  .tr-section-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Empty state ────────────────────────────────────────────────────── */
+  .tr-empty {
+    padding: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+
+  .tr-empty-text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ── Ledger table (CSS grid) ─────────────────────────────────────────── */
+  .tr-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .tr-row {
+    display: grid;
+    grid-template-columns: 2rem 1fr 6.5rem 6.5rem 8rem 6.5rem 2rem;
+    align-items: center;
+    gap: 0;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 120ms ease;
+  }
+
+  .tr-row:last-child { border-bottom: none; }
+
+  .tr-row:not(.tr-row--head):hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .tr-row--head {
+    padding: 0.55rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .tr-col { font-size: 0.72rem; color: var(--text-muted); }
+
+  .tr-row--head .tr-col {
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .tr-col--num  { color: var(--text-muted); }
+  .tr-col--date { font-family: ui-monospace, 'Cascadia Code', monospace; }
+
+  .tr-col--score {
+    display: flex;
+    align-items: baseline;
+    gap: 0.2rem;
+  }
+
+  /* ── Title link ─────────────────────────────────────────────────────── */
+  .tr-title-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.78rem;
+    transition: color 120ms ease;
+  }
+
+  .tr-title-link:hover { color: var(--accent); }
+
+  /* ── Score display ──────────────────────────────────────────────────── */
+  .tr-score-num {
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .tr-score-denom {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+  }
+
+  .tr-score-bar {
+    display: none; /* hidden on mobile, shown at wider breakpoint */
+    font-size: 0.42rem;
+    letter-spacing: 0.5px;
+    color: rgba(245, 166, 35, 0.35);
+    margin-left: 0.35rem;
+  }
+
+  /* ── Verdict badge ──────────────────────────────────────────────────── */
+  .tr-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .tr-badge--correct {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--correct);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .tr-badge--wrong {
+    background: rgba(248, 113, 113, 0.08);
+    color: var(--wrong);
+    border: 1px solid rgba(248, 113, 113, 0.18);
+  }
+
+  .tr-badge--pending {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--pending);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* ── Anchor link ────────────────────────────────────────────────────── */
+  .tr-anchor-link {
+    color: var(--accent);
+    font-size: 0.75rem;
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 120ms ease;
+  }
+
+  .tr-anchor-link:hover { opacity: 1; }
+
+  .tr-muted { color: var(--text-muted); }
+
+  /* ── Sparkline container ───────────────────────────────────────────── */
+  .tr-sparkline {
+    position: relative;
+    height: 56px;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 8px 16px 0;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  /* ── Individual sparkline bars ─────────────────────────────────────── */
+  .tr-spark-bar {
+    flex: 0 0 12px;
+    border-radius: 2px 2px 0 0;
+    transition: opacity 150ms ease;
+    min-height: 4px;
+  }
+
+  .tr-spark-bar--correct {
+    background: rgba(16, 185, 129, 0.65);
+  }
+
+  .tr-spark-bar--correct:hover {
+    background: rgba(16, 185, 129, 0.9);
+  }
+
+  .tr-spark-bar--wrong {
+    background: rgba(248, 113, 113, 0.55);
+  }
+
+  .tr-spark-bar--wrong:hover {
+    background: rgba(248, 113, 113, 0.8);
+  }
+
+  /* ── 50% baseline dashed rule (cognitive anchor) ───────────────────── */
+  .tr-spark-baseline {
+    position: absolute;
+    bottom: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.1) 0px,
+      rgba(255, 255, 255, 0.1) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+    pointer-events: none;
+  }
+
+  /* ── Sparkline axis labels ─────────────────────────────────────────── */
+  .tr-sparkline-labels {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 56px;
+    pointer-events: none;
+    margin-top: -56px; /* overlay on top of sparkline */
+    padding: 4px 8px;
+  }
+
+  .tr-spark-label {
+    font-size: 0.55rem;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    color: rgba(255, 255, 255, 0.2);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .tr-spark-label--top { order: -1; }
+  .tr-spark-label--mid { position: absolute; top: 50%; transform: translateY(-50%); }
+
+  /* ── Footer ─────────────────────────────────────────────────────────── */
+  .tr-footer {
+    max-width: 840px;
+    margin: 0 auto 4rem;
+    padding: 0 1.5rem;
+    text-align: center;
+  }
+
+  .tr-footer-text {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.2);
+    font-style: italic;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Responsive ─────────────────────────────────────────────────────── */
+  @media (min-width: 700px) {
+    .tr-score-bar { display: inline; }
+  }
+
+  @media (max-width: 600px) {
+    .tr-row {
+      grid-template-columns: 2rem 1fr 4rem 5rem 6rem 5rem 2rem;
+      padding: 0.55rem 0.75rem;
+      gap: 0;
+    }
+
+    .tr-col--date { font-size: 0.62rem; }
+  }
+
+  @media (max-width: 480px) {
+    /* On very small screens, collapse resolved date + anchor columns */
+    .tr-row {
+      grid-template-columns: 2rem 1fr 4rem 5.5rem 2rem;
+    }
+
+    /* Hide sealed date (keeps verdict + anchor) */
+    .tr-col:nth-child(4),
+    .tr-col:nth-child(6) { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tr-spark-bar,
+    .tr-title-link,
+    .tr-anchor-link,
+    .tr-row { transition: none; }
+  }
+</style>

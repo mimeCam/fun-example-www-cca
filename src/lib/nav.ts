@@ -3,16 +3,17 @@
 // /now is a first-class page (Tanya §3 — sitemap revision).
 
 /** Canonical page IDs for the sitemap. */
-export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'verdict' | 'predictions' | 'audit' | 'map' | 'unknown';
+export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'verdict' | 'track-record' | 'predictions' | 'audit' | 'map' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
-  ['/blog',        'blog'],
-  ['/graveyard',   'graveyard'],
-  ['/now',         'now'],
-  ['/verdict',     'verdict'],
-  ['/predictions', 'predictions'],
-  ['/audit',       'audit'],
-  ['/map',         'map'],
+  ['/blog',         'blog'],
+  ['/graveyard',    'graveyard'],
+  ['/now',          'now'],
+  ['/verdict',      'verdict'],
+  ['/track-record', 'track-record'],
+  ['/predictions',  'predictions'],
+  ['/audit',        'audit'],
+  ['/map',          'map'],
 ];
 
 /** Derives the active PageId from a pathname string. SSR-safe. */
@@ -35,8 +36,9 @@ export function _testNav(): void {
   console.assert(getActivePage('/graveyard')   === 'graveyard', 'graveyard');
   console.assert(getActivePage('/now')         === 'now',       '/now -> now');
   console.assert(getActivePage('/now/')        === 'now',       '/now/ -> now');
-  console.assert(getActivePage('/verdict')      === 'verdict',   '/verdict -> verdict');
-  console.assert(getActivePage('/audit/foo')   === 'audit',     '/audit/* -> audit');
+  console.assert(getActivePage('/verdict')        === 'verdict',      '/verdict -> verdict');
+  console.assert(getActivePage('/track-record')   === 'track-record', '/track-record -> track-record');
+  console.assert(getActivePage('/audit/foo')      === 'audit',        '/audit/* -> audit');
   console.assert(getActivePage('/map')          === 'map',       '/map -> map');
   console.assert(getActivePage('/wall')        === 'unknown',   '/wall removed');
   console.assert(getActivePage('/xyz')         === 'unknown',   'unknown');

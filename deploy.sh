@@ -4,7 +4,7 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v50 — Full CMS Trust Verification (2026-04-07)
+# Architecture v51 — Track Record Page (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
 #   Public audit receipts prove the author's past self is on record.
@@ -41,8 +41,38 @@
 #   CA cert (src/assets/freetsa-ca.der). TrustBadge on conviction hero now
 #   shows a live cryptographic badge. New GET /api/trust-verify/:slug endpoint
 #   for admin tooling. Fail-open unchanged.
+#   Track Record Page: authoritative /track-record SSR page — three-act layout:
+#   Act I (BattingAverageHero, reused), Act II (full conviction ledger table:
+#   every sealed bet, score/10, seal date, verdict badge, resolved date, Gist
+#   anchor link — CSS Grid, responsive), Act III (CSS-only running accuracy
+#   sparkline — bar height = running % at each resolved verdict; 50% cognitive
+#   anchor dashed baseline). Navigation chip (batting average %) now deep-links
+#   to /track-record. No new DB tables, no new npm packages, no new services.
 #
-# Sprint (latest — Full CMS Trust Verification):
+# Sprint (latest — Track Record Page):
+#   pages/track-record.astro — NEW: SSR page at /track-record; assembles
+#     buildTrackRecord() data from existing conviction + verdict ledgers;
+#     renders BattingAverageHero (Act I) + TrackRecord (Acts II+III).
+#     prerender=false. Page meta adapts to sealed/cold state.
+#   components/TrackRecord.astro — NEW: Act II ledger table (CSS Grid, 7-col;
+#     responsive down to 480 px — collapses sealed-date + anchor on very small
+#     screens); Act III sparkline (CSS-only, bar-height = running pct, 50%
+#     dashed baseline); tamper-evidence footer (first seal date).
+#   lib/track-record.ts — NEW: pure O(n) assembly; buildTrackRecord() reads
+#     getSealEntry() + getVerdictRecord() + getAnchorData() + computeBattingAverage()
+#     (all existing helpers — zero new DB queries); outcomeToStatus() maps
+#     VerdictOutcome → TrackRecordStatus; buildRunningHistory() derives sparkline
+#     data points in verdict-chronological order. Fail-open (try/catch → cold state).
+#   components/SiteNav.astro — UPDATED: batting chip href /verdict → /track-record;
+#     tooltip copy "See prediction timeline →" → "See full track record →".
+#   lib/nav.ts — UPDATED: 'track-record' added to PageId union + PAGE_PREFIXES
+#     mapping; _testNav() updated with /track-record assertion.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor — gist scope only).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
+# Sprint (prev — Full CMS Trust Verification):
 #   lib/rfc3161-verifier.ts — UPGRADED: full pkijs CMS SignedData verification;
 #     pkijs.setEngine() one-time WebCrypto init; parseSignedData() + verifyCmsSignature()
 #     validate against bundled FreeTSA CA cert; extractTstGenTime() reads genTime

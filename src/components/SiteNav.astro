@@ -71,10 +71,10 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   <!-- Cold state: ghost text "0 bets sealed" instead of chip (Tanya §17) -->
   <div class="nav-right">
     {avgLive ? (
-      <a href="/verdict" class:list={['batting-chip', chipClass]} aria-label={chipLabel} title="See prediction timeline →">
+      <a href="/track-record" class:list={['batting-chip', chipClass]} aria-label={chipLabel} title="See full track record →">
         <span class="batting-pct">{avgLive.pct}%</span>
         <span class="batting-check" aria-hidden="true">✓</span>
-        <span class="batting-tooltip" aria-hidden="true">See prediction timeline →</span>
+        <span class="batting-tooltip" aria-hidden="true">See full track record →</span>
       </a>
     ) : (
       <span class="batting-chip--ghost" aria-label="No bets sealed yet">0 bets sealed</span>

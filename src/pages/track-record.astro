@@ -1,0 +1,72 @@
+---
+// src/pages/track-record.astro
+// The authoritative track record — every sealed bet, scored.
+// Bookmark-worthy ledger page that proves the batting average is earned.
+// SSR only — live ledger data must not be cached at build time.
+//
+// Three acts:
+//   Act I — BattingAverageHero (existing component, reused as-is)
+//   Act II — Conviction ledger table (TrackRecord.astro §Act II)
+//   Act III — Running accuracy sparkline (TrackRecord.astro §Act III)
+//
+// Credits: Mike (arch spec §track-record napkin plan),
+//          Tanya (UX spec — page hierarchy, conviction gold grammar)
+
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BattingAverageHero from '../components/BattingAverageHero.astro';
+import TrackRecord from '../components/TrackRecord.astro';
+import { buildTrackRecord } from '../lib/track-record';
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const posts = await getCollection('blog');
+const data  = buildTrackRecord(posts);
+
+// ── Page meta ─────────────────────────────────────────────────────────────────
+
+const sealedCount  = data.entries.length;
+const resolvedCount = data.runningHistory.length;
+const pageTitle    = 'Track Record — Every Sealed Bet, Scored';
+const pageDesc     = sealedCount > 0
+  ? `${sealedCount} sealed bets · ${resolvedCount} resolved · tamper-evident on GitHub`
+  : 'Public prediction ledger. Tamper-evident. Scored.';
+---
+
+<BaseLayout title={pageTitle} description={pageDesc}>
+  <main class="tr-page">
+
+    <!-- Act I — Batting average hero (reused component, no changes) -->
+    <BattingAverageHero avg={data.avg} />
+
+    <!-- Divider between hero and ledger -->
+    <div class="tr-acts-divider" aria-hidden="true" />
+
+    <!-- Acts II + III — Ledger table and sparkline -->
+    <TrackRecord data={data} />
+
+  </main>
+</BaseLayout>
+
+<style>
+  .tr-page {
+    min-height: 100vh;
+  }
+
+  /* Subtle section break between hero and the ledger below */
+  .tr-acts-divider {
+    max-width: 840px;
+    margin: 0 auto 2.5rem;
+    padding: 0 1.5rem;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(245, 166, 35, 0.12) 30%,
+      rgba(245, 166, 35, 0.12) 70%,
+      transparent
+    );
+  }
+</style>
