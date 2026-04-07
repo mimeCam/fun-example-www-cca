@@ -15,6 +15,7 @@ import RisenBadge from './RisenBadge.astro';
 import KeepButton from './KeepButton.astro';
 import BloomParticles from './BloomParticles.astro';
 import DeathClock from './DeathClock.astro';
+import TensionBadge from './TensionBadge.astro';
 import { formatPubDate } from '../lib/dates';
 import type { PostDisplayData } from '../lib/postMeta';
 import { clockUrgency } from '../lib/death-clock';
@@ -61,7 +62,14 @@ const conviction = post.conviction ?? null;
         {post.freshness}
       </span>
       {post.revivalCount > 0 && <span class="footer-dot">&middot;</span>}
-      <RevivalBadge count={post.revivalCount} />
+      {/* TensionBadge replaces RevivalBadge when ≥3 stances exist (Tanya §5.1).
+          RevivalBadge stays as the "remembered by N" micro-count below the badge. */}
+      <TensionBadge
+        tensionResult={post.tensionResult}
+        revivalCount={post.revivalCount}
+        slug={post.slug}
+      />
+      {!post.tensionResult && <RevivalBadge count={post.revivalCount} />}
       <RisenBadge visible={post.recentlyRisen} />
     </div>
     <KeepButton slug={post.slug} count={post.revivalCount} urgency={urgency} conviction={conviction} />

@@ -1,0 +1,174 @@
+---
+// src/components/TensionBadge.astro
+// Displays the tension state of a post — Contested / Consensus / Indifferent.
+// Server-rendered with live SSE updates via the existing /api/heartbeat stream.
+// Replaces the raw revival counter in card footers (Tanya §5.1).
+//
+// Three states:
+//   contested  — amber, pulsing ring   (◈ readers genuinely disagree)
+//   consensus  — sage green, static    (◉ readers agree with author)
+//   indifferent — grey, low opacity    (○ not enough stances recorded yet)
+//   hidden      — total < 3 stances    (render nothing — no badge, no empty state)
+//
+// Credits: Mike (arch spec), Tanya (UX §5.1)
+
+import type { TensionResult } from '../lib/tension-score';
+
+interface Props {
+  tensionResult: TensionResult | null;
+  revivalCount: number;
+  slug: string;   // used by SSE patch
+}
+
+const { tensionResult, revivalCount, slug } = Astro.props;
+
+// Don't render the badge when there's no tension data (< 3 stances).
+// Silence is the feature — no empty-state placeholder.
+const show = tensionResult !== null && tensionResult.label !== 'indifferent';
+
+const GLYPHS: Record<string, string> = {
+  contested:   '◈',
+  consensus:   '◉',
+  indifferent: '○',
+};
+
+const LABELS: Record<string, string> = {
+  contested:   'Contested',
+  consensus:   'Consensus',
+  indifferent: 'Indifferent',
+};
+
+const glyph = tensionResult ? GLYPHS[tensionResult.label] : '○';
+const label = tensionResult ? LABELS[tensionResult.label] : '';
+---
+
+{show && (
+  <span
+    class:list={['tension-badge', tensionResult && `tension-badge--${tensionResult.label}`]}
+    data-tension-badge
+    data-slug={slug}
+    data-label={tensionResult?.label}
+    aria-label={`${label} — ${tensionResult?.contestedPct}% minority stance`}
+    title={`${tensionResult?.contestedPct}% on the minority side`}
+  >
+    <span class="tension-glyph" aria-hidden="true">{glyph}</span>
+    <span class="tension-label">{label}</span>
+  </span>
+)}
+
+{revivalCount > 0 && (
+  <span
+    class="tension-memory"
+    data-revival-memory
+    data-slug={slug}
+    aria-label={`Remembered by ${revivalCount} readers`}
+  >
+    remembered by {revivalCount}
+  </span>
+)}
+
+<style>
+  /* ── Badge pill ─────────────────────────────────────────────── */
+  .tension-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    padding: 3px 10px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: opacity 300ms ease;
+    vertical-align: middle;
+  }
+
+  /* ── Contested — amber, pulsing ─────────────────────────────── */
+  .tension-badge--contested {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.40);
+    animation: tension-pulse 2.4s ease-in-out infinite;
+  }
+
+  /* ── Consensus — sage green, static ────────────────────────── */
+  .tension-badge--consensus {
+    color: #6ee7b7;
+    background: rgba(110, 231, 183, 0.08);
+    border-color: rgba(110, 231, 183, 0.40);
+  }
+
+  /* ── Pulsing glow for contested posts ──────────────────────── */
+  @keyframes tension-pulse {
+    0%, 100% { box-shadow: 0 0 0 0   rgba(245,158,11,0); }
+    50%       { box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tension-badge--contested { animation: none; }
+  }
+
+  /* ── "remembered by N" micro-label ─────────────────────────── */
+  .tension-memory {
+    font-size: 10px;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.03em;
+    display: block;
+    margin-top: 2px;
+  }
+</style>
+
+<script>
+  // Live-patch TensionBadge when a tension:updated SSE event arrives.
+  // Reuses the existing /api/heartbeat EventSource — no new connection.
+  (function wireTensionBadge() {
+    const GLYPHS: Record<string, string> = {
+      contested: '◈', consensus: '◉', indifferent: '○',
+    };
+    const LABELS: Record<string, string> = {
+      contested: 'Contested', consensus: 'Consensus', indifferent: 'Indifferent',
+    };
+
+    function patchBadge(slug: string, label: string, contestedPct: number): void {
+      const badges = document.querySelectorAll<HTMLElement>(`[data-tension-badge][data-slug="${slug}"]`);
+      badges.forEach(badge => applyLabel(badge, label, contestedPct));
+    }
+
+    function applyLabel(badge: HTMLElement, label: string, contestedPct: number): void {
+      badge.dataset.label = label;
+      badge.className = `tension-badge tension-badge--${label}`;
+      const glyph = badge.querySelector('.tension-glyph');
+      const lbl   = badge.querySelector('.tension-label');
+      if (glyph) glyph.textContent = GLYPHS[label] ?? '○';
+      if (lbl)   lbl.textContent   = LABELS[label] ?? '';
+      badge.setAttribute('aria-label', `${LABELS[label]} — ${contestedPct}% minority stance`);
+      badge.style.display = label === 'indifferent' ? 'none' : '';
+    }
+
+    function attachToStream(es: EventSource): void {
+      es.addEventListener('tension:updated', (e: MessageEvent) => {
+        try {
+          const d = JSON.parse(e.data) as { slug: string; label: string; contestedPct: number };
+          patchBadge(d.slug, d.label, d.contestedPct);
+        } catch { /* malformed — ignore */ }
+      });
+    }
+
+    // Try to attach to the already-open heartbeat stream; retry once on load.
+    function tryAttach(): void {
+      const win = window as Window & { __heartbeatES?: EventSource; __presenceES?: EventSource };
+      const es = win.__heartbeatES ?? win.__presenceES;
+      if (es) { attachToStream(es); return; }
+      // Fallback: open our own connection if no shared stream found
+      const newEs = new EventSource('/api/heartbeat');
+      win.__heartbeatES = newEs;
+      attachToStream(newEs);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', tryAttach);
+    } else {
+      tryAttach();
+    }
+  })();
+</script>

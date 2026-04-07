@@ -20,6 +20,8 @@ import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import KeepButton from '../../components/KeepButton.astro';
+import StanceDrawer from '../../components/StanceDrawer.astro';
+import TensionBadge from '../../components/TensionBadge.astro';
 import { allPostDisplayData } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
@@ -28,6 +30,8 @@ import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
 import { daysUntilEntombment, clockUrgency, CLOCK_MAX_DAYS } from '../../lib/death-clock';
 import { decayFactor, dominantConviction } from '../../lib/decay-engine';
 import { getGraceState } from '../../lib/cold-start';
+import { getStanceDistribution } from '../../lib/stance-ledger';
+import { computeTension } from '../../lib/tension-score';
 
 export async function getStaticPaths() {
   const posts  = await getCollection('blog');
@@ -67,6 +71,10 @@ function safeRead<T>(fn: () => T, fallback?: T): T {
 
 // safeRead for graceState needs a typed fallback
 const safeGraceState = graceState ?? { warming: false, decayFactor: postDecay, daysRemaining };
+
+// Tension score — computed from accumulated stances for this post
+const stanceDist    = safeRead(() => getStanceDistribution(post.slug));
+const tensionResult = stanceDist ? computeTension(stanceDist) : null;
 ---
 
 <BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={pubDateISO} ogSlug={post.slug}>
@@ -91,6 +99,17 @@ const safeGraceState = graceState ?? { warming: false, decayFactor: postDecay, d
       revivalCount={revivalCount}
       conviction={dominantVerdict}
     />
+
+    <!-- TensionBadge: live stance signal alongside ConvictionHero (Tanya §5.1) -->
+    {tensionResult && (
+      <div class="tension-row">
+        <TensionBadge
+          tensionResult={tensionResult}
+          revivalCount={revivalCount}
+          slug={post.slug}
+        />
+      </div>
+    )}
 
     <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
       <article class="post-body">
@@ -119,6 +138,9 @@ const safeGraceState = graceState ?? { warming: false, decayFactor: postDecay, d
   </main>
 
   <PostNav nav={nav} />
+
+  <!-- StanceDrawer: slides up 800ms after revival to capture reader stance (Mike's arch spec) -->
+  <StanceDrawer slug={post.slug} />
 
   <!-- Erosion bar: scroll-driven progress as a CSS custom property -->
   <script>
@@ -253,6 +275,15 @@ const safeGraceState = graceState ?? { warming: false, decayFactor: postDecay, d
     height: auto;
     border-radius: var(--radius, 12px);
     margin: 1.5em 0;
+  }
+
+  /* TensionBadge row — sits just below ConvictionHero (Tanya §5.1) */
+  .tension-row {
+    margin: 0.5rem 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.5rem; /* prevent layout shift when badge absent */
   }
 
   /* Revival footer: centered single CTA (Tanya §9 — one primary action) */

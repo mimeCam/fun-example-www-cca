@@ -213,6 +213,7 @@ function applyReviveResult(
   flashDaysBanner(bannerEl, daysGained(decayFactor, data.decayAfterRevival, lifespan));
   markSessionRevived(slug);
   dispatchRevivalConfirmed(data);
+  scheduleStancePrompt(slug);
 }
 
 /** Stamp sessionStorage so the button shows "kept" on next page load within this tab. */
@@ -223,6 +224,16 @@ function markSessionRevived(slug: string): void {
 /** Dispatch a DOM event so revival-moment.ts can fire its visual choreography. */
 function dispatchRevivalConfirmed(data: RevivalResult): void {
   document.dispatchEvent(new CustomEvent('revival:confirmed', { detail: data }));
+}
+
+/**
+ * Invite the reader to record their stance 800ms after revival confirms.
+ * StanceDrawer listens for 'stance:prompt' — keeps the two concerns decoupled.
+ */
+function scheduleStancePrompt(slug: string): void {
+  setTimeout(() => {
+    document.dispatchEvent(new CustomEvent('stance:prompt', { detail: { slug } }));
+  }, 800);
 }
 
 // ---------------------------------------------------------------------------

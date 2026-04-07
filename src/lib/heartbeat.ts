@@ -166,6 +166,12 @@ export function broadcast(event: HeartbeatEvent): void {
   pending.set(event.slug, { event, timer });
 }
 
+/** Immediately broadcast a named event to all connections (no debounce). */
+export function broadcastNamed(name: string, data: unknown): void {
+  const bytes = sseNamedFrame(name, data);
+  connections.forEach((meta, id) => safeSend(id, meta, bytes));
+}
+
 /** Current connection count (for diagnostics). */
 export function connectionCount(): number {
   return connections.size;

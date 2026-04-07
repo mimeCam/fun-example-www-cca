@@ -11,6 +11,9 @@ import { getReadingTime } from './readingTime';
 import { decayFactor, freshnessTag, decayStyleString, revivalBonus, dominantConviction } from './decay-engine';
 import type { FreshnessTag, ConvictionVerdict } from './decay-engine';
 import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost } from './collectiveMemory';
+import { getAllStanceDistributions } from './stance-ledger';
+import { computeTension } from './tension-score';
+import type { TensionResult } from './tension-score';
 import { isEntombed, isRecentlyRisen } from './entomb';
 import { isEndangered, urgencyLevel, daysUntilEntomb } from './endangered';
 import type { UrgencyLevel } from './endangered';
@@ -76,6 +79,7 @@ export interface PostDisplayData extends PostMeta {
   maxDays: number;          // post lifespan in days — from frontmatter lifespan field (default 365)
   daysRemaining: number;    // days until entombment, derived from decay + maxDays
   clockUrgency: ClockUrgency;  // 6-tier urgency for DeathClock ring rendering
+  tensionResult: TensionResult | null;  // null until ≥3 stances recorded
 }
 
 /** Max decay window in days. Reads lifespan frontmatter field; falls back to 365. */
@@ -97,6 +101,7 @@ export function getPostDisplayData(
   risenAt: Date | null = null,
   readingSeconds = 0,
   entombedAt: Date | null = null,
+  tensionResult: TensionResult | null = null,
 ): PostDisplayData {
   const meta = extractMeta(post);
   const maxDays = resolveMaxDays(post);
@@ -126,6 +131,7 @@ export function getPostDisplayData(
     maxDays,
     daysRemaining: daysLeft,
     clockUrgency: computeClockUrgency(daysLeft),
+    tensionResult,
   };
 }
 
@@ -141,18 +147,20 @@ export function allPostDisplayData(
   posts: CollectionEntry<'blog'>[],
   now = new Date(),
 ): PostDisplayData[] {
-  const counts = safeRevivalCounts();
-  const risen = safeRisenTimestamps();
-  const reading = safeReadingSeconds();
+  const counts   = safeRevivalCounts();
+  const risen    = safeRisenTimestamps();
+  const reading  = safeReadingSeconds();
   const tombedAt = safeEntombedTimestamps();
-  const sorted = [...posts].sort(byNewest);
-  const result = sorted.map(p =>
+  const stances  = safeTensionScores();
+  const sorted   = [...posts].sort(byNewest);
+  const result   = sorted.map(p =>
     getPostDisplayData(
       p, now,
       counts.get(p.slug) ?? 0,
       risen.get(p.slug) ?? null,
       reading.get(p.slug) ?? 0,
       tombedAt.get(p.slug) ?? null,
+      stances.get(p.slug) ?? null,
     ),
   );
   recordNewlyEntombed(result, now);
@@ -195,6 +203,16 @@ function safeReadingSeconds(): Map<string, number> {
 function safeEntombedTimestamps(): Map<string, Date> {
   try { return getEntombedTimestamps(); }
   catch { return new Map(); }
+}
+
+/** Graceful fallback for tension scores — empty map if stance table not yet created. */
+function safeTensionScores(): Map<string, TensionResult> {
+  try {
+    const dists = getAllStanceDistributions();
+    const map = new Map<string, TensionResult>();
+    dists.forEach((dist, slug) => map.set(slug, computeTension(dist)));
+    return map;
+  } catch { return new Map(); }
 }
 
 /** Graceful write: record entombment; swallows errors during SSG builds. */

@@ -4,37 +4,46 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v31 — ConvictionMeter / Batting Average / /api/conviction-stats (2026-04-07)
+# Architecture v32 — Adversarial Stance Drawer + Tension Score (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Honest Presence shows real-time reader
 #   counts per slug (and global scope) via SSE. Zero phantoms.
 #
-# Sprint (latest — Sitewide Conviction Batting Average):
-#   lib/batting-average.ts — NEW: pure read-only aggregator over conviction_ledger
-#     in revivals.db (SQLITE_VOLUME at /app/data/); returns BattingAverage
-#     discriminated union (cold | live); scoring: correct ≥7 + died, wrong ≤4
-#     + died, pending = sealed + still alive, neutral 5-6 excluded from pct;
-#     pct = correct ÷ (correct + wrong); safe at build time (returns cold
-#     if DB absent). No new DB, volume, or npm package.
-#   pages/api/conviction-stats.ts — NEW: GET /api/conviction-stats — sitewide
-#     batting average as JSON with chainIntegrity flag (verifyChain per sealed
-#     slug) and computedAt timestamp; Cache-Control: no-store; 503 on error.
-#   components/ConvictionMeter.astro — NEW: sitewide batting average chip placed
-#     between <SiteNav> and page content on /, /now, /graveyard; four threshold
-#     states (amber ≥70%, yellow 50–69%, slate <50%, grey cold); collapsible
-#     "How is this calculated?" disclosure; pure SSR, zero client JS.
-#   pages/index.astro — UPDATED: added prerender = false; ConvictionMeter
-#     rendered above the post feed; archive overflow copy refined.
-#   pages/now.astro — UPDATED: added prerender = false; conviction record
-#     whisper link in footer (Tanya §7 — 0.68rem, 0.25 opacity, no amber).
-#   pages/graveyard.astro — UPDATED: ConvictionMeter above the Hall of Records;
-#     graveyard-epitaph responsive fix (desktop: horizontal monument row via
-#     flex-direction:row at min-width:641px — Tanya §5).
-#   components/ConvictionHero.astro — UPDATED: graceful unsealed state renders
-#     amber dashed placeholder instead of returning early (Mike §4); score/note
-#     now optional chained; ch-note no longer truncated (Tanya §4 Refinement B).
-#   components/SiteNav.astro — UPDATED: further nav refinements.
+# Sprint (latest — Adversarial Stance Drawer + Tension Score):
+#   lib/stance-ledger.ts — NEW: reader stance storage (agree|torn|disagree)
+#     per post; uses the same revivals.db (SQLITE_VOLUME at /app/data/);
+#     adds reader_stances table with UNIQUE index on (post_slug, session_id)
+#     for idempotent writes; WAL mode; batch getAllStanceDistributions() for
+#     homepage. No new DB, volume, or npm package.
+#   lib/tension-score.ts — NEW: pure O(1) tension computation from a
+#     StanceDistribution; returns TensionResult {label, score, contestedPct};
+#     labels: 'contested' | 'consensus' | 'indifferent'; MIN_STANCES=3 guard;
+#     no DB calls, trivially unit-testable.
+#   pages/api/stance.ts — NEW: POST /api/stance — records reader stance after
+#     revival; idempotent (INSERT OR IGNORE); returns tensionScore JSON for
+#     immediate client-side TensionBadge update; broadcasts tension:updated
+#     SSE event via broadcastNamed(); appends resonance to conviction ledger
+#     (best-effort, non-blocking).
+#   lib/heartbeat.ts — UPDATED: added broadcastNamed() — immediately pushes
+#     a named SSE frame to all active connections (no debounce).
+#   lib/postMeta.ts — UPDATED: PostDisplayData gains tensionResult field;
+#     allPostDisplayData() populates it via safeTensionScores() (graceful
+#     fallback to empty map if table not yet created).
+#   lib/revival-counter.ts — UPDATED: scheduleStancePrompt() fires 800ms
+#     after revival confirmation, dispatching 'stance:prompt' CustomEvent;
+#     decoupled from StanceDrawer via event bus.
+#   components/StanceDrawer.astro — NEW: slide-up drawer listening for
+#     'stance:prompt'; captures agree/torn/disagree + 1–5 score; POSTs to
+#     /api/stance; dismisses on submit or backdrop click.
+#   components/TensionBadge.astro — NEW: inline badge showing tension label
+#     (contested/consensus/indifferent); replaces RevivalBadge when ≥3 stances
+#     exist (Tanya §5.1); live-updated via SSE tension:updated events.
+#   components/DecayCard.astro — UPDATED: TensionBadge wired alongside
+#     RevivalBadge; RevivalBadge shown only when tensionResult is absent.
+#   pages/blog/[slug].astro — UPDATED: StanceDrawer + TensionBadge injected;
+#     tension-row layout below ConvictionHero (Tanya §5.1).
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME already mounts revivals.db; schema auto-migrates on boot.
 #     ADMIN_SECRET already required from v29 sprint.
 #
 # Supports: Hybrid SSR (Astro + Node), SQLite collective memory,
