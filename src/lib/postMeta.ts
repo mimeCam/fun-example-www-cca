@@ -10,7 +10,8 @@ import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
 import { decayFactor, freshnessTag, decayStyleString, revivalBonus, dominantConviction } from './decay-engine';
 import type { FreshnessTag, ConvictionVerdict } from './decay-engine';
-import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost } from './collectiveMemory';
+import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost, getAllCausesOfDeath } from './collectiveMemory';
+import type { CauseOfDeath } from './cause-of-death';
 import { getAllStanceDistributions } from './stance-ledger';
 import { computeTension } from './tension-score';
 import type { TensionResult } from './tension-score';
@@ -80,6 +81,7 @@ export interface PostDisplayData extends PostMeta {
   daysRemaining: number;    // days until entombment, derived from decay + maxDays
   clockUrgency: ClockUrgency;  // 6-tier urgency for DeathClock ring rendering
   tensionResult: TensionResult | null;  // null until ≥3 stances recorded
+  causeOfDeath: CauseOfDeath | null;   // null for living posts; set at entombment
 }
 
 /** Max decay window in days. Reads lifespan frontmatter field; falls back to 365. */
@@ -102,6 +104,7 @@ export function getPostDisplayData(
   readingSeconds = 0,
   entombedAt: Date | null = null,
   tensionResult: TensionResult | null = null,
+  causeOfDeath: CauseOfDeath | null = null,
 ): PostDisplayData {
   const meta = extractMeta(post);
   const maxDays = resolveMaxDays(post);
@@ -132,6 +135,7 @@ export function getPostDisplayData(
     daysRemaining: daysLeft,
     clockUrgency: computeClockUrgency(daysLeft),
     tensionResult,
+    causeOfDeath,
   };
 }
 
@@ -152,6 +156,7 @@ export function allPostDisplayData(
   const reading  = safeReadingSeconds();
   const tombedAt = safeEntombedTimestamps();
   const stances  = safeTensionScores();
+  const causes   = safeCausesOfDeath();
   const sorted   = [...posts].sort(byNewest);
   const result   = sorted.map(p =>
     getPostDisplayData(
@@ -161,6 +166,7 @@ export function allPostDisplayData(
       reading.get(p.slug) ?? 0,
       tombedAt.get(p.slug) ?? null,
       stances.get(p.slug) ?? null,
+      causes.get(p.slug) ?? null,
     ),
   );
   recordNewlyEntombed(result, now);
@@ -202,6 +208,12 @@ function safeReadingSeconds(): Map<string, number> {
 /** Graceful fallback for entombed_at timestamps. */
 function safeEntombedTimestamps(): Map<string, Date> {
   try { return getEntombedTimestamps(); }
+  catch { return new Map(); }
+}
+
+/** Graceful fallback for causes of death — empty map if column not yet created. */
+function safeCausesOfDeath(): Map<string, CauseOfDeath> {
+  try { return getAllCausesOfDeath(); }
   catch { return new Map(); }
 }
 

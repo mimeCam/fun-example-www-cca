@@ -22,6 +22,8 @@ import { getResurrectionRate, getTotalReadingSecondsEntombed } from '../lib/grav
 import { getGraveyardSummary } from '../lib/graveyard-ledger';
 import ConvictionMeter from '../components/ConvictionMeter.astro';
 import { computeBattingAverage } from '../lib/batting-average';
+import { causeLabel } from '../lib/cause-of-death';
+import type { CauseOfDeath } from '../lib/cause-of-death';
 import '../styles/graveyard.css';
 
 const PAGE_SIZE = 20;
@@ -48,6 +50,23 @@ const summary             = getGraveyardSummary(all);
 const hasPrev = safePage > 1;
 const hasNext = safePage < totalPages;
 const avg     = computeBattingAverage();
+
+// Dominant cause of death — pure tally, no new imports needed
+const dominantCause = findDominantCause(entombed);
+
+/** Tally cause frequencies; return the most common or null when graveyard is empty. */
+function findDominantCause(posts: typeof entombed): { cause: CauseOfDeath; count: number } | null {
+  if (posts.length === 0) return null;
+  const tally = new Map<CauseOfDeath, number>();
+  for (const p of posts) {
+    if (p.causeOfDeath) tally.set(p.causeOfDeath, (tally.get(p.causeOfDeath) ?? 0) + 1);
+  }
+  if (tally.size === 0) return null;
+  let top: CauseOfDeath = 'DECAYED';
+  let max = 0;
+  tally.forEach((n, c) => { if (n > max) { max = n; top = c; } });
+  return { cause: top, count: max };
+}
 ---
 
 <BaseLayout
@@ -81,6 +100,13 @@ const avg     = computeBattingAverage();
           <div class="epitaph-stat">
             <span class="epitaph-number">{broughtBack}</span>
             <span class="epitaph-label">brought back</span>
+          </div>
+        )}
+
+        {dominantCause && (
+          <div class="epitaph-stat">
+            <span class="epitaph-number">{dominantCause.count}</span>
+            <span class="epitaph-label">{causeLabel(dominantCause.cause).toLowerCase()}</span>
           </div>
         )}
 

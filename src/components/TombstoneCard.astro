@@ -13,6 +13,7 @@ import { daysSince } from '../lib/temporal';
 import type { PostDisplayData } from '../lib/postMeta';
 import { survivalTier, generateEpitaph, tierCSSClass, tierLabel } from '../lib/epitaph-engine';
 import { CLOCK_MAX_DAYS } from '../lib/death-clock';
+import { causeLabel, causeDescription, causeCSSClass } from '../lib/cause-of-death';
 
 interface Props { post: PostDisplayData; }
 
@@ -65,7 +66,17 @@ function calcSurvivalDays(p: PostDisplayData): number {
 
     <div class="tomb-header-row">
       <span class="tomb-here-lies">here lies</span>
-      <span class={`tomb-tier ${tierCss}`}>{tierLabel(tier)}</span>
+      <div class="tomb-badges">
+        {post.causeOfDeath && (
+          <span
+            class={`tomb-cause ${causeCSSClass(post.causeOfDeath)}`}
+            title={causeDescription(post.causeOfDeath)}
+          >
+            {causeLabel(post.causeOfDeath)}
+          </span>
+        )}
+        <span class={`tomb-tier ${tierCss}`}>{tierLabel(tier)}</span>
+      </div>
     </div>
 
     <h2 class="tomb-title">{post.title}</h2>
@@ -160,6 +171,37 @@ function calcSurvivalDays(p: PostDisplayData): number {
   .tier-contested { color: oklch(68% 0.14  45); }   /* amber — fought over */
   .tier-quiet     { color: oklch(55% 0.06 270); }   /* muted blue — gentle exit */
   .tier-forgotten { color: var(--color-grave-ghost); } /* achromatic — no story */
+
+  /* Badge row: cause (left) + tier (right), both inline */
+  .tomb-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  /*
+   * Cause-of-death badge — editorial verdict: WHY it died.
+   * Separate visual contract from tier badge (HOW LONG it fought).
+   * Earthy desaturated oklch palette — monochrome-safe for the Graveyard.
+   * Tanya §3: "The Graveyard strips colour. Everything becomes monochrome."
+   */
+  .tomb-cause {
+    font-size: 0.52rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;          /* near-sharp — Tanya §6: Graveyard cards are hard */
+    border: 1px solid currentColor;
+    opacity: 0.75;
+    cursor: default;
+  }
+
+  /* Five cause colours — desaturated earthy tones, dark-mode safe */
+  .cause-superseded { color: oklch(58% 0.05 200); }  /* muted teal — voluntary exit */
+  .cause-unsealed   { color: oklch(55% 0.04  50); }  /* warm grey-amber — incomplete */
+  .cause-rejected   { color: oklch(52% 0.08  20); }  /* muted rust — reader verdict */
+  .cause-abandoned  { color: oklch(48% 0.03 280); }  /* cool grey — silence */
+  .cause-decayed    { color: oklch(45% 0.03  50); }  /* stone grey — time's default */
 
   /* Engraved text illusion: layered text-shadow — Mike §1 */
   .tomb-title {

@@ -11,8 +11,11 @@
 
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { entombPost, getRevivalCount } from '../../lib/collectiveMemory';
-import { appendResonance } from '../../lib/conviction-ledger';
+import { entombPost, getRevivalCount, getReadingSeconds, setCauseOfDeath } from '../../lib/collectiveMemory';
+import { appendResonance, getSealEntry } from '../../lib/conviction-ledger';
+import { getStanceDistribution } from '../../lib/stance-ledger';
+import { computeTension } from '../../lib/tension-score';
+import { computeCauseOfDeath } from '../../lib/cause-of-death';
 
 export const prerender = false;
 
@@ -34,6 +37,12 @@ export const POST: APIRoute = async ({ request }) => {
   entombPost(slug);
   _confirmed.add(slug);
 
+  // Compute and persist cause of death (fire-and-forget; COALESCE — first-write wins)
+  try {
+    const cause = computeCauseOfDeath(buildCauseData(slug));
+    setCauseOfDeath(slug, cause);
+  } catch { /* best-effort; cause visible on next SSR render */ }
+
   // Append death event to conviction ledger (non-blocking)
   try {
     const finalRevivalCount = getRevivalCount(slug);
@@ -46,6 +55,19 @@ export const POST: APIRoute = async ({ request }) => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Gather the data needed for cause-of-death classification (pure → DB boundary). */
+function buildCauseData(slug: string) {
+  const dist    = getStanceDistribution(slug);
+  const tension = dist.total >= 3 ? computeTension(dist).score / 100 : null;
+  return {
+    convictionSealed: getSealEntry(slug) !== null,
+    revivalCount:     getRevivalCount(slug),
+    readingSeconds:   getReadingSeconds(slug),
+    tensionScore:     tension,
+    authorRetired:    false,   // future: read from post frontmatter
+  };
+}
 
 async function parseBody(req: Request): Promise<Record<string, unknown> | null> {
   try { return await req.json(); }

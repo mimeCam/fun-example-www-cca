@@ -8,6 +8,7 @@
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
+import type { CauseOfDeath } from './cause-of-death';
 
 const RATE_WINDOW_MS = 30_000;
 const READING_RATE_MS = 25_000; // Accept a pulse every 25s (client fires every 30s)
@@ -52,6 +53,7 @@ function initTables(d: Database.Database): void {
   migrateGuardTables(d);
   migrateReadingSessions(d);
   migrateEntombedAt(d);
+  migrateCauseOfDeath(d);
 }
 
 /**
@@ -74,6 +76,18 @@ function migrateEntombedAt(d: Database.Database): void {
   const cols = d.prepare("PRAGMA table_info('revivals')").all() as Array<{ name: string }>;
   if (!cols.some(c => c.name === 'entombed_at')) {
     d.exec("ALTER TABLE revivals ADD COLUMN entombed_at TEXT DEFAULT NULL");
+  }
+}
+
+/**
+ * Add cause_of_death column if missing (safe to run repeatedly).
+ * First-write wins: COALESCE in setCauseOfDeath ensures the verdict at the
+ * moment of death is never revised — historical honesty.
+ */
+function migrateCauseOfDeath(d: Database.Database): void {
+  const cols = d.prepare("PRAGMA table_info('revivals')").all() as Array<{ name: string }>;
+  if (!cols.some(c => c.name === 'cause_of_death')) {
+    d.exec("ALTER TABLE revivals ADD COLUMN cause_of_death TEXT DEFAULT NULL");
   }
 }
 
@@ -204,6 +218,32 @@ export function getEntombedTimestamps(): Map<string, Date> {
     .all() as Array<{ slug: string; entombed_at: string }>;
   const map = new Map<string, Date>();
   for (const r of rows) map.set(r.slug, new Date(r.entombed_at));
+  return map;
+}
+
+// ---------------------------------------------------------------------------
+// Cause of death — set once at entombment, never overwritten (COALESCE contract)
+// ---------------------------------------------------------------------------
+
+/**
+ * Persist the cause of death for a slug.
+ * COALESCE guarantees first-write wins — cause is the verdict at moment of death.
+ * Idempotent: calling twice for the same slug leaves the original value intact.
+ */
+export function setCauseOfDeath(slug: string, cause: CauseOfDeath): void {
+  db().prepare(`
+    INSERT INTO revivals (slug, cause_of_death) VALUES (?, ?)
+    ON CONFLICT(slug) DO UPDATE SET cause_of_death = COALESCE(cause_of_death, ?)
+  `).run(slug, cause, cause);
+}
+
+/** Batch-read all cause_of_death values (one query for graveyard page). */
+export function getAllCausesOfDeath(): Map<string, CauseOfDeath> {
+  const rows = db()
+    .prepare('SELECT slug, cause_of_death FROM revivals WHERE cause_of_death IS NOT NULL')
+    .all() as Array<{ slug: string; cause_of_death: string }>;
+  const map = new Map<string, CauseOfDeath>();
+  for (const r of rows) map.set(r.slug, r.cause_of_death as CauseOfDeath);
   return map;
 }
 
