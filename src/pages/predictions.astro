@@ -1,0 +1,60 @@
+---
+// src/pages/predictions.astro
+// Public /predictions wall — all falsifiable claims across all posts.
+// Groups: Overdue (urgent) → Pending → Resolved.
+// SSR: prediction status is derived at request time (wall-clock matters).
+//
+// Credits: Mike (arch spec §Route-Layer), Tanya (UX §12)
+
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PredictionVault from '../components/PredictionVault.astro';
+import { flattenPredictions, computeStats } from '../lib/prediction-engine';
+
+const posts       = await getCollection('blog');
+const now         = new Date();
+const predictions = flattenPredictions(posts, now);
+const stats       = computeStats(predictions);
+---
+
+<BaseLayout title="Prediction Vault" description="Every falsifiable claim, publicly tracked. Reality decides.">
+  <main class="vault-page">
+    <header class="vault-header">
+      <h1 class="vault-title">Prediction Vault</h1>
+      <p class="vault-desc">
+        Every claim is pre-committed before the outcome is known.
+        Verdicts are sealed by reality, not the author.
+      </p>
+    </header>
+
+    <PredictionVault predictions={predictions} stats={stats} />
+  </main>
+</BaseLayout>
+
+<style>
+  .vault-page {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+  }
+
+  .vault-header { margin-bottom: 2.5rem; }
+
+  .vault-title {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.65rem;
+    color: rgba(255,255,255,0.92);
+  }
+
+  .vault-desc {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.6;
+    margin: 0;
+    max-width: 34rem;
+  }
+</style>

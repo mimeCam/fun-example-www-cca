@@ -22,6 +22,8 @@ import RevivalMoment from '../../components/RevivalMoment.astro';
 import KeepButton from '../../components/KeepButton.astro';
 import StanceDrawer from '../../components/StanceDrawer.astro';
 import DeadlineClock from '../../components/DeadlineClock.astro';
+import PredictionCard from '../../components/PredictionCard.astro';
+import { flattenPredictions } from '../../lib/prediction-engine';
 // TensionBadge is now rendered inside ConvictionHero (embedded in status row).
 import { allPostDisplayData, extractMeta } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
@@ -86,6 +88,9 @@ const stanceDist    = safeRead(() => getStanceDistribution(post.slug));
 const tensionResult = stanceDist ? computeTension(stanceDist) : null;
 
 // JSON-LD: conviction + decay are already computed above — free rider, no new DB queries.
+// Prediction Vault — derive statuses at render time (wall-clock)
+const postPredictions = flattenPredictions([post], new Date());
+
 const sealEntry       = safeRead(() => getSealEntry(post.slug));
 const postMeta        = extractMeta(post);
 const convictionState = buildConvictionState(
@@ -145,6 +150,23 @@ const jsonLd      = [
         publishDate={post.data.pubDate}
         deadline={post.data.resolution_deadline}
       />
+    )}
+
+    <!-- Prediction Vault inline: falsifiable claims baked into this post.
+         Renders only when the post carries predictions[] in frontmatter.
+         Each card anchors to /predictions#{slug}-{id} for shareability. -->
+    {postPredictions.length > 0 && (
+      <section class="post-predictions" aria-label="Predictions in this post">
+        <h2 class="post-predictions__heading">Predictions</h2>
+        <ul class="post-predictions__list">
+          {postPredictions.map(p => (
+            <li><PredictionCard prediction={p} compact /></li>
+          ))}
+        </ul>
+        <a href="/predictions" class="post-predictions__vault-link">
+          View all predictions →
+        </a>
+      </section>
     )}
 
     <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
@@ -368,6 +390,42 @@ const jsonLd      = [
     border-radius: var(--radius, 12px);
     margin: 1.5em 0;
   }
+
+  /* Prediction inline section — between conviction strip and article body */
+  .post-predictions {
+    margin: 1.5rem 0 2rem;
+    padding: 1.25rem;
+    background: oklch(11% 0.008 270 / 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .post-predictions__heading {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin: 0 0 0.85rem;
+  }
+
+  .post-predictions__list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .post-predictions__vault-link {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.25);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 150ms ease;
+  }
+  .post-predictions__vault-link:hover { color: rgba(255,255,255,0.55); }
 
   /* Revival footer: centered single CTA (Tanya §9 — one primary action) */
   .revival-footer {

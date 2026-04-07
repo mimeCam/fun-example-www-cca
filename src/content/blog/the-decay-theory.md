@@ -15,6 +15,21 @@ constellation:
     strength: 0.9
   - slug: "now-page"
     strength: 0.4
+predictions:
+  - id: "decay-p1"
+    claim: "Posts with revival rates above the median will outlast their nominal lifespan by at least 50%."
+    resolution_criteria: >
+      Check the revivals.db for any post that has exceeded its lifespan date by 50% or more
+      while still alive (decay factor < 0.95). At least one such post must exist.
+    resolution_deadline: 2027-04-04
+    verdict: null
+  - id: "decay-p2"
+    claim: "At least one reader will explicitly cite the decay mechanic as their reason for keeping a post alive."
+    resolution_criteria: >
+      A reader message, comment, or public post (linked or screenshotted) that names the decay
+      clock as the reason they clicked Keep. Author or reader can surface the evidence.
+    resolution_deadline: 2027-01-01
+    verdict: null
 ---
 
 Content decays. Posts fade. The newest writing glows brightest; older pieces dim and blur at the edges. This isn't entropy — it's editorial.

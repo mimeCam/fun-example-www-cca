@@ -3,14 +3,15 @@
 // /now is a first-class page (Tanya §3 — sitemap revision).
 
 /** Canonical page IDs for the sitemap. */
-export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'verdict' | 'audit' | 'unknown';
+export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'verdict' | 'predictions' | 'audit' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
-  ['/blog',      'blog'],
-  ['/graveyard', 'graveyard'],
-  ['/now',       'now'],
-  ['/verdict',   'verdict'],
-  ['/audit',     'audit'],
+  ['/blog',        'blog'],
+  ['/graveyard',   'graveyard'],
+  ['/now',         'now'],
+  ['/verdict',     'verdict'],
+  ['/predictions', 'predictions'],
+  ['/audit',       'audit'],
 ];
 
 /** Derives the active PageId from a pathname string. SSR-safe. */

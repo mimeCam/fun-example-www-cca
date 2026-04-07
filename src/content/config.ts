@@ -10,6 +10,19 @@ import { defineCollection, z } from 'astro:content';
  */
 const verdictEnum = z.enum(['still-true', 'wrong', 'evolved', 'unaudited', 'abandoned']);
 
+/**
+ * Falsifiable prediction with pre-committed resolution criteria — Prediction Vault feature.
+ * verdict is null at publish; sealed by admin via POST /api/seal-prediction.
+ * id must be stable after publish — it is the foreign key for predictions_ledger.
+ */
+const predictionSchema = z.object({
+  id:                   z.string(),
+  claim:                z.string(),
+  resolution_criteria:  z.string(),
+  resolution_deadline:  z.coerce.date(),
+  verdict:              z.enum(['correct', 'incorrect', 'partial']).nullable().default(null),
+});
+
 const blog = defineCollection({
   type: 'content',
   schema: z.object({
@@ -44,6 +57,10 @@ const blog = defineCollection({
     // If deadline passes with no sealed verdict → auto-sealed as 'abandoned' by /api/deadline-sweep.
     // Absence = no commitment. Presence = public accountability contract.
     resolution_deadline: z.date().optional(),
+    // --- Prediction Vault (Mike §Prediction-Vault) ---
+    // Falsifiable claims with pre-defined criteria. Verdict sealed by admin, never self-reported.
+    // prediction.id values are immutable after publish — treat like post slugs.
+    predictions: z.array(predictionSchema).optional(),
   }),
 });
 

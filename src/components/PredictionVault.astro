@@ -1,0 +1,128 @@
+---
+// src/components/PredictionVault.astro
+// Full predictions wall: stats bar + grouped list (Overdue → Pending → Resolved).
+// Pure server-render. No client JS.
+//
+// Credits: Mike (arch spec §Component-Layer), Tanya (UX §12 layout principles)
+
+import PredictionCard from './PredictionCard.astro';
+import type { FlatPrediction, PredictionStats } from '../lib/prediction-engine';
+import { groupByStatus } from '../lib/prediction-engine';
+
+interface Props {
+  predictions: FlatPrediction[];
+  stats: PredictionStats;
+}
+
+const { predictions, stats } = Astro.props;
+const groups = groupByStatus(predictions);
+const resolvedCount = stats.correct + stats.incorrect + stats.partial;
+---
+
+<section class="vault">
+  <!-- Stats bar: one horizontal line, no card chrome -->
+  <div class="vault__stats" aria-label="Prediction accuracy summary">
+    <span class="vault__stat">{stats.total} predictions</span>
+    <span class="vault__sep">·</span>
+    <span class="vault__stat">{resolvedCount} resolved</span>
+    {stats.overdue > 0 && (
+      <>
+        <span class="vault__sep">·</span>
+        <span class="vault__stat vault__stat--overdue">{stats.overdue} overdue</span>
+      </>
+    )}
+    <span class="vault__sep">·</span>
+    {stats.accuracy !== null
+      ? <span class="vault__stat vault__stat--accuracy">{stats.accuracy}% accurate</span>
+      : <span class="vault__stat vault__stat--cold">no verdict yet</span>
+    }
+  </div>
+
+  {predictions.length === 0 && (
+    <p class="vault__empty">No predictions published yet.</p>
+  )}
+
+  {groups.overdue.length > 0 && (
+    <div class="vault__group">
+      <h2 class="vault__group-label vault__group-label--overdue">Overdue</h2>
+      <ul class="vault__list">
+        {groups.overdue.map(p => (
+          <li><PredictionCard prediction={p} /></li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  {groups.pending.length > 0 && (
+    <div class="vault__group">
+      <h2 class="vault__group-label">Pending</h2>
+      <ul class="vault__list">
+        {groups.pending.map(p => (
+          <li><PredictionCard prediction={p} /></li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  {groups.resolved.length > 0 && (
+    <div class="vault__group">
+      <h2 class="vault__group-label">Resolved</h2>
+      <ul class="vault__list">
+        {groups.resolved.map(p => (
+          <li><PredictionCard prediction={p} /></li>
+        ))}
+      </ul>
+    </div>
+  )}
+</section>
+
+<style>
+  .vault { display: flex; flex-direction: column; gap: 2.5rem; }
+
+  .vault__stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .vault__sep { color: rgba(255,255,255,0.2); }
+
+  .vault__stat              { color: rgba(255,255,255,0.55); }
+  .vault__stat--overdue     { color: oklch(60% 0.18 20); }
+  .vault__stat--accuracy    { color: oklch(76% 0.18 85); font-variant-numeric: tabular-nums; }
+  .vault__stat--cold        { color: rgba(255,255,255,0.3); font-style: italic; }
+
+  .vault__empty {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    padding: 3rem 0;
+  }
+
+  .vault__group { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  .vault__group-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin: 0;
+  }
+
+  .vault__group-label--overdue { color: oklch(60% 0.18 20 / 0.8); }
+
+  .vault__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+</style>

@@ -27,6 +27,15 @@ export type BattingAverage =
   | { status: 'cold'; total: 0 }
   | { status: 'live'; total: number; correct: number; wrong: number; pending: number; pct: number };
 
+/**
+ * Prediction-granular accuracy — computed from PredictionStats (frontmatter-derived).
+ * Companion to BattingAverage; kept here so the nav chip can show both in one import.
+ * Credits: Mike (arch spec §Prediction-Vault §5 Batting Average Is Now Prediction-Granular)
+ */
+export type PredictionAccuracy =
+  | { status: 'cold' }
+  | { status: 'live'; total: number; correct: number; incorrect: number; partial: number; pending: number; overdue: number; accuracy: number };
+
 interface SealRow        { post_slug: string }
 interface VerdictEventRow { post_slug: string; payload_json: string | null }
 interface Counts          { correct: number; wrong: number; pending: number }
@@ -120,6 +129,18 @@ export function computeBattingAverage(): BattingAverage {
     if (!verdictEvents.length) return { status: 'cold', total: 0 };
     return buildLive(seals, verdictEvents);
   } catch { return { status: 'cold', total: 0 }; }
+}
+
+/**
+ * Lift PredictionStats into PredictionAccuracy discriminated union.
+ * Takes already-computed stats from prediction-engine so this stays DB-free.
+ */
+export function computePredictionBattingAverage(
+  stats: { total: number; correct: number; incorrect: number; partial: number; pending: number; overdue: number; accuracy: number | null },
+): PredictionAccuracy {
+  if (stats.total === 0 || stats.accuracy === null) return { status: 'cold' };
+  const { total, correct, incorrect, partial, pending, overdue, accuracy } = stats;
+  return { status: 'live', total, correct, incorrect, partial, pending, overdue, accuracy };
 }
 
 /** Returns all sealed post slugs. Used by the /api/conviction-stats chain-integrity check. */

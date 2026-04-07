@@ -1,0 +1,166 @@
+---
+// src/components/PredictionCard.astro
+// Single prediction row: claim, criteria, deadline, status badge.
+// Status colors: pending=amber, overdue=red, correct=emerald, incorrect=zinc, partial=sky.
+// Pure server-render — no client JS.
+// Anchor: #{slug}-{prediction.id} — enables direct-link bookmarking of each claim.
+//
+// Credits: Mike (arch spec §Component-Layer), Tanya (UX §12 prediction placement)
+
+import type { FlatPrediction } from '../lib/prediction-engine';
+
+interface Props {
+  prediction: FlatPrediction;
+  /** When rendered inside a post page, omit the "from [post]" back-link */
+  compact?: boolean;
+}
+
+const { prediction: p, compact = false } = Astro.props;
+
+const anchor    = `${p.slug}-${p.id}`;
+const deadline  = p.resolution_deadline.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+const isResolved = p.status === 'correct' || p.status === 'incorrect' || p.status === 'partial';
+
+const BADGE: Record<string, { label: string; cls: string }> = {
+  pending:   { label: 'pending',   cls: 'badge--pending'   },
+  overdue:   { label: 'overdue',   cls: 'badge--overdue'   },
+  correct:   { label: 'correct',   cls: 'badge--correct'   },
+  incorrect: { label: 'incorrect', cls: 'badge--incorrect' },
+  partial:   { label: 'partial',   cls: 'badge--partial'   },
+};
+
+const badge = BADGE[p.status] ?? BADGE['pending'];
+---
+
+<article class:list={['pred-card', `pred-card--${p.status}`]} id={anchor}>
+  <header class="pred-card__header">
+    <span class:list={['pred-badge', badge.cls]}>{badge.label}</span>
+    {!compact && (
+      <a href={`/blog/${p.slug}`} class="pred-card__post-link">{p.postTitle}</a>
+    )}
+    <a href={`#${anchor}`} class="pred-card__anchor" aria-label="Link to this prediction">#</a>
+  </header>
+
+  <p class="pred-card__claim">{p.claim}</p>
+
+  <dl class="pred-card__meta">
+    <div class="pred-card__meta-row">
+      <dt>Criteria</dt>
+      <dd>{p.resolution_criteria}</dd>
+    </div>
+    <div class="pred-card__meta-row">
+      <dt>Deadline</dt>
+      <dd class:list={['pred-card__deadline', p.status === 'overdue' && 'pred-card__deadline--overdue']}>
+        {deadline}{p.status === 'overdue' ? ' · overdue' : ''}
+      </dd>
+    </div>
+    {isResolved && (
+      <div class="pred-card__meta-row">
+        <dt>Verdict</dt>
+        <dd class:list={['pred-card__verdict-text', `pred-card__verdict-text--${p.status}`]}>
+          {p.status}
+        </dd>
+      </div>
+    )}
+  </dl>
+</article>
+
+<style>
+  .pred-card {
+    background: oklch(11% 0.008 270);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    transition: border-color 180ms ease;
+  }
+
+  .pred-card:target { border-color: rgba(255,255,255,0.18); }
+
+  .pred-card--overdue { border-left: 3px solid oklch(60% 0.18 20); }
+  .pred-card--pending { border-left: 3px solid oklch(72% 0.16 75); }
+  .pred-card--correct { border-left: 3px solid oklch(68% 0.18 155); }
+  .pred-card--incorrect { border-left: 3px solid oklch(45% 0.04 270); }
+  .pred-card--partial { border-left: 3px solid oklch(65% 0.18 220); }
+
+  .pred-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .pred-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2em 0.55em;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .badge--pending   { background: oklch(72% 0.16 75 / 0.15);  color: oklch(72% 0.16 75);  }
+  .badge--overdue   { background: oklch(60% 0.18 20 / 0.15);  color: oklch(60% 0.18 20);  }
+  .badge--correct   { background: oklch(68% 0.18 155 / 0.15); color: oklch(68% 0.18 155); }
+  .badge--incorrect { background: oklch(45% 0.04 270 / 0.15); color: oklch(55% 0.04 270); }
+  .badge--partial   { background: oklch(65% 0.18 220 / 0.15); color: oklch(65% 0.18 220); }
+
+  .pred-card__post-link {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.35);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 150ms ease;
+  }
+  .pred-card__post-link:hover { color: rgba(255,255,255,0.65); }
+
+  .pred-card__anchor {
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.2);
+    text-decoration: none;
+    transition: color 150ms ease;
+  }
+  .pred-card__anchor:hover { color: rgba(255,255,255,0.55); }
+
+  .pred-card__claim {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.88);
+    margin: 0 0 0.75rem;
+  }
+
+  .pred-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin: 0;
+  }
+
+  .pred-card__meta-row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .pred-card__meta-row dt {
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    padding-top: 0.1em;
+  }
+
+  .pred-card__meta-row dd {
+    color: rgba(255,255,255,0.6);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .pred-card__deadline--overdue { color: oklch(60% 0.18 20); }
+
+  .pred-card__verdict-text--correct   { color: oklch(68% 0.18 155); }
+  .pred-card__verdict-text--incorrect { color: oklch(55% 0.04 270); }
+  .pred-card__verdict-text--partial   { color: oklch(65% 0.18 220); }
+</style>
