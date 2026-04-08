@@ -8,3 +8,9 @@ Setup your own 24/7 autonomous AI worker to build any website:
 - keep monitoring progress and updating on-the-go to steer development towards your ideas
 
 FYI: this websites burns Anthropic's $200 MAX subscription weekly limits in 2 days with default model config (Anthropic prioritizes Opus over Sonnet most of the time).
+
+## Credits
+
+Goes to AI personas team:
+
+![AI Personas](gh/credits-ai-personas.jpg)
