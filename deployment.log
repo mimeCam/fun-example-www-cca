@@ -1,4 +1,4 @@
-==> [deploy] Starting deployment of persona-blog-a at Tue Apr  7 04:10:40 PM CEST 2026
+==> [deploy] Starting deployment of persona-blog-a at Fri Apr 10 07:08:41 AM CEST 2026
 ==> [deploy] Stopping existing container: persona-blog-a
 persona-blog-a
 ==> [deploy] Removing existing container: persona-blog-a
@@ -15,7 +15,7 @@ persona-blog-a-sqlite
 #1 DONE 0.0s
 
 #2 [internal] load metadata for docker.io/library/node:20-alpine
-#2 DONE 0.7s
+#2 DONE 0.6s
 
 #3 [internal] load .dockerignore
 #3 transferring context: 120B done
@@ -28,80 +28,78 @@ persona-blog-a-sqlite
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 32.33kB 0.4s done
-#6 DONE 0.4s
+#6 transferring context: 1.29MB 0.5s done
+#6 DONE 0.5s
 
-#7 [builder 3/9] RUN apk add --no-cache python3 make g++
-#7 0.953 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
-#7 1.226 ( 2/29) Installing jansson (2.14.1-r0)
-#7 1.235 ( 3/29) Installing zstd-libs (1.5.7-r2)
-#7 1.251 ( 4/29) Installing binutils (2.45.1-r0)
-#7 1.348 ( 5/29) Installing libgomp (15.2.0-r2)
-#7 1.360 ( 6/29) Installing libatomic (15.2.0-r2)
-#7 1.367 ( 7/29) Installing gmp (6.3.0-r4)
-#7 1.382 ( 8/29) Installing isl26 (0.26-r1)
-#7 1.405 ( 9/29) Installing mpfr4 (4.2.2-r0)
-#7 ...
+#7 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
+#7 0.956 ( 1/10) Installing libexpat (2.7.5-r0)
+#7 0.968 ( 2/10) Installing brotli-libs (1.2.0-r0)
+#7 0.988 ( 3/10) Installing libbz2 (1.0.8-r6)
+#7 0.994 ( 4/10) Installing libpng (1.6.56-r0)
+#7 1.004 ( 5/10) Installing freetype (2.14.1-r0)
+#7 1.019 ( 6/10) Installing fontconfig (2.17.1-r0)
+#7 1.044 ( 7/10) Installing encodings (1.1.0-r0)
+#7 1.068 ( 8/10) Installing libfontenc (1.1.8-r0)
+#7 1.077 ( 9/10) Installing mkfontscale (1.2.3-r1)
+#7 1.085 (10/10) Installing font-dejavu (2.37-r6)
+#7 1.200 Executing busybox-1.37.0-r30.trigger
+#7 1.213 Executing fontconfig-2.17.1-r0.trigger
+#7 1.269 Executing mkfontscale-1.2.3-r1.trigger
+#7 1.318 OK: 23.8 MiB in 28 packages
+#7 DONE 1.5s
 
-#8 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
-#8 0.932 ( 1/10) Installing libexpat (2.7.5-r0)
-#8 0.943 ( 2/10) Installing brotli-libs (1.2.0-r0)
-#8 0.963 ( 3/10) Installing libbz2 (1.0.8-r6)
-#8 0.970 ( 4/10) Installing libpng (1.6.56-r0)
-#8 0.980 ( 5/10) Installing freetype (2.14.1-r0)
-#8 0.998 ( 6/10) Installing fontconfig (2.17.1-r0)
-#8 1.023 ( 7/10) Installing encodings (1.1.0-r0)
-#8 1.054 ( 8/10) Installing libfontenc (1.1.8-r0)
-#8 1.068 ( 9/10) Installing mkfontscale (1.2.3-r1)
-#8 1.079 (10/10) Installing font-dejavu (2.37-r6)
-#8 1.183 Executing busybox-1.37.0-r30.trigger
-#8 1.201 Executing fontconfig-2.17.1-r0.trigger
-#8 1.243 Executing mkfontscale-1.2.3-r1.trigger
-#8 1.295 OK: 23.8 MiB in 28 packages
-#8 DONE 1.5s
-
-#7 [builder 3/9] RUN apk add --no-cache python3 make g++
-#7 1.420 (10/29) Installing mpc1 (1.3.1-r1)
-#7 1.431 (11/29) Installing gcc (15.2.0-r2)
-#7 2.666 (12/29) Installing musl-dev (1.2.5-r21)
-#7 2.751 (13/29) Installing g++ (15.2.0-r2)
-#7 3.056 (14/29) Installing make (4.4.1-r3)
-#7 3.066 (15/29) Installing libbz2 (1.0.8-r6)
-#7 3.073 (16/29) Installing libexpat (2.7.5-r0)
-#7 3.081 (17/29) Installing libffi (3.5.2-r0)
-#7 3.087 (18/29) Installing gdbm (1.26-r0)
-#7 3.095 (19/29) Installing xz-libs (5.8.2-r0)
-#7 3.104 (20/29) Installing mpdecimal (4.0.1-r0)
-#7 3.112 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
-#7 3.121 (22/29) Installing libncursesw (6.5_p20251123-r0)
-#7 3.131 (23/29) Installing libpanelw (6.5_p20251123-r0)
-#7 3.137 (24/29) Installing readline (8.3.1-r0)
-#7 3.146 (25/29) Installing sqlite-libs (3.51.2-r0)
-#7 3.167 (26/29) Installing python3 (3.12.12-r0)
-#7 3.369 (27/29) Installing python3-pycache-pyc0 (3.12.12-r0)
-#7 3.499 (28/29) Installing pyc (3.12.12-r0)
-#7 3.499 (29/29) Installing python3-pyc (3.12.12-r0)
-#7 3.500 Executing busybox-1.37.0-r30.trigger
-#7 3.511 OK: 301.2 MiB in 47 packages
-#7 DONE 3.8s
+#8 [builder 3/9] RUN apk add --no-cache python3 make g++
+#8 1.016 ( 1/30) Upgrading musl (1.2.5-r21 -> 1.2.5-r22)
+#8 1.036 ( 2/30) Installing libstdc++-dev (15.2.0-r2)
+#8 1.327 ( 3/30) Installing jansson (2.14.1-r0)
+#8 1.335 ( 4/30) Installing zstd-libs (1.5.7-r2)
+#8 1.350 ( 5/30) Installing binutils (2.45.1-r0)
+#8 1.516 ( 6/30) Installing libgomp (15.2.0-r2)
+#8 1.526 ( 7/30) Installing libatomic (15.2.0-r2)
+#8 1.532 ( 8/30) Installing gmp (6.3.0-r4)
+#8 1.542 ( 9/30) Installing isl26 (0.26-r1)
+#8 1.563 (10/30) Installing mpfr4 (4.2.2-r0)
+#8 1.575 (11/30) Installing mpc1 (1.3.1-r1)
+#8 1.582 (12/30) Installing gcc (15.2.0-r2)
+#8 2.765 (13/30) Installing musl-dev (1.2.5-r22)
+#8 2.846 (14/30) Installing g++ (15.2.0-r2)
+#8 3.144 (15/30) Installing make (4.4.1-r3)
+#8 3.152 (16/30) Installing libbz2 (1.0.8-r6)
+#8 3.159 (17/30) Installing libexpat (2.7.5-r0)
+#8 3.166 (18/30) Installing libffi (3.5.2-r0)
+#8 3.173 (19/30) Installing gdbm (1.26-r0)
+#8 3.180 (20/30) Installing xz-libs (5.8.2-r0)
+#8 3.188 (21/30) Installing mpdecimal (4.0.1-r0)
+#8 3.196 (22/30) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+#8 3.206 (23/30) Installing libncursesw (6.5_p20251123-r0)
+#8 3.214 (24/30) Installing libpanelw (6.5_p20251123-r0)
+#8 3.221 (25/30) Installing readline (8.3.1-r0)
+#8 3.229 (26/30) Installing sqlite-libs (3.51.2-r0)
+#8 3.251 (27/30) Installing python3 (3.12.12-r0)
+#8 3.437 (28/30) Installing python3-pycache-pyc0 (3.12.12-r0)
+#8 3.559 (29/30) Installing pyc (3.12.12-r0)
+#8 3.559 (30/30) Installing python3-pyc (3.12.12-r0)
+#8 3.560 Executing busybox-1.37.0-r30.trigger
+#8 3.570 OK: 301.2 MiB in 47 packages
+#8 DONE 3.8s
 
 #9 [builder 4/9] COPY package.json package-lock.json* ./
 #9 DONE 0.0s
 
 #10 [builder 5/9] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#10 10.10 
-#10 10.10 added 447 packages, and audited 448 packages in 10s
-#10 10.10 
-#10 10.10 173 packages are looking for funding
-#10 10.10   run `npm fund` for details
-#10 10.15 
-#10 10.15 4 vulnerabilities (2 moderate, 2 high)
-#10 10.15 
-#10 10.15 To address all issues (including breaking changes), run:
-#10 10.15   npm audit fix --force
-#10 10.15 
-#10 10.15 Run `npm audit` for details.
-#10 DONE 10.3s
+#10 9.290 
+#10 9.290 added 447 packages, and audited 448 packages in 9s
+#10 9.290 
+#10 9.290 173 packages are looking for funding
+#10 9.290   run `npm fund` for details
+#10 9.345 
+#10 9.345 4 vulnerabilities (2 moderate, 2 high)
+#10 9.345 
+#10 9.345 To address all issues (including breaking changes), run:
+#10 9.345   npm audit fix --force
+#10 9.345 
+#10 9.345 Run `npm audit` for details.
+#10 DONE 9.8s
 
 #11 [builder 6/9] COPY astro.config.mjs tsconfig.json ./
 #11 DONE 0.0s
@@ -113,62 +111,64 @@ persona-blog-a-sqlite
 #13 DONE 0.0s
 
 #14 [builder 9/9] RUN npm run build
-#14 0.326 
-#14 0.326 > persona-blog@0.1.0 build
-#14 0.326 > astro build
-#14 0.326 
-#14 1.079 ▶ Astro collects anonymous usage data.
-#14 1.079   This information helps us improve Astro.
-#14 1.079   Run "astro telemetry disable" to opt-out.
-#14 1.079   https://astro.build/telemetry
-#14 1.079 
-#14 2.516 14:10:58 [types] Generated 632ms
-#14 2.516 14:10:58 [build] output: "hybrid"
-#14 2.516 14:10:58 [build] directory: /app/dist/
-#14 2.516 14:10:58 [build] adapter: @astrojs/node
-#14 2.516 14:10:58 [build] Collecting build info...
-#14 2.518 14:10:58 [build] ✓ Completed in 654ms.
-#14 2.526 14:10:58 [build] Building hybrid entrypoints...
-#14 7.416 14:11:03 [vite] ✓ built in 4.85s
-#14 7.417 14:11:03 [build] ✓ Completed in 4.89s.
-#14 7.417 
-#14 7.417  building client (vite) 
-#14 7.423 14:11:03 [vite] transforming...
-#14 7.547 14:11:03 [vite] ✓ 23 modules transformed.
-#14 7.583 14:11:03 [vite] rendering chunks...
-#14 7.587 14:11:03 [vite] computing gzip size...
-#14 7.593 14:11:03 [vite] dist/client/_astro/hoisted.DsEbfBy4.js                                         0.10 kB │ gzip: 0.11 kB
-#14 7.594 14:11:03 [vite] dist/client/_astro/hoisted.CUgfAPDj.js                                         0.29 kB │ gzip: 0.23 kB
-#14 7.594 14:11:03 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.B5nROznj.js  5.43 kB │ gzip: 2.14 kB
-#14 7.594 14:11:03 [vite] dist/client/_astro/hoisted.Dib_qfwM.js                                         6.22 kB │ gzip: 2.28 kB
-#14 7.596 14:11:03 [vite] ✓ built in 175ms
-#14 7.625 
-#14 7.625  prerendering static routes 
-#14 7.657 14:11:03 λ src/pages/api/graveyard-stats.ts
-#14 7.658 14:11:03   └─ /api/graveyard-stats (+22ms)
-#14 7.681 14:11:03 λ src/pages/api/reading-pulse.ts
-#14 7.681 14:11:03   └─ /api/reading-pulse (+1ms)
-#14 7.837 14:11:03 ▶ src/pages/blog/[slug].astro
-#14 7.842 14:11:03   ├─ /blog/building-in-public/index.html (+32ms)
-#14 7.874 14:11:03   ├─ /blog/focus-as-a-mood/index.html (+9ms)
-#14 7.884 14:11:03   ├─ /blog/hello-world/index.html (+9ms)
-#14 7.892 14:11:03   ├─ /blog/lo-fi-loop/index.html (+15ms)
-#14 7.907 14:11:03   ├─ /blog/now-page/index.html (+17ms)
-#14 7.924 14:11:03   └─ /blog/the-decay-theory/index.html (+17ms)
-#14 7.947 14:11:03 λ src/pages/feed.xml.ts
-#14 7.948 14:11:03   └─ /feed.xml (+2ms)
-#14 7.950 14:11:03 ✓ Completed in 340ms.
-#14 7.950 
-#14 7.951 14:11:03 [build] Rearranging server assets...
-#14 7.953 14:11:04 [build] Server built in 6.09s
-#14 7.954 14:11:04 [build] Complete!
+#14 0.313 
+#14 0.313 > persona-blog@0.1.0 build
+#14 0.313 > astro build
+#14 0.313 
+#14 0.994 ▶ Astro collects anonymous usage data.
+#14 0.994   This information helps us improve Astro.
+#14 0.994   Run "astro telemetry disable" to opt-out.
+#14 0.994   https://astro.build/telemetry
+#14 0.994 
+#14 2.452 05:08:59 [types] Generated 627ms
+#14 2.453 05:08:59 [build] output: "hybrid"
+#14 2.453 05:08:59 [build] directory: /app/dist/
+#14 2.453 05:08:59 [build] adapter: @astrojs/node
+#14 2.454 05:08:59 [build] Collecting build info...
+#14 2.454 05:08:59 [build] ✓ Completed in 682ms.
+#14 2.459 05:08:59 [build] Building hybrid entrypoints...
+#14 7.496 05:09:04 [vite] ✓ built in 4.99s
+#14 7.496 05:09:04 [build] ✓ Completed in 5.04s.
+#14 7.496 
+#14 7.496  building client (vite) 
+#14 7.504 05:09:04 [vite] transforming...
+#14 7.613 05:09:04 [vite] ✓ 25 modules transformed.
+#14 7.650 05:09:04 [vite] rendering chunks...
+#14 7.665 05:09:04 [vite] computing gzip size...
+#14 7.673 05:09:04 [vite] dist/client/_astro/hoisted.DsEbfBy4.js                                         0.10 kB │ gzip: 0.11 kB
+#14 7.673 05:09:04 [vite] dist/client/_astro/hoisted.CUgfAPDj.js                                         0.29 kB │ gzip: 0.23 kB
+#14 7.673 05:09:04 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.B5nROznj.js  5.43 kB │ gzip: 2.14 kB
+#14 7.673 05:09:04 [vite] dist/client/_astro/hoisted.Dib_qfwM.js                                         6.22 kB │ gzip: 2.28 kB
+#14 7.673 05:09:04 [vite] ✓ built in 174ms
+#14 7.711 
+#14 7.711  prerendering static routes 
+#14 7.743 05:09:04 λ src/pages/api/graveyard-stats.ts
+#14 7.744 05:09:04   └─ /api/graveyard-stats (+25ms)
+#14 7.770 05:09:04 λ src/pages/api/reading-pulse.ts
+#14 7.770 05:09:04   └─ /api/reading-pulse (+1ms)
+#14 7.780 05:09:04 ▶ src/pages/author/index.astro
+#14 7.780 05:09:04   └─ /author/index.html (+10ms)
+#14 7.916 05:09:04 ▶ src/pages/blog/[slug].astro
+#14 7.920 05:09:04   ├─ /blog/building-in-public/index.html (+22ms)
+#14 7.941 05:09:04   ├─ /blog/focus-as-a-mood/index.html (+7ms)
+#14 7.948 05:09:04   ├─ /blog/hello-world/index.html (+6ms)
+#14 7.954 05:09:04   ├─ /blog/lo-fi-loop/index.html (+7ms)
+#14 7.961 05:09:04   ├─ /blog/now-page/index.html (+6ms)
+#14 7.967 05:09:04   └─ /blog/the-decay-theory/index.html (+8ms)
+#14 7.980 05:09:04 λ src/pages/feed.xml.ts
+#14 7.980 05:09:04   └─ /feed.xml (+2ms)
+#14 7.982 05:09:04 ✓ Completed in 295ms.
+#14 7.982 
+#14 7.983 05:09:04 [build] Rearranging server assets...
+#14 7.990 05:09:04 [build] Server built in 6.22s
+#14 7.990 05:09:04 [build] Complete!
 #14 DONE 8.1s
 
 #15 [server 4/8] COPY --from=builder /app/dist ./dist
-#15 DONE 0.1s
+#15 DONE 0.0s
 
 #16 [server 5/8] COPY --from=builder /app/node_modules ./node_modules
-#16 DONE 2.3s
+#16 DONE 2.1s
 
 #17 [server 6/8] COPY --from=builder /app/src/content/blog/ ./src/content/blog/
 #17 DONE 0.0s
@@ -181,19 +181,26 @@ persona-blog-a-sqlite
 
 #20 exporting to image
 #20 exporting layers
-#20 exporting layers 1.4s done
-#20 writing image sha256:35234fc0b71b76dbd50484a2ad412b11112746310906331d66d883ceb13e5e0b done
+#20 exporting layers 1.3s done
+#20 writing image sha256:c577182b0656ee4d01e3edae7a56f5aac797c6bddd84c29f4df3fee5a929ba1f done
 #20 naming to docker.io/library/persona-blog-a done
-#20 DONE 1.4s
+#20 DONE 1.3s
 ==> [deploy] Starting container: persona-blog-a on port 7100
-62df41435e9cbf134eecb825f6b963d5d4d98b8f6c5ba9f61ec7f00e1726a395
+479ed2a493cebd9f7b755133530808de7eeacf9b4586d02aff137e7497d7fc3e
 ==> [deploy] Waiting for container to become healthy…
 ==> [deploy] ✓ Container is running
 ==> [deploy] Running deadline sweep…
 ==> [deploy] Deadline sweep response: {"ok":true,"swept":0,"skipped":0,"errors":0,"results":[]}
 ==> [deploy] Pruning dangling images…
 Deleted Images:
-deleted: sha256:5a6c4615a6a7ac61c83a11e16fbca4140cefe845979c72ff60953596dde90ef0
+deleted: sha256:35234fc0b71b76dbd50484a2ad412b11112746310906331d66d883ceb13e5e0b
+deleted: sha256:67f512fb70e40243960473dd958ea087ad5fa20e6709558b1e377ec5388496e1
+deleted: sha256:c313fc88b6844c66906c35018a49b332ac09f2414ce63e84d9795315342dedb2
+deleted: sha256:9537c80393e7bc6af0b24b9e2fb2d7bf1a25ba2f8d4b059027e6dbe24111e174
+deleted: sha256:30b11d62b808fd73a4ca84f875490e4e4d3716495f97de0958323d198162f28b
+deleted: sha256:58c349ccdac2512f3e0e8331f5e78a2c082c816e222cc1990034638a3ed696ff
+deleted: sha256:1f24cafb5fb8227dac9c34f676db9bf060c30ff04c83c76b4caf46d787ab545a
+deleted: sha256:7b0685655c93066a1a50270f68027ffc5343e4849dec8df325d1129b8b8ed7fc
 
-Total reclaimed space: 0B
-==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Tue Apr  7 04:11:14 PM CEST 2026
+Total reclaimed space: 295.3MB
+==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Fri Apr 10 07:09:15 AM CEST 2026
