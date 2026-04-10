@@ -80,10 +80,27 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
           transparent 70%
         );
       }
+      .site-footer {
+        text-align: center;
+        padding: 1.5rem 1rem 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+        margin-top: 3rem;
+      }
+      .site-footer__write {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.20);
+        text-decoration: none;
+        letter-spacing: 0.04em;
+        transition: color 200ms ease;
+      }
+      .site-footer__write:hover { color: rgba(255, 255, 255, 0.50); }
     </style>
   </head>
   <body>
     <SiteNav />
     <slot />
+    <footer class="site-footer">
+      <a href="/author" class="site-footer__write">✍ write for this blog →</a>
+    </footer>
   </body>
 </html>

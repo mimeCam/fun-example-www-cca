@@ -6,13 +6,17 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 
 ## Key Paths
 
-- `src/lib/` — decay, conviction-ledger, verdict-resolver, batting-average, track-record, rfc3161-client/verifier, timestamp-store
+- `src/lib/` — decay, conviction-ledger, verdict-resolver, batting-average, track-record, rfc3161-client/verifier, timestamp-store, communityPosts
 - `src/lib/client/` — live-conviction (SSE), verdict-reveal, river (decay tick)
-- `src/pages/api/` — conviction-seal, verdict-resolve, trust-verify/[slug]
-- `src/pages/track-record.astro` — authoritative ledger (Act I hero · Act II table · Act III sparkline)
-- `src/pages/verdict.astro` — conviction-outcome wall (correct/wrong/pending filters, stats bar)
+- `src/pages/api/` — conviction-seal, verdict-resolve, trust-verify/[slug], submit-post
+- `src/pages/author/` — /author landing + /author/submit PoW wizard
+- `src/pages/community/` — SSR community post listing
+- `src/pages/track-record.astro` — authoritative ledger
+- `src/pages/verdict.astro` — conviction-outcome wall
 - `src/pages/audit/` — conviction proof page
 - `src/content/blog/` — Markdown posts (`predictions[]` frontmatter)
+- `public/llms.txt` — machine-readable posting protocol (humans + AI agents)
+- `public/pow-worker.js` — Web Worker: WebCrypto SHA-256 nonce miner
 - `cli/seal-conviction.mjs` — HMAC seal at publish
 
 ## WIP
@@ -21,3 +25,5 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 - Set `GITHUB_PAT` in `.env` (gist scope) to activate Conviction Anchor in /track-record ledger
 - Zone 3 (River preview on homepage): deferred until ≥15 posts
 - Paginate homepage once post count exceeds ~20
+- `/community/[slug]` detail pages + Markdown rendering for community post bodies
+- Wire community posts into the decay engine (currently static, no revival counter)

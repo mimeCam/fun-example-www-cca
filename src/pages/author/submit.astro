@@ -1,0 +1,524 @@
+---
+// src/pages/author/submit.astro
+// GET /author/submit — 3-step browser PoW wizard.
+// Step 1: paste Markdown  →  Step 2: PoW progress  →  Step 3: confirm + receipt.
+// All heavy lifting is client-side; Web Worker at /pow-worker.js runs off main thread.
+//
+// Credits: Michael Koch (arch spec), Tanya Donska (UX spec §submit 3-step flow)
+export const prerender = false;
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Submit an Article — Octopoid">
+  <main class="submit-page">
+
+    <!-- Step indicator -->
+    <div class="steps" id="steps" aria-label="Progress" role="list">
+      <span class="step-dot active" data-step="1" role="listitem" aria-current="step"></span>
+      <span class="step-dot"        data-step="2" role="listitem"></span>
+      <span class="step-dot"        data-step="3" role="listitem"></span>
+    </div>
+
+    <!-- ── Step 1: Paste ── -->
+    <section class="step" id="step-1" aria-label="Step 1: Paste your article">
+      <h1 class="step-title">Paste your article</h1>
+      <p class="step-hint">Write in Markdown. Start with <code># Title</code> on the first line.</p>
+
+      <textarea
+        id="article-input"
+        class="article-textarea"
+        placeholder="# Your Article Title&#10;&#10;Paste your Markdown here…"
+        rows="18"
+        aria-label="Article content"
+        spellcheck="true"
+      ></textarea>
+
+      <div class="textarea-footer">
+        <span class="word-count" id="word-count" aria-live="polite"></span>
+        <button id="btn-next" class="btn btn--amber" disabled>Next →</button>
+      </div>
+    </section>
+
+    <!-- ── Step 2: Proof of Work ── -->
+    <section class="step hidden" id="step-2" aria-label="Step 2: Computing proof of work">
+      <h1 class="step-title">Computing proof of work</h1>
+      <p class="step-hint">SHA-256 · difficulty 4 · running in background thread</p>
+
+      <div class="pow-card" id="pow-card">
+        <div class="pow-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pow-progress-role">
+          <div class="pow-progress-fill" id="pow-fill"></div>
+        </div>
+
+        <div class="pow-stats">
+          <span class="pow-stat" id="pow-attempts">0 attempts</span>
+          <span class="pow-stat" id="pow-eta">estimating…</span>
+        </div>
+
+        <div class="pow-hash-display" id="pow-hash-display" aria-live="off">—</div>
+      </div>
+
+      <a href="#" id="cancel-pow" class="cancel-link">× Cancel</a>
+    </section>
+
+    <!-- ── Step 3: Confirm ── -->
+    <section class="step hidden" id="step-3" aria-label="Step 3: Confirm and publish">
+      <h1 class="step-title">Ready to publish</h1>
+      <p class="step-hint">Review and confirm. Once published, posts are live immediately.</p>
+
+      <div class="summary-card" id="post-summary" aria-live="polite"></div>
+
+      <div class="step-actions">
+        <a href="#" id="btn-back" class="btn btn--ghost">← Back</a>
+        <button id="btn-publish" class="btn btn--amber">Publish article</button>
+      </div>
+    </section>
+
+    <!-- ── Receipt ── -->
+    <section class="step hidden" id="step-receipt" aria-label="Published">
+      <div class="receipt-check" aria-hidden="true">✓</div>
+      <h1 class="step-title receipt-title">Published</h1>
+
+      <div class="receipt-card" id="receipt-card" aria-live="polite"></div>
+
+      <div class="step-actions">
+        <button id="btn-copy-receipt" class="btn btn--ghost">Copy receipt</button>
+        <a href="/community" class="btn btn--amber">View posts →</a>
+      </div>
+    </section>
+
+  </main>
+</BaseLayout>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+
+interface PoWResult { nonce: number; hash: string; }
+
+let _articleText  = '';
+let _powResult: PoWResult | null = null;
+let _worker: Worker | null = null;
+
+// ── DOM helpers ────────────────────────────────────────────────────────────
+
+function el<T extends HTMLElement>(id: string): T {
+  return document.getElementById(id) as T;
+}
+
+function showStep(stepId: string): void {
+  document.querySelectorAll('.step').forEach(s => s.classList.add('hidden'));
+  el(stepId).classList.remove('hidden');
+  updateDots(stepId);
+}
+
+function updateDots(stepId: string): void {
+  const num = parseInt(stepId.replace('step-', ''), 10) || 0;
+  document.querySelectorAll('.step-dot').forEach((dot, i) => {
+    dot.classList.toggle('active',     i + 1 === num);
+    dot.classList.toggle('completed',  i + 1 < num);
+    dot.setAttribute('aria-current', i + 1 === num ? 'step' : 'false');
+  });
+}
+
+// ── Word counter ───────────────────────────────────────────────────────────
+
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function readTime(words: number): string {
+  const mins = Math.max(1, Math.round(words / 200));
+  return `${mins} min read`;
+}
+
+function refreshWordCount(text: string): void {
+  const wc  = countWords(text);
+  const wEl = el('word-count');
+  wEl.textContent = wc > 0 ? `${wc} words · ${readTime(wc)}` : '';
+  (el('btn-next') as HTMLButtonElement).disabled = wc < 50;
+}
+
+// ── Step 1 ─────────────────────────────────────────────────────────────────
+
+el<HTMLTextAreaElement>('article-input').addEventListener('input', (e) => {
+  const t = (e.target as HTMLTextAreaElement).value;
+  refreshWordCount(t);
+});
+
+el('btn-next').addEventListener('click', () => {
+  _articleText = el<HTMLTextAreaElement>('article-input').value;
+  startPoW(_articleText);
+  showStep('step-2');
+});
+
+// ── Step 2 — PoW ───────────────────────────────────────────────────────────
+
+function extractTitle(markdown: string): string {
+  const match = markdown.match(/^#\s+(.+)/m);
+  return match ? match[1].trim() : '(untitled)';
+}
+
+function startPoW(text: string): void {
+  stopWorker();
+  const title = extractTitle(text);
+  const body  = text;
+  _worker = new Worker('/pow-worker.js');
+  _worker.onmessage = handleWorkerMessage;
+  _worker.onerror   = (e) => console.error('[pow-worker]', e.message);
+  _worker.postMessage({ type: 'start', title, body });
+  el('pow-fill').style.width = '0%';
+  el('pow-attempts').textContent = '0 attempts';
+  el('pow-eta').textContent = 'estimating…';
+  el('pow-hash-display').textContent = '—';
+  el('pow-card').classList.add('pow-active');
+}
+
+function handleWorkerMessage(e: MessageEvent): void {
+  const { type, nonce, hash, rate } = e.data;
+  if (type === 'progress') onPoWProgress(nonce, hash, rate);
+  if (type === 'done')     onPoWDone(nonce, hash);
+}
+
+function onPoWProgress(nonce: number, hash: string, rate: number): void {
+  const expected = 65536;
+  const pct  = Math.min(98, Math.round((nonce / expected) * 100));
+  const eta  = rate > 0 ? `~${Math.ceil((expected - nonce) / rate)}s remaining` : 'estimating…';
+  el('pow-fill').style.width = `${pct}%`;
+  el<HTMLElement>('pow-progress-role').setAttribute('aria-valuenow', String(pct));
+  el('pow-attempts').textContent = `${nonce.toLocaleString()} attempts`;
+  el('pow-eta').textContent = eta;
+  el('pow-hash-display').textContent = hash.slice(0, 32) + '…';
+}
+
+function onPoWDone(nonce: number, hash: string): void {
+  _powResult = { nonce, hash };
+  el('pow-fill').style.width = '100%';
+  el('pow-attempts').textContent = `${nonce.toLocaleString()} attempts`;
+  el('pow-eta').textContent = 'complete';
+  el('pow-hash-display').textContent = hash;
+  stopWorker();
+  setTimeout(() => showConfirmStep(), 600);
+}
+
+function stopWorker(): void {
+  if (_worker) { _worker.terminate(); _worker = null; }
+}
+
+el('cancel-pow').addEventListener('click', (e) => {
+  e.preventDefault();
+  stopWorker();
+  _powResult = null;
+  showStep('step-1');
+});
+
+// ── Step 3 — Confirm ───────────────────────────────────────────────────────
+
+function showConfirmStep(): void {
+  if (!_powResult) return;
+  const title  = extractTitle(_articleText);
+  const words  = countWords(_articleText);
+  const noTitle = !_articleText.match(/^#\s+/m);
+
+  el('post-summary').innerHTML = `
+    ${noTitle ? `<p class="summary-warn">⚠ No <code># Title</code> heading found — title will show as "(untitled)".</p>` : ''}
+    <dl class="summary-grid">
+      <dt>Title</dt>   <dd>${escHtml(title)}</dd>
+      <dt>Words</dt>   <dd>${words} · ${readTime(words)}</dd>
+      <dt>PoW hash</dt><dd class="mono">${_powResult.hash.slice(0, 20)}…</dd>
+    </dl>
+  `;
+  showStep('step-3');
+}
+
+el('btn-back').addEventListener('click', (e) => {
+  e.preventDefault();
+  showStep('step-1');
+});
+
+el('btn-publish').addEventListener('click', () => publishPost());
+
+async function publishPost(): Promise<void> {
+  if (!_powResult) return;
+  const btn = el<HTMLButtonElement>('btn-publish');
+  btn.textContent = 'Publishing…';
+  btn.disabled = true;
+
+  const title = extractTitle(_articleText);
+  const res   = await fetch('/api/submit-post', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title, body: _articleText,
+      pow_nonce: _powResult.nonce, pow_hash: _powResult.hash,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    btn.textContent = 'Publish article';
+    btn.disabled = false;
+    alert(`Submission failed: ${data.error ?? 'unknown error'}`);
+    return;
+  }
+  showReceipt(data);
+}
+
+// ── Receipt ────────────────────────────────────────────────────────────────
+
+interface Receipt { postId: string; title: string; proofHash: string; publishedAt: string; }
+
+function showReceipt(data: Receipt): void {
+  const receipt = { postId: data.postId, proofHash: data.proofHash, publishedAt: data.publishedAt };
+  el('receipt-card').innerHTML = `
+    <dl class="summary-grid">
+      <dt>Title</dt>      <dd>${escHtml(data.title)}</dd>
+      <dt>Post ID</dt>    <dd class="mono">${escHtml(data.postId)}</dd>
+      <dt>Proof hash</dt> <dd class="mono">${data.proofHash.slice(0, 20)}…</dd>
+      <dt>Published</dt>  <dd>${new Date(data.publishedAt).toLocaleString()}</dd>
+    </dl>
+  `;
+  el('btn-copy-receipt').addEventListener('click', () => {
+    navigator.clipboard?.writeText(JSON.stringify(receipt, null, 2));
+    el('btn-copy-receipt').textContent = 'Copied ✓';
+  });
+  showStep('step-receipt');
+}
+
+function escHtml(s: string): string {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
+<style>
+  .submit-page {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+
+  /* Step indicator */
+  .steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 2rem;
+    align-items: center;
+  }
+
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transition: background 250ms ease, transform 250ms ease;
+  }
+  .step-dot.active    { background: #F5A623; transform: scale(1.25); }
+  .step-dot.completed { background: rgba(245, 166, 35, 0.4); }
+
+  /* Step sections */
+  .step { display: block; }
+  .step.hidden { display: none; }
+
+  .step-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: rgba(255, 255, 255, 0.90);
+    margin: 0 0 0.4rem;
+  }
+
+  .step-hint {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.38);
+    margin: 0 0 1.5rem;
+    line-height: 1.5;
+  }
+  .step-hint code { font-family: ui-monospace, monospace; font-size: 0.75rem; }
+
+  /* Textarea (Step 1) */
+  .article-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 280px;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    resize: vertical;
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .article-textarea:focus {
+    border-color: rgba(255, 255, 255, 0.20);
+    box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.10);
+  }
+  .article-textarea::placeholder { color: rgba(255, 255, 255, 0.20); }
+
+  .textarea-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    gap: 1rem;
+  }
+
+  .word-count {
+    font-size: 0.7rem;
+    font-family: ui-monospace, monospace;
+    color: rgba(255, 255, 255, 0.28);
+  }
+
+  /* PoW card (Step 2) */
+  .pow-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.04);
+    margin-bottom: 1.25rem;
+    transition: box-shadow 400ms ease;
+  }
+  .pow-card.pow-active {
+    box-shadow: 0 12px 40px rgba(245, 166, 35, 0.12);
+    border-color: rgba(245, 166, 35, 0.12);
+  }
+
+  .pow-progress-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .pow-progress-fill {
+    height: 100%;
+    background: #F5A623;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 300ms ease;
+  }
+
+  .pow-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .pow-stat {
+    font-size: 0.72rem;
+    font-family: ui-monospace, monospace;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .pow-hash-display {
+    font-family: ui-monospace, monospace;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.22);
+    word-break: break-all;
+    min-height: 1.2em;
+  }
+
+  .cancel-link {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 150ms ease;
+  }
+  .cancel-link:hover { color: rgba(255, 255, 255, 0.5); }
+
+  /* Summary / receipt cards (Steps 3 + receipt) */
+  .summary-card, .receipt-card {
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.04);
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-warn {
+    font-size: 0.76rem;
+    color: rgba(245, 166, 35, 0.75);
+    margin: 0 0 0.75rem;
+  }
+  .summary-warn code { font-family: ui-monospace, monospace; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: 0.4rem 1rem;
+    margin: 0;
+  }
+  .summary-grid dt {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.28);
+    letter-spacing: 0.03em;
+    align-self: start;
+    padding-top: 1px;
+  }
+  .summary-grid dd {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.78);
+    margin: 0;
+    word-break: break-word;
+  }
+  .summary-grid .mono {
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.50);
+  }
+
+  /* Receipt check */
+  .receipt-check {
+    font-size: 2rem;
+    color: #F5A623;
+    margin-bottom: 0.5rem;
+  }
+  .receipt-title { margin-bottom: 1.25rem; }
+
+  /* Step actions */
+  .step-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-block;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: opacity 150ms ease, box-shadow 150ms ease;
+  }
+  .btn--amber {
+    background: #F5A623;
+    color: #0c0c0e;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(245, 166, 35, 0.25);
+  }
+  .btn--amber:hover   { opacity: 0.90; }
+  .btn--amber:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .btn--ghost {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .btn--ghost:hover { opacity: 0.75; }
+
+  @media (max-width: 640px) {
+    .submit-page      { padding: 1.75rem 1rem 4rem; }
+    .article-textarea { min-height: 200px; }
+    .pow-hash-display { display: none; }
+    .summary-grid     { grid-template-columns: 5rem 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pow-progress-fill { transition: none; }
+    .step-dot { transition: none; }
+  }
+</style>

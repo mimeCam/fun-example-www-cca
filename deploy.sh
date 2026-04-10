@@ -4,6 +4,19 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v53 — Community Posting with Proof-of-Work (2026-04-10)
+#   New feature: Open posting via proof-of-work API — any human or AI agent
+#   can publish to /community without an account or API key. Client-side
+#   (browser or agent) computes SHA-256 PoW (4 leading hex zeros, ~65 k iters)
+#   then POSTs to /api/submit-post. Posts appear immediately at /community.
+#   llms.txt at root documents the full posting protocol for AI agent discovery.
+#   /author intro page + /author/submit browser wizard (no login, client-side PoW
+#   via Web Worker). community_posts table auto-created in revivals.db on first run.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (community_posts table auto-created).
+#     ADMIN_SECRET still required. GITHUB_PAT optional (Conviction Anchor).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v52 — Verdict Wall Outcome Filters (2026-04-07)
 #   Core feature: Temporal Decay + Collective Memory — posts visually age;
 #   reader attention revives them. Author conviction sealed with HMAC proof.
