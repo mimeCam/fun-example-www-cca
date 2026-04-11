@@ -5,7 +5,10 @@
 //
 // Architecture: Michael Koch · UX: Tanya Donska · 2026-04-11
 
-export type AtmosphereStage = 'fresh' | 'endangered' | 'entombed' | 'risen' | 'verdict';
+export type AtmosphereStage =
+  | 'fresh' | 'endangered' | 'entombed' | 'risen' | 'verdict'
+  | 'gold'                  // seal ceremony in progress (hold → POST in flight)
+  | 'vindicated';           // receipt landed — hash etched, consequence complete
 
 /** Maps river StageFilter → AtmosphereStage. Centralised — never inline this. */
 const RIVER_TO_ATMOSPHERE: Record<string, AtmosphereStage> = {

@@ -9,14 +9,12 @@
 - `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep, stage-counts, graveyard-page
 - `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes + duration scale · `src/styles/atmosphere.css` — stage palette shifts
 - `src/lib/atmosphere.ts` — client-side atmosphere controller (body[data-atmosphere] mutations, river filter observer)
+- `src/lib/ceremony-atmosphere.ts` — ceremony lifecycle → atmosphere mapping; dispatches `ceremony:start/resolved/aborted`
 
 ## WIP
 
 - Seal posts via `/admin` to activate TrustBadge + batting average
 - Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
-- P1: Conviction seal ceremony atmosphere transitions (idle → gold → vindicated)
-- P1: RiverFilter sticky below SiteNav (`position: sticky; top: 48px; z-index: var(--z-sticky)`)
-- P1: BattingAverageHero height 100vh → 60vh
 - P2: BattingAverageHero cold-state ghost progress indicator (dashed rotating SVG ring)
 - P2: VerdictCeremony staggered act entrances (`@starting-style` + `animation-delay`)
 - P2: DecayCard footer density reduction (max 3 elements: clock + one badge + keep button)

@@ -33,6 +33,39 @@ body::after {
   transition: background var(--motion-drift-duration) var(--motion-drift-easing);
 }
 
+/* ── Stage: gold — ceremony in progress, room warms as the author commits ─── */
+/* Barely perceptible 2.5% amber tint: peripheral vision catches it first.   */
+/* body::after overlay gets gold-breathe — 3s pulse, 0.4% amplitude.         */
+[data-atmosphere="gold"] {
+  --atm-bg-primary:   oklch(11% 0.025 60);
+  --atm-tint:         rgba(245, 166, 35, 0.025);
+  --atm-border-color: var(--gold-border);
+  --surface-base:     oklch(11% 0.025 60);
+  --surface-raised:   rgba(245, 166, 35, 0.045);
+  --border-subtle:    rgba(245, 166, 35, 0.10);
+}
+
+[data-atmosphere="gold"] body::after,
+body[data-atmosphere="gold"]::after {
+  animation: gold-breathe 3s ease-in-out infinite;
+}
+
+/* ── Stage: vindicated — receipt landed, consequence complete ─────────────── */
+/* Resolves from amber warmth toward emerald clarity: correctness confirmed.  */
+/* Overlay near-zero — clarity after ceremony, not a celebration.            */
+[data-atmosphere="vindicated"] {
+  --atm-bg-primary:   oklch(11% 0.022 145);
+  --atm-tint:         rgba(16, 185, 129, 0.018);
+  --atm-border-color: var(--clr-emerald-500);
+  --atm-glow-color:   var(--clr-emerald-500);
+  --surface-base:     oklch(11% 0.022 145);
+  --surface-raised:   rgba(16, 185, 129, 0.04);
+  --border-subtle:    rgba(16, 185, 129, 0.10);
+}
+
+/* Settle: transitions FROM gold naturally via body transition (DRIFT profile). */
+/* No explicit keyframe needed — background-color transition handles it.      */
+
 /* ── Stage: endangered — amber tension, urgency without alarm ─────────────── */
 /* Room lit by a low amber lamp: visible only on neutral surfaces.            */
 [data-atmosphere="endangered"] {
@@ -135,4 +168,12 @@ body::after {
   0%   { box-shadow: 0 0 0 0   var(--gold-glow); }
   30%  { box-shadow: 0 0 0 8px var(--gold-glow); }
   100% { box-shadow: 0 0 0 4px var(--gold-glow); }
+}
+
+/* ── Gold breathe: page overlay pulses while ceremony is active ──────────── */
+/* 0.4% amplitude: subliminal. The room breathes, not flashes.               */
+/* prefers-reduced-motion: motion.css zeroes --motion-drift-duration → 0ms. */
+@keyframes gold-breathe {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.78; }
 }

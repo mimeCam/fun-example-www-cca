@@ -121,20 +121,58 @@
   }
 }
 
-/* ── Hash typewriter: clip-path reveal ───────────────────── */
+/* ── Receipt rows: staggered @starting-style entrances ──────── */
+/* Each direct child of the receipt panel slides up individually. */
+/* --row-index drives per-row delay; fallback 0 = no extra delay. */
+
+.seal-receipt > * {
+  transition:
+    opacity  var(--motion-ceremony-duration) var(--motion-ceremony-easing),
+    translate var(--motion-ceremony-duration) var(--motion-ceremony-easing);
+  transition-delay: calc(var(--row-index, 0) * 80ms);
+}
+
+.seal-receipt > *:nth-child(1) { --row-index: 0; }
+.seal-receipt > *:nth-child(2) { --row-index: 1; }
+.seal-receipt > *:nth-child(3) { --row-index: 2; }
+.seal-receipt > *:nth-child(4) { --row-index: 3; }
+
+@starting-style {
+  .seal-receipt > * { opacity: 0; translate: 0 6px; }
+}
+
+/* ── Hash typewriter: clip-path ink-dry reveal ───────────────── */
+/* 800ms linear for 64-char hash = 12.5ms per character.         */
+/* ghost → conviction-gold: hash is being *etched*, not printed. */
 
 @keyframes reveal-hash {
   from { clip-path: inset(0 100% 0 0); }
   to   { clip-path: inset(0 0%   0 0); }
 }
 
+@keyframes hash-ink-dry {
+  from { color: rgba(255, 255, 255, 0.22); }        /* --text-ghost */
+  to   { color: rgba(245, 166, 35, 0.70); }         /* --gold-dim */
+}
+
 .seal-receipt-hash {
   clip-path: inset(0 0% 0 0);
-  animation: reveal-hash 800ms var(--motion-easing-standard) 200ms forwards;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-ghost);
-  letter-spacing: var(--tracking-wide);
+  animation:
+    reveal-hash  800ms linear               200ms forwards,
+    hash-ink-dry   2s   ease-in-out         200ms forwards;
+  font-family:    var(--font-mono);
+  font-size:      var(--text-xs);
+  letter-spacing: -0.02em;
+  color:          var(--text-ghost);
+}
+
+/* ── Weight meter: gold color sync in gold atmosphere ─────────── */
+/* Inherit the ceremony's emotional color without JS.              */
+
+[data-atmosphere="gold"] .seal-weight-meter {
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(245, 166, 35, 0.35);
+  transition: box-shadow var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
 /* ── Reduced motion: collapse to instant transitions ─────── */
@@ -143,8 +181,9 @@
   .seal-dot,
   .seal-weight-meter,
   .seal-arc,
-  .seal-receipt                    { transition: none; }
+  .seal-receipt,
+  .seal-receipt > *                { transition: none; }
   [data-seal-phase="2"] .seal-btn  { animation: none; }
-  .seal-receipt-hash               { animation: none; clip-path: none; }
+  .seal-receipt-hash               { animation: none; clip-path: none; color: var(--gold-dim); }
   .seal-spinner                    { animation: seal-spin 1200ms linear infinite; }
 }

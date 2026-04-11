@@ -633,7 +633,16 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
 </style>
 
 <script>
-  import { createCeremony } from '../lib/seal-ceremony';
+  import { createCeremony }    from '../lib/seal-ceremony';
+  import type { SealPhase }    from '../lib/seal-ceremony';
+  import { ceremonyStart, ceremonyAbort, ceremonyResolve } from '../lib/ceremony-atmosphere';
+
+  /** Map seal phase transitions to atmosphere lifecycle. */
+  function handleCeremonyAtmosphere(phase: SealPhase, slug: string, active: { v: boolean }): void {
+    if (phase === 2) { active.v = true;  ceremonyStart(slug); }
+    else if (phase === 4) { active.v = false; setTimeout(() => ceremonyResolve(slug), 300); }
+    else if (phase === 0 && active.v) { active.v = false; ceremonyAbort(slug); }
+  }
 
   function initSealForm(container: HTMLElement): void {
     const form       = container.querySelector<HTMLFormElement>('[data-seal-form]')!;
@@ -648,15 +657,29 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     let score    = 5;
     let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Boxed boolean — mutated by handleCeremonyAtmosphere across closures.
+    const active = { v: false };
+
     const ceremony = createCeremony(slug, {
       onPhase: (phase) => {
         container.dataset.sealPhase = String(phase);
         container.style.setProperty('--seal-phase', String(phase));
         arc.classList.toggle('is-filling', phase === 2);
+        handleCeremonyAtmosphere(phase, slug, active);
       },
       onReceipt: (data) => populateReceipt(receipt, data),
       onError:   (msg)  => { errorEl.textContent = msg; errorEl.style.display = 'block'; },
     });
+
+    // Escape key: abort only when not locked (phase < 3 = POST not yet in flight).
+    const onEscape = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && ceremony.phase() < 3 && active.v) ceremonyAbort(slug);
+    };
+    // Navigation: unconditional cleanup — prevents gold atmosphere leaking across pages.
+    const onNavigation = (): void => { if (active.v) { active.v = false; ceremonyAbort(slug); } };
+
+    document.addEventListener('keydown', onEscape);
+    document.addEventListener('astro:before-preparation', onNavigation);
 
     function setScore(n: number): void {
       score = n;

@@ -4,6 +4,43 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v72 — Ceremony Atmosphere (2026-04-11)
+#   Sprint: Conviction seal ceremony now drives body atmosphere lifecycle.
+#     Two new AtmosphereStage values ('gold', 'vindicated') wire the seal
+#     hold → POST-in-flight → receipt-landed flow to full-page ambient lighting.
+#     RiverFilter pill rail made sticky (top: 48px, glass backdrop blur) so the
+#     stage filter stays reachable while scrolling the river. BattingAverageHero
+#     min-height tightened to clamp(480px, 60vh, 680px) — invites scroll.
+#   New files:
+#     src/lib/ceremony-atmosphere.ts — ceremony lifecycle → atmosphere bridge;
+#       ceremonyStart() (phase 2 → gold), ceremonyResolve() (phase 4 → vindicated,
+#       300 ms settle delay), ceremonyAbort() (escape / nav → fresh); dispatches
+#       ceremony:start / ceremony:resolved / ceremony:aborted CustomEvents for
+#       loose pub/sub. Pure client side — zero DB or API impact.
+#   Updated files:
+#     src/lib/atmosphere.ts — AtmosphereStage union extended with 'gold' and
+#       'vindicated' (seal-ceremony lifecycle stages; RIVER_TO_ATMOSPHERE
+#       unchanged — stages are ceremony-only, not river-filter stages).
+#     src/components/ConvictionSeal.astro — imports ceremony-atmosphere; boxed
+#       active flag guards abort against spurious phase-0 fires; Escape key
+#       aborts when phase < 3 (POST not yet in flight); astro:before-preparation
+#       listener ensures gold atmosphere never leaks across View Transition pages.
+#     src/components/BattingAverageHero.astro — min-height: calc(100vh - 48px)
+#       → clamp(480px, 60vh, 680px); hero is present but no longer full-screen.
+#     src/components/RiverFilter.astro — sticky pill rail; top:48px tracks
+#       SiteNav height; surface-overlay glass backdrop; border-bottom faint rule.
+#     src/styles/atmosphere.css — [data-atmosphere="gold"]: amber 2.5% tint +
+#       gold-breathe 3s pulse keyframe (0.4% amplitude — subliminal); [data-
+#       atmosphere="vindicated"]: emerald clarity settle (no keyframe — DRIFT
+#       transition from gold handles it naturally).
+#     src/styles/seal-ceremony.css — receipt rows gain @starting-style staggered
+#       entrance (80 ms/row via --row-index); seal-receipt-hash gains hash-ink-dry
+#       keyframe (ghost-white → gold-dim over 800 ms — etching feel).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v71 — Token Migration Sprint (2026-04-11)
 #   Sprint: Pure UIX/design-system polish — all remaining hardcoded rgba() values
 #     in StanceDrawer, DisputeTally, VerdictCeremony, TrackRecord, TensionBadge,

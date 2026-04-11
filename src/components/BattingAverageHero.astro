@@ -106,7 +106,7 @@ const pctMod = isLive
     flex-direction: column;
     justify-content: center;
     gap: 1.5rem;
-    min-height: calc(100vh - 48px); /* subtract nav height */
+    min-height: clamp(480px, 60vh, 680px); /* 60vh: present but not full-screen; invites scroll */
     padding: 6rem 2rem;
     max-width: 40rem;
     margin: 0 auto;

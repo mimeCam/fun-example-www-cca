@@ -75,7 +75,16 @@ function stageCount(id: StageFilter): number {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: 0 0 var(--space-6);
+    /* Sticky below SiteNav: filter stays reachable as user scrolls the river. */
+    position: sticky;
+    top: 48px;                             /* exact SiteNav height */
+    z-index: var(--z-sticky);             /* above cards, below drawer/modal */
+    background: var(--surface-overlay);   /* rgba(12,12,14,0.75) — glass dark */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-faint);
+    padding: var(--space-2) 0 var(--space-2);
+    margin-bottom: var(--space-4);
   }
 
   @media (max-width: 640px) {
@@ -84,7 +93,7 @@ function stageCount(id: StageFilter): number {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      padding-bottom: var(--space-4);
+      padding-bottom: var(--space-2);
     }
     .rf-stage::-webkit-scrollbar { display: none; }
   }
