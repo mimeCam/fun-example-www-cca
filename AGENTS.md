@@ -6,12 +6,14 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 
 ## Key Paths
 
-- `src/lib/` — decay-engine, communityPosts, conviction-ledger, verdict-resolver, batting-average, rfc3161-client/verifier, timestamp-store
+- `src/lib/` — decay-engine, communityPosts, conviction-ledger, verdict-resolver, batting-average, rfc3161-client/verifier, timestamp-store, dispute-quorum
 - `src/lib/client/` — live-conviction (SSE), verdict-reveal, river (decay tick)
-- `src/pages/api/` — conviction-seal, verdict-resolve, revive, submit-post
+- `src/pages/api/` — conviction-seal, verdict-resolve, revive, submit-post, verdict-dispute, dispute-sse
 - `src/pages/community/` — index (decay wall), [slug] (detail + KeepButton), submit (→ /author/submit)
+- `src/components/` — DisputeChallenge, DisputeTally, DisputeQuorum (verdict dispute panel)
 - `src/styles/tokens.css` — master design token registry
 - `src/styles/motion.css` — easing functions, duration scale, shared @keyframes
+- `src/styles/dispute.css` — dispute panel layout, state-badge, hold-fill animations
 - `public/pow-worker.js` — Web Worker: WebCrypto SHA-256 nonce miner
 - `cli/seal-conviction.mjs` — HMAC seal at publish
 

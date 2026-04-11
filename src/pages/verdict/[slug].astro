@@ -22,9 +22,14 @@ export const prerender = false;
 import { getCollection }    from 'astro:content';
 import BaseLayout           from '../../layouts/BaseLayout.astro';
 import VerdictCeremony      from '../../components/VerdictCeremony.astro';
+import DisputeChallenge     from '../../components/DisputeChallenge.astro';
+import DisputeTally         from '../../components/DisputeTally.astro';
+import DisputeQuorum        from '../../components/DisputeQuorum.astro';
 import { getSealEntry, getAnchorData } from '../../lib/conviction-ledger';
 import { getVerdictRecord }  from '../../lib/verdict-resolver';
 import { computeBattingAverage } from '../../lib/batting-average';
+import { getDisputeState }   from '../../lib/verdict-dispute';
+import { getDisputeSummary } from '../../lib/dispute-quorum';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
 
 // ── Route param ───────────────────────────────────────────────────────────────
@@ -37,10 +42,13 @@ const post  = posts.find(p => p.slug === slug);
 if (!post) return Astro.redirect('/404');
 
 // ── DB reads — all safe (return null on empty DB) ─────────────────────────────
-const seal    = safeRead(() => getSealEntry(slug));
-const verdict = safeRead(() => getVerdictRecord(slug));
-const avg     = safeRead(() => computeBattingAverage()) ?? { status: 'cold' as const, total: 0 };
-const anchor  = seal ? safeRead(() => getAnchorData(slug)) : null;
+const seal         = safeRead(() => getSealEntry(slug));
+const verdict      = safeRead(() => getVerdictRecord(slug));
+const avg          = safeRead(() => computeBattingAverage()) ?? { status: 'cold' as const, total: 0 };
+const anchor       = seal ? safeRead(() => getAnchorData(slug)) : null;
+const disputeState = safeRead(() => getDisputeState(slug)) ?? { status: 'no-verdict' as const };
+const quorumSummary = safeRead(() => getDisputeSummary(slug)) ?? { status: 'open' as const, challenges: 0, threshold: 1, totalStances: 0, ratio: 0 };
+const verdictSealed = verdict !== null;
 
 // ── Page meta ─────────────────────────────────────────────────────────────────
 const VERDICT_LABELS: Record<VerdictOutcome, string> = {
@@ -105,6 +113,29 @@ function safeRead<T>(fn: () => T): T | null {
       anchorUrl={anchor?.url ?? null}
     />
 
+    <!-- Dispute Panel — only when verdict is sealed -->
+    {verdictSealed && (
+      <section class="dispute-panel" aria-label="Community verdict quorum">
+
+        <!-- Header row: label + live tally badge -->
+        <div class="dispute-panel__header">
+          <p class="dispute-panel__eyebrow">Community Challenge</p>
+          <DisputeTally slug={slug} disputeState={disputeState} />
+        </div>
+
+        <!-- Quorum threshold bar -->
+        <DisputeQuorum summary={quorumSummary} />
+
+        <!-- Challenge form — gated by client-side stance check -->
+        <DisputeChallenge
+          slug={slug}
+          verdictSealed={verdictSealed}
+          disputeState={disputeState}
+        />
+
+      </section>
+    )}
+
     <!-- Footer: audit trail link -->
     <footer class="ceremony-footer">
       <a href={`/audit/${slug}/`} class="ceremony-audit-link">
@@ -115,6 +146,10 @@ function safeRead<T>(fn: () => T): T | null {
   </main>
 
 </BaseLayout>
+
+<style is:global>
+  @import '../../styles/dispute.css';
+</style>
 
 <style>
   .ceremony-page {
@@ -186,6 +221,24 @@ function safeRead<T>(fn: () => T): T | null {
   }
 
   .ceremony-audit-link:hover { color: rgba(255, 255, 255, 0.6); }
+
+  /* ── Dispute Panel header ─────────────────────────────────────── */
+  .dispute-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .dispute-panel__eyebrow {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--text-ghost);
+    margin: 0;
+  }
 
   @media (max-width: 640px) {
     .ceremony-page { padding: 2rem 1rem 4rem; }

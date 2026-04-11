@@ -4,15 +4,19 @@
 // Idempotent: double-submit returns current state without error.
 // Auth: X-Session-Id header (same fingerprint used by revival + stance APIs).
 //
-// Request:  { slug: string }
-// Response: { ok, disputed, alreadyDisputed?, state, ratio, total, disputes }
+// Request:  { slug: string, reason?: string }
+// Response: { ok, disputed?, alreadyDisputed?, state, summary }
+//   state   — DisputeState from verdict-dispute.ts (clean | contested | …)
+//   summary — DisputeSummary from dispute-quorum.ts (challenges, threshold, ratio)
 //
-// Credits: Mike (napkin plan §Verdict-Dispute-Engine), Paul Kim (Challenge Moment)
+// Credits: Mike (napkin plan §verdict-dispute-hardening, §quorum-math-is-tunable),
+//          Paul Kim (Challenge Moment as must-have #3)
 
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { getStanceForSession } from '../../lib/stance-ledger';
 import { recordDispute, disputeAlreadyRecorded, getDisputeState } from '../../lib/verdict-dispute';
+import { getDisputeSummary } from '../../lib/dispute-quorum';
 import { SESSION_HEADER } from '../../lib/sessionToken';
 
 export const prerender = false;
@@ -29,15 +33,21 @@ function json(data: unknown, status = 200): Response {
 }
 
 function badRequest(msg: string): Response { return json({ ok: false, error: msg }, 400); }
-function forbidden(msg: string): Response  { return json({ ok: false, error: msg }, 403); }
+function forbidden(msg: string):  Response { return json({ ok: false, error: msg }, 403); }
 
 async function slugExists(slug: string): Promise<boolean> {
   const posts = await getCollection('blog');
   return posts.some(p => p.slug === slug);
 }
 
-function sessionFromRequest(request: Request): string | null {
+function sessionId(request: Request): string | null {
   return request.headers.get(SESSION_HEADER) ?? null;
+}
+
+function buildReply(ok: boolean, extra: Record<string, unknown>, slug: string): Response {
+  const state   = getDisputeState(slug);
+  const summary = getDisputeSummary(slug);
+  return json({ ok, ...extra, state, summary });
 }
 
 // ---------------------------------------------------------------------------
@@ -51,23 +61,21 @@ export const POST: APIRoute = async ({ request }) => {
   const { slug } = body;
   if (!slug || typeof slug !== 'string') return badRequest('Missing slug');
 
-  const sessionId = sessionFromRequest(request);
-  if (!sessionId) return forbidden('Missing X-Session-Id header');
+  const sid = sessionId(request);
+  if (!sid) return forbidden('Missing X-Session-Id header');
 
   if (!(await slugExists(slug))) return badRequest('Unknown slug');
 
-  const stance = getStanceForSession(slug, sessionId);
+  const stance = getStanceForSession(slug, sid);
   if (stance !== 'disagree') return forbidden('Only readers who disagreed may challenge');
 
   const state = getDisputeState(slug);
   if (state.status === 'no-verdict') return badRequest('Verdict not yet sealed — nothing to dispute');
 
-  if (disputeAlreadyRecorded(slug, sessionId)) {
-    return json({ ok: true, alreadyDisputed: true, state: getDisputeState(slug) });
+  if (disputeAlreadyRecorded(slug, sid)) {
+    return buildReply(true, { alreadyDisputed: true }, slug);
   }
 
-  recordDispute(slug, sessionId);
-  const newState = getDisputeState(slug);
-
-  return json({ ok: true, disputed: true, state: newState });
+  recordDispute(slug, sid);
+  return buildReply(true, { disputed: true }, slug);
 };

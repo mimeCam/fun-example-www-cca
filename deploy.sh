@@ -4,6 +4,39 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v56 — Dispute Quorum Engine (2026-04-11)
+#   Sprint: Formal quorum math for reader challenges against sealed verdicts.
+#   New files:
+#     src/lib/dispute-quorum.ts — threshold state machine; getQuorumThreshold()
+#       scales with engagement (QUORUM_RATIO × totalStances, floor 1);
+#       getDisputeSummary() returns {status,challenges,threshold,ratio};
+#       QuorumStatus: open → contested (→ overturned | upheld future phase).
+#       State is read-only at call time; same revivals.db WAL singleton.
+#     src/components/DisputeQuorum.astro — segmented quorum progress bar;
+#       ceremony-animated fill: amber (open) → red (contested); ghost segments
+#       show remaining challenges needed; caps display at 20 for overflow safety.
+#     src/pages/api/dispute-sse.ts — GET /api/dispute-sse?slug=X; SSE endpoint
+#       emitting DisputeSummary JSON every 3 s; auto-closes after 90 s; mirrors
+#       /api/heartbeat + /api/presence SSE pattern.
+#     src/styles/dispute.css — design-token-compliant stylesheet for all dispute
+#       UI (challenge button, quorum bar, tally badge); zero hardcoded colours.
+#   Updated files:
+#     src/components/DisputeChallenge.astro — hold-to-challenge gesture (800 ms,
+#       SPRING motion profile); same UX grammar as KeepButton; amber→red fill.
+#     src/components/DisputeTally.astro — wired to DisputeSummary (threshold +
+#       ratio); colour ramp grey→amber→red mirrors quorum progress.
+#     src/pages/api/verdict-dispute.ts — response now includes full DisputeSummary
+#       from dispute-quorum.ts alongside DisputeState; reason field accepted.
+#     src/pages/verdict/[slug].astro — DisputeQuorum component rendered; live
+#       patch via dispute-sse SSE stream on connected clients.
+#     src/styles/tokens.css — dispute colour tokens added (--color-dispute-*).
+#   Infrastructure: no new services, volumes, or required npm packages.
+#     SQLITE_VOLUME mounts revivals.db (verdict_disputes table already exists).
+#     ADMIN_SECRET still required. GITHUB_PAT optional (Conviction Anchor).
+#     New optional env var: DISPUTE_QUORUM_RATIO (float 0..1, default 0.3).
+#       Omit to use the built-in default — no action needed for existing deploys.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v55 — Community Decay Integration & Detail Pages (2026-04-11)
 #   Sprint: Community posts now fully participate in the decay + revival loop.
 #   New files:
@@ -677,6 +710,7 @@ docker build \
 # ── 4. Run the new container ─────────────────────────────────────────────────
 echo "==> [deploy] Starting container: ${CONTAINER_NAME} on port ${HOST_PORT}"
 GITHUB_PAT_VAL="$(grep -oP '^GITHUB_PAT=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')"
+DISPUTE_QUORUM_RATIO_VAL="$(grep -oP '^DISPUTE_QUORUM_RATIO=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')"
 
 docker run \
   --detach \
@@ -689,6 +723,7 @@ docker run \
   --volume "${SQLITE_VOLUME}:/app/data" \
   --env ADMIN_SECRET="$(grep -oP '^ADMIN_SECRET=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')" \
   ${GITHUB_PAT_VAL:+--env GITHUB_PAT="${GITHUB_PAT_VAL}"} \
+  ${DISPUTE_QUORUM_RATIO_VAL:+--env DISPUTE_QUORUM_RATIO="${DISPUTE_QUORUM_RATIO_VAL}"} \
   "${IMAGE_NAME}"
 
 # ── 5. Health check with retry ───────────────────────────────────────────────

@@ -1,10 +1,11 @@
 ---
 // src/components/DisputeChallenge.astro
-// "Challenge Moment" — lets readers who disagreed formally dispute the author's verdict.
-// Renders inert HTML; client script gates visibility by checking localStorage stance.
-// Eligible: reader staked 'disagree' + verdict is sealed + hasn't disputed yet.
-// On submit: POST /api/verdict-dispute → reveal outcome + update tally badge.
-// Credits: Mike (napkin plan §Challenge-Moment), Tanya (§StanceDrawer interaction pattern)
+// "Challenge Moment" — hold-to-challenge gesture for disagreeing readers.
+// Eligible: reader staked 'disagree' + verdict sealed + hasn't disputed yet.
+// Hold 800ms (SPRING profile) to commit — same UX grammar as KeepButton,
+// inverse emotional register: amber → red fill (challenge = consequential).
+// Credits: Mike (napkin plan §Challenge-Moment, §hold-gesture-deliberate-reuse),
+//          Tanya (§StanceDrawer interaction pattern, §color-as-signal axiom)
 
 import type { DisputeState } from '../lib/verdict-dispute';
 
@@ -15,16 +16,6 @@ interface Props {
 }
 
 const { slug, verdictSealed, disputeState } = Astro.props;
-
-const stateLabel =
-  disputeState.status === 'contested' ? 'CONTESTED'
-  : disputeState.status === 'clean'   ? 'VERIFIED'
-  : '';
-
-const ratioText =
-  (disputeState.status === 'contested' || disputeState.status === 'clean')
-    ? `${disputeState.disputes} of ${disputeState.total} disagree-stakers challenged`
-    : '';
 ---
 
 {verdictSealed && (
@@ -32,33 +23,59 @@ const ratioText =
     class="dispute-challenge"
     id="dispute-challenge"
     data-slug={slug}
-    data-verdict-sealed="true"
     aria-label="Challenge this verdict"
     style="display:none"
   >
     <div class="dispute-challenge__inner">
-      <p class="dispute-challenge__eyebrow">Author sealed a verdict.</p>
-      <p class="dispute-challenge__headline">You disagreed. Do you contest this outcome?</p>
+
+      <!-- Eyebrow -->
+      <p class="dispute-challenge__eyebrow">You disagreed. The verdict is sealed.</p>
+
+      <!-- Headline -->
+      <h3 class="dispute-challenge__headline">Contest this outcome?</h3>
+
+      <!-- Body copy -->
       <p class="dispute-challenge__body">
-        If 1 in 3 dissenting readers challenge this verdict, it becomes
-        <strong>contested</strong> — excluded from the batting average until the author responds.
+        Hold the button for 2 seconds to file a formal challenge.
+        If <strong>1 in 3</strong> dissenting readers challenge this verdict,
+        it becomes <strong>contested</strong> — excluded from the batting average
+        until the author responds.
       </p>
 
-      <button
-        class="dispute-challenge__btn"
-        id="dispute-submit-btn"
-        data-slug={slug}
-        type="button"
-        aria-label="File a formal dispute against this verdict"
-      >
-        Challenge Verdict
-      </button>
+      <!-- Reason selector -->
+      <fieldset class="dispute-challenge__reasons" id="dispute-reasons">
+        <legend class="dispute-challenge__reasons-legend">Reason <span class="dispute-challenge__optional">(optional)</span></legend>
+        {(['Too vague', 'Outcome contradicts claim', 'Moved goalposts', 'Other'] as const).map(r => (
+          <label class="dispute-challenge__reason-label">
+            <input
+              type="radio"
+              name="dispute-reason"
+              value={r}
+              class="dispute-challenge__reason-input"
+            />
+            <span class="dispute-challenge__reason-text">{r}</span>
+          </label>
+        ))}
+      </fieldset>
 
-      <div class="dispute-challenge__feedback" id="dispute-feedback" aria-live="polite"></div>
+      <!-- Hold-to-challenge button -->
+      <div class="dispute-challenge__btn-wrap">
+        <button
+          class="dispute-challenge__btn"
+          id="dispute-submit-btn"
+          data-slug={slug}
+          type="button"
+          aria-label="Hold to file a formal dispute against this verdict"
+        >
+          <span class="dispute-challenge__btn-fill" aria-hidden="true"></span>
+          <span class="dispute-challenge__btn-label">Hold to Challenge</span>
+        </button>
+        <p class="dispute-challenge__hint" id="dispute-hint" aria-live="polite"></p>
+      </div>
 
-      {ratioText && (
-        <p class="dispute-challenge__tally">{ratioText} · {stateLabel}</p>
-      )}
+      <!-- Post-submit feedback -->
+      <div class="dispute-challenge__feedback" id="dispute-feedback" aria-live="polite" hidden></div>
+
     </div>
   </section>
 )}
@@ -68,149 +85,327 @@ const ratioText =
   const section = document.getElementById('dispute-challenge');
   if (!section) return;
 
-  const slug = section.dataset.slug ?? '';
+  const slug       = section.dataset.slug ?? '';
   const STANCE_KEY = `stance-${slug}`;
   const DISPUTE_KEY = `dispute-${slug}`;
 
-  function getSessionId() {
-    try { return localStorage.getItem('_sid'); } catch { return null; }
-  }
+  // ── Guards ────────────────────────────────────────────────────────────────
 
-  function hasDisagreed() {
+  function hasDisagreed(): boolean {
     try { return localStorage.getItem(STANCE_KEY) === 'disagree'; } catch { return false; }
   }
 
-  function alreadyDisputed() {
+  function alreadyDisputed(): boolean {
     try { return localStorage.getItem(DISPUTE_KEY) === '1'; } catch { return false; }
   }
 
-  // Gate: only show if reader disagreed and hasn't filed a dispute yet
+  function getSessionId(): string | null {
+    try { return localStorage.getItem('_sid'); } catch { return null; }
+  }
+
+  function selectedReason(): string {
+    const checked = document.querySelector<HTMLInputElement>('input[name="dispute-reason"]:checked');
+    return checked?.value ?? '';
+  }
+
+  // Show section only for eligible readers
   if (!hasDisagreed() || alreadyDisputed()) return;
   section.style.display = '';
 
-  const btn = document.getElementById('dispute-submit-btn');
-  const feedback = document.getElementById('dispute-feedback');
-  if (!btn || !feedback) return;
+  // ── Hold gesture ──────────────────────────────────────────────────────────
 
-  btn.addEventListener('click', async function handleDispute() {
-    btn.setAttribute('disabled', 'true');
-    btn.textContent = 'Filing…';
+  const btn      = document.getElementById('dispute-submit-btn') as HTMLButtonElement | null;
+  const fill     = btn?.querySelector<HTMLElement>('.dispute-challenge__btn-fill');
+  const label    = btn?.querySelector<HTMLElement>('.dispute-challenge__btn-label');
+  const hint     = document.getElementById('dispute-hint');
+  const feedback = document.getElementById('dispute-feedback') as HTMLElement | null;
+  if (!btn || !fill || !label || !feedback) return;
 
+  const HOLD_MS = 800;
+  let holdTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function startHold(): void {
+    if (btn!.classList.contains('disputed')) return;
+    btn!.classList.add('holding');
+    fill!.style.transitionDuration = `${HOLD_MS}ms`;
+    if (hint) hint.textContent = 'Keep holding…';
+    holdTimer = setTimeout(commitDispute, HOLD_MS);
+  }
+
+  function cancelHold(): void {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    btn!.classList.remove('holding');
+    fill!.style.transitionDuration = '200ms';
+    if (hint) hint.textContent = '';
+  }
+
+  function lockButton(): void {
+    btn!.classList.add('disputed');
+    btn!.setAttribute('disabled', 'true');
+    label!.textContent = 'Challenged ✓';
+    if (hint) hint.textContent = '';
+  }
+
+  function restoreButton(): void {
+    btn!.classList.remove('holding');
+    fill!.style.transitionDuration = '200ms';
+    label!.textContent = 'Hold to Challenge';
+    if (hint) hint.textContent = '';
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+
+  async function commitDispute(): Promise<void> {
+    holdTimer = null;
+    btn!.classList.remove('holding');
     const sessionId = getSessionId();
-    if (!sessionId) {
-      feedback.textContent = 'Session not found — try refreshing.';
-      btn.removeAttribute('disabled');
-      btn.textContent = 'Challenge Verdict';
-      return;
-    }
+    if (!sessionId) { showError('Session not found — refresh and try again.'); return; }
 
+    lockButton();
     try {
-      const res = await fetch('/api/verdict-dispute', {
+      const res  = await fetch('/api/verdict-dispute', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-Id': sessionId,
-        },
-        body: JSON.stringify({ slug }),
+        headers: { 'Content-Type': 'application/json', 'X-Session-Id': sessionId },
+        body: JSON.stringify({ slug, reason: selectedReason() }),
       });
-
-      const data = await res.json();
-
+      const data = await res.json() as Record<string, unknown>;
       if (data.ok) {
         localStorage.setItem(DISPUTE_KEY, '1');
-        btn.textContent = 'Challenged ✓';
-        feedback.textContent = data.state?.status === 'contested'
-          ? 'Verdict is now contested — the author must respond.'
-          : 'Your dispute is recorded. Challenge threshold not yet reached.';
-        // Refresh DisputeTally badge if present
-        const tally = document.getElementById(`dispute-tally-${slug}`);
-        if (tally && data.state) {
-          tally.setAttribute('data-state', data.state.status);
-          tally.setAttribute('data-disputes', data.state.disputes ?? 0);
-          tally.setAttribute('data-total', data.state.total ?? 0);
-        }
+        showSuccess(data);
       } else {
-        feedback.textContent = data.error ?? 'Could not file dispute.';
-        btn.removeAttribute('disabled');
-        btn.textContent = 'Challenge Verdict';
+        restoreButton();
+        showError((data.error as string) ?? 'Could not file dispute.');
       }
     } catch {
-      feedback.textContent = 'Network error — try again.';
-      btn.removeAttribute('disabled');
-      btn.textContent = 'Challenge Verdict';
+      restoreButton();
+      showError('Network error — try again.');
     }
+  }
+
+  function showSuccess(data: Record<string, unknown>): void {
+    const state = (data.state as { status?: string } | undefined)?.status ?? 'open';
+    feedback!.textContent = state === 'contested'
+      ? 'Verdict is now contested — the author must respond.'
+      : 'Challenge recorded. Quorum threshold not yet reached.';
+    feedback!.hidden = false;
+    document.dispatchEvent(new CustomEvent('dispute:recorded', { detail: { slug, state: data.state } }));
+  }
+
+  function showError(msg: string): void {
+    feedback!.textContent = msg;
+    feedback!.hidden = false;
+  }
+
+  // ── Event wiring ──────────────────────────────────────────────────────────
+
+  btn.addEventListener('mousedown',   startHold);
+  btn.addEventListener('touchstart',  startHold, { passive: true });
+  btn.addEventListener('mouseup',     cancelHold);
+  btn.addEventListener('mouseleave',  cancelHold);
+  btn.addEventListener('touchend',    cancelHold);
+  btn.addEventListener('touchcancel', cancelHold);
+  btn.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'Enter') startHold();
+  });
+  btn.addEventListener('keyup', (e) => {
+    if (e.key === ' ' || e.key === 'Enter') cancelHold();
   });
 })();
 </script>
 
 <style>
+  /* ── Section wrapper ──────────────────────────────────────────────────── */
   .dispute-challenge {
-    margin: 2rem 0;
     padding: 1.5rem;
-    background: oklch(13% 0.01 30 / 0.7);
-    border: 1px solid oklch(60% 0.15 40 / 0.3);
-    border-radius: 12px;
+    background: rgba(251, 191, 36, 0.025);
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: var(--radius-md);
   }
 
-  .dispute-challenge__inner { display: flex; flex-direction: column; gap: 0.6rem; }
+  .dispute-challenge__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
 
+  /* ── Typography ── */
   .dispute-challenge__eyebrow {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
-    color: oklch(65% 0.15 40);
+    color: rgba(251, 191, 36, 0.55);
     margin: 0;
   }
 
   .dispute-challenge__headline {
-    font-size: 1rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
     margin: 0;
+    letter-spacing: var(--tracking-tight);
   }
 
   .dispute-challenge__body {
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.55);
-    line-height: 1.55;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
     margin: 0;
   }
 
-  .dispute-challenge__btn {
-    margin-top: 0.5rem;
-    align-self: flex-start;
-    padding: 0.55rem 1.25rem;
-    background: oklch(60% 0.18 40);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    transition: background 200ms ease, opacity 200ms ease;
+  .dispute-challenge__body strong {
+    color: var(--text-primary);
+    font-weight: var(--weight-semibold);
   }
 
-  .dispute-challenge__btn:hover:not(:disabled) {
-    background: oklch(65% 0.2 40);
+  /* ── Reason fieldset ── */
+  .dispute-challenge__reasons {
+    border: none;
+    padding: 0;
+    margin: 0.25rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .dispute-challenge__reasons-legend {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    margin-bottom: 0.45rem;
+    float: none;
+    padding: 0;
+  }
+
+  .dispute-challenge__optional {
+    font-weight: var(--weight-normal);
+    opacity: 0.5;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .dispute-challenge__reason-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .dispute-challenge__reason-input {
+    accent-color: var(--color-dispute-contested);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .dispute-challenge__reason-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    transition: color var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .dispute-challenge__reason-label:hover .dispute-challenge__reason-text {
+    color: var(--text-primary);
+  }
+
+  /* ── Hold-to-challenge button ── */
+  .dispute-challenge__btn-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+
+  .dispute-challenge__btn {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.5rem 1.5rem;
+    border: 1.5px solid rgba(251, 191, 36, 0.30);
+    border-radius: var(--radius-sm);
+    background: rgba(251, 191, 36, 0.05);
+    color: rgba(251, 191, 36, 0.80);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      border-color  var(--motion-snap-duration) var(--motion-snap-easing),
+      background    var(--motion-snap-duration) var(--motion-snap-easing),
+      color         var(--motion-snap-duration) var(--motion-snap-easing),
+      transform     var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .dispute-challenge__btn:hover:not(:disabled):not(.disputed) {
+    border-color: rgba(251, 191, 36, 0.55);
+    background:   rgba(251, 191, 36, 0.09);
+    transform: scale(1.01);
+  }
+
+  .dispute-challenge__btn:active:not(.disputed) { transform: scale(0.98); }
+
+  /* Fill layer — scaleX 0→1 on hold */
+  .dispute-challenge__btn-fill {
+    position: absolute;
+    inset: 0;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: linear-gradient(90deg, var(--color-dispute-fill-from), var(--color-dispute-fill-to));
+    opacity: 0.22;
+    transition: transform 200ms linear;
+    pointer-events: none;
+  }
+
+  .dispute-challenge__btn.holding .dispute-challenge__btn-fill {
+    transform: scaleX(1);
+    /* duration is overridden by JS to HOLD_MS */
+  }
+
+  /* Button label stays above the fill */
+  .dispute-challenge__btn-label {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Committed state */
+  .dispute-challenge__btn.disputed {
+    border-color: rgba(251, 191, 36, 0.15);
+    background:   rgba(251, 191, 36, 0.04);
+    color: rgba(251, 191, 36, 0.45);
+    cursor: default;
   }
 
   .dispute-challenge__btn:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
   }
 
-  .dispute-challenge__feedback {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-    min-height: 1.2em;
+  /* ── Hint below button ── */
+  .dispute-challenge__hint {
+    font-size: var(--text-xs);
+    color: var(--text-ghost);
+    margin: 0;
+    min-height: 1.1em;
+    transition: opacity var(--motion-flow-duration) var(--motion-flow-easing);
   }
 
-  .dispute-challenge__tally {
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.3);
-    margin: 0.25rem 0 0;
-    letter-spacing: 0.03em;
+  /* ── Post-submit feedback ── */
+  .dispute-challenge__feedback {
+    margin-top: 0.25rem;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+  }
+
+  .dispute-challenge__feedback:not([hidden]) {
+    animation: badge-enter var(--motion-flow-duration) var(--motion-flow-easing) both;
   }
 </style>

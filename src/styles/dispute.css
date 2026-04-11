@@ -1,0 +1,85 @@
+/* src/styles/dispute.css
+ * Community Verdict Quorum — panel layout + dispute-specific rules.
+ * All color references go through --color-dispute-* tokens (defined in tokens.css).
+ * Motion references go through motion.css profiles only.
+ * Import order: after tokens.css, after motion.css.
+ *
+ * Credits: Mike (napkin plan §design-system-integration),
+ *          Tanya (§color-as-signal axiom, §tombstone-rise reuse)
+ */
+
+/* ── DisputePanel outer wrapper ────────────────────────────────────────── */
+
+.dispute-panel {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: tombstone-rise var(--motion-ceremony-duration) var(--motion-ceremony-easing) both;
+}
+
+/* ── State badge — shared by DisputeTally + DisputeChallenge ───────────── */
+
+.dispute-state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  transition:
+    color            var(--motion-flow-duration) var(--motion-flow-easing),
+    background       var(--motion-flow-duration) var(--motion-flow-easing),
+    border-color     var(--motion-flow-duration) var(--motion-flow-easing);
+}
+
+.dispute-state-badge[data-status="open"] {
+  color: var(--color-dispute-open);
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+.dispute-state-badge[data-status="contested"] {
+  color: var(--color-dispute-contested);
+  background: rgba(251, 191, 36, 0.06);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.dispute-state-badge[data-status="overturned"] {
+  color: var(--color-dispute-overturned);
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.dispute-state-badge[data-status="upheld"] {
+  color: var(--color-dispute-upheld);
+  background: rgba(74, 222, 128, 0.06);
+  border-color: rgba(74, 222, 128, 0.22);
+}
+
+/* ── Hold-to-challenge fill animation (DisputeChallenge) ───────────────── */
+
+@keyframes hold-fill-challenge {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── Quorum bar segment entry (DisputeQuorum) ──────────────────────────── */
+
+@keyframes seg-enter {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Contested flash — brief amber pulse when threshold just crossed ────── */
+
+@keyframes contested-flash {
+  0%   { box-shadow: 0 0 0   rgba(251, 191, 36, 0); }
+  40%  { box-shadow: 0 0 20px rgba(251, 191, 36, 0.30); }
+  100% { box-shadow: 0 0 0   rgba(251, 191, 36, 0); }
+}

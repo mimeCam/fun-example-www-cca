@@ -175,6 +175,14 @@
     inset 0 1px 0 oklch(28% 0.01 50 / 0.6),
     0 2px 8px oklch(8% 0.01 50 / 0.4);
 
+  /* ── Dispute State Colors (Community Verdict Quorum) ────────────────── */
+  --color-dispute-open:       var(--clr-slate-400);
+  --color-dispute-contested:  var(--clr-amber-400);
+  --color-dispute-overturned: var(--clr-red-500);
+  --color-dispute-upheld:     var(--clr-green-400);
+  --color-dispute-fill-from:  var(--clr-amber-400);
+  --color-dispute-fill-to:    var(--clr-red-500);
+
   /* ── Sympathetic Bloom (cascade glow on connected posts) ────────────── */
   --sympathetic-ring-spread:       14px;
   --sympathetic-ring-alpha:        0.10;

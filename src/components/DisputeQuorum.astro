@@ -1,0 +1,127 @@
+---
+// src/components/DisputeQuorum.astro
+// N of M threshold visualizer — segmented quorum bar.
+// Ceremony-animated segments fill amber → red as challenges accumulate.
+// Ghost segments show remaining needed challenges at a glance.
+// Credits: Mike (napkin plan §DisputeQuorum), Tanya (§ceremony motion profile)
+
+import type { DisputeSummary } from '../lib/dispute-quorum';
+
+interface Props {
+  summary: DisputeSummary;
+}
+
+const { summary } = Astro.props;
+const { challenges, threshold, status } = summary;
+
+// Cap displayed segments at 20 so the bar doesn't overflow on high-conviction posts
+const displayMax  = Math.min(threshold, 20);
+const displayFill = Math.min(challenges, displayMax);
+const segments    = Array.from({ length: displayMax });
+
+const cappedNote  = threshold > 20
+  ? `(showing first 20 of ${threshold} needed)`
+  : null;
+---
+
+<div
+  class="quorum-bar"
+  data-status={status}
+  id="quorum-bar"
+  aria-label={`${challenges} of ${threshold} challenges needed to contest`}
+>
+
+  <!-- Segmented progress bar -->
+  <div class="quorum-bar__segments" role="meter" aria-valuenow={challenges} aria-valuemax={threshold}>
+    {segments.map((_, i) => (
+      <span
+        class:list={['quorum-bar__seg', i < displayFill && 'quorum-bar__seg--filled']}
+        style={i < displayFill ? `animation-delay:${i * 55}ms` : ''}
+        aria-hidden="true"
+      />
+    ))}
+  </div>
+
+  <!-- Count label -->
+  <p class="quorum-bar__label">
+    <span class="quorum-bar__count" id="quorum-count">{challenges}</span>
+    <span class="quorum-bar__sep"> / </span>
+    <span class="quorum-bar__max">{threshold}</span>
+    <span class="quorum-bar__unit"> challenges to contest</span>
+    {cappedNote && <span class="quorum-bar__cap-note"> {cappedNote}</span>}
+  </p>
+
+</div>
+
+<style>
+  .quorum-bar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  /* ── Segments ── */
+  .quorum-bar__segments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+
+  .quorum-bar__seg {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    transition:
+      background    var(--motion-ceremony-duration) var(--motion-ceremony-easing),
+      border-color  var(--motion-ceremony-duration) var(--motion-ceremony-easing);
+  }
+
+  .quorum-bar__seg--filled {
+    background: var(--color-dispute-fill-from);
+    border-color: rgba(251, 191, 36, 0.55);
+    animation: seg-enter var(--motion-ceremony-duration) var(--motion-ceremony-easing) both;
+  }
+
+  /* All filled segments go red once contested */
+  .quorum-bar[data-status="contested"] .quorum-bar__seg--filled {
+    background: var(--color-dispute-fill-to);
+    border-color: rgba(239, 68, 68, 0.55);
+    animation: contested-flash var(--motion-ceremony-duration) var(--motion-ceremony-easing) both;
+  }
+
+  /* ── Label ── */
+  .quorum-bar__label {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin: 0;
+    letter-spacing: var(--tracking-normal);
+  }
+
+  .quorum-bar__count {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    font-weight: var(--weight-semibold);
+    color: var(--color-dispute-contested);
+    transition: color var(--motion-flow-duration) var(--motion-flow-easing);
+  }
+
+  .quorum-bar[data-status="contested"] .quorum-bar__count {
+    color: var(--color-dispute-overturned);
+  }
+
+  .quorum-bar__max {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+  }
+
+  .quorum-bar__unit { color: var(--text-ghost); }
+
+  .quorum-bar__cap-note {
+    color: var(--text-ghost);
+    font-size: var(--text-2xs);
+    font-style: italic;
+  }
+</style>
