@@ -17,7 +17,7 @@ import { createHmac } from 'crypto';
 import { getSealEntry } from '../lib/conviction-ledger';
 import { getVerdictRecord } from '../lib/collectiveMemory';
 import { getDeadlineStatus } from '../lib/deadline-enforcer';
-import AdminSealForm from '../components/AdminSealForm.astro';
+import ConvictionSeal from '../components/ConvictionSeal.astro';
 import VerdictResolutionPanel from '../components/VerdictResolutionPanel.astro';
 
 // ---------------------------------------------------------------------------
@@ -340,12 +340,10 @@ const sealedCount = posts.filter(p => p.sealed).length;
       <div class="post-list">
         {posts.map(post => (
           <div class="admin-post-group">
-            <AdminSealForm
+            <ConvictionSeal
               slug={post.slug}
               title={post.title}
-              sealed={post.sealed}
-              score={post.score}
-              sealedAt={post.sealedAt}
+              context="admin"
             />
             <VerdictResolutionPanel
               slug={post.slug}

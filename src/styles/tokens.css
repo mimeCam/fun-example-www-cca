@@ -149,6 +149,13 @@
   --shadow-fresh-spread: 32px;
   --shadow-fresh-alpha:  0.22;
 
+  /* ── Motion Tokens (seal ceremony + microinteractions) ─────────────── */
+  --motion-duration-fast:      150ms;  /* micro feedback: dot fill, button state */
+  --motion-duration-base:      300ms;  /* ceremony phases: stamp, meter */
+  --motion-duration-deliberate: 500ms; /* lock + receipt entrance */
+  --motion-easing-spring:      cubic-bezier(0.34, 1.56, 0.64, 1);  /* overshoot — weight */
+  --motion-easing-standard:    ease-in-out;
+
   /* ── Z-Index Scale ──────────────────────────────────────────────────── */
   --z-base:    0;
   --z-card:    1;

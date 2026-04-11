@@ -113,12 +113,13 @@ export const POST: APIRoute = async ({ request }) => {
     // Broadcast conviction:sealed so live-conviction-hero.ts can update open tabs.
     broadcastNamed('conviction:sealed', { slug, score: entry.conviction_score });
     return json({
-      hash:       entry.hash,
-      sealedAt:   entry.timestamp,
-      score:      entry.conviction_score,
-      authorNote: entry.author_note,
+      hash:            entry.hash,
+      sealedAt:        entry.timestamp,
+      score:           entry.conviction_score,
+      authorNote:      entry.author_note,
       anchorUrl,
-      tst_token:  tstToken,
+      tst_token:       tstToken,
+      ceremony_phase:  4,  // client uses this to advance to receipt phase
     });
   } catch (err) {
     if (err instanceof ConvictionAlreadySealedError) {

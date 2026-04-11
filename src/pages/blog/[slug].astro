@@ -1,12 +1,10 @@
 ---
 // src/pages/blog/[slug].astro
 // Blog detail page — "The Sealed Bet" (Tanya §9).
-// Above-fold: ConvictionHero (score + clock/grace state).
-// Below fold: post content, KeepButton (single CTA), GhostEchoes, AuditTrail.
+// Above-fold: ConvictionSeal (score display when sealed, ceremony when not).
+// Below fold: post content, KeepButton (single CTA), AuditTrail.
 //
-// ConvictionHero replaces ConvictionDeclaration above fold (Mike §Modules).
-// ConvictionDeclaration stays in codebase — still used by ConvictionAuditTrail context.
-// ConvictionPanel merged into ConvictionHero's wager display — removed from below fold.
+// ConvictionSeal unifies ConvictionHero + ConvictionDeclaration + AdminSealForm.
 // ReadingPulse removed (Tanya §16 — zero reader value).
 //
 // DONE: reading progress "erosion bar" — see SiteNav.astro + inline script below
@@ -15,7 +13,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
 import PostNav from '../../components/PostNav.astro';
-import ConvictionHero from '../../components/ConvictionHero.astro';
+import ConvictionSeal from '../../components/ConvictionSeal.astro';
 import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
@@ -26,7 +24,7 @@ import PredictionCard from '../../components/PredictionCard.astro';
 import DisputeChallenge from '../../components/DisputeChallenge.astro';
 import DisputeTally from '../../components/DisputeTally.astro';
 import { flattenPredictions } from '../../lib/prediction-engine';
-// TensionBadge is now rendered inside ConvictionHero (embedded in status row).
+// TensionBadge is rendered inside ConvictionSeal (embedded in status row).
 import { allPostDisplayData, extractMeta } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
@@ -77,7 +75,7 @@ const postDecay      = decayFactor(pubDateISO, lifespan, new Date(), revivalCoun
 const daysRemaining  = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS);
 const postUrgency    = clockUrgency(daysRemaining);
 
-// Grace state — discriminated union drives ConvictionHero's clock section
+// Grace state — discriminated union drives ConvictionSeal's clock section
 const graceState     = safeRead(() => getGraceState(post.slug, pubDateISO, postDecay, daysRemaining));
 
 function safeRead<T>(fn: () => T, fallback?: T): T {
@@ -137,11 +135,12 @@ const jsonLd      = [
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
 
-    <!-- ConvictionHero: above-fold sealed wager. The first impression.
-         tensionResult flows in so TensionBadge renders inside the status row
-         (Mike §Key Design Decisions #2 — visual unification). -->
-    <ConvictionHero
+    <!-- ConvictionSeal: above-fold conviction display + author ceremony.
+         Sealed → score/clock/tension display. Unsealed + admin cookie → ceremony form.
+         TensionBadge embedded in status row (Mike §Key Design Decisions #2). -->
+    <ConvictionSeal
       slug={post.slug}
+      context="post"
       graceState={safeGraceState}
       revivalCount={revivalCount}
       conviction={dominantVerdict}

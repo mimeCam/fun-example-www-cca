@@ -4,6 +4,56 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v62 — Conviction Seal Unification (2026-04-11)
+#   Sprint: ConvictionSeal unified component — replaces AdminSealForm +
+#     ConvictionHero + ConvictionDeclaration with a single context-aware
+#     component; 5-phase CSS/TS seal ceremony; motion token expansion.
+#     Pure UIX/design-system refactoring — no infrastructure changes.
+#   New files:
+#     src/components/ConvictionSeal.astro — unified seal ceremony component;
+#       context="post" renders conviction display (score, clock, tension,
+#       trust badge) when sealed, ceremony form when unsealed; context="admin"
+#       always shows the ceremony form. CSS custom property --seal-phase (0–4)
+#       drives all visual transitions. Progressive enhancement: works as plain
+#       <form> without JS.
+#     src/lib/seal-ceremony.ts — pure TS state machine for the 5-phase seal
+#       ceremony (0=idle, 1=hover, 2=press, 3=lock/fetching, 4=receipt);
+#       CeremonyCallbacks interface (onPhase, onReceipt, onError); fetchSeal()
+#       POSTs to /api/conviction-seal; ceremony_phase field in response drives
+#       client to advance to receipt phase automatically.
+#     src/styles/seal-ceremony.css — CSS animations for the seal ceremony;
+#       @starting-style entrance, stamp-down keyframe (phase 2), lock-in spring
+#       (phase 3), receipt slide-up (phase 4); .seal-dot fill transitions;
+#       .seal-weight-meter scaleY interpolated via --seal-phase; reduced-motion
+#       guard collapses all beats to a single opacity reveal.
+#   Deleted files:
+#     src/components/AdminSealForm.astro — superseded by ConvictionSeal
+#       context="admin".
+#     src/components/ConvictionDeclaration.astro — superseded by ConvictionSeal.
+#     src/components/ConvictionHero.astro — superseded by ConvictionSeal
+#       context="post".
+#   Updated files:
+#     src/pages/admin.astro — AdminSealForm → ConvictionSeal context="admin";
+#       simplified props (slug, title only; sealed/score/sealedAt resolved
+#       internally by ConvictionSeal via getSealEntry()).
+#     src/pages/blog/[slug].astro — ConvictionHero → ConvictionSeal
+#       context="post"; graceState, revivalCount, conviction, tensionResult,
+#       tst props forwarded unchanged.
+#     src/pages/api/conviction-seal.ts — response contract extended with
+#       ceremony_phase: 4 field; client uses this to advance to receipt phase
+#       automatically after a successful seal POST; backward-compatible (new
+#       field only).
+#     src/styles/tokens.css — motion tokens added: --motion-duration-fast
+#       (150ms micro feedback), --motion-duration-base (300ms ceremony phases),
+#       --motion-duration-deliberate (500ms lock + receipt entrance);
+#       --motion-easing-spring (cubic-bezier overshoot for weight feel),
+#       --motion-easing-standard (ease-in-out).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged — no schema changes this sprint).
+#     ADMIN_SECRET still required. GITHUB_PAT optional (Conviction Anchor).
+#     DISPUTE_QUORUM_RATIO optional (float 0..1, default 0.3).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v61 — Conviction Loop Closure (2026-04-11)
 #   Sprint: Component consolidation + OKLCH design-system migration + API contract
 #     hardening. Pure UIX/design-system refactoring — no infrastructure changes.

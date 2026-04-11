@@ -7,9 +7,10 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, batting average, RFC 3161 client
-- `src/components/` — KeepButton, VerdictReveal, BattingAverageHero, DecayBar, DecayClock, DisputeTally
+- `src/components/` — ConvictionSeal (unified seal ceremony), KeepButton, VerdictReveal, BattingAverageHero, DecayBar, DecayClock, DisputeTally
 - `src/pages/api/` — conviction-seal, verdict-resolve, revive, verdict-dispute, deadline-sweep
 - `src/styles/tokens.css` — design token registry (fonts, colors, spacing, motion)
+- `src/styles/seal-ceremony.css` — five-phase seal ceremony animations
 
 ## WIP
 
