@@ -5,12 +5,16 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, RFC 3161 + OTS clients, river-data
-- `src/components/` — ConvictionSeal, KeepButton, VerdictReveal, BattingAverageHero, DecayBar, OpenLoopCard, StagePill, RiverFilter
-- `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep, stage-counts
+- `src/lib/pagination.ts` — generic `paginate<T>`, `parsePage`, `paginateURL` utilities
+- `src/components/` — ConvictionSeal, KeepButton, VerdictReveal, BattingAverageHero, DecayBar, OpenLoopCard, StagePill, RiverFilter, **Pagination**
+- `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep, stage-counts, **graveyard-page**
 - `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes + duration scale · `src/styles/river-filter.css` — stage pill rail
 
 ## WIP
 
-- Pagination for graveyard stage once post count > 20
 - Seal posts via `/admin` to activate TrustBadge + batting average
 - Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
+- P1: OKLCH verdict color migration (tokens.css), section break standardization
+- P1: Tombstone radius asymmetry (8px 8px 0 0), stage transition atmosphere palette shift
+- P2: BattingAverageHero cold-state ghost progress indicator, share button glow-on-confirm
+

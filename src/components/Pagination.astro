@@ -1,0 +1,208 @@
+---
+// src/components/Pagination.astro
+// Generic page-turn nav — graveyard theme by default.
+// Pure <a> navigation: URL is the only state (SSR, crawlable, shareable).
+// Reads currentURL from Astro.url so callers need not pass a base param.
+//
+// Usage:
+//   <Pagination meta={pagination} baseURL={Astro.url} />
+//
+// Accessibility: aria-current="page", aria-disabled on dead edges, 44px tap targets.
+// Motion: FLOW (200ms) on active ring; prefers-reduced-motion zeroes all transitions.
+// Credits: Mike (arch §4.2 — napkin plan), Tanya (UX §3 — graveyard pagination spec)
+
+import { paginateURL }      from '../lib/pagination';
+import type { PaginationMeta } from '../lib/pagination';
+
+interface Props {
+  meta:    PaginationMeta;
+  baseURL: URL;
+}
+
+const { meta, baseURL } = Astro.props;
+const { page, totalPages, hasPrev, hasNext } = meta;
+
+/** Return href for a page, or undefined when that nav direction is disabled. */
+function href(target: number): string | undefined {
+  if (target < 1 || target > totalPages) return undefined;
+  return paginateURL(baseURL, target);
+}
+
+/** Determine which page pills to show (window of 5 centered on current page). */
+function visiblePages(): number[] {
+  if (totalPages <= 7) return range(1, totalPages);
+  const lo = Math.max(1, Math.min(page - 2, totalPages - 4));
+  const hi = Math.min(totalPages, lo + 4);
+  return range(lo, hi);
+}
+
+function range(lo: number, hi: number): number[] {
+  return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
+}
+
+const pills   = visiblePages();
+const prevHref = href(page - 1);
+const nextHref = href(page + 1);
+---
+
+{totalPages > 1 && (
+  <nav class="pagination" aria-label="Graveyard pages">
+
+    {/* ← older graves */}
+    {hasPrev
+      ? <a class="pg-edge pg-prev" href={prevHref}>← older graves</a>
+      : <span class="pg-edge pg-prev pg-disabled" aria-disabled="true">← older graves</span>
+    }
+
+    {/* Page pills — hidden on narrow screens (≤640px) */}
+    <ol class="pg-pills" role="list" aria-label="Page numbers">
+      {page > 3 && totalPages > 7 && (
+        <>
+          <li><a class="pg-pill" href={href(1)} aria-label="Page 1">1</a></li>
+          <li class="pg-ellipsis" aria-hidden="true">…</li>
+        </>
+      )}
+
+      {pills.map(n => (
+        <li>
+          {n === page
+            ? <span class="pg-pill pg-current" aria-current="page" aria-label={`Page ${n}, current`}>{n}</span>
+            : <a class="pg-pill" href={href(n)} aria-label={`Page ${n}`}>{n}</a>
+          }
+        </li>
+      ))}
+
+      {page < totalPages - 2 && totalPages > 7 && (
+        <>
+          <li class="pg-ellipsis" aria-hidden="true">…</li>
+          <li><a class="pg-pill" href={href(totalPages)} aria-label={`Page ${totalPages}`}>{totalPages}</a></li>
+        </>
+      )}
+    </ol>
+
+    {/* center label — always visible */}
+    <span class="pg-label" aria-live="polite">
+      page <strong>{page}</strong> of <strong>{totalPages}</strong>
+    </span>
+
+    {/* newer graves → */}
+    {hasNext
+      ? <a class="pg-edge pg-next" href={nextHref}>newer graves →</a>
+      : <span class="pg-edge pg-next pg-disabled" aria-disabled="true">newer graves →</span>
+    }
+
+  </nav>
+)}
+
+<style>
+  /* ── Container ──────────────────────────────────────────────────── */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-5) 0 var(--space-2);
+    margin-top: var(--space-4);
+    border-top: 1px solid var(--color-grave-border);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;  /* mono: page numbers */
+    font-size: var(--text-2xs, 0.65rem);
+    color: var(--color-grave-ghost);
+    user-select: none;
+  }
+
+  /* ── Edge nav: "← older graves" / "newer graves →" ─────────────── */
+  .pg-edge {
+    /* FLOW (200ms) — Tanya §12 motion profile rule */
+    transition: color 200ms ease, opacity 200ms ease;  /* FLOW */
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    color: var(--color-grave-ghost);
+    min-height: 44px;   /* Tanya §16 — 44px tap target */
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-tombstone);  /* 8px — calcified */
+  }
+
+  .pg-edge:hover { color: var(--color-grave-text); }
+
+  .pg-disabled {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* ── Pills ──────────────────────────────────────────────────────── */
+  .pg-pills {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  .pg-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    min-height: 44px;     /* Tanya §16 — 44px tap target on mobile */
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-tombstone);  /* 8px — calcified, not --radius-md */
+    border: 1px solid transparent;
+    color: var(--color-grave-ghost);
+    text-decoration: none;
+    font-size: var(--text-2xs, 0.65rem);
+    font-variant-numeric: tabular-nums;     /* Tanya §3 — no layout shift on count update */
+    transition: border-color 200ms ease, color 200ms ease, box-shadow 200ms ease;  /* FLOW */
+  }
+
+  .pg-pill:hover {
+    color: var(--color-grave-text);
+    border-color: var(--color-grave-border);
+  }
+
+  /* Active page pill — gold ring treatment */
+  .pg-current {
+    color: var(--gold);
+    border-color: var(--gold-border, rgba(245, 166, 35, 0.35));
+    box-shadow: var(--shadow-chip);
+    cursor: default;
+    font-weight: var(--weight-medium);
+  }
+
+  .pg-ellipsis {
+    color: var(--color-grave-ghost);
+    opacity: 0.5;
+    padding: 0 var(--space-1);
+    list-style: none;
+  }
+
+  /* ── Center label "page N of M" ─────────────────────────────────── */
+  .pg-label {
+    font-size: var(--text-2xs, 0.65rem);
+    letter-spacing: 0.06em;
+    color: var(--color-grave-ghost);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .pg-label strong {
+    font-weight: var(--weight-medium);
+    color: var(--color-grave-text);
+  }
+
+  /* ── Responsive: hide pills, keep edge nav ──────────────────────── */
+  @media (max-width: 640px) {
+    .pg-pills { display: none; }
+    .pg-label { display: none; }
+    .pagination { justify-content: space-between; }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .pg-edge, .pg-pill { transition: none; }
+  }
+</style>

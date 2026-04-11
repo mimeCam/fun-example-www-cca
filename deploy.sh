@@ -4,6 +4,34 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v68 — Graveyard Pagination (2026-04-11)
+#   Sprint: Server-side paginated graveyard view (?stage=graveyard&page=N);
+#     20 tombstones/page; URL-driven, crawlable, shareable. Pure SSR/UIX sprint.
+#   New files:
+#     src/lib/pagination.ts — generic paginate<T>(), parsePage(), paginateURL()
+#       utilities; pure functions, zero side-effects, zero DB access; includes
+#       inline sanity checks (_testPagination). Reusable for any list beyond
+#       graveyard.
+#     src/components/Pagination.astro — accessible page-turn nav; window of 5
+#       pills centered on current page; ellipsis for large ranges; ← older graves
+#       / newer graves → edge arrows; aria-current="page"; aria-disabled on dead
+#       edges; 44px tap targets; FLOW (200ms) active ring; reduced-motion guard;
+#       graveyard design tokens (--color-grave-border, --color-grave-ghost, --gold).
+#     src/pages/api/graveyard-page.ts — GET /api/graveyard-page?page=N&pageSize=20;
+#       returns { posts: LedgerEntry[], pagination: PaginationMeta }; pageSize
+#       capped at 50; Cache-Control: no-store (live revival counts); prerender=false.
+#   Updated files:
+#     src/pages/index.astro — ?page=N param parsed via parsePage(); graveyard stage
+#       renders gravePagePosts slice (20/page) via paginate(); GraveyardLedger still
+#       receives allEntombed (aggregate — unchanged); <Pagination> rendered below
+#       tombstone grid when totalPages > 1; non-graveyard stages unaffected.
+#     AGENTS.md — graveyard pagination added to Done list; Key Paths updated with
+#       pagination.ts and graveyard-page API.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v67 — Stage Filter Pill Rail (2026-04-11)
 #   Sprint: RiverFilter refactored from verdict-outcome tabs to lifecycle-stage
 #     pill rail (live / endangered / graveyard). Stage IS the product's navigation

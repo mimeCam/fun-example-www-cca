@@ -9,12 +9,14 @@
 // Stage routing (card polymorphism at the template layer — Mike §Key Design):
 //   live       → DecayCards  (living posts)
 //   endangered → EndangeredCards (urgency ring, decay bar)
-//   graveyard  → TombstoneCards (dark charcoal atmosphere)
+//   graveyard  → TombstoneCards in paginated 2-col grid, 20/page
 //   all        → all card types grouped
 //
-// TODO: add pagination once post count exceeds ~20 (especially graveyard stage)
+// Graveyard pagination: ?page=N, server-side, 20 items/page.
+// GraveyardLedger always receives ALL entombed posts (aggregate, not sliced).
+// API: GET /api/graveyard-page?page=N&pageSize=20
 //
-// Credits: Mike (arch §Unified Feed, §Key Design §2), Tanya (UX §1 sitemap + §2 river)
+// Credits: Mike (arch §Unified Feed, §4.1–4.4 napkin plan), Tanya (UX §1 sitemap + §2–3 river)
 
 export const prerender = false;
 
@@ -26,12 +28,14 @@ import TombstoneCard          from '../components/TombstoneCard.astro';
 import EndangeredBand         from '../components/EndangeredBand.astro';
 import BattingAverageHero     from '../components/BattingAverageHero.astro';
 import RiverFilter            from '../components/RiverFilter.astro';
+import Pagination             from '../components/Pagination.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { endangeredClientScript } from '../lib/endangered';
 import { computeBattingAverage }  from '../lib/batting-average';
 import { buildWebSiteSchema, serializeJsonLd } from '../lib/json-ld';
 import { getStageCounts, filterByStage } from '../lib/river-data';
 import type { StageFilter } from '../lib/river-data';
+import { paginate, parsePage } from '../lib/pagination';
 import '../styles/river-filter.css';
 
 // ─── Stage param ──────────────────────────────────────────────────────────────
@@ -46,16 +50,28 @@ const currentStage = parseStage(Astro.url.searchParams.get('stage'));
 
 // ─── Data assembly ────────────────────────────────────────────────────────────
 
+const GRAVEYARD_PAGE_SIZE = 20;
+
 const posts        = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
 const avg          = computeBattingAverage();
 const stageCounts  = getStageCounts(displayPosts);
-const stagePosts   = filterByStage(displayPosts, currentStage);
 
 // Pre-partition for 'all' stage rendering — template stays declarative
-const allLive      = displayPosts.filter(p => !p.endangered && !p.entombed);
+const allLive       = displayPosts.filter(p => !p.endangered && !p.entombed);
 const allEndangered = displayPosts.filter(p => p.endangered);
-const allEntombed  = displayPosts.filter(p => p.entombed);
+const allEntombed   = displayPosts.filter(p => p.entombed);  // ALL — for GraveyardLedger aggregate
+
+// ─── Graveyard pagination (only graveyard stage is paginated — Mike §4 napkin) ──
+
+const graveTotalPages = Math.max(1, Math.ceil(allEntombed.length / GRAVEYARD_PAGE_SIZE));
+const gravePage       = parsePage(Astro.url.searchParams.get('page'), graveTotalPages);
+const { items: gravePagePosts, pagination: gravePagination } =
+  paginate(allEntombed, gravePage, GRAVEYARD_PAGE_SIZE);
+
+// ─── Stage posts (non-graveyard stages — no pagination needed yet) ────────────
+
+const stagePosts = filterByStage(displayPosts, currentStage);
 
 // ─── Empty-state copy per stage (Tanya §2 — first-class empty states) ─────────
 
@@ -96,24 +112,35 @@ const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
 
     <RiverFilter currentStage={currentStage} counts={stageCounts} />
 
-    {stagePosts.length === 0 && (
-      <p class="stage-empty">{EMPTY_MSG[currentStage]}</p>
-    )}
-
     {/* live: DecayCards */}
+    {currentStage === 'live' && stagePosts.length === 0 && (
+      <p class="stage-empty">{EMPTY_MSG.live}</p>
+    )}
     {currentStage === 'live' && stagePosts.map(post => <DecayCard post={post} />)}
 
     {/* endangered: EndangeredCards */}
+    {currentStage === 'endangered' && stagePosts.length === 0 && (
+      <p class="stage-empty">{EMPTY_MSG.endangered}</p>
+    )}
     {currentStage === 'endangered' && stagePosts.map(post => <EndangeredCard post={post} />)}
 
-    {/* graveyard: TombstoneCards in a 2-col grid (styled via river-filter.css) */}
-    {currentStage === 'graveyard' && (
-      <section class="tombs" aria-label="Entombed posts">
-        {stagePosts.map(post => <TombstoneCard post={post} />)}
+    {/* graveyard: paginated TombstoneCards (Mike §4.1 — GraveyardLedger sees ALL) */}
+    {currentStage === 'graveyard' && allEntombed.length === 0 && (
+      <p class="stage-empty">{EMPTY_MSG.graveyard}</p>
+    )}
+    {currentStage === 'graveyard' && allEntombed.length > 0 && (
+      <section class="tombs" aria-label={`Entombed posts — page ${gravePage} of ${graveTotalPages}`}>
+        {gravePagePosts.map(post => <TombstoneCard post={post} />)}
       </section>
     )}
+    {currentStage === 'graveyard' && (
+      <Pagination meta={gravePagination} baseURL={Astro.url} />
+    )}
 
-    {/* all: group by type — live first, endangered second, graveyard last */}
+    {/* all: group by type — live first, endangered second, graveyard last (no pagination) */}
+    {currentStage === 'all' && stagePosts.length === 0 && (
+      <p class="stage-empty">{EMPTY_MSG.all}</p>
+    )}
     {currentStage === 'all' && allLive.map(post => <DecayCard post={post} />)}
     {currentStage === 'all' && allEndangered.map(post => <EndangeredCard post={post} />)}
     {currentStage === 'all' && allEntombed.length > 0 && (
