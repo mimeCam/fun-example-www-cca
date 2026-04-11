@@ -41,25 +41,25 @@
 
 .dispute-state-badge[data-status="open"] {
   color: var(--color-dispute-open);
-  border-color: rgba(148, 163, 184, 0.18);
+  border-color: var(--color-dispute-open-border);
 }
 
 .dispute-state-badge[data-status="contested"] {
   color: var(--color-dispute-contested);
-  background: rgba(251, 191, 36, 0.06);
-  border-color: rgba(251, 191, 36, 0.28);
+  background: var(--color-dispute-contested-bg);
+  border-color: var(--color-dispute-contested-border);
 }
 
 .dispute-state-badge[data-status="overturned"] {
   color: var(--color-dispute-overturned);
-  background: rgba(239, 68, 68, 0.06);
-  border-color: rgba(239, 68, 68, 0.28);
+  background: var(--color-dispute-overturned-bg);
+  border-color: var(--color-dispute-overturned-border);
 }
 
 .dispute-state-badge[data-status="upheld"] {
   color: var(--color-dispute-upheld);
-  background: rgba(74, 222, 128, 0.06);
-  border-color: rgba(74, 222, 128, 0.22);
+  background: var(--color-dispute-upheld-bg);
+  border-color: var(--color-dispute-upheld-border);
 }
 
 /* ── Hold-to-challenge fill animation (DisputeChallenge) ───────────────── */
@@ -79,7 +79,7 @@
 /* ── Contested flash — brief amber pulse when threshold just crossed ────── */
 
 @keyframes contested-flash {
-  0%   { box-shadow: 0 0 0   rgba(251, 191, 36, 0); }
-  40%  { box-shadow: 0 0 20px rgba(251, 191, 36, 0.30); }
-  100% { box-shadow: 0 0 0   rgba(251, 191, 36, 0); }
+  0%   { box-shadow: 0 0 0   transparent; }
+  40%  { box-shadow: 0 0 20px var(--color-dispute-flash-glow); }
+  100% { box-shadow: 0 0 0   transparent; }
 }

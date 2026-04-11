@@ -4,6 +4,38 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v71 — Token Migration Sprint (2026-04-11)
+#   Sprint: Pure UIX/design-system polish — all remaining hardcoded rgba() values
+#     in StanceDrawer, DisputeTally, VerdictCeremony, TrackRecord, TensionBadge,
+#     and dispute.css migrated to global design-system tokens. 27 new tokens added
+#     to tokens.css; `.section-break` / `.section-rule` utility classes added to
+#     global.css. Atmosphere cascade now fully covers all migrated components.
+#     Local token fork in TrackRecord deleted (single source of truth restored).
+#   Updated files:
+#     src/components/DisputeTally.astro — dispute-state border/bg replaced with
+#       --color-dispute-contested-border/bg, --color-dispute-overturned-border/bg,
+#       --color-dispute-upheld-border/bg tokens.
+#     src/components/StanceDrawer.astro — 27 inline rgba() values replaced with
+#       --overlay-scrim, --surface-modal, --border-light, --shadow-drawer,
+#       --text-secondary, --text-dim, --text-ghost, --surface-raised, --surface-hover,
+#       --border-subtle, --border-interactive-hover, --gold-bg-strong,
+#       --gold-border-strong, --stance-torn, --stance-disagree-bg/border/color,
+#       --border-medium, --gold, --surface-base tokens.
+#     src/components/TensionBadge.astro — hardcoded colours replaced with tokens.
+#     src/components/TrackRecord.astro — local token fork removed; global tokens used.
+#     src/components/VerdictCeremony.astro — rgba() values replaced with tokens.
+#     src/styles/dispute.css — state badge border/bg and @keyframes glow replaced
+#       with --color-dispute-*-border/bg and --color-dispute-flash-glow tokens.
+#     src/styles/global.css — .section-break and .section-rule utility classes added
+#       (replaces 12+ inline border-top patterns across components).
+#     src/styles/tokens.css — 27 new tokens: dispute state bg/border tints
+#       (color-mix oklch); --color-dispute-flash-glow; overlay/modal/shadow/drawer
+#       surface tokens; stance-disagree alias set; section-break spacing tokens.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v70 — Atmosphere System (2026-04-11)
 #   Sprint: Stage-scoped page atmosphere — body[data-atmosphere] CSS palette shift
 #     driven SSR-side and updated client-side on river filter pill change.

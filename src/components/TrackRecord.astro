@@ -147,21 +147,6 @@ function scoreBar(score: number): string {
 )}
 
 <style>
-  /* ── Design tokens (mirrors Tanya's 6-var palette) ─────────────────── */
-  .tr-section,
-  .tr-footer {
-    --surface:       rgba(255, 255, 255, 0.04);
-    --border:        rgba(255, 255, 255, 0.06);
-    --text-primary:  rgba(255, 255, 255, 0.88);
-    --text-muted:    rgba(255, 255, 255, 0.38);
-    --accent:        #F5A623;
-    --correct:       rgba(16, 185, 129, 0.85);
-    --wrong:         rgba(248, 113, 113, 0.75);
-    --pending:       rgba(255, 255, 255, 0.45);
-    --radius-md:     12px;
-    --radius-sm:     6px;
-  }
-
   /* ── Section shell ─────────────────────────────────────────────────── */
   .tr-section {
     max-width: 840px;
@@ -176,13 +161,13 @@ function scoreBar(score: number): string {
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--gold);
     margin: 0 0 0.25rem;
   }
 
   .tr-section-sub {
     font-size: 0.72rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     margin: 0;
     letter-spacing: 0.02em;
   }
@@ -190,26 +175,26 @@ function scoreBar(score: number): string {
   /* ── Empty state ────────────────────────────────────────────────────── */
   .tr-empty {
     padding: 2rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     text-align: center;
   }
 
   .tr-empty-text {
     font-size: 0.82rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-style: italic;
     margin: 0;
   }
 
   /* ── Ledger table (CSS grid) ─────────────────────────────────────────── */
   .tr-table {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     overflow: hidden;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-card-standard);
   }
 
   .tr-row {
@@ -218,22 +203,22 @@ function scoreBar(score: number): string {
     align-items: center;
     gap: 0;
     padding: 0.65rem 1rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-subtle);
     transition: background 120ms ease;
   }
 
   .tr-row:last-child { border-bottom: none; }
 
   .tr-row:not(.tr-row--head):hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: color-mix(in oklch, white 3%, transparent);
   }
 
   .tr-row--head {
     padding: 0.55rem 1rem;
-    background: rgba(255, 255, 255, 0.02);
+    background: color-mix(in oklch, white 2%, transparent);
   }
 
-  .tr-col { font-size: 0.72rem; color: var(--text-muted); }
+  .tr-col { font-size: 0.72rem; color: var(--text-secondary); }
 
   .tr-row--head .tr-col {
     font-size: 0.62rem;
@@ -242,7 +227,7 @@ function scoreBar(score: number): string {
     font-weight: 600;
   }
 
-  .tr-col--num  { color: var(--text-muted); }
+  .tr-col--num  { color: var(--text-secondary); }
   .tr-col--date { font-family: ui-monospace, 'Cascadia Code', monospace; }
 
   .tr-col--score {
@@ -266,20 +251,20 @@ function scoreBar(score: number): string {
     font-size: 0.82rem;
     font-weight: 600;
     font-family: ui-monospace, 'Cascadia Code', monospace;
-    color: var(--accent);
+    color: var(--gold);
     letter-spacing: -0.02em;
   }
 
   .tr-score-denom {
     font-size: 0.65rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 
   .tr-score-bar {
     display: none; /* hidden on mobile, shown at wider breakpoint */
     font-size: 0.42rem;
     letter-spacing: 0.5px;
-    color: rgba(245, 166, 35, 0.35);
+    color: color-mix(in oklch, var(--gold) 35%, transparent);
     margin-left: 0.35rem;
   }
 
@@ -295,26 +280,26 @@ function scoreBar(score: number): string {
   }
 
   .tr-badge--correct {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--correct);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: var(--verdict-true-bg);
+    color: var(--verdict-true);
+    border: 1px solid var(--verdict-true-border);
   }
 
   .tr-badge--wrong {
-    background: rgba(248, 113, 113, 0.08);
-    color: var(--wrong);
-    border: 1px solid rgba(248, 113, 113, 0.18);
+    background: var(--verdict-wrong-bg);
+    color: var(--verdict-wrong);
+    border: 1px solid var(--verdict-wrong-border);
   }
 
   .tr-badge--pending {
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--pending);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--verdict-pending-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--verdict-pending-border);
   }
 
   /* ── Anchor link ────────────────────────────────────────────────────── */
   .tr-anchor-link {
-    color: var(--accent);
+    color: var(--gold);
     font-size: 0.75rem;
     text-decoration: none;
     opacity: 0.7;
@@ -323,7 +308,7 @@ function scoreBar(score: number): string {
 
   .tr-anchor-link:hover { opacity: 1; }
 
-  .tr-muted { color: var(--text-muted); }
+  .tr-muted { color: var(--text-secondary); }
 
   /* ── Sparkline container ───────────────────────────────────────────── */
   .tr-sparkline {
@@ -332,11 +317,11 @@ function scoreBar(score: number): string {
     display: flex;
     align-items: flex-end;
     gap: 3px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     padding: 8px 16px 0;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-card-standard);
     overflow: hidden;
   }
 
@@ -349,19 +334,19 @@ function scoreBar(score: number): string {
   }
 
   .tr-spark-bar--correct {
-    background: rgba(16, 185, 129, 0.65);
+    background: color-mix(in oklch, var(--verdict-true) 65%, transparent);
   }
 
   .tr-spark-bar--correct:hover {
-    background: rgba(16, 185, 129, 0.9);
+    background: color-mix(in oklch, var(--verdict-true) 90%, transparent);
   }
 
   .tr-spark-bar--wrong {
-    background: rgba(248, 113, 113, 0.55);
+    background: color-mix(in oklch, var(--verdict-wrong) 55%, transparent);
   }
 
   .tr-spark-bar--wrong:hover {
-    background: rgba(248, 113, 113, 0.8);
+    background: color-mix(in oklch, var(--verdict-wrong) 80%, transparent);
   }
 
   /* ── 50% baseline dashed rule (cognitive anchor) ───────────────────── */
@@ -373,8 +358,8 @@ function scoreBar(score: number): string {
     height: 1px;
     background: repeating-linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.1) 0px,
-      rgba(255, 255, 255, 0.1) 4px,
+      var(--border-light) 0px,
+      var(--border-light) 4px,
       transparent 4px,
       transparent 8px
     );
@@ -395,7 +380,7 @@ function scoreBar(score: number): string {
   .tr-spark-label {
     font-size: 0.55rem;
     font-family: ui-monospace, 'Cascadia Code', monospace;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--text-faint);
     line-height: 1;
     pointer-events: none;
     user-select: none;
@@ -414,7 +399,7 @@ function scoreBar(score: number): string {
 
   .tr-footer-text {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--text-faint);
     font-style: italic;
     letter-spacing: 0.04em;
   }

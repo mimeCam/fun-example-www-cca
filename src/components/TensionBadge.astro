@@ -90,17 +90,17 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
 
   /* ── Contested — amber, pulsing ─────────────────────────────── */
   .tension-badge--contested {
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.08);
-    border-color: rgba(245, 158, 11, 0.40);
+    color: var(--gold);
+    background: var(--gold-bg);
+    border-color: var(--gold-border-strong);
     animation: tension-pulse 2.4s ease-in-out infinite;
   }
 
   /* ── Consensus — sage green, static ────────────────────────── */
   .tension-badge--consensus {
-    color: #6ee7b7;
-    background: rgba(110, 231, 183, 0.08);
-    border-color: rgba(110, 231, 183, 0.40);
+    color: var(--verdict-true);
+    background: var(--verdict-true-bg);
+    border-color: var(--verdict-true-border);
   }
 
   /* ── Embedded variant: tighter pill for ConvictionHero row ── */
@@ -112,8 +112,8 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
 
   /* ── Pulsing glow for contested posts ──────────────────────── */
   @keyframes tension-pulse {
-    0%, 100% { box-shadow: 0 0 0 0   rgba(245,158,11,0); }
-    50%       { box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
+    0%, 100% { box-shadow: 0 0 0 0   transparent; }
+    50%       { box-shadow: 0 0 0 3px var(--gold-glow); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -123,7 +123,7 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
   /* ── "remembered by N" micro-label ─────────────────────────── */
   .tension-memory {
     font-size: 10px;
-    color: rgba(255,255,255,0.28);
+    color: var(--text-dim);
     letter-spacing: 0.03em;
     display: block;
     margin-top: 2px;

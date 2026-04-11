@@ -244,17 +244,17 @@ function fmtTs(ts: number): string {
   .verdict-ceremony {
     display: flex;
     flex-direction: column;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     overflow: hidden;
     background: var(--surface-deep);
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-card-standard);
   }
 
   /* ── Acts ─────────────────────────────────────────────────────────── */
   .vc-act {
     padding: 1.75rem 2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .vc-act:last-child { border-bottom: none; }
@@ -264,7 +264,7 @@ function fmtTs(ts: number): string {
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: rgba(245, 166, 35, 0.45);
+    color: var(--gold-dim);
     margin: 0 0 1.25rem;
   }
 
@@ -296,7 +296,7 @@ function fmtTs(ts: number): string {
     font-size: 0.62rem;
     letter-spacing: 0.09em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.18);
+    color: var(--text-faint);
     margin-left: 0.2rem;
   }
 
@@ -316,7 +316,7 @@ function fmtTs(ts: number): string {
   }
 
   .vc-meta-row dt {
-    color: rgba(255, 255, 255, 0.25);
+    color: var(--text-dim);
     min-width: 8rem;
     flex-shrink: 0;
   }
@@ -336,18 +336,18 @@ function fmtTs(ts: number): string {
   }
 
   .vc-anchor-link {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--text-tertiary);
     font-size: 0.7rem;
     font-family: inherit;
     text-decoration: none;
     transition: color 150ms ease;
   }
 
-  .vc-anchor-link:hover { color: rgba(255, 255, 255, 0.75); }
+  .vc-anchor-link:hover { color: var(--text-primary); }
 
   .vc-act1-note {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--text-faint);
     font-style: italic;
     margin: 0;
     line-height: 1.55;
@@ -355,7 +355,7 @@ function fmtTs(ts: number): string {
 
   .vc-unsealed-msg {
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.28);
+    color: var(--text-dim);
     font-style: italic;
     margin: 0;
   }
@@ -389,7 +389,7 @@ function fmtTs(ts: number): string {
   }
 
   .vc-verdict-note {
-    border-left: 2px solid rgba(255, 255, 255, 0.1);
+    border-left: 2px solid var(--border-light);
     padding-left: 0.85rem;
     margin: 0 0 1rem;
   }
@@ -397,7 +397,7 @@ function fmtTs(ts: number): string {
   .vc-verdict-note p {
     font-size: 0.82rem;
     line-height: 1.7;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-secondary);
     font-style: italic;
     margin: 0;
   }
@@ -410,13 +410,13 @@ function fmtTs(ts: number): string {
 
   .vc-pending-glyph {
     font-size: 1.4rem;
-    color: rgba(255, 255, 255, 0.15);
+    color: var(--text-disabled);
     line-height: 1;
   }
 
   .vc-pending-msg {
     font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.28);
+    color: var(--text-dim);
     font-style: italic;
     margin: 0;
   }
@@ -471,7 +471,7 @@ function fmtTs(ts: number): string {
     font-size: 0.62rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.18);
+    color: var(--text-faint);
   }
 
   .vc-avg-pills {
@@ -490,33 +490,33 @@ function fmtTs(ts: number): string {
     white-space: nowrap;
   }
 
-  .vc-pill--correct { background: rgba(16,  185, 129, 0.1); color: rgba(16,  185, 129, 0.8); }
-  .vc-pill--wrong   { background: rgba(248, 113, 113, 0.1); color: rgba(248, 113, 113, 0.75); }
-  .vc-pill--pending { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.3); }
+  .vc-pill--correct { background: var(--verdict-true-bg);    color: color-mix(in oklch, var(--verdict-true)    80%, transparent); }
+  .vc-pill--wrong   { background: var(--verdict-wrong-bg);   color: color-mix(in oklch, var(--verdict-wrong)   75%, transparent); }
+  .vc-pill--pending { background: var(--verdict-pending-bg); color: var(--text-dim); }
 
   .vc-avg-note {
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-dim);
     margin: 0;
     line-height: 1.5;
   }
 
   .vc-cold-msg {
     font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.25);
+    color: var(--text-dim);
     font-style: italic;
     margin: 0.5rem 0 0;
   }
 
   .vc-wall-link {
-    color: rgba(245, 166, 35, 0.5);
+    color: var(--gold-dim);
     text-decoration: none;
     margin-left: 0.4rem;
     font-size: 0.68rem;
     transition: color 150ms ease;
   }
 
-  .vc-wall-link:hover { color: rgba(245, 166, 35, 0.9); }
+  .vc-wall-link:hover { color: var(--gold); }
 
   /* ── Mobile ───────────────────────────────────────────────────────── */
   @media (max-width: 640px) {

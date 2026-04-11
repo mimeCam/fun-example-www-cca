@@ -218,6 +218,18 @@
   --color-dispute-fill-from:  var(--clr-amber-400);
   --color-dispute-fill-to:    var(--clr-red-500);
 
+  /* ── Dispute state bg/border tints (DisputeTally + dispute.css) ──────── */
+  /* color-mix keeps these in OKLCH space — atmosphere overrides propagate. */
+  --color-dispute-open-border:       color-mix(in oklch, var(--clr-slate-400)  18%, transparent);
+  --color-dispute-contested-bg:      color-mix(in oklch, var(--clr-amber-400)   6%, transparent);
+  --color-dispute-contested-border:  color-mix(in oklch, var(--clr-amber-400)  28%, transparent);
+  --color-dispute-overturned-bg:     color-mix(in oklch, var(--clr-red-500)     6%, transparent);
+  --color-dispute-overturned-border: color-mix(in oklch, var(--clr-red-500)    28%, transparent);
+  --color-dispute-upheld-bg:         color-mix(in oklch, var(--clr-green-400)   4%, transparent);
+  --color-dispute-upheld-border:     color-mix(in oklch, var(--clr-green-400)  22%, transparent);
+  /* Flash glow — single token keeps @keyframes in the cascade */
+  --color-dispute-flash-glow:        color-mix(in oklch, var(--clr-amber-400)  30%, transparent);
+
   /* ── Urgency Tier Tokens (endangered discovery feed) ───────────────── */
   /* Colors per tier — zero hardcoded values in components (Paul's mandate) */
   --urgency-warning-color:        var(--clr-amber-400);
@@ -268,6 +280,30 @@
   /* ── Deep Surface (Tanya §10) ───────────────────────────────────────── */
   /* VerdictCeremony shell, audit pages, admin dark panels                 */
   --surface-deep: oklch(11% 0.010 50);
+
+  /* ── Modal / Drawer surface tokens (Mike §3, Tanya §StanceDrawer) ────── */
+  --overlay-scrim:        rgba(0, 0, 0, 0.45);       /* atmosphere-aware backdrop   */
+  --surface-modal:        rgba(14, 14, 16, 0.97);    /* glass-dark drawer shell     */
+  --shadow-drawer:
+    0 -8px 32px rgba(0, 0, 0, 0.55),
+    0  0   0 1px rgba(255, 255, 255, 0.04);          /* bottom-sheet lift           */
+  --shadow-card-standard: 0 2px 16px rgba(0, 0, 0, 0.3); /* standard card at rest  */
+
+  /* ── Text alpha ramp extensions (fills gaps between existing stops) ──── */
+  --text-dim:   rgba(255, 255, 255, 0.28);  /* between tertiary(0.38) and ghost(0.22) */
+  --text-faint: rgba(255, 255, 255, 0.18);  /* below ghost — labels, footnotes        */
+
+  /* ── Border ramp extension ───────────────────────────────────────────── */
+  --border-light: rgba(255, 255, 255, 0.08); /* between subtle(0.06) and medium(0.12) */
+
+  /* ── Gold active-state tokens (selected buttons, pressed states) ─────── */
+  --gold-border-strong: rgba(245, 166, 35, 0.40); /* heavier than gold-border(0.22) */
+  --gold-bg-strong:     rgba(245, 166, 35, 0.12); /* heavier than gold-bg(0.08)     */
+
+  /* ── Stance disagree semantic aliases (via verdict-wrong primitive) ───── */
+  --stance-disagree-bg:     color-mix(in oklch, var(--clr-red-500) 10%, transparent);
+  --stance-disagree-border: color-mix(in oklch, var(--clr-red-500) 35%, transparent);
+  --stance-disagree-color:  oklch(71% 0.15 25);  /* light red — honest, not punitive */
 
   /* ── Extended Shadow System (Tanya §13) ────────────────────────────── */
   /* Conviction ceremony: the act of sealing has elevation                */

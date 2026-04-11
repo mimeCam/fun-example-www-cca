@@ -11,6 +11,23 @@
 @import "./motion.css";
 @import "./death-clock.css";
 
+/* ── Section break utilities (Tanya §P2, Mike §8) ──────────────────────── */
+/* Replaces 12+ inline border-top patterns scattered across components.     */
+/* Usage: <hr class="section-break"> or <hr class="section-rule">           */
+
+.section-break {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  padding-block-start: var(--space-6);
+  margin-block-start: var(--space-6);
+}
+
+.section-rule {
+  border: none;
+  border-top: 1px solid var(--border-faint);
+  margin-block: var(--space-4);
+}
+
 /* ── Tailwind 4 bridge: token vars → utility class generation ──────────── */
 @theme {
   /* Colors */

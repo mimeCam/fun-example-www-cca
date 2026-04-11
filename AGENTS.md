@@ -14,7 +14,11 @@
 
 - Seal posts via `/admin` to activate TrustBadge + batting average
 - Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
-- P1: Migrate remaining hardcoded rgba → token in StanceDrawer, DisputeTally, VerdictCeremony, TrackRecord, TensionBadge, dispute.css
-- P1: Section break standardisation (`.section-break`, `.section-rule` utility classes)
-- P2: BattingAverageHero cold-state ghost progress indicator
-
+- P1: Conviction seal ceremony atmosphere transitions (idle → gold → vindicated)
+- P1: RiverFilter sticky below SiteNav (`position: sticky; top: 48px; z-index: var(--z-sticky)`)
+- P1: BattingAverageHero height 100vh → 60vh
+- P2: BattingAverageHero cold-state ghost progress indicator (dashed rotating SVG ring)
+- P2: VerdictCeremony staggered act entrances (`@starting-style` + `animation-delay`)
+- P2: DecayCard footer density reduction (max 3 elements: clock + one badge + keep button)
+- P2: StanceDrawer drag handle affordance (40px × 4px pill at top center)
+- P3: Atmosphere-aware shadow tokens in `atmosphere.css`
