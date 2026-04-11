@@ -37,9 +37,19 @@ const hasPact     = decayFactor !== undefined;
     class:list={['keep-btn', isCritical && 'keep-btn--critical', isStillTrue && 'keep-btn--still-true']}
     data-keep-slug={slug}
     data-pact-trigger={hasPact ? '' : undefined}
+    data-state="idle"
     aria-label="Keep this post alive"
     type="button"
   >
+    <!-- Arc ring: JS sets strokeDashoffset; CSS state selectors colour it.
+         Circumference = 2π × r=20 ≈ 125.664. rotate(-90deg) so fill starts at top. -->
+    <svg class="keep-arc" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <circle class="keep-arc-track"  cx="24" cy="24" r="20" />
+      <circle class="keep-arc-circle" cx="24" cy="24" r="20"
+        stroke-dasharray="125.664"
+        stroke-dashoffset="125.664"
+      />
+    </svg>
     <span class="keep-icon">&#9829;</span>
     <span class="keep-label">Keep this alive</span>
     {count > 0  && <span class="keep-count"> &middot; {count}</span>}
@@ -71,6 +81,7 @@ const hasPact     = decayFactor !== undefined;
 
   /* ── Button ─────────────────────────────────────────────────── */
   .keep-btn {
+    position: relative;           /* anchor the SVG arc absolutely */
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
@@ -83,7 +94,7 @@ const hasPact     = decayFactor !== undefined;
     color: rgba(var(--mood-accent-rgb, 120,120,120), 0.80);
     background: rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
     border: 1.5px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
-    border-radius: 10px;
+    border-radius: calc(10px + var(--arc-progress, 0) * 9989px); /* calcifies toward pill */
     cursor: pointer;
     transition:
       border-color 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -91,6 +102,8 @@ const hasPact     = decayFactor !== undefined;
       box-shadow   200ms ease,
       transform    200ms cubic-bezier(0.34, 1.56, 0.64, 1),
       opacity      600ms ease-out;
+    /* border-radius transition driven by --arc-progress (not keyframes) */
+    will-change: border-radius;
   }
 
   .keep-btn:hover {
@@ -150,13 +163,97 @@ const hasPact     = decayFactor !== undefined;
     transition: opacity 200ms ease;
   }
   .keep-count--hidden { display: none; }
+
+  /* ── Arc ring — SVG positioned over button center ─────────────── */
+  .keep-arc {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 56px;
+    height: 56px;
+    transform: translate(-50%, -50%) rotate(-90deg);  /* 0° = top */
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease;
+    overflow: visible;
+  }
+
+  /* Arc visible only while pressing/tension/peak */
+  .keep-btn[data-state="pressing"] .keep-arc,
+  .keep-btn[data-state="tension"]  .keep-arc,
+  .keep-btn[data-state="peak"]     .keep-arc { opacity: 1; }
+
+  .keep-arc-track {
+    fill: none;
+    stroke: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+    stroke-width: 2;
+  }
+
+  .keep-arc-circle {
+    fill: none;
+    stroke: rgba(var(--mood-accent-rgb, 212,149,106), 0.65);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    transition: stroke 200ms ease;   /* colour shift at TENSION */
+  }
+
+  /* Gold stroke at tension — "commitment colour" */
+  .keep-btn[data-state="tension"] .keep-arc-circle,
+  .keep-btn[data-state="peak"]    .keep-arc-circle {
+    stroke: var(--gold, #F5A623);
+  }
+
+  /* ── State: PEAK — brief scale overshoot ──────────────────────── */
+  .keep-btn[data-state="peak"] {
+    animation: keep-peak-burst 400ms var(--ease-spring, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+  }
+
+  @keyframes keep-peak-burst {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── State: BLOOM — warm glow from center ─────────────────────── */
+  .keep-btn[data-state="bloom"] {
+    background:    rgba(var(--mood-accent-rgb, 212,149,106), 0.14);
+    border-color:  rgba(var(--mood-accent-rgb, 212,149,106), 0.50);
+    box-shadow:    0 0 20px rgba(var(--mood-accent-rgb, 212,149,106), 0.22);
+    animation: keep-bloom-glow var(--duration-bloom, 1200ms) ease-out forwards;
+  }
+
+  @keyframes keep-bloom-glow {
+    0%   { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb, 212,149,106), 0.35); }
+    30%  { box-shadow: 0 0 24px rgba(var(--mood-accent-rgb, 212,149,106), 0.28); }
+    100% { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb, 212,149,106), 0); }
+  }
+
+  /* ── State: SETTLED — kept confirmation; muted until cooldown ends ── */
+  .keep-btn[data-state="settled"] {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+  }
 </style>
+
+<!-- Ceremony bootstrap: wires CeremonyController to feed-card KeepButtons.
+     Astro bundles this via Vite — imports TypeScript from src/lib/client/. -->
+<script>
+  import { initCeremonies } from '../lib/client/revival-ceremony';
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCeremonies);
+  } else {
+    initCeremonies();
+  }
+</script>
 
 <script>
   // Delegated handler for KeepButtons WITHOUT the pact ritual wired.
   // Covers: feed cards, DeathClockBanner — anywhere without decayFactor + RevivalCounter.
   // Skips: buttons with data-pact-trigger (handled by keep-pact.ts)
   //        buttons in .revival-footer (handled by revival-counter.ts)
+  //        buttons with data-wired="ceremony" (handled by CeremonyController above)
   (function wireKeepButtons() {
     function getSessionId(): string | null {
       try { return sessionStorage.getItem('session-token'); } catch { return null; }

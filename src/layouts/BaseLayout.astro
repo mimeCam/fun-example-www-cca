@@ -47,6 +47,11 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- IBM Plex Mono: numeric gravitas for batting %, revival counts, hash displays. -->
+    <!-- Tanya §1 triage item #2: load this font before any visual work ships. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} jsonLd={jsonLd} />
     <meta name="decay-max-days" content="365" />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />

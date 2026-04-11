@@ -529,3 +529,55 @@
 @media (prefers-reduced-motion: reduce) {
   .graveyard-stats { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * HOLD-TO-REVIVE CEREMONY v2 — CASCADE BLOOM + @property arc
+ * Additive only — no existing rules modified.
+ * Michael Koch arch spec §6, Tanya §4.1
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Register --arc-progress as a typed number so CSS calc() can use it
+   in border-radius and other length expressions without @property hacks. */
+@property --arc-progress {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+/* Count spring: number hops up with spring overshoot when bloom fires. */
+@keyframes count-spring {
+  0%   { transform: translateY(0)    scale(1); }
+  30%  { transform: translateY(-4px) scale(1.15); }
+  60%  { transform: translateY(1px)  scale(0.97); }
+  100% { transform: translateY(0)    scale(1); }
+}
+
+/* Cascade bloom: warm amber border + faint lift on related cards.
+   Triggered by cascade-bloom.ts setting data-bloom="active". */
+.decay-card[data-bloom="active"] {
+  animation: cascade-glow var(--duration-bloom, 1200ms) var(--ease-spring, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+}
+
+@keyframes cascade-glow {
+  0%   {
+    box-shadow: 0 0 0 0  rgba(var(--mood-accent-rgb, 212,149,106), 0);
+    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.06);
+  }
+  25%  {
+    box-shadow: 0 0 0 4px rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.20);
+  }
+  100% {
+    box-shadow: 0 0 0 0  rgba(var(--mood-accent-rgb, 212,149,106), 0);
+    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.06);
+  }
+}
+
+/* Reduced motion: cascade bloom becomes a simple border tint, no animation. */
+@media (prefers-reduced-motion: reduce) {
+  .decay-card[data-bloom="active"] {
+    animation: none;
+    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.18);
+    transition: border-color 300ms ease;
+  }
+}

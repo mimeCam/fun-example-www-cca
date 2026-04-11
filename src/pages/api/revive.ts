@@ -96,7 +96,10 @@ export const POST: APIRoute = async ({ request }) => {
   const monthlyCount = getMonthlyRevivalCount(slug);
 
   const constellation = await getConstellation(slug);
-  const resonance = constellation.length > 0 ? constellation : undefined;
+  const resonance     = constellation.length > 0 ? constellation : undefined;
+  // Derive related slugs for cascade bloom (additive field — existing callers unaffected).
+  const relatedSlugs  = constellation.map(c => c.slug);
+
   // Append resonance to conviction ledger (non-blocking — never break revival on ledger failure)
   try {
     const readerSeconds = getReadingSeconds(slug);
@@ -107,7 +110,17 @@ export const POST: APIRoute = async ({ request }) => {
   // Notify honest presence subscribers on this slug
   presenceRevive(slug);
 
-  return jsonOk({ ok: true, count, decayAfterRevival, decayPct, monthlyCount, resonance: resonance ?? [] });
+  return jsonOk({
+    ok: true,
+    count,
+    revivalCount:       count,       // alias — ceremony controller reads this
+    battingAverageDelta: 0,          // placeholder; verdicts drive batting avg, not revivals
+    relatedSlugs,                    // slugs for cascade bloom in cascade-bloom.ts
+    decayAfterRevival,
+    decayPct,
+    monthlyCount,
+    resonance: resonance ?? [],
+  });
 };
 
 // ---------------------------------------------------------------------------

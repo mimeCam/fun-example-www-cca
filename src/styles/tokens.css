@@ -71,7 +71,9 @@
 
   /* ── Font Families ──────────────────────────────────────────────────── */
   --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
+  /* IBM Plex Mono loaded via Google Fonts in BaseLayout.astro.
+     Tanya §1 triage: numeric gravitas for batting %, revival counts, hash. */
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
 
   /* ── Font Weights ────────────────────────────────────────────────────── */
   --weight-normal:    400;

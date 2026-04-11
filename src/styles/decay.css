@@ -26,12 +26,17 @@
     0 2px 8px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, calc(0.08 * var(--decay-opacity, 1)));
   transition:
-    opacity    var(--motion-drift-duration) var(--motion-drift-easing),
-    filter     var(--motion-drift-duration) var(--motion-drift-easing),
-    box-shadow var(--motion-drift-duration) var(--motion-drift-easing),
-    transform  var(--motion-spring-duration) var(--motion-spring-easing);
+    opacity       var(--motion-drift-duration)   var(--motion-drift-easing),
+    filter        var(--motion-drift-duration)   var(--motion-drift-easing),
+    box-shadow    var(--motion-drift-duration)   var(--motion-drift-easing),
+    border-radius var(--motion-drift-duration)   var(--motion-drift-easing),
+    transform     var(--motion-spring-duration)  var(--motion-spring-easing);
   transform: translateY(0);
-  border-radius: var(--radius-md);
+  /* Calcification: fresh=16px soft → fossil=8px crisp. Tanya §4 "corners calcify."
+     --decay-factor is 0 (fresh) → 1 (fossil), set by decay-engine JS per card.
+     calc(16px − factor × 8px): 0→16px, 0.5→12px, 1→8px.
+     Uses --radius-md (16px token alias via --radius) down to --radius-tombstone (8px). */
+  border-radius: calc(var(--radius, 16px) - var(--decay-factor, 0) * 8px);
   will-change: transform, box-shadow;
 }
 

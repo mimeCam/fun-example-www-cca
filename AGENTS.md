@@ -7,13 +7,11 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 ## Key Paths
 
 - `src/lib/` — decay-engine, communityPosts, conviction-ledger, verdict-resolver, batting-average, rfc3161-client/verifier, timestamp-store, dispute-quorum
-- `src/lib/client/` — live-conviction (SSE), verdict-reveal, river (decay tick)
+- `src/lib/client/` — revival-ceremony (spring physics + state machine), cascade-bloom (staggered card glow), haptics (Vibration API), live-conviction (SSE), verdict-reveal, river (decay tick)
 - `src/pages/api/` — conviction-seal, verdict-resolve, revive, submit-post, verdict-dispute, dispute-sse
 - `src/pages/community/` — index (decay wall), [slug] (detail + KeepButton), submit (→ /author/submit)
-- `src/components/` — DisputeChallenge, DisputeTally, DisputeQuorum (verdict dispute panel)
-- `src/styles/tokens.css` — master design token registry
-- `src/styles/motion.css` — easing functions, duration scale, shared @keyframes
-- `src/styles/dispute.css` — dispute panel layout, state-badge, hold-fill animations
+- `src/components/` — KeepButton (SVG arc hold-to-revive), DisputeChallenge, DisputeTally, DisputeQuorum
+- `src/styles/tokens.css` — master design token registry (fonts, colors, spacing, motion)
 - `public/pow-worker.js` — Web Worker: WebCrypto SHA-256 nonce miner
 - `cli/seal-conviction.mjs` — HMAC seal at publish
 
@@ -23,4 +21,3 @@ Commit messages: 1 sentence, no exceptions. Prefix `[wip]` if any `// TODO` comm
 - Map legacy article moods (contemplative, etc.) → closest simple mood (warm/sharp/raw)
 - Seal all 6 posts via `/admin` — TrustBadge goes green; /track-record sparkline activates once verdicts resolve
 - Set `GITHUB_PAT` in `.env` (gist scope) to activate Conviction Anchor in /track-record
-- Load IBM Plex Mono for numeric display contexts (batting %, score numerals, hash displays)

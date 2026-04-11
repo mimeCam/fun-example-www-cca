@@ -4,6 +4,38 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v57 — Hold-to-Revive Ceremony v2 (2026-04-11)
+#   Sprint: Spring-physics rAF loop, SVG arc ring, haptics, cascade bloom.
+#   New files:
+#     src/lib/client/revival-ceremony.ts — CeremonyController; IDLE→PRESSING→
+#       TENSION→PEAK→BLOOM→SETTLED state machine; springStep() rAF loop drives
+#       SVG strokeDashoffset + --arc-progress CSS var; fetches /api/revive on
+#       PEAK; emits haptic patterns at each state transition.
+#     src/lib/client/cascade-bloom.ts — staggered 80ms bloom on related
+#       DecayCards after revival; max 5 cards; CEREMONY_MS=1200 auto-clear.
+#     src/lib/client/haptics.ts — Vibration API wrapper; PRESS_START /
+#       TENSION_RAMP / PEAK_CONFIRM / CANCEL named patterns; graceful no-op.
+#   Updated files:
+#     src/components/KeepButton.astro — SVG arc ring overlaid on button
+#       (circumference 125.664); data-state machine wired to CeremonyController;
+#       border-radius calcification calc(10px + --arc-progress × 9989px);
+#       state-driven CSS: pressing/tension/peak/bloom/settled.
+#     src/pages/api/revive.ts — additive response fields: revivalCount (alias),
+#       relatedSlugs (from constellation), battingAverageDelta (placeholder 0);
+#       existing callers unaffected.
+#     src/styles/revival.css — @property --arc-progress typed number; count-spring
+#       keyframe; cascade-glow keyframe; .decay-card[data-bloom="active"] rule;
+#       prefers-reduced-motion guard for cascade bloom.
+#     src/styles/tokens.css — --font-mono updated: 'IBM Plex Mono' prepended;
+#       loaded via Google Fonts in BaseLayout.astro.
+#     src/styles/decay.css — border-radius transition added; calcification formula:
+#       calc(var(--radius,16px) − var(--decay-factor,0) × 8px).
+#     src/layouts/BaseLayout.astro — IBM Plex Mono Google Fonts link + preconnects.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor). DISPUTE_QUORUM_RATIO optional.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v56 — Dispute Quorum Engine (2026-04-11)
 #   Sprint: Formal quorum math for reader challenges against sealed verdicts.
 #   New files:
