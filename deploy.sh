@@ -4,6 +4,35 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v67 — Stage Filter Pill Rail (2026-04-11)
+#   Sprint: RiverFilter refactored from verdict-outcome tabs to lifecycle-stage
+#     pill rail (live / endangered / graveyard). Stage IS the product's navigation
+#     identity — always visible, no cold-start hide rule. Pure UIX/design sprint.
+#   New files:
+#     src/components/StagePill.astro — single pill button; renders active/inactive
+#       states; shows SSR count badge; data-pill-id + data-count attrs for client
+#       refresh; accessible <a> link that drives ?stage= URL param.
+#     src/pages/api/stage-counts.ts — GET /api/stage-counts → { live, endangered,
+#       graveyard, computedAt }; public, no auth; Cache-Control 30s/60s SWR;
+#       used by RiverFilter client-side refresh to keep count badges current
+#       without a full page reload.
+#     src/styles/river-filter.css — design-token-compliant stage filter styles;
+#       pill rail layout; active/inactive pill tokens; count badge; zero magic
+#       colours; extracted from RiverFilter.astro inline styles.
+#   Updated files:
+#     src/components/RiverFilter.astro — switched from VerdictFilter (?verdict=)
+#       to StageFilter (?stage=); uses StagePill; always visible; client fetch
+#       of /api/stage-counts on mount to refresh count badges.
+#     src/lib/river-data.ts — StageFilter type, StageCounts interface,
+#       getStageCounts(), filterByStage() added; pure helpers, no DB reads.
+#     src/pages/index.astro — ?stage= param drives filterByStage(); RiverFilter
+#       receives currentStage + counts props; verdict filter removed from homepage.
+#     src/pages/endangered.astro — updated to use stage filter helpers.
+#     src/pages/graveyard.astro — updated to use stage filter helpers.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     deploy.sh: no changes to startup sequence or post-start hooks.
+#
 # Architecture v66 — Crystallized Card Stage & Shimmer (2026-04-11)
 #   Sprint: 4th decay stage 'crystallized' (ratio ≥ 1.0) added to OpenLoopCard;
 #     crystallized cards are pinned to history with a museum-glass aesthetic and

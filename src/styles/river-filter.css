@@ -1,0 +1,60 @@
+/* src/styles/river-filter.css
+   Unified feed — stage-specific layout overrides.
+   Import in index.astro frontmatter (unscoped global styles).
+   Component-level pill styles live in StagePill.astro <style>.
+   Credits: Mike (arch §river-filter.css), Tanya (UX §2, §6 — stage + graveyard spec)
+*/
+
+/* ── Tombstone grid for graveyard + all stages ───────────────────── */
+.feed[data-stage="graveyard"] .tombs,
+.feed[data-stage="all"] .tombs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .feed[data-stage="graveyard"] .tombs,
+  .feed[data-stage="all"] .tombs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── Graveyard stage: shift page register ───────────────────────── */
+/* Warm charcoal takes over below the hero — Tanya §6 */
+.feed[data-stage="graveyard"] {
+  background: var(--color-grave-bg);
+  color: var(--color-grave-text);
+  border-top-color: var(--color-grave-border);
+}
+
+.feed[data-stage="graveyard"] .feed-label {
+  color: var(--color-grave-ghost);
+}
+
+/* ── Tombstone scroll-driven entrance ───────────────────────────── */
+/* Mirrors graveyard.css logic — keeps unified feed visually consistent */
+.feed[data-stage="graveyard"] .tombstone-card,
+.feed[data-stage="all"] .tombstone-card {
+  animation: tombstone-rise linear both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 40%;
+}
+
+@keyframes tombstone-rise {
+  from { opacity: 0; transform: translateY(1.5rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Browsers without scroll-driven animation support */
+@supports not (animation-timeline: view()) {
+  .feed[data-stage="graveyard"] .tombstone-card,
+  .feed[data-stage="all"] .tombstone-card { animation: none; opacity: 1; }
+}
+
+/* ── Reduced motion: skip all animations ────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .feed[data-stage="graveyard"] .tombstone-card,
+  .feed[data-stage="all"] .tombstone-card { animation: none !important; opacity: 1; }
+}

@@ -1,0 +1,111 @@
+---
+// src/components/StagePill.astro
+// Pill atom — label + count badge. Used by RiverFilter for stage selection.
+// SNAP transition on hover; active state via .sp--active class.
+// Endangered pill breathes when posts exist and stage is not selected.
+// Credits: Mike (arch §StagePill), Tanya (UX §2 — pill visual spec)
+
+import type { StageFilter } from '../lib/river-data';
+
+interface Props {
+  id:     StageFilter;
+  label:  string;
+  count:  number;
+  active: boolean;
+  href:   string;
+}
+
+const { id, label, count, active, href } = Astro.props;
+const pulseRing = id === 'endangered' && count > 0 && !active;
+---
+
+<a
+  href={href}
+  class:list={['sp', `sp--${id}`, active && 'sp--active']}
+  aria-current={active ? 'page' : undefined}
+  data-stage={id}
+  data-pulse={String(pulseRing)}
+>
+  <span class="sp-label">{label}</span>
+  <span class="sp-count">{count}</span>
+</a>
+
+<style>
+  .sp {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 5px var(--space-3);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-interactive);
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-wide);
+    text-decoration: none;
+    transition:
+      color        var(--motion-snap-duration) var(--motion-snap-easing),
+      border-color var(--motion-snap-duration) var(--motion-snap-easing),
+      background   var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .sp:hover {
+    color: rgba(255, 255, 255, 0.65);
+    border-color: var(--border-interactive-hover);
+  }
+
+  .sp:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  /* ── Count badge ─────────────────────────────────────── */
+  .sp-count {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    opacity: 0.55;
+    min-width: 1.2ch;
+    transition: opacity var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  /* ── Active: live (conviction gold) ─────────────────── */
+  .sp--live.sp--active {
+    background: var(--gold-bg);
+    border-color: var(--gold-border);
+    color: var(--gold);
+  }
+  .sp--live.sp--active .sp-count { opacity: 1; }
+
+  /* ── Active: endangered (amber urgency) ─────────────── */
+  .sp--endangered.sp--active {
+    background: rgba(245, 166, 35, 0.06);
+    border-color: var(--urgency-warning-color);
+    color: var(--urgency-warning-color);
+  }
+  .sp--endangered.sp--active .sp-count { opacity: 1; }
+
+  /* Quiet pulse ring when posts exist and pill is not active */
+  .sp--endangered[data-pulse="true"] {
+    animation: pill-breathe var(--urgency-pulse-speed-warning) ease-in-out infinite;
+  }
+
+  @keyframes pill-breathe {
+    0%, 100% { border-color: var(--border-interactive); }
+    50%       { border-color: rgba(245, 166, 35, 0.30); }
+  }
+
+  /* ── Active: graveyard (warm charcoal) ──────────────── */
+  .sp--graveyard.sp--active {
+    background: var(--color-grave-surface);
+    border-color: var(--color-grave-border);
+    color: var(--color-grave-text);
+  }
+  .sp--graveyard.sp--active .sp-count { opacity: 1; }
+
+  /* ── Reduced motion ──────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .sp { transition: none; }
+    .sp--endangered[data-pulse="true"] { animation: none; }
+  }
+</style>

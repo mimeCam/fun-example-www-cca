@@ -64,6 +64,37 @@ export function buildRiverPosts(posts: PostDisplayData[]): RiverPost[] {
 }
 
 // ---------------------------------------------------------------------------
+// Stage filter — lifecycle stage URL param drives the unified feed
+// ---------------------------------------------------------------------------
+
+/** Lifecycle stage — maps to ?stage= URL param on the homepage. */
+export type StageFilter = 'live' | 'endangered' | 'graveyard' | 'all';
+
+/** Post counts per lifecycle stage for RiverFilter count badges. */
+export interface StageCounts {
+  live: number;
+  endangered: number;
+  graveyard: number;
+}
+
+/** Count posts in each lifecycle stage. Pure. No DB reads. */
+export function getStageCounts(posts: PostDisplayData[]): StageCounts {
+  return {
+    live:       posts.filter(p => !p.endangered && !p.entombed).length,
+    endangered: posts.filter(p => p.endangered).length,
+    graveyard:  posts.filter(p => p.entombed).length,
+  };
+}
+
+/** Return posts matching the requested lifecycle stage. */
+export function filterByStage(posts: PostDisplayData[], stage: StageFilter): PostDisplayData[] {
+  if (stage === 'live')       return posts.filter(p => !p.endangered && !p.entombed);
+  if (stage === 'endangered') return posts.filter(p => p.endangered);
+  if (stage === 'graveyard')  return posts.filter(p => p.entombed);
+  return posts; // 'all'
+}
+
+// ---------------------------------------------------------------------------
 // Client IIFE — inline script for map.astro via <script set:html={...}>
 // Same pattern as decayEngineClientScript() in decay-engine.ts.
 // SSR pages' <script> module imports aren't bundled by Vite client build;

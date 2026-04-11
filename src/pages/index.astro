@@ -1,86 +1,79 @@
 ---
 // src/pages/index.astro
-// Homepage "The Score" — conviction hero above the fold, living posts below.
-// Replaces the blog-feed-first layout with a batting-average-first experience.
+// Unified Conviction River — one feed, three lifecycle stages.
+// Stage driven by ?stage= URL param (default: 'live'). Zero client state.
 //
-// Zone 1: BattingAverageHero — the single number that tells the whole story.
-// Zone 2: DecayCard feed — the evidence. Filterable by verdict via ?verdict= param.
-// Zone 3: Deferred until ≥15 posts (River timeline too sparse at 6 posts — Tanya §18).
+// Zone 1: BattingAverageHero — conviction score above the fold.
+// Zone 2: RiverFilter pills + stage-appropriate cards below the fold.
 //
-// Filter logic: SSR-time — no client re-fetch, no flash of wrong content (Mike §2).
-// OG image: /api/og/batting-average.png — 5 min cache (short enough to show live score).
+// Stage routing (card polymorphism at the template layer — Mike §Key Design):
+//   live       → DecayCards  (living posts)
+//   endangered → EndangeredCards (urgency ring, decay bar)
+//   graveyard  → TombstoneCards (dark charcoal atmosphere)
+//   all        → all card types grouped
 //
-// TODO: add pagination once post count grows beyond ~20
+// TODO: add pagination once post count exceeds ~20 (especially graveyard stage)
 //
-// Credits: Mike (arch spec — index.astro rewrite), Tanya (UX §18 — homepage layout)
+// Credits: Mike (arch §Unified Feed, §Key Design §2), Tanya (UX §1 sitemap + §2 river)
 
 export const prerender = false;
 
-import { getCollection } from 'astro:content';
-import BaseLayout from '../layouts/BaseLayout.astro';
-import DecayCard from '../components/DecayCard.astro';
-import EndangeredBand from '../components/EndangeredBand.astro';
-import BattingAverageHero from '../components/BattingAverageHero.astro';
-import RiverFilter from '../components/RiverFilter.astro';
-import type { VerdictFilter } from '../components/RiverFilter.astro';
+import { getCollection }      from 'astro:content';
+import BaseLayout             from '../layouts/BaseLayout.astro';
+import DecayCard              from '../components/DecayCard.astro';
+import EndangeredCard         from '../components/EndangeredCard.astro';
+import TombstoneCard          from '../components/TombstoneCard.astro';
+import EndangeredBand         from '../components/EndangeredBand.astro';
+import BattingAverageHero     from '../components/BattingAverageHero.astro';
+import RiverFilter            from '../components/RiverFilter.astro';
 import { allPostDisplayData } from '../lib/postMeta';
-import type { PostDisplayData } from '../lib/postMeta';
 import { endangeredClientScript } from '../lib/endangered';
-import { computeBattingAverage } from '../lib/batting-average';
+import { computeBattingAverage }  from '../lib/batting-average';
 import { buildWebSiteSchema, serializeJsonLd } from '../lib/json-ld';
+import { getStageCounts, filterByStage } from '../lib/river-data';
+import type { StageFilter } from '../lib/river-data';
+import '../styles/river-filter.css';
 
-// ---------------------------------------------------------------------------
-// Verdict filter — read from URL param at SSR time
-// ---------------------------------------------------------------------------
+// ─── Stage param ──────────────────────────────────────────────────────────────
 
-const RAW_FILTER = Astro.url.searchParams.get('verdict') ?? 'all';
-const VALID_FILTERS: VerdictFilter[] = ['all', 'correct', 'wrong', 'pending'];
-const currentFilter: VerdictFilter = VALID_FILTERS.includes(RAW_FILTER as VerdictFilter)
-  ? (RAW_FILTER as VerdictFilter)
-  : 'all';
+const VALID_STAGES: StageFilter[] = ['live', 'endangered', 'graveyard', 'all'];
 
-// ---------------------------------------------------------------------------
-// Data assembly
-// ---------------------------------------------------------------------------
+function parseStage(raw: string | null): StageFilter {
+  return VALID_STAGES.includes(raw as StageFilter) ? (raw as StageFilter) : 'live';
+}
+
+const currentStage = parseStage(Astro.url.searchParams.get('stage'));
+
+// ─── Data assembly ────────────────────────────────────────────────────────────
 
 const posts        = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
 const avg          = computeBattingAverage();
+const stageCounts  = getStageCounts(displayPosts);
+const stagePosts   = filterByStage(displayPosts, currentStage);
 
-// ---------------------------------------------------------------------------
-// Post filtering helpers — one responsibility each
-// ---------------------------------------------------------------------------
+// Pre-partition for 'all' stage rendering — template stays declarative
+const allLive      = displayPosts.filter(p => !p.endangered && !p.entombed);
+const allEndangered = displayPosts.filter(p => p.endangered);
+const allEntombed  = displayPosts.filter(p => p.entombed);
 
-function effectiveVerdict(p: PostDisplayData): string | null {
-  return p.runtimeVerdict ?? p.conviction;
-}
+// ─── Empty-state copy per stage (Tanya §2 — first-class empty states) ─────────
 
-function matchesFilter(p: PostDisplayData, filter: VerdictFilter): boolean {
-  if (filter === 'all')     return true;
-  const v = effectiveVerdict(p);
-  if (filter === 'correct') return v === 'still-true';
-  if (filter === 'wrong')   return v === 'wrong' || v === 'abandoned';
-  if (filter === 'pending') return v === null || v === 'unaudited' || v === 'evolved';
-  return true;
-}
+const EMPTY_MSG: Record<StageFilter, string> = {
+  live:       'Nothing sealing convictions yet.',
+  endangered: 'All posts are healthy.',
+  graveyard:  'No posts have died yet.',
+  all:        'Nothing here yet.',
+};
 
-function applyFilter(posts: PostDisplayData[], filter: VerdictFilter): PostDisplayData[] {
-  return posts.filter(p => matchesFilter(p, filter));
-}
+const STAGE_LABEL: Record<StageFilter, string> = {
+  live:       'living bets',
+  endangered: 'fading ideas',
+  graveyard:  'the graveyard',
+  all:        'all posts',
+};
 
-// ---------------------------------------------------------------------------
-// Post partitioning
-// ---------------------------------------------------------------------------
-
-const endangered      = displayPosts.filter(p => p.endangered);
-const livePosts       = displayPosts.filter(p => !p.endangered && !p.entombed);
-const filteredPosts   = applyFilter(livePosts, currentFilter);
-const allEntombed     = displayPosts.every(p => p.entombed);
-const emptyAfterFilter = filteredPosts.length === 0 && livePosts.length > 0;
-
-// ---------------------------------------------------------------------------
-// JSON-LD + meta
-// ---------------------------------------------------------------------------
+// ─── JSON-LD ──────────────────────────────────────────────────────────────────
 
 const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
 ---
@@ -96,31 +89,44 @@ const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
   {/* Zone 1 — Conviction Hero (above the fold) */}
   <BattingAverageHero avg={avg} />
 
-  {/* Zone 2 — Living Posts (below fold, the evidence) */}
-  <main class="feed" id="bets">
+  {/* Zone 2 — Unified River Feed */}
+  <main class="feed" id="bets" data-stage={currentStage}>
 
-    <h2 class="feed-label">living bets</h2>
+    <h2 class="feed-label">{STAGE_LABEL[currentStage]}</h2>
 
-    <RiverFilter currentFilter={currentFilter} avg={avg} />
+    <RiverFilter currentStage={currentStage} counts={stageCounts} />
 
-    {allEntombed && (
-      <div class="empty-state">
-        <p>Everything has faded.</p>
-        <a href="/graveyard" class="graveyard-cta">Visit the graveyard to bring something back</a>
-      </div>
+    {stagePosts.length === 0 && (
+      <p class="stage-empty">{EMPTY_MSG[currentStage]}</p>
     )}
 
-    {emptyAfterFilter && (
-      <p class="filter-empty">
-        {currentFilter === 'wrong'
-          ? 'No wrong calls yet \u2014 the bets are still running.'
-          : `No ${currentFilter} bets right now.`}
-      </p>
+    {/* live: DecayCards */}
+    {currentStage === 'live' && stagePosts.map(post => <DecayCard post={post} />)}
+
+    {/* endangered: EndangeredCards */}
+    {currentStage === 'endangered' && stagePosts.map(post => <EndangeredCard post={post} />)}
+
+    {/* graveyard: TombstoneCards in a 2-col grid (styled via river-filter.css) */}
+    {currentStage === 'graveyard' && (
+      <section class="tombs" aria-label="Entombed posts">
+        {stagePosts.map(post => <TombstoneCard post={post} />)}
+      </section>
     )}
 
-    {filteredPosts.map(post => <DecayCard post={post} />)}
+    {/* all: group by type — live first, endangered second, graveyard last */}
+    {currentStage === 'all' && allLive.map(post => <DecayCard post={post} />)}
+    {currentStage === 'all' && allEndangered.map(post => <EndangeredCard post={post} />)}
+    {currentStage === 'all' && allEntombed.length > 0 && (
+      <section class="tombs" aria-label="Entombed posts">
+        {allEntombed.map(post => <TombstoneCard post={post} />)}
+      </section>
+    )}
 
-    {endangered.length > 0 && <EndangeredBand posts={endangered} />}
+    {/* EndangeredBand: below live feed only, when endangered posts exist */}
+    {currentStage === 'live' && allEndangered.length > 0 && (
+      <EndangeredBand posts={allEndangered} />
+    )}
+
   </main>
 </BaseLayout>
 
@@ -134,7 +140,7 @@ const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
     padding-top: 2.5rem;
   }
 
-  /* "living bets" — whispered label (Tanya §18) */
+  /* "living bets" — whispered label (Tanya §2) */
   .feed-label {
     font-size: 0.65rem;
     font-weight: 400;
@@ -144,39 +150,15 @@ const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
     margin: 0 0 1.5rem;
   }
 
-  /* Filter empty state — always a message, never a blank screen (Tanya §19) */
-  .filter-empty {
-    font-size: 0.82rem;
+  /* Empty state — dignity over blank screen (Tanya §2 — first-class empty) */
+  .stage-empty {
+    font-size: var(--text-sm);
     font-style: italic;
-    color: rgba(255, 255, 255, 0.38);
-    padding: 2rem 0;
+    color: var(--text-tertiary);
+    padding: var(--space-8) 0;
     margin: 0;
     text-align: center;
   }
-
-  /* All posts entombed — graveyard CTA */
-  .empty-state {
-    text-align: center;
-    padding: 4rem 1rem;
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  .empty-state p {
-    font-size: 0.9rem;
-    font-style: italic;
-    margin: 0 0 1rem;
-  }
-
-  .graveyard-cta {
-    font-size: 0.75rem;
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    opacity: 0.7;
-    transition: opacity 200ms ease;
-  }
-
-  .graveyard-cta:hover { opacity: 1; }
 
   @media (max-width: 640px) {
     .feed { padding: 0 1rem 3rem; padding-top: 2rem; }
