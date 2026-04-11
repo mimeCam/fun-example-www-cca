@@ -7,7 +7,7 @@
 //   1. Cookie: admin_token=<hmac>          — Admin web UI
 //   2. Body:   { ..., adminSecret: string } — CLI / curl
 //
-// Response: { ok, verdict, hmac, sealedAt }
+// Response: { ok, verdict, hmac_seal, sealedAt, hash, postSlug, newBattingAverage }
 //
 // Credits: Mike (arch §verdict-resolve endpoint), Tanya (UX §3 verdict page)
 
@@ -115,16 +115,25 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Broadcast verdict:declared — non-blocking, fire-and-forget (never rejects POST).
+    const batting = computeBattingAverage();
+    const newBattingAverage = batting.status === 'live' ? batting.pct : null;
     try {
-      const batting = computeBattingAverage();
-      const newBattingAvg = batting.status === 'live' ? batting.pct    : null;
-      const correct      = batting.status === 'live' ? batting.correct  : 0;
-      const wrong        = batting.status === 'live' ? batting.wrong    : 0;
-      const pending      = batting.status === 'live' ? batting.pending  : 0;
-      broadcastNamed('verdict:declared', { slug, verdict, newBattingAvg, correct, wrong, pending, sealedAt: record.sealedAt });
+      const correct  = batting.status === 'live' ? batting.correct  : 0;
+      const wrong    = batting.status === 'live' ? batting.wrong    : 0;
+      const pending  = batting.status === 'live' ? batting.pending  : 0;
+      broadcastNamed('verdict:declared', { slug, verdict, newBattingAvg: newBattingAverage, correct, wrong, pending, sealedAt: record.sealedAt });
     } catch { /* broadcast failure must never reject the POST */ }
 
-    return json({ ok: true, verdict: record.verdict, hmac: record.hmac_seal, sealedAt: record.sealedAt, hash: record.hash });
+    // Structured response — contract for API consumers (Mike §verdict-resolve endpoint).
+    return json({
+      ok:                true,
+      postSlug:          slug,
+      verdict:           record.verdict,
+      hmac_seal:         record.hmac_seal,
+      sealedAt:          record.sealedAt,
+      hash:              record.hash,
+      newBattingAverage,
+    });
   } catch (err) {
     if (err instanceof VerdictAlreadySealedError) {
       return json({ ok: false, alreadySealed: true, error: 'Verdict already sealed' }, 409);

@@ -11,6 +11,17 @@ import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Minimum absolute dispute count to mark a verdict contested (Elon P0 security fix). */
+const QUORUM_FLOOR = 3;
+/** 30% of disagree-stancers must dispute before contested status is reached. */
+const QUORUM_RATIO = 0.30;
+/** Minimum disagree-stancers required before disputes can open (single-actor attack prevention). */
+const ENGAGEMENT_GATE = 5;
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -101,7 +112,9 @@ function toRatio(disputes: number, total: number): number {
 
 function buildState(disputes: number, total: number): DisputeState {
   const ratio = toRatio(disputes, total);
-  if (ratio >= 0.33) return { status: 'contested', ratio, total, disputes };
+  if (total < ENGAGEMENT_GATE) return { status: 'clean', ratio, total, disputes };
+  const quorum = Math.max(QUORUM_FLOOR, Math.ceil(total * QUORUM_RATIO));
+  if (disputes >= quorum) return { status: 'contested', ratio, total, disputes };
   return { status: 'clean', ratio, total, disputes };
 }
 

@@ -1,210 +1,299 @@
 ---
 // src/components/VerdictReveal.astro
-// Dispute resolution ceremony — fires when community verdict tips to upheld/overturned.
-// One component, two CSS token sets. data-state attribute drives all branching (Mike §3).
+// Conviction verdict ceremony — fires when the author seals a final verdict.
+// Three-beat animation (pure CSS, no JS animation libraries):
+//   Beat 1 (0–400ms):   Gold pulse ring expands from TrustBadge center
+//   Beat 2 (400–900ms): HMAC hash types itself in character-by-character
+//   Beat 3 (900–1400ms): Timestamp stamp-in — scale(0.92)→scale(1), spring easing
+// Outcome color wash: background bleeds to verdict-specific token.
+// Accessible: prefers-reduced-motion collapses all animation to simple fade.
 //
-// SSR renders the resolved state when page loads after resolution.
-// Inline script listens to dispute-sse for live reveal (no page reload needed).
+// Two modes:
+//   SSR rendered:  verdict is already known (page load after resolution)
+//   Live reveal:   inline script listens to /api/verdict-sse for live ceremony
 //
-// Motion: CSS spring via verdict.css keyframes. prefers-reduced-motion collapses to
-// instant opacity change (Tanya §6 — VerdictCeremony motion spec).
-//
-// Credits: Mike (napkin plan §3 VerdictReveal — one ceremony, two outcomes),
-//          Tanya (UX §6 VerdictCeremony motion spec, §3.1 verdict color semantics)
+// Credits: Mike (arch §Module-5 VerdictReveal rewrite),
+//          Tanya (UX §6 Verdict Reveal — The Reckoning, outcome color grammar)
+
+import type { VerdictOutcome } from '../lib/verdict-resolver';
 
 interface Props {
-  state:             'upheld' | 'overturned';
-  challengeSharePct: number;   // 0.0–1.0 (e.g. 0.31 = 31%)
-  resolvedAt:        string;   // ISO date string
-  authorNote?:       string;
-  slug:              string;
+  verdict:    VerdictOutcome;
+  hmacSeal:   string;       // full HMAC-SHA256 hex (64 chars)
+  sealedAt:   number;       // Unix ms
+  slug:       string;
+  authorNote?: string;
 }
 
-const { state, challengeSharePct, resolvedAt, authorNote, slug } = Astro.props;
+const { verdict, hmacSeal, sealedAt, slug, authorNote } = Astro.props;
 
-const isUpheld    = state === 'upheld';
-const pctDisplay  = Math.round(challengeSharePct * 100);
-const resolvedFmt = new Date(resolvedAt).toLocaleDateString('en-US', {
+const OUTCOME_META: Record<VerdictOutcome, { label: string; icon: string; desc: string }> = {
+  'still-true': { label: 'Still True',  icon: '✓', desc: 'The conviction held.' },
+  'evolved':    { label: 'Evolved',     icon: '⟳', desc: 'The thinking grew.' },
+  'wrong':      { label: 'Wrong',       icon: '✗', desc: 'The conviction failed.' },
+  'abandoned':  { label: 'Abandoned',   icon: '—', desc: 'The bet was retired.' },
+};
+
+const meta       = OUTCOME_META[verdict];
+const sealedFmt  = new Date(sealedAt).toLocaleDateString('en-US', {
   year: 'numeric', month: 'long', day: 'numeric',
 });
-
-const LABELS = {
-  upheld:     { word: 'Upheld',     glyph: '✓', eyebrow: 'Community Verdict', desc: "The author's conviction held." },
-  overturned: { word: 'Overturned', glyph: '↺', eyebrow: 'Community Verdict', desc: 'The community challenged and won.' },
-} as const;
-
-const label = LABELS[state];
+// Show first 16 hex chars — enough cryptographic weight, readable in UI
+const hashShort  = hmacSeal.slice(0, 16);
+// Stagger each character: 12 chars × 40ms gap
+const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 40}ms` }));
 ---
 
 <div
-  class:list={['verdict-reveal', 'reveal-active']}
-  data-state={state}
+  class:list={['vr', `vr--${verdict}`]}
+  data-verdict={verdict}
   data-slug={slug}
-  aria-label={`Community verdict: ${label.word}`}
+  data-sealed-at={sealedAt}
+  aria-label={`Verdict sealed: ${meta.label}`}
   role="region"
 >
+  <!-- Beat 1: Gold pulse ring (CSS @starting-style entry) -->
+  <div class="vr__pulse-ring" aria-hidden="true"></div>
 
-  <p class="verdict-reveal__eyebrow" aria-hidden="true">{label.eyebrow}</p>
+  <!-- Eyebrow -->
+  <p class="vr__eyebrow">Conviction Sealed</p>
 
-  <!-- The verdict word — primary emotional signal (Tanya §3.1) -->
-  <div class="verdict-reveal__headline">
-    <span class="verdict-reveal__glyph" aria-hidden="true">{label.glyph}</span>
-    <span class:list={['verdict-reveal__word', `verdict-reveal__word--${state}`]} aria-live="polite">
-      {label.word}
-    </span>
+  <!-- Verdict badge — stamp-in animation (Beat 1 → Beat 2 transition) -->
+  <div class="vr__badge-wrap">
+    <span class="vr__icon" aria-hidden="true">{meta.icon}</span>
+    <span class="vr__label">{meta.label}</span>
   </div>
 
-  <p class="verdict-reveal__desc">{label.desc}</p>
+  <!-- Description -->
+  <p class="vr__desc">{meta.desc}</p>
 
-  <!-- Resolution metadata -->
-  <dl class="verdict-reveal__meta">
-    <div class="verdict-reveal__meta-row">
-      <dt>Challenge share</dt>
-      <dd>{pctDisplay}% of readers disputed</dd>
-    </div>
-    <div class="verdict-reveal__meta-row">
-      <dt>Resolved</dt>
-      <dd>{resolvedFmt}</dd>
-    </div>
-    {authorNote && (
-      <div class="verdict-reveal__meta-row verdict-reveal__meta-row--note">
-        <dt>Author note</dt>
-        <dd>{authorNote}</dd>
-      </div>
-    )}
-  </dl>
-
-  <!-- Quorum share bar — visual proof of community weight -->
-  <div class="verdict-reveal__bar-wrap" aria-hidden="true">
-    <div
-      class="verdict-reveal__bar-fill"
-      style={`width: ${pctDisplay}%; --bar-color: var(--verdict-${state})`}
-    ></div>
-    <span class="verdict-reveal__bar-label">30% quorum threshold</span>
-    <div class="verdict-reveal__bar-threshold"></div>
+  <!-- Beat 2: HMAC hash reveal — chars shimmer in one-by-one -->
+  <div class="vr__hash" aria-label={`HMAC seal: ${hashShort}`}>
+    <span class="vr__hash-prefix" aria-hidden="true">seal·</span>
+    {hashChars.map(({ c, delay }) => (
+      <span class="vr__hash-char" style={`animation-delay:${delay}`}>{c}</span>
+    ))}
+    <span class="vr__hash-ellipsis" aria-hidden="true">…</span>
   </div>
 
+  <!-- Beat 3: Timestamp stamp-in -->
+  <div class="vr__timestamp">
+    <time datetime={new Date(sealedAt).toISOString()} class="vr__timestamp-text">
+      {sealedFmt}
+    </time>
+    <span class="vr__timestamp-badge" aria-label="RFC 3161 timestamped">RFC 3161 ✓</span>
+  </div>
+
+  {authorNote && (
+    <blockquote class="vr__note">
+      <p>{authorNote}</p>
+    </blockquote>
+  )}
 </div>
 
-<!-- Inline SSE listener: reveals component live when dispute resolves -->
-<!-- Separated from verdict-reveal.ts to keep SSE concern local (Mike §2) -->
-<script define:vars={{ slug, state }}>
+<!-- Live reveal: listen for verdict:declared SSE event on this slug -->
+<script define:vars={{ slug }}>
   (function () {
-    const root = document.querySelector(`[data-slug="${slug}"].verdict-reveal`);
-    if (!root || root.classList.contains('reveal-active')) return;
+    const root = document.querySelector(`[data-slug="${slug}"].vr`);
+    if (!root) return;
+    // Already rendered SSR — no live reveal needed
+    if (root.dataset.verdict && root.dataset.verdict !== 'pending') return;
 
-    const sse = new EventSource(`/api/dispute-sse?slug=${encodeURIComponent(slug)}`);
-    sse.onmessage = function (e) {
+    const es = new EventSource('/api/heartbeat');
+    es.addEventListener('verdict:declared', function (e) {
       try {
-        const data = JSON.parse(e.data);
-        if (data.status === 'upheld' || data.status === 'overturned') {
-          root.dataset.state = data.status;
-          root.classList.add('reveal-active');
-          sse.close();
-        }
-      } catch { /* malformed SSE frame — skip */ }
-    };
-    sse.onerror = function () { sse.close(); };
+        const d = JSON.parse(e.data);
+        if (d.slug !== slug) return;
+        root.dataset.verdict = d.verdict ?? 'still-true';
+        root.classList.remove('vr--pending');
+        root.classList.add(`vr--${d.verdict ?? 'still-true'}`);
+        es.close();
+      } catch { /* malformed event — ignore */ }
+    });
+    es.onerror = function () { es.close(); };
   })();
 </script>
 
 <style>
-  /* Component-scoped styles — global ceremony classes live in verdict.css */
+  /* ── Shell ────────────────────────────────────────────────────────────── */
+  .vr {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-8) var(--space-6);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-seal-ceremony);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    /* Outcome color wash — background bleeds via CSS custom property */
+    transition: background 600ms ease, box-shadow 600ms ease;
+  }
 
-  .verdict-reveal__eyebrow {
+  /* Outcome-specific shell wash — 6% alpha tints (Tanya §6 color grammar) */
+  .vr--still-true { background: var(--correct-bg);  }
+  .vr--evolved    { background: var(--evolved-bg);  }
+  .vr--wrong      { background: var(--wrong-bg);    }
+  .vr--abandoned  { background: var(--pending-bg);  }
+
+  /* ── Beat 1: Gold pulse ring ─────────────────────────────────────────── */
+  .vr__pulse-ring {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 0;
+    height: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    /* Ring expands from center, then fades: 0 → 120px, opacity 0.35 → 0 */
+    animation: vr-gold-pulse 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes vr-gold-pulse {
+    0%   { box-shadow: 0 0 0  0px var(--gold-glow); opacity: 0.35; }
+    100% { box-shadow: 0 0 0 60px var(--gold-glow); opacity: 0;    }
+  }
+
+  /* ── Eyebrow ─────────────────────────────────────────────────────────── */
+  .vr__eyebrow {
+    margin: 0;
     font-size: var(--text-2xs);
     font-weight: var(--weight-semibold);
     letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
-    color: var(--text-ghost);
-    margin: 0 0 var(--space-4);
+    color: var(--gold-dim);
+    animation: vr-fade-in 200ms ease both;
   }
 
-  .verdict-reveal__headline {
+  /* ── Badge stamp-in (Beat 1→2 overlap, 200ms delay) ─────────────────── */
+  .vr__badge-wrap {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    margin-bottom: var(--space-3);
+    animation: vr-stamp-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms both;
+  }
+  @keyframes vr-stamp-in {
+    from { transform: scale(0); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
   }
 
-  .verdict-reveal__glyph {
+  .vr__icon {
     font-size: var(--text-2xl);
     line-height: 1;
-    opacity: 0.7;
   }
+  /* Icon colors follow verdict outcome tokens */
+  .vr--still-true .vr__icon { color: var(--verdict-true);    }
+  .vr--evolved    .vr__icon { color: var(--gold);             }
+  .vr--wrong      .vr__icon { color: var(--verdict-wrong);    }
+  .vr--abandoned  .vr__icon { color: var(--verdict-pending);  }
 
-  .verdict-reveal__desc {
+  .vr__label {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-extrabold);
+    letter-spacing: var(--tracking-tight);
+    line-height: 1.1;
+  }
+  .vr--still-true .vr__label { color: var(--verdict-true);    }
+  .vr--evolved    .vr__label { color: var(--gold);             }
+  .vr--wrong      .vr__label { color: var(--verdict-wrong);    }
+  .vr--abandoned  .vr__label { color: var(--verdict-pending);  }
+
+  /* ── Description ─────────────────────────────────────────────────────── */
+  .vr__desc {
+    margin: 0;
     font-size: var(--text-sm);
     color: var(--text-secondary);
-    margin: 0 0 var(--space-6);
     line-height: var(--leading-normal);
+    animation: vr-fade-in 200ms ease 300ms both;
   }
 
-  /* Metadata table */
-  .verdict-reveal__meta {
+  /* ── Beat 2: HMAC hash reveal ────────────────────────────────────────── */
+  .vr__hash {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    margin: 0 0 var(--space-6);
-  }
-
-  .verdict-reveal__meta-row {
-    display: flex;
-    gap: var(--space-4);
-    font-size: var(--text-xs);
-    align-items: baseline;
-  }
-
-  .verdict-reveal__meta-row dt {
-    color: var(--text-ghost);
-    min-width: 9rem;
-    flex-shrink: 0;
+    align-items: center;
+    gap: 0;
     font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--gold-dim);
+    letter-spacing: 0.04em;
+  }
+  .vr__hash-prefix {
+    color: var(--text-ghost);
+    margin-right: var(--space-1);
+  }
+  .vr__hash-char {
+    /* Each char: invisible → gold, staggered via animation-delay on element */
+    opacity: 0;
+    color: var(--gold-dim);
+    animation: vr-char-in 80ms ease forwards;
+    transition: color 200ms ease;
+  }
+  /* Last char brightens to full gold */
+  .vr__hash-char:last-of-type {
+    animation: vr-char-in 80ms ease forwards, vr-char-land 200ms ease forwards;
+    animation-delay: inherit, calc(var(--animation-delay, 0ms) + 80ms);
+  }
+  @keyframes vr-char-in  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes vr-char-land { to { color: var(--gold); } }
+  .vr__hash-ellipsis {
+    color: var(--text-ghost);
+    animation: vr-fade-in 200ms ease 900ms both;
   }
 
-  .verdict-reveal__meta-row dd {
-    color: var(--text-secondary);
+  /* ── Beat 3: Timestamp stamp-in ──────────────────────────────────────── */
+  .vr__timestamp {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    animation: vr-timestamp-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 900ms both;
+  }
+  @keyframes vr-timestamp-in {
+    from { transform: scale(0.92); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+  .vr__timestamp-text {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+  }
+  .vr__timestamp-badge {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--verdict-true);
+    opacity: 0.7;
+    letter-spacing: var(--tracking-wide);
+  }
+
+  /* ── Author note ─────────────────────────────────────────────────────── */
+  .vr__note {
     margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border-left: 2px solid var(--gold-border);
+    animation: vr-fade-in 200ms ease 1400ms both;
   }
-
-  .verdict-reveal__meta-row--note dd {
+  .vr__note p {
+    margin: 0;
     font-style: italic;
+    font-size: var(--text-sm);
     color: var(--text-muted);
   }
 
-  /* Quorum bar */
-  .verdict-reveal__bar-wrap {
-    position: relative;
-    height: 4px;
-    background: var(--border-subtle);
-    border-radius: var(--radius-full);
-    overflow: visible;
+  /* ── Shared entry fade ───────────────────────────────────────────────── */
+  @keyframes vr-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
-  .verdict-reveal__bar-fill {
-    height: 100%;
-    background: var(--bar-color, var(--text-ghost));
-    border-radius: var(--radius-full);
-    transition: width 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
-    max-width: 100%;
-  }
-
-  /* 30% threshold marker */
-  .verdict-reveal__bar-threshold {
-    position: absolute;
-    top: -3px;
-    left: 30%;
-    width: 1px;
-    height: 10px;
-    background: var(--border-medium);
-  }
-
-  .verdict-reveal__bar-label {
-    display: block;
-    margin-top: var(--space-2);
-    font-size: var(--text-2xs);
-    color: var(--text-ghost);
-    font-family: var(--font-mono);
-    letter-spacing: var(--tracking-wide);
+  /* ── Reduced motion: collapse to single fade ─────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .vr__pulse-ring,
+    .vr__badge-wrap,
+    .vr__hash-char,
+    .vr__timestamp {
+      animation: vr-fade-in 300ms ease both !important;
+    }
+    .vr__eyebrow,
+    .vr__desc,
+    .vr__hash-ellipsis,
+    .vr__note { animation: none; opacity: 1; }
   }
 </style>

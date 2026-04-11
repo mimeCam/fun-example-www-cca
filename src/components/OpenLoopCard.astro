@@ -6,22 +6,28 @@
 //
 // TODO: hover shimmer effect on crystallized cards (v2)
 
-import FreshnessIndicator from './FreshnessIndicator.astro';
-import { decayRatio, decayLabel } from '../lib/pulse';
+import DecayBar from './DecayBar.astro';
+import { decayRatio } from '../lib/pulse';
 import type { OpenLoop } from '../lib/pulse';
 
 interface Props { loop: OpenLoop; }
 
 const { loop } = Astro.props;
 const ratio = decayRatio(loop.dateAdded, loop.decayDays);
-const label = decayLabel(ratio);
+
+function loopStage(d: number): 'fresh' | 'aging' | 'stale' {
+  if (d < 0.33) return 'fresh';
+  if (d < 0.66) return 'aging';
+  return 'stale';
+}
+const stage = loopStage(ratio);
 const style = `--decay: ${ratio.toFixed(3)};`;
 ---
 
-<article class={`loop-card loop-${label}`} style={style}
+<article class={`loop-card loop-${stage}`} style={style}
          data-posted={loop.dateAdded} data-max-days={String(loop.decayDays)}>
   <header class="loop-head">
-    <FreshnessIndicator label={label} />
+    <DecayBar mode="glyph" decayFactor={ratio} />
     <span class="loop-question">{loop.question}</span>
   </header>
   {loop.context && <p class="loop-context">{loop.context}</p>}

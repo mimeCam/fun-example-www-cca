@@ -10,15 +10,17 @@
 
 :root {
 
-  /* ── Color Primitives (internal — never use directly in components) ── */
-  --clr-earth-50:   hsl(35 20% 98%);
-  --clr-earth-100:  hsl(35 20% 96%);
-  --clr-earth-900:  hsl(25 15% 12%);
-  --clr-amber-400:  hsl(38 90% 58%);
-  --clr-red-500:    hsl(0 72% 51%);
-  --clr-green-400:  hsl(142 70% 45%);
-  --clr-violet-400: hsl(262 83% 74%);
-  --clr-slate-400:  hsl(215 20% 65%);
+  /* ── Color Primitives (OKLCH — Baseline 2024, perceptually uniform) ──── */
+  /* Migration from HSL: Tanya §7, Mike §Token-System-Discipline.           */
+  /* Surface/border tokens stay RGBA — glass compositing needs transparency. */
+  --clr-earth-50:   oklch(98%  0.006  75);   /* was hsl(35 20% 98%)  */
+  --clr-earth-100:  oklch(96%  0.008  75);   /* was hsl(35 20% 96%)  */
+  --clr-earth-900:  oklch(14%  0.012  55);   /* was hsl(25 15% 12%)  */
+  --clr-amber-400:  oklch(72%  0.160  70);   /* was hsl(38 90% 58%)  */
+  --clr-red-500:    oklch(55%  0.220  25);   /* was hsl(0 72% 51%)   */
+  --clr-green-400:  oklch(64%  0.190 145);   /* was hsl(142 70% 45%) */
+  --clr-violet-400: oklch(70%  0.180 300);   /* was hsl(262 83% 74%) */
+  --clr-slate-400:  oklch(67%  0.030 250);   /* was hsl(215 20% 65%) */
 
   /* ── Page Surface ──────────────────────────────────────────────────── */
   --surface-base:    #0c0c0e;
@@ -165,8 +167,6 @@
   --decay-sepia:          0;   /* sepia(0.15) at full fossil — Tanya §4.5 */
 
   /* ── Graveyard tokens — OKLCH warm charcoal (prevents OLED halation) ── */
-  /* Note: this section uses OKLCH; all other primitives use hsl/rgba.
-     Migration to OKLCH is planned for the full token registry. */
   --color-grave-bg:      oklch(14% 0.015 50);
   --color-grave-surface: oklch(19% 0.012 50);
   --color-grave-border:  oklch(28% 0.010 50);
@@ -188,7 +188,7 @@
   /* ── Urgency Tier Tokens (endangered discovery feed) ───────────────── */
   /* Colors per tier — zero hardcoded values in components (Paul's mandate) */
   --urgency-warning-color:        var(--clr-amber-400);
-  --urgency-critical-color:       hsl(25 90% 58%);   /* deep amber-orange */
+  --urgency-critical-color:       oklch(67% 0.185 55);  /* deep amber-orange */
   --urgency-final-color:          var(--clr-red-500);
   /* Pulse animation speed per tier — faster = more urgent */
   --urgency-pulse-speed-warning:  2s;
@@ -222,4 +222,26 @@
   --container-wide: 1080px;             /* wide column: card grids */
   --container-nav:  800px;              /* navigation bar max-width */
   --gutter: clamp(16px, 4vw, 48px);    /* responsive side padding */
+
+  /* ── Verdict Outcome Backgrounds (Tanya §10) ────────────────────────── */
+  /* Pills, ceremony sections, VerdictCard — all 6% alpha tints.          */
+  --correct-bg:  rgba(74,  222, 128, 0.10);
+  --wrong-bg:    rgba(248, 113, 113, 0.10);
+  --pending-bg:  rgba(255, 255, 255, 0.05);
+  --evolved-bg:  rgba(167, 139, 250, 0.10);
+
+  /* ── Deep Surface (Tanya §10) ───────────────────────────────────────── */
+  /* VerdictCeremony shell, audit pages, admin dark panels                 */
+  --surface-deep: oklch(11% 0.010 50);
+
+  /* ── Extended Shadow System (Tanya §13) ────────────────────────────── */
+  /* Conviction ceremony: the act of sealing has elevation                */
+  --shadow-seal-ceremony:
+    0 0 0 1px var(--gold-border),
+    0 8px 32px rgba(245, 166, 35, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+  /* Disputed: a card under scrutiny has a subtle red cast                */
+  --shadow-card-disputed:
+    0 4px 16px rgba(248, 113, 113, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.3);
 }

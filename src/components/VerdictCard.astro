@@ -13,7 +13,7 @@
 // Credits: Tanya Donska (UX spec — VerdictCard layout, colors, hover)
 
 import type { VerdictPost } from '../lib/verdict-wall';
-import DeathClock from './DeathClock.astro';
+import DecayClock from './DecayClock.astro';
 
 interface Props {
   post: VerdictPost;
@@ -30,14 +30,17 @@ const STATE_LABELS: Record<string, string> = {
   fossil:     'FOSSIL',
 };
 
-const STATE_COLORS: Record<string, string> = {
-  living:     '#f59e0b',  // amber
-  endangered: '#f97316',  // orange
-  revived:    '#10b981',  // emerald
-  fossil:     '#4b5563',  // cool gray
+// State colors reference CSS custom properties via the data-state attribute.
+// Inline fallback: var() is not valid in JS string context — we use the CSS class approach.
+// verdictCard CSS classes (.verdict-card--living etc.) set --state-color via :where() rules.
+const STATE_TOKEN_FALLBACK: Record<string, string> = {
+  living:     'var(--gold)',
+  endangered: 'var(--urgency-critical-color)',
+  revived:    'var(--verdict-true)',
+  fossil:     'var(--verdict-pending)',
 };
 
-const stateColor = STATE_COLORS[post.verdictState] ?? '#4b5563';
+const stateColor = STATE_TOKEN_FALLBACK[post.verdictState] ?? 'var(--verdict-pending)';
 const stateLabel = STATE_LABELS[post.verdictState] ?? 'UNKNOWN';
 
 // ── Conviction label ──────────────────────────────────────────────────────────
@@ -51,11 +54,11 @@ const CONVICTION_LABELS: Record<string, string> = {
 };
 
 const CONVICTION_COLORS: Record<string, string> = {
-  'still-true': '#10b981',
-  'evolved':    '#f59e0b',
-  'unaudited':  'rgba(255,255,255,0.35)',
-  'wrong':      '#f87171',
-  'abandoned':  '#6b7280',
+  'still-true': 'var(--verdict-true)',
+  'evolved':    'var(--gold)',
+  'unaudited':  'var(--text-tertiary)',
+  'wrong':      'var(--verdict-wrong)',
+  'abandoned':  'var(--verdict-pending)',
 };
 
 const convictionKey   = post.conviction ?? 'unaudited';
@@ -79,7 +82,8 @@ const cardStyle = `--state-color: ${stateColor};`;
 
   <!-- Row 1: clock + title + badge -->
   <div class="vc-header">
-    <DeathClock
+    <DecayClock
+      variant="ring"
       daysRemaining={post.daysRemaining}
       urgency={post.clockUrgency}
       compact={true}

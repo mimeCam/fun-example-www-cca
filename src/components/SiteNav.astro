@@ -80,7 +80,7 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
         <span class="batting-tooltip" aria-hidden="true">See full track record →</span>
       </a>
     ) : (
-      <span class="batting-chip--ghost" aria-label="No bets sealed yet">0 bets sealed</span>
+      <a href="/track-record" class="batting-chip--ghost" aria-label="Track record — no bets sealed yet">0 bets sealed</a>
     )}
 
     <div
@@ -190,7 +190,7 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   .batting-pct {
     font-size: 0.72rem;
     font-weight: 600;
-    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     line-height: 1;
   }
 
@@ -273,10 +273,10 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   /* Ghost chip — cold state hint (Tanya §17: "hints the mechanism exists") */
   .batting-chip--ghost {
     font-size: 0.65rem;
-    font-family: ui-monospace, 'Cascadia Code', monospace;
-    color: rgba(255, 255, 255, 0.22);
+    font-family: var(--font-mono);
+    color: var(--text-ghost);
     letter-spacing: 0.04em;
-    pointer-events: none;
+    text-decoration: none;
     user-select: none;
   }
 

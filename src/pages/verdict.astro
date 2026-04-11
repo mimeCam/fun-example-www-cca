@@ -114,13 +114,13 @@ function tabHref(id: VerdictFilter): string {
       )}
       {wall.stats.contested > 0 && (
         <div class="verdict-stat">
-          <span class="verdict-stat__value" style="color: #f59e0b;">{wall.stats.contested}</span>
+          <span class="verdict-stat__value verdict-stat__value--contested">{wall.stats.contested}</span>
           <span class="verdict-stat__label">contested</span>
         </div>
       )}
       {wall.stats.endangered > 0 && (
         <div class="verdict-stat">
-          <span class="verdict-stat__value" style="color: #f97316;">{wall.stats.endangered}</span>
+          <span class="verdict-stat__value verdict-stat__value--endangered">{wall.stats.endangered}</span>
           <span class="verdict-stat__label">endangered</span>
         </div>
       )}

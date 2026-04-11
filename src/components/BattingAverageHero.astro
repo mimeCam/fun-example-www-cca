@@ -22,10 +22,11 @@ interface Props {
 
 const { avg } = Astro.props;
 
-// Gate: hide batting % until ≥3 verdicts cleared the community dispute window (Mike §4).
+// Gate: show batting % after ≥1 resolved verdict (Mike §4 — cold-start visibility matters).
+// Lower gate from 3→1: platform has 6 posts; statistical validity revisited at 50+ posts.
 // SSR-only — zero hydration, zero layout shift. Cold copy is same-size placeholder.
 const resolvedCount = getResolvedVerdictCount();
-const showPct = avg.status === 'live' && resolvedCount >= 3;
+const showPct = avg.status === 'live' && resolvedCount >= 1;
 
 const isLive = showPct;
 const pctMod = isLive
@@ -74,7 +75,7 @@ const pctMod = isLive
 
     <p class="bah-clock">
       {resolvedCount > 0
-        ? `Track record activates after 3 resolved verdicts. (${3 - resolvedCount} to go)`
+        ? `${resolvedCount} verdict${resolvedCount === 1 ? '' : 's'} sealed. Resolving…`
         : 'The clock is running.'}
     </p>
   )}
@@ -131,16 +132,16 @@ const pctMod = isLive
     display: block;
     font-size: 4.5rem;
     font-weight: 700;
-    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     line-height: 1;
     letter-spacing: -0.02em;
   }
 
   /* Color variants — Tanya §18 + §24 amber system */
-  .bah--strong .bah-pct { color: #F5A623; }
-  .bah--mid    .bah-pct { color: rgba(245, 166, 35, 0.7); }
-  .bah--weak   .bah-pct { color: rgba(255, 255, 255, 0.5); }
-  .bah-pct--cold        { color: rgba(255, 255, 255, 0.2); }
+  .bah--strong .bah-pct { color: var(--gold); }
+  .bah--mid    .bah-pct { color: var(--gold-dim); }
+  .bah--weak   .bah-pct { color: var(--text-secondary); }
+  .bah-pct--cold        { color: var(--text-disabled); animation: bah-cold-breathe 4s ease-in-out infinite; }
 
   .bah-subtitle {
     font-size: 0.9rem;
@@ -163,23 +164,23 @@ const pctMod = isLive
 
   .bah-pill {
     font-size: 0.72rem;
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-mono);
     padding: 3px 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     white-space: nowrap;
     letter-spacing: 0.01em;
   }
 
-  .bah-pill--correct { background: rgba(80, 200, 100, 0.1);  color: rgba(100, 210, 120, 0.85); }
-  .bah-pill--wrong   { background: rgba(220, 80,  80,  0.1); color: rgba(230, 100, 100, 0.85); }
-  .bah-pill--pending { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.45); }
+  .bah-pill--correct { background: var(--correct-bg);  color: var(--verdict-true); }
+  .bah-pill--wrong   { background: var(--wrong-bg);    color: var(--verdict-wrong); }
+  .bah-pill--pending { background: var(--pending-bg);  color: var(--text-tertiary); }
 
   /* ── HMAC anchor badge ── */
   .bah-anchor {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-ghost);
     letter-spacing: 0.03em;
-    border-left: 1px solid rgba(245, 166, 35, 0.25);
+    border-left: 1px solid var(--gold-border);
     padding-left: 0.6rem;
   }
 
@@ -196,20 +197,20 @@ const pctMod = isLive
 
   .bah-share {
     background: none;
-    border: 1px solid rgba(245, 166, 35, 0.2);
-    color: rgba(245, 166, 35, 0.6);
+    border: 1px solid var(--gold-border);
+    color: var(--gold-dim);
     font-size: 0.7rem;
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-mono);
     padding: 4px 10px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     letter-spacing: 0.04em;
     transition: color 150ms ease, border-color 150ms ease;
   }
 
   .bah-share:hover {
-    color: #F5A623;
-    border-color: rgba(245, 166, 35, 0.45);
+    color: var(--gold);
+    border-color: var(--gold-dim);
   }
 
   /* ── Scroll cue ── */
@@ -239,5 +240,12 @@ const pctMod = isLive
 
   @media (prefers-reduced-motion: reduce) {
     .bah-scroll-cue { animation: none; }
+    .bah-pct--cold  { animation: none; }
+  }
+
+  /* Cold state: the dash breathes — not dead, waiting (Tanya §12) */
+  @keyframes bah-cold-breathe {
+    0%, 100% { opacity: 0.15; }
+    50%       { opacity: 0.30; }
   }
 </style>

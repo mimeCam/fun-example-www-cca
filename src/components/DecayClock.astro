@@ -1,0 +1,377 @@
+---
+// src/components/DecayClock.astro
+// Unified countdown — replaces DeathClock + DeadlineClock + DeathClockBanner.
+// Three variants, one component, zero duplicated urgency logic.
+//
+//   variant="ring"   → SVG countdown ring (card footers, post headers)
+//   variant="bar"    → horizontal deadline bar (post detail body)
+//   variant="banner" → sticky bottom CTA band (endangered post detail pages)
+//
+// All timing, colors, and pulse speeds reference CSS tokens — no magic values.
+// Pulse at "final" tier: only the ring strokes breathe. Numbers stay still.
+// Accessible: role="img"/"progressbar", aria-label computed server-side.
+//
+// Credits: Mike (arch §Module-2 "one countdown timer"),
+//          Tanya (UX §2 DecayClock spec, ring drain spec, banner spec)
+
+import type { ClockUrgency, ConvictionVerdict } from '../lib/decay-engine';
+import {
+  deathClockDayDisplay,
+  deathClockUnitDisplay,
+  deathClockA11yLabel,
+  clockStyleString,
+} from '../lib/death-clock';
+import { getDeadlineStatus } from '../lib/deadline-enforcer';
+import { buildDeadlineDisplay } from '../lib/deadline-clock';
+
+type DecayVariant = 'ring' | 'bar' | 'banner';
+
+interface Props {
+  variant?:      DecayVariant;
+  /** For variant="ring" / variant="banner" */
+  daysRemaining?: number;
+  urgency?:       ClockUrgency;
+  compact?:       boolean;
+  conviction?:    ConvictionVerdict | null;
+  /** For variant="bar" */
+  slug?:        string;
+  publishDate?: Date;
+  deadline?:    Date;
+}
+
+const {
+  variant      = 'ring',
+  daysRemaining = 0,
+  urgency       = 'aging',
+  compact       = false,
+  conviction    = null,
+  slug,
+  publishDate,
+  deadline,
+} = Astro.props;
+
+// ── ring/banner helpers ────────────────────────────────────────────────────────
+const dayDisplay  = deathClockDayDisplay(daysRemaining, urgency);
+const unitDisplay = deathClockUnitDisplay(daysRemaining);
+const a11yLabel   = deathClockA11yLabel(daysRemaining);
+const inlineStyle = clockStyleString(urgency, daysRemaining, conviction);
+
+// Urgency tier mapping (ring CSS data-attribute drives pulse token)
+function urgencyTier(u: ClockUrgency): 'warning' | 'critical' | 'final' {
+  if (u === 'dying')     return 'final';
+  if (u === 'critical')  return 'critical';
+  return 'warning';
+}
+const tier = urgencyTier(urgency);
+
+// ── bar helpers ────────────────────────────────────────────────────────────────
+const deadlineStatus = (variant === 'bar' && slug && publishDate && deadline)
+  ? getDeadlineStatus(slug, deadline)
+  : null;
+
+const deadlineDisplay = (
+  deadlineStatus &&
+  deadlineStatus.status !== 'no-deadline' &&
+  deadlineStatus.status !== 'auto-resolved' &&
+  deadlineStatus.status !== 'expired-unsealed'
+) ? buildDeadlineDisplay(publishDate!, deadline!) : null;
+
+// Urgency band → token name mapping (avoids BAND_COLOR magic strings)
+function bandTokenName(band: string): string {
+  if (band === 'critical' || band === 'overdue') return 'urgency-critical-color';
+  if (band === 'warning')  return 'urgency-warning-color';
+  return 'text-ghost';
+}
+const bandToken   = deadlineDisplay ? bandTokenName(deadlineDisplay.urgencyBand) : 'text-ghost';
+const isPulsing   = deadlineDisplay && (deadlineDisplay.urgencyBand === 'critical' || deadlineDisplay.urgencyBand === 'overdue');
+const deadlineFmt = deadline
+  ? deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  : '';
+---
+
+{variant === 'ring' && (
+  <div
+    class:list={['decay-clock', compact && 'decay-clock--compact']}
+    data-urgency={urgency}
+    data-tier={tier}
+    data-days-remaining={daysRemaining}
+    data-conviction={conviction ?? undefined}
+    style={inlineStyle}
+    aria-label={a11yLabel}
+    title={a11yLabel}
+    role="img"
+  >
+    <svg class="decay-clock__ring-wrap" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <circle class="decay-clock__track" cx="32" cy="32" r="28" />
+      <circle class="decay-clock__ring"  cx="32" cy="32" r="28" />
+    </svg>
+    <div class="decay-clock__label" aria-hidden="true">
+      <span class="decay-clock__days">{dayDisplay}</span>
+      <span class="decay-clock__unit">{unitDisplay}</span>
+    </div>
+  </div>
+)}
+
+{variant === 'bar' && deadlineStatus?.status === 'auto-resolved' && (
+  <div class="dc-bar dc-bar--resolved">
+    <span class="dc-bar__label">verdict sealed</span>
+    <time class="dc-bar__date">
+      {new Date(deadlineStatus.sealedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+    </time>
+  </div>
+)}
+
+{variant === 'bar' && deadlineStatus?.status === 'expired-unsealed' && (
+  <div class="dc-bar dc-bar--overdue" style="--dc-color: var(--urgency-final-color)">
+    <div class="dc-bar__header">
+      <span class="dc-bar__icon" aria-hidden="true">◈</span>
+      <span class="dc-bar__label dc-bar__label--pulse">OVERDUE — awaiting sweep</span>
+      <time class="dc-bar__date" datetime={deadline?.toISOString()}>{deadlineFmt}</time>
+    </div>
+    <div class="dc-bar__track" role="progressbar" aria-valuenow={100} aria-valuemin={0} aria-valuemax={100}>
+      <div class="dc-bar__fill" style="width:100%" />
+    </div>
+  </div>
+)}
+
+{variant === 'bar' && deadlineDisplay && (
+  <div
+    class:list={['dc-bar', isPulsing && 'dc-bar--pulse']}
+    style={`--dc-color: var(--${bandToken})`}
+    aria-label={`Resolution deadline: ${deadlineDisplay.label}`}
+  >
+    <div class="dc-bar__header">
+      <span class="dc-bar__icon" aria-hidden="true">◈</span>
+      <span class="dc-bar__label">{deadlineDisplay.label}</span>
+      <time class="dc-bar__date" datetime={deadline?.toISOString()}>{deadlineFmt}</time>
+    </div>
+    <div
+      class="dc-bar__track"
+      role="progressbar"
+      aria-valuenow={deadlineDisplay.percentConsumed}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`${deadlineDisplay.percentConsumed}% of deadline window consumed`}
+    >
+      <div class="dc-bar__fill" style={`width:${deadlineDisplay.percentConsumed}%`} />
+    </div>
+  </div>
+)}
+
+{variant === 'banner' && daysRemaining > 0 && (
+  <div class="dc-banner" data-tier={tier} aria-live="polite">
+    <span class="dc-banner__ring" aria-hidden="true">
+      <!-- Inline micro-ring: 20px, urgency-colored stroke -->
+      <svg viewBox="0 0 24 24" class="dc-banner__svg" focusable="false">
+        <circle class="dc-banner__track" cx="12" cy="12" r="9" />
+        <circle class="dc-banner__arc"   cx="12" cy="12" r="9" />
+      </svg>
+    </span>
+    <span class="dc-banner__text">
+      This post has <strong>{daysRemaining}</strong> day{daysRemaining === 1 ? '' : 's'} left
+    </span>
+    <span class="dc-banner__sep" aria-hidden="true">·</span>
+    <span class="dc-banner__cta-label">Hold to keep it alive</span>
+    <slot name="keep-button" />
+  </div>
+)}
+
+<style>
+  /* ═══════════════════════════════════════════════
+     variant="ring"
+  ═══════════════════════════════════════════════ */
+  .decay-clock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 3.75rem;
+    height: 3.75rem;
+    flex-shrink: 0;
+  }
+  .decay-clock--compact { width: 2.75rem; height: 2.75rem; }
+
+  .decay-clock__ring-wrap {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .decay-clock__track {
+    fill: none;
+    stroke: rgba(255,255,255,0.07);
+    stroke-width: 3;
+  }
+  .decay-clock__ring {
+    fill: none;
+    stroke: hsl(var(--clock-urgency-hue, 220) 65% 60%);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 176;
+    stroke-dashoffset: var(--clock-dashoffset, 0);
+    transform-origin: 32px 32px;
+    transform: rotate(-90deg);
+    transition: stroke-dashoffset 600ms ease, stroke 300ms ease;
+    filter: drop-shadow(0 0 4px var(--clock-conviction-tint, transparent));
+  }
+  /* Final tier: ring strokes breathe, numbers stay still */
+  .decay-clock[data-tier="final"] .decay-clock__ring {
+    animation: dc-ring-pulse var(--urgency-pulse-speed-final, 0.4s) ease-in-out infinite;
+  }
+  .decay-clock[data-tier="critical"] .decay-clock__ring {
+    animation: dc-ring-pulse var(--urgency-pulse-speed-critical, 1s) ease-in-out infinite;
+  }
+  @keyframes dc-ring-pulse {
+    0%, 100% { opacity: 1;    }
+    50%       { opacity: 0.45; }
+  }
+
+  .decay-clock__label {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.05rem;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .decay-clock__days {
+    font-size: 0.9rem;
+    font-weight: var(--weight-bold);
+    font-family: var(--font-mono);
+    color: hsl(var(--clock-urgency-hue, 220) 65% 72%);
+    line-height: 1;
+  }
+  .decay-clock__unit {
+    font-size: 0.44rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    opacity: 0.55;
+    color: hsl(var(--clock-urgency-hue, 220) 40% 65%);
+  }
+  .decay-clock--compact .decay-clock__days { font-size: 0.7rem;  }
+  .decay-clock--compact .decay-clock__unit { font-size: 0.38rem; }
+
+  /* ═══════════════════════════════════════════════
+     variant="bar"
+  ═══════════════════════════════════════════════ */
+  .dc-bar {
+    margin: 1.25rem 0;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid color-mix(in oklch, var(--dc-color, var(--border-medium)) 30%, transparent);
+    border-radius: var(--radius-sm);
+    background: var(--surface-raised);
+    font-size: var(--text-sm);
+  }
+  .dc-bar--resolved {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    opacity: 0.55;
+    --dc-color: var(--border-medium);
+  }
+  .dc-bar__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+  }
+  .dc-bar__icon { font-size: 0.85em; color: var(--dc-color); }
+  .dc-bar__label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--dc-color, var(--text-tertiary));
+    font-weight: var(--weight-semibold);
+  }
+  .dc-bar__label--pulse {
+    animation: dc-label-pulse var(--urgency-pulse-speed-critical, 1.6s) ease-in-out infinite;
+  }
+  .dc-bar__date {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-ghost);
+    letter-spacing: 0.02em;
+  }
+  .dc-bar__track {
+    height: 3px;
+    background: var(--border-subtle);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+  .dc-bar__fill {
+    height: 100%;
+    background: var(--dc-color, var(--text-ghost));
+    border-radius: var(--radius-full);
+    transition: width 300ms ease;
+  }
+  @keyframes dc-label-pulse {
+    0%, 100% { opacity: 1;    }
+    50%       { opacity: 0.45; }
+  }
+
+  /* ═══════════════════════════════════════════════
+     variant="banner"
+  ═══════════════════════════════════════════════ */
+  .dc-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0 var(--space-4);
+    height: 40px;
+    width: 100%;
+    background: var(--surface-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-subtle);
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    /* Slide-up entrance when page loads and post is endangered */
+    animation: dc-banner-enter 300ms ease-out both;
+  }
+  @keyframes dc-banner-enter {
+    from { transform: translateY(40px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .dc-banner__svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    flex-shrink: 0;
+  }
+  .dc-banner__track {
+    fill: none;
+    stroke: rgba(255,255,255,0.1);
+    stroke-width: 2;
+  }
+  .dc-banner__arc {
+    fill: none;
+    stroke: var(--urgency-critical-color);
+    stroke-width: 2;
+    stroke-linecap: round;
+    transform-origin: 12px 12px;
+    transform: rotate(-90deg);
+  }
+  .dc-banner[data-tier="final"] .dc-banner__arc {
+    stroke: var(--urgency-final-color);
+    animation: dc-ring-pulse var(--urgency-pulse-speed-final, 0.4s) ease-in-out infinite;
+  }
+
+  .dc-banner__text { flex: 1; }
+  .dc-banner__text strong { color: var(--text-primary); }
+  .dc-banner__sep  { color: var(--text-ghost); }
+  .dc-banner__cta-label { color: var(--text-tertiary); font-size: var(--text-2xs); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .decay-clock__ring,
+    .dc-banner__arc,
+    .dc-label-pulse,
+    .dc-banner { animation: none; }
+  }
+</style>

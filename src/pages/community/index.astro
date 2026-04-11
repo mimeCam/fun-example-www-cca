@@ -8,7 +8,7 @@
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import DeathClock from '../../components/DeathClock.astro';
+import DecayClock from '../../components/DecayClock.astro';
 import '../../styles/community.css';
 import { getLivePosts, COMMUNITY_MAX_DAYS } from '../../lib/communityPosts';
 import type { CommunityPost } from '../../lib/communityPosts';
@@ -111,7 +111,7 @@ catch { /* DB not yet seeded */ }
               <p class="community-card__excerpt">{preview(post.body)}</p>
 
               <div class="community-card__footer">
-                <DeathClock daysRemaining={daysLeft} urgency={urgency} compact={true} />
+                <DecayClock variant="ring" daysRemaining={daysLeft} urgency={urgency} compact={true} />
                 <span class="community-card__keep-count">
                   ↑ {revivalCount} kept
                 </span>

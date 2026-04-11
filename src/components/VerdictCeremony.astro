@@ -247,7 +247,7 @@ function fmtTs(ts: number): string {
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 12px;
     overflow: hidden;
-    background: #151210;
+    background: var(--surface-deep);
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
   }
 
@@ -280,16 +280,16 @@ function fmtTs(ts: number): string {
     font-size: 3.5rem;
     font-weight: 800;
     line-height: 1;
-    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     letter-spacing: -0.03em;
-    color: #f59e0b;
+    color: var(--gold);
   }
 
   .vc-score-denom {
     font-size: 1.35rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.22);
-    font-family: ui-monospace, monospace;
+    color: var(--text-ghost);
+    font-family: var(--font-mono);
   }
 
   .vc-score-label {
@@ -322,15 +322,15 @@ function fmtTs(ts: number): string {
   }
 
   .vc-meta-row dd {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-muted);
     margin: 0;
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-mono);
   }
 
   .vc-fingerprint {
-    color: rgba(245, 166, 35, 0.5);
+    color: var(--gold-dim);
     font-size: 0.7rem;
-    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     cursor: help;
     letter-spacing: 0.04em;
   }
@@ -456,15 +456,15 @@ function fmtTs(ts: number): string {
   .vc-avg-pct {
     font-size: 2.75rem;
     font-weight: 800;
-    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     letter-spacing: -0.02em;
     line-height: 1;
-    color: #f59e0b;
+    color: var(--gold);
   }
 
   .vc-avg-pct--cold {
     font-size: 2.25rem;
-    color: rgba(255, 255, 255, 0.18);
+    color: var(--text-disabled);
   }
 
   .vc-avg-desc {

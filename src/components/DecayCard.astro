@@ -13,7 +13,7 @@ import RevivalBadge from './RevivalBadge.astro';
 import RisenBadge from './RisenBadge.astro';
 import KeepButton from './KeepButton.astro';
 import BloomParticles from './BloomParticles.astro';
-import DeathClock from './DeathClock.astro';
+import DecayClock from './DecayClock.astro';
 import TensionBadge from './TensionBadge.astro';
 import { formatPubDate } from '../lib/dates';
 import type { PostDisplayData } from '../lib/postMeta';
@@ -59,7 +59,7 @@ const conviction = post.conviction ?? null;
   <PostBadge readingTime={post.readingTime} badge={post.badge} />
   {post.description && <p class="post-excerpt">{post.description}</p>}
   <div class="card-footer">
-    <DeathClock daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} />
+    <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} />
     <div class="card-footer-meta">
       <span class="decay-freshness" aria-label={`Freshness: ${post.freshness}`}>
         {post.freshness}

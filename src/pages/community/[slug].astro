@@ -11,7 +11,7 @@
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import DeathClock from '../../components/DeathClock.astro';
+import DecayClock from '../../components/DecayClock.astro';
 import KeepButton from '../../components/KeepButton.astro';
 import '../../styles/community.css';
 import { getPostBySlug, COMMUNITY_MAX_DAYS } from '../../lib/communityPosts';
@@ -110,7 +110,7 @@ const bodyHtml = renderMarkdown(post.body);
         PoW {post.pow_hash.slice(0, 8)}…
       </button>
       <span class="community-detail__chip community-detail__chip--clock">
-        <DeathClock daysRemaining={daysLeft} urgency={urgency} compact={true} />
+        <DecayClock variant="ring" daysRemaining={daysLeft} urgency={urgency} compact={true} />
         {daysLeft > 0 ? `${daysLeft}d left` : 'entombed'}
       </span>
     </div>

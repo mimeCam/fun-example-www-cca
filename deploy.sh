@@ -4,6 +4,62 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v61 — Conviction Loop Closure (2026-04-11)
+#   Sprint: Component consolidation + OKLCH design-system migration + API contract
+#     hardening. Pure UIX/design-system refactoring — no infrastructure changes.
+#   New files:
+#     src/components/DecayBar.astro — unified decay state visualiser; replaces
+#       ErosionBar + FreshnessIndicator; three output modes: bar (vitality meter),
+#       pill (inline badge), ring (SVG arc for cards); single source of urgency
+#       colour logic referencing tokens.css vars only.
+#     src/components/DecayClock.astro — unified countdown; replaces DeathClock +
+#       DeadlineClock + DeathClockBanner; three variants (ring/compact/banner);
+#       zero duplicated urgency logic; variant="banner" matches old DeadlineClock
+#       layout needs exactly.
+#   Deleted files:
+#     src/components/ErosionBar.astro — superseded by DecayBar mode="bar".
+#     src/components/FreshnessIndicator.astro — superseded by DecayBar mode="pill".
+#     src/components/DeathClock.astro — superseded by DecayClock variant="ring".
+#     src/components/DeadlineClock.astro — superseded by DecayClock variant="banner".
+#   Updated files:
+#     src/components/VerdictReveal.astro — rewritten as 3-beat pure-CSS ceremony
+#       (gold pulse → hash reveal → timestamp stamp-in); old community-dispute
+#       reveal logic removed (lives in VerdictCeremony.astro); no SSE dependency;
+#       reduced-motion guard collapses all three beats to a single opacity reveal.
+#     src/lib/batting-average.ts — gate lowered ≥3 → ≥1 resolved verdict (cold-
+#       start visibility improvement); evolved verdicts now count as 0.5× wrong in
+#       denominator (closes self-grading loophole); QUORUM_MIN_DISAGREE = 5
+#       (engagement gate — quorum window only opens after ≥5 disagree-stancers).
+#     src/lib/verdict-dispute.ts — quorum floor fix: Math.max(3, ceil(n × 0.30))
+#       ensures at least 3 challenges required even for low-engagement posts.
+#     src/pages/api/verdict-resolve.ts — response contract extended: now returns
+#       postSlug + newBattingAverage alongside existing ok/verdict/hmac_seal/
+#       sealedAt/hash; SSE broadcast payload unchanged (backward-compatible).
+#     src/styles/tokens.css — OKLCH migration complete for all primitives; new
+#       tokens: --correct-bg, --wrong-bg, --pending-bg, --evolved-bg,
+#       --surface-deep, --shadow-seal-ceremony, --shadow-card-disputed.
+#     src/components/BattingAverageHero.astro — magic hex values → token references;
+#       ui-monospace → var(--font-mono).
+#     src/components/VerdictCard.astro — magic hex values → token references.
+#     src/components/VerdictCeremony.astro — magic hex values → token references;
+#       motion profile variables replace hardcoded timing.
+#     src/components/SiteNav.astro — magic hex values → token references;
+#       ui-monospace → var(--font-mono); ghost chip is now an <a> link to
+#       /track-record (was pointer-events: none).
+#     src/pages/verdict.astro — magic hex values → token references.
+#     src/styles/verdict.css — outcome-variant styles updated to reference new
+#       --correct-bg / --wrong-bg / --pending-bg tokens.
+#     src/components/ConvictionHero.astro — minor token alignment.
+#     src/components/DecayCard.astro, EndangeredCard.astro, OpenLoopCard.astro,
+#       community/[slug].astro, community/index.astro, blog/[slug].astro —
+#       DeathClock → DecayClock; ErosionBar/FreshnessIndicator → DecayBar imports
+#       updated; no behavioural changes.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged — no schema changes this sprint).
+#     ADMIN_SECRET still required. GITHUB_PAT optional (Conviction Anchor).
+#     DISPUTE_QUORUM_RATIO optional (float 0..1, default 0.3).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v60 — Quorum Resolution Engine + VerdictReveal Ceremony (2026-04-11)
 #   Sprint: 72h dispute window; upheld/overturned final states; VerdictReveal
 #     ceremony component; deadline-sweep now co-sweeps expired dispute windows.

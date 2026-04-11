@@ -151,8 +151,10 @@
 }
 
 /* Outcome stat value colors — outcome pair in stats bar */
-.verdict-stat__value--correct { color: var(--verdict-true); }
-.verdict-stat__value--wrong   { color: var(--verdict-wrong); }
+.verdict-stat__value--correct   { color: var(--verdict-true);            }
+.verdict-stat__value--wrong     { color: var(--verdict-wrong);           }
+.verdict-stat__value--contested { color: var(--gold);                    }
+.verdict-stat__value--endangered{ color: var(--urgency-critical-color);  }
 
 /* ── Card grid: 2-col desktop, 1-col mobile ──────────────────────── */
 

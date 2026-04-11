@@ -21,7 +21,7 @@ import GhostEchoes from '../../components/GhostEchoes.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import KeepButton from '../../components/KeepButton.astro';
 import StanceDrawer from '../../components/StanceDrawer.astro';
-import DeadlineClock from '../../components/DeadlineClock.astro';
+import DecayClock from '../../components/DecayClock.astro';
 import PredictionCard from '../../components/PredictionCard.astro';
 import DisputeChallenge from '../../components/DisputeChallenge.astro';
 import DisputeTally from '../../components/DisputeTally.astro';
@@ -149,11 +149,12 @@ const jsonLd      = [
       tst={tstData}
     />
 
-    <!-- DeadlineClock: renders only when author has set a resolution_deadline.
+    <!-- DecayClock bar: renders only when author has set a resolution_deadline.
          Maps to DeadlineStatus discriminated union — no booleans, no nullable flags.
          Auto-seal via POST /api/deadline-sweep (Mike §deadline-enforcer). -->
     {post.data.resolution_deadline && (
-      <DeadlineClock
+      <DecayClock
+        variant="bar"
         slug={post.slug}
         publishDate={post.data.pubDate}
         deadline={post.data.resolution_deadline}

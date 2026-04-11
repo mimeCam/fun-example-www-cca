@@ -42,7 +42,7 @@ export type PredictionAccuracy =
 
 interface SealRow        { post_slug: string }
 interface VerdictEventRow { post_slug: string; payload_json: string | null }
-interface Counts          { correct: number; wrong: number; pending: number }
+interface Counts          { correct: number; wrong: number; evolved: number; pending: number }
 type VerdictTally = 'correct' | 'wrong' | 'neutral';
 
 // ---------------------------------------------------------------------------
@@ -97,7 +97,7 @@ function isContested(slug: string): boolean {
 }
 
 function tallyVerdicts(verdictEvents: VerdictEventRow[], totalSealed: number): Counts {
-  const c: Counts = { correct: 0, wrong: 0, pending: 0 };
+  const c: Counts = { correct: 0, wrong: 0, evolved: 0, pending: 0 };
   const resolvedSlugs = new Set<string>();
   for (const v of verdictEvents) {
     if (resolvedSlugs.has(v.post_slug)) continue; // first-write-wins
@@ -107,20 +107,21 @@ function tallyVerdicts(verdictEvents: VerdictEventRow[], totalSealed: number): C
     const t = verdictTally((payload.verdict as string) ?? '');
     if (t === 'correct') c.correct++;
     else if (t === 'wrong') c.wrong++;
-    // neutral excluded from counts
+    else c.evolved++; // neutral/'evolved' — counted with 0.5 weight in denominator
   }
   c.pending = Math.max(0, totalSealed - resolvedSlugs.size);
   return c;
 }
 
-function toPercent(correct: number, wrong: number): number {
-  const denom = correct + wrong;
+/** evolved counts as 0.5 wrong in denominator (prevents author self-grading via "evolved" loophole). */
+function toPercent(correct: number, wrong: number, evolved: number): number {
+  const denom = correct + wrong + evolved * 0.5;
   return denom > 0 ? Math.round((correct / denom) * 100) : 0;
 }
 
 function buildLive(seals: SealRow[], verdictEvents: VerdictEventRow[]): BattingAverage {
-  const { correct, wrong, pending } = tallyVerdicts(verdictEvents, seals.length);
-  return { status: 'live', total: seals.length, correct, wrong, pending, pct: toPercent(correct, wrong) };
+  const { correct, wrong, evolved, pending } = tallyVerdicts(verdictEvents, seals.length);
+  return { status: 'live', total: seals.length, correct, wrong, pending, pct: toPercent(correct, wrong, evolved) };
 }
 
 // ---------------------------------------------------------------------------

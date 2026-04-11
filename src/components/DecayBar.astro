@@ -1,0 +1,125 @@
+---
+// src/components/DecayBar.astro
+// Unified decay state visualizer — replaces ErosionBar + FreshnessIndicator.
+// Single component, three output modes:
+//   mode="bar"   → quantitative vitality meter (formerly ErosionBar)
+//   mode="glyph" → categorical stage icon ○ ◐ ◆ (formerly FreshnessIndicator)
+//   mode="nav"   → 2px reading progress line at nav bottom (formerly inline in SiteNav)
+//
+// All color transitions driven by CSS tokens only. No inline magic values.
+// decayFactor: 0.0 (fresh) → 1.0 (fossil).
+//
+// Credits: Mike (arch §Module-1 "one bar, one truth"),
+//          Tanya (UX §3 DecayBar spec, §2 color grammar)
+
+import type { UrgencyLevel } from '../lib/endangered';
+import { erosionBarPct, erosionHue } from '../lib/endangered';
+
+type DecayMode = 'bar' | 'glyph' | 'nav';
+
+interface Props {
+  mode?:        DecayMode;
+  decayFactor:  number;
+  /** urgency tier — required for mode="bar" color accuracy */
+  urgency?:     UrgencyLevel;
+  /** 0–1 reading progress — used by mode="nav" */
+  progress?:    number;
+  /** accent color override (RGB triple) for mode="nav" */
+  accentRgb?:   string;
+}
+
+const {
+  mode        = 'bar',
+  decayFactor,
+  urgency     = 'warning',
+  progress    = 0,
+  accentRgb   = '245,166,35',
+} = Astro.props;
+
+// ── bar helpers (reuse existing lib) ──────────────────────────────────────────
+const pct = erosionBarPct(decayFactor);
+const hue = erosionHue(urgency);
+
+// ── glyph helpers ─────────────────────────────────────────────────────────────
+type GlyphStage = 'fresh' | 'aging' | 'stale';
+function glyphStage(d: number): GlyphStage {
+  if (d < 0.33) return 'fresh';
+  if (d < 0.66) return 'aging';
+  return 'stale';
+}
+const GLYPH: Record<GlyphStage, { icon: string; title: string }> = {
+  fresh: { icon: '○', title: 'Soft — freshly formed thought' },
+  aging: { icon: '◐', title: 'Setting — gaining definition'  },
+  stale: { icon: '◆', title: 'Crystallized — mineral permanence' },
+};
+const stage  = glyphStage(decayFactor);
+const glyph  = GLYPH[stage];
+---
+
+{mode === 'bar' && (
+  <div
+    class="decay-bar"
+    role="meter"
+    aria-label="Post vitality"
+    aria-valuenow={pct}
+    aria-valuemin={0}
+    aria-valuemax={100}
+    style={`--db-pct:${pct}%;--db-hue:${hue}deg`}
+  >
+    <div class="decay-bar__fill"></div>
+  </div>
+)}
+
+{mode === 'glyph' && (
+  <span
+    class={`decay-glyph decay-glyph--${stage}`}
+    title={glyph.title}
+    aria-label={glyph.title}
+  >
+    {glyph.icon}
+  </span>
+)}
+
+{mode === 'nav' && (
+  <div
+    class="decay-nav"
+    style={`--db-progress:${Math.min(1, Math.max(0, progress)) * 100}%;--db-accent:${accentRgb}`}
+    aria-hidden="true"
+  ></div>
+)}
+
+<style>
+  /* ── mode="bar" ─────────────────────────────────────────────────────── */
+  .decay-bar {
+    height: 3px;
+    background: var(--border-subtle);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .decay-bar__fill {
+    height: 100%;
+    width: var(--db-pct, 100%);
+    background: oklch(
+      from hsl(var(--db-hue, 120deg) 60% 50%)
+      l c h
+    );
+    border-radius: var(--radius-full);
+    transition: width 400ms ease;
+  }
+
+  /* ── mode="glyph" ───────────────────────────────────────────────────── */
+  .decay-glyph        { font-size: 0.85rem; line-height: 1; cursor: default; }
+  .decay-glyph--fresh { color: var(--color-decay-fresh);  opacity: 0.50; }
+  .decay-glyph--aging { color: var(--color-revival);      opacity: 0.70; }
+  .decay-glyph--stale { color: var(--color-decay-fossil); opacity: 0.95; }
+
+  /* ── mode="nav" ─────────────────────────────────────────────────────── */
+  .decay-nav {
+    height: 2px;
+    width: var(--db-progress, 0%);
+    background: rgba(var(--db-accent, 245,166,35), 0.55);
+    border-radius: var(--radius-full);
+    transition: width 200ms ease;
+  }
+</style>

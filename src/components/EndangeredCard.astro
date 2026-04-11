@@ -14,8 +14,8 @@ import { formatPubDate } from '../lib/dates';
 import { urgencyLevel, endangeredStyleString } from '../lib/endangered';
 import { decayStyleString } from '../lib/decay-engine';
 import type { PostDisplayData } from '../lib/postMeta';
-import ErosionBar from './ErosionBar.astro';
-import DeathClock from './DeathClock.astro';
+import DecayBar from './DecayBar.astro';
+import DecayClock from './DecayClock.astro';
 
 interface Props { post: PostDisplayData; }
 
@@ -38,7 +38,8 @@ const style = [decayStyleString(post.decay), endangeredStyleString(post.decay)].
   aria-label={`${post.title} — endangered, ${post.daysRemaining} days left. Hold to revive.`}
 >
   <div class="endangered-card-inner">
-    <DeathClock
+    <DecayClock
+      variant="ring"
       daysRemaining={post.daysRemaining}
       urgency={post.clockUrgency}
       compact={true}
@@ -49,7 +50,7 @@ const style = [decayStyleString(post.decay), endangeredStyleString(post.decay)].
         <time datetime={post.pubDateISO} class="post-date">{formattedDate}</time>
         <h2 class="post-title">{post.title}</h2>
       </a>
-      <ErosionBar decayFactor={post.decay} urgency={urgency} />
+      <DecayBar mode="bar" decayFactor={post.decay} urgency={urgency} />
       <div class="endangered-card-footer">
         <a href={href} class="endangered-tend-link">tend this post &rarr;</a>
       </div>

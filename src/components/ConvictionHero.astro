@@ -16,7 +16,7 @@
 //          Tanya (UX §post-detail — ConvictionHero redesign, indigo palette)
 
 import { getSealEntry } from '../lib/conviction-ledger';
-import DeathClock from './DeathClock.astro';
+import DecayClock from './DecayClock.astro';
 import TensionBadge from './TensionBadge.astro';
 import TrustBadge from './TrustBadge.astro';
 import { clockUrgency } from '../lib/death-clock';
@@ -114,7 +114,8 @@ const deadlineISO = (!graceState.warming && clockDays > 0)
       </div>
     ) : (
       <div class="ch-clock-wrap" data-deadline-iso={deadlineISO ?? undefined}>
-        <DeathClock
+        <DecayClock
+          variant="ring"
           daysRemaining={graceState.daysRemaining}
           urgency={clockUrgencyVal}
           conviction={conviction}
