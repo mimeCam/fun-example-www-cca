@@ -17,6 +17,7 @@
   --duration-slow:     500ms;
   --duration-dramatic: 800ms;
   --duration-bloom:    1200ms;
+  --duration-museum:   1400ms;   /* crystallized shimmer sweep — deliberate, not urgent */
 
   /* ── Named Easing Functions ─────────────────────────────────────────── */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);      /* snappy exit */
@@ -72,6 +73,7 @@
     --duration-slow:            0ms;
     --duration-dramatic:        0ms;
     --duration-bloom:           0ms;
+    --duration-museum:          0ms;
   }
 }
 
@@ -119,4 +121,14 @@
 @keyframes clock-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.45; }
+}
+
+/* Crystallized card shimmer — single-pass cold museum-glass sweep on hover.
+ * 105deg mirrors reader's natural left-to-right scan direction.
+ * Gradient positioned off-screen at rest; only passes through card on hover.
+ * animation-iteration-count: 1 + forwards keeps it pinned off-screen after sweep.
+ * NOT warm amber — cold blue-white signals history, not urgency. Tanya §Crystallized */
+@keyframes shimmer-glass {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
 }

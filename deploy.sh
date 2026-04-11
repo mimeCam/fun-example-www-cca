@@ -4,6 +4,28 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v66 — Crystallized Card Stage & Shimmer (2026-04-11)
+#   Sprint: 4th decay stage 'crystallized' (ratio ≥ 1.0) added to OpenLoopCard;
+#     crystallized cards are pinned to history with a museum-glass aesthetic and
+#     a single-pass cold shimmer sweep on hover. Pure UIX/design-system sprint.
+#   Updated files:
+#     src/components/OpenLoopCard.astro — loopStage() now returns 'crystallized'
+#       when decay ratio ≥ 1.0; cardClass emits 'loop-stale loop-crystallized'
+#       (additive); crystallizedDate() formats the seal date; footer badge with
+#       ◆ crystallized · Mon YYYY; CSS: .loop-crystallized museum-glass override
+#       (no hover elevation, inset ring); ::before shimmer layer (off-screen at
+#       rest, single-pass cold sweep on hover via animation shimmer-glass).
+#     src/styles/motion.css — --duration-museum: 1400ms token added (deliberate
+#       shimmer pace); @keyframes shimmer-glass (-200%→200% background-position);
+#       prefers-reduced-motion: --duration-museum → 0ms.
+#     src/styles/tokens.css — --z-shimmer: 2 (above card content, below nav);
+#       --z-onboarding: 150 (above modal, below toast); crystallized card tokens:
+#       --clr-crystallized-shimmer, --clr-crystallized-border,
+#       --clr-crystallized-tint (cold oklch palette — signals history, not urgency).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     deploy.sh: no changes to startup sequence or post-start hooks.
+#
 # Architecture v65 — First-Visit Onboarding Overlay (2026-04-11)
 #   Sprint: 3-step full-screen onboarding overlay for first-time visitors;
 #     explains the post lifecycle (decay → conviction seal → verdict tracking).

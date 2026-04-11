@@ -157,14 +157,16 @@
   --motion-easing-standard:    ease-in-out;
 
   /* ── Z-Index Scale ──────────────────────────────────────────────────── */
-  --z-base:    0;
-  --z-card:    1;
-  --z-nav:     10;
-  --z-tooltip: 20;
-  --z-sticky:  40;   /* sticky banners: death-clock-banner, cookie notice */
-  --z-drawer:  50;
-  --z-modal:   100;
-  --z-toast:   200;
+  --z-base:       0;
+  --z-card:       1;
+  --z-shimmer:    2;    /* above card content, below nav — shimmer ::before layer */
+  --z-nav:        10;
+  --z-tooltip:    20;
+  --z-sticky:     40;   /* sticky banners: death-clock-banner, cookie notice */
+  --z-drawer:     50;
+  --z-modal:      100;
+  --z-onboarding: 150;  /* full-screen teach modal — above modal, below toast */
+  --z-toast:      200;
 
   /* ── Decay Card Defaults (overridden by JS decay-engine at runtime) ──── */
   --decay-bg-fresh:       var(--surface-raised);
@@ -172,6 +174,13 @@
   --decay-border-alpha:   0.06;
   --decay-grain:          0;
   --decay-sepia:          0;   /* sepia(0.15) at full fossil — Tanya §4.5 */
+
+  /* ── Crystallized Card Tokens (shimmer ceremony — Tanya §Crystallized) ── */
+  /* Temperature contrast is the emotional message:                          */
+  /* warm amber = conviction/revival; cold blue = sealed behind museum glass */
+  --clr-crystallized-shimmer: oklch(95% 0.02 210);        /* museum white — 14% alpha in usage */
+  --clr-crystallized-border:  oklch(60% 0.06 230 / 0.15); /* glass ring — inset seal */
+  --clr-crystallized-tint:    oklch(14% 0.008 240);        /* subtle cool background */
 
   /* ── Graveyard tokens — OKLCH warm charcoal (prevents OLED halation) ── */
   --color-grave-bg:      oklch(14% 0.015 50);

@@ -4,13 +4,13 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, RFC 3161 + OTS clients, timestamp facade
-- `src/lib/client/` — client-side state machines (onboarding)
-- `src/components/` — ConvictionSeal, KeepButton, VerdictReveal, BattingAverageHero, DecayBar, DecayClock, AuditReceipt, OnboardingOverlay
-- `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep, leaderboard, onboarding-dismiss
-- `src/styles/tokens.css` — design token registry (fonts, colors, spacing, motion)
+- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, RFC 3161 + OTS clients
+- `src/components/` — ConvictionSeal, KeepButton, VerdictReveal, BattingAverageHero, DecayBar, OpenLoopCard
+- `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep
+- `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes + duration scale
 
 ## WIP
 
 - Seal posts via `/admin` to activate TrustBadge + batting average
 - Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
+- Sitemap consolidation: redirect `/endangered` + `/graveyard` to main feed with `?stage=` filter
