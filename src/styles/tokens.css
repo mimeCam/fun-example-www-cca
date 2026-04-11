@@ -185,6 +185,20 @@
   --color-dispute-fill-from:  var(--clr-amber-400);
   --color-dispute-fill-to:    var(--clr-red-500);
 
+  /* ── Urgency Tier Tokens (endangered discovery feed) ───────────────── */
+  /* Colors per tier — zero hardcoded values in components (Paul's mandate) */
+  --urgency-warning-color:        var(--clr-amber-400);
+  --urgency-critical-color:       hsl(25 90% 58%);   /* deep amber-orange */
+  --urgency-final-color:          var(--clr-red-500);
+  /* Pulse animation speed per tier — faster = more urgent */
+  --urgency-pulse-speed-warning:  2s;
+  --urgency-pulse-speed-critical: 1s;
+  --urgency-pulse-speed-final:    0.4s;
+  /* Glow opacity per tier */
+  --urgency-glow-warning:         0.15;
+  --urgency-glow-critical:        0.25;
+  --urgency-glow-final:           0.38;
+
   /* ── Sympathetic Bloom (cascade glow on connected posts) ────────────── */
   --sympathetic-ring-spread:       14px;
   --sympathetic-ring-alpha:        0.10;

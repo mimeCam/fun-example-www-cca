@@ -59,6 +59,27 @@ export function dominantConviction(
 // Importing death-clock.ts here would be circular (it imports decay-engine).
 // Both constants are 365; death-clock.ts is the canonical owner. — Mike §4.1
 const MAX_DAYS_DEFAULT = 365;
+
+// ---------------------------------------------------------------------------
+// Logarithmic decay — Elon §3: front-loads 70% of decay to first 60 days.
+// k ≈ 0.065 solved numerically from: ln(1+60k)/ln(1+365k) = 0.70
+// Flag-gate allows rollback without touching callers.
+// ---------------------------------------------------------------------------
+
+/** When true, decayFactor() uses logarithmic curve instead of linear. */
+export const LOGARITHMIC_DECAY = true;
+
+const LOG_K = 0.065;
+
+/**
+ * Logarithmic decay: t=0 → 0.0, t=maxDays → 1.0.
+ * Front-loads 70% of decay into the first 60 days.
+ * Shape: ln(1 + t·k) / ln(1 + maxDays·k), k=0.065.
+ */
+export function logarithmicDecay(t: number, maxDays = MAX_DAYS_DEFAULT): number {
+  const denom = Math.log(1 + maxDays * LOG_K);
+  return Math.log(1 + t * LOG_K) / denom;
+}
 const MS_PER_DAY = 86_400_000;
 const ENTOMB_THRESHOLD = 0.95;
 const DORMANCY_DAYS = 30;
@@ -103,7 +124,10 @@ export function decayFactor(
   readingSeconds = 0,
   conviction: ConvictionVerdict | null = null,
 ): number {
-  const raw = Math.min(1, daysSince(pubDate, now) / maxDays);
+  const days = daysSince(pubDate, now);
+  const raw = LOGARITHMIC_DECAY
+    ? Math.min(1, logarithmicDecay(days, maxDays))
+    : Math.min(1, days / maxDays);
   const adjusted = raw * convictionMultiplier(conviction);
   return Math.max(0, adjusted - revivalBonus(revivalCount) - readingBonus(readingSeconds));
 }

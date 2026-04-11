@@ -4,6 +4,42 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v58 — Endangered Discovery Feed (2026-04-11)
+#   Sprint: Dedicated /endangered discovery page; GET /api/endangered +
+#     GET /api/endangered-sse endpoints; logarithmic decay curve; urgency tokens.
+#   New files:
+#     src/pages/endangered.astro — SSR discovery page at /endangered; renders
+#       EndangeredFeed island with SSR-supplied initial snapshot; zero-flicker
+#       hydration via CSS order re-sort.
+#     src/components/EndangeredFeed.astro — client island; opens EventSource to
+#       /api/endangered-sse; re-sorts cards via CSS `order` property on each
+#       emission; zero DOM re-mount; initial data from SSR prop.
+#     src/pages/api/endangered.ts — GET /api/endangered; returns EndangeredPost[]
+#       sorted daysLeft ASC; sources: blog collection (365d) + community DB (180d).
+#       Cache-Control: no-store. prerender=false.
+#     src/pages/api/endangered-sse.ts — GET /api/endangered-sse; SSE endpoint;
+#       emits EndangeredPost[] snapshot every 5 s; keepalive every 25 s; auto-
+#       closes after 120 s. Mirrors dispute-sse.ts pattern exactly.
+#   Updated files:
+#     src/lib/decay-engine.ts — logarithmicDecay() added (k=0.065; front-loads
+#       70% of decay into first 60 days); LOGARITHMIC_DECAY flag (default true)
+#       gates usage; flag allows rollback without touching callers.
+#     src/lib/endangered.ts — EndangeredPost wire interface + sortByUrgency()
+#       sort helper exported; used by both /api/endangered and EndangeredFeed.
+#     src/pages/api/revive.ts — broadcastNamed('endangered-update', …) called
+#       post-revival when revived post is still in the danger zone; alerts all
+#       connected /api/endangered-sse clients.
+#     src/components/EndangeredBand.astro — header row flex layout; "view all →"
+#       link to /endangered added.
+#     src/styles/endangered.css — .endangered-header flex + .endangered-view-all
+#       styles; .endangered-header-left wrapper.
+#     src/styles/tokens.css — urgency tier tokens added (--urgency-warning-color,
+#       --urgency-critical-color, --urgency-final-color; pulse speeds; glow opacities).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor). DISPUTE_QUORUM_RATIO optional.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v57 — Hold-to-Revive Ceremony v2 (2026-04-11)
 #   Sprint: Spring-physics rAF loop, SVG arc ring, haptics, cascade bloom.
 #   New files:

@@ -114,6 +114,34 @@ export function countdownLabel(decay: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// Endangered Discovery Feed — shared types + sort
+// Used by GET /api/endangered and EndangeredFeed.astro
+// ---------------------------------------------------------------------------
+
+/** Wire shape for the endangered discovery API. One flat type — no union gymnastics. */
+export interface EndangeredPost {
+  slug:         string;
+  title:        string;
+  decay:        number;       // 0–1 float
+  daysLeft:     number;       // estimated days until entombment
+  urgency:      UrgencyLevel; // 'warning' | 'critical' | 'final'
+  revivalCount: number;
+  pubDate:      string;       // ISO 8601
+}
+
+/** Rank posts by urgency: soonest death first; break ties by urgency tier (final > critical > warning). */
+export function sortByUrgency(posts: EndangeredPost[]): EndangeredPost[] {
+  return [...posts].sort((a, b) => {
+    if (a.daysLeft !== b.daysLeft) return a.daysLeft - b.daysLeft;
+    return urgencyRank(b.urgency) - urgencyRank(a.urgency);
+  });
+}
+
+function urgencyRank(u: UrgencyLevel): number {
+  return u === 'final' ? 2 : u === 'critical' ? 1 : 0;
+}
+
+// ---------------------------------------------------------------------------
 // Client script — SSE listener + hourly countdown refresh
 // Multi-phase revival-dismiss with animateCollapse, debounce, a11y.
 // ---------------------------------------------------------------------------

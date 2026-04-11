@@ -15,8 +15,9 @@ import {
   recordRevivalBySession,
   getMonthlyRevivalCount,
 } from '../../lib/collectiveMemory';
-import { broadcast } from '../../lib/heartbeat';
+import { broadcast, broadcastNamed } from '../../lib/heartbeat';
 import { revive as presenceRevive } from '../../lib/presence-hub';
+import { isEndangered, urgencyLevel } from '../../lib/endangered';
 import { getConstellation } from '../../lib/constellationLookup';
 import { checkRevival } from '../../lib/revivalGuard';
 import { FP_HEADER } from '../../lib/visitorFingerprint';
@@ -109,6 +110,10 @@ export const POST: APIRoute = async ({ request }) => {
   broadcast({ slug, count, ts: Date.now(), decayAfterRevival, resonance });
   // Notify honest presence subscribers on this slug
   presenceRevive(slug);
+  // Alert endangered-feed SSE clients when revived post is (or just left) the danger zone
+  if (isEndangered(decayAfterRevival)) {
+    broadcastNamed('endangered-update', { slug, revivalCount: count, decay: decayAfterRevival, urgency: urgencyLevel(decayAfterRevival) });
+  }
 
   return jsonOk({
     ok: true,

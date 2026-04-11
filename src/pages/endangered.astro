@@ -1,0 +1,176 @@
+---
+// src/pages/endangered.astro
+// /endangered — Endangered discovery feed.
+// Shareable, urgency-ranked, live-updating page for posts nearing death.
+// SSR: fetches all endangered posts; passes initial data to EndangeredFeed island.
+// OG: dynamic meta reflects live post count — the share hook.
+//
+// This page is the cold-start bypass: works with zero prior users.
+// A single author can link here; a reader arrives and feels urgency immediately.
+//
+// Credits: Mike (architecture §endangered.astro — SSR + OG meta + island),
+//          Tanya (UX spec §25 — endangered-first hierarchy, FADING NOW label)
+
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EndangeredFeed from '../components/EndangeredFeed.astro';
+import { getCollection } from 'astro:content';
+import { getLivePosts, COMMUNITY_MAX_DAYS } from '../lib/communityPosts';
+import { getRevivalCount, getReadingSeconds } from '../lib/collectiveMemory';
+import { decayFactor } from '../lib/decay-engine';
+import {
+  isEndangered,
+  urgencyLevel,
+  daysUntilEntomb,
+  sortByUrgency,
+} from '../lib/endangered';
+import type { EndangeredPost } from '../lib/endangered';
+
+// ---------------------------------------------------------------------------
+// Server-side data fetch — mirrors /api/endangered but inline for SSR perf
+// ---------------------------------------------------------------------------
+
+function buildEntry(
+  slug: string,
+  title: string,
+  pubDate: string,
+  maxDays?: number,
+): EndangeredPost {
+  const revivalCount   = getRevivalCount(slug);
+  const readingSeconds = getReadingSeconds(slug);
+  const decay = decayFactor(pubDate, maxDays, undefined, revivalCount, readingSeconds);
+  return {
+    slug,
+    title,
+    decay,
+    daysLeft: daysUntilEntomb(decay, maxDays),
+    urgency: urgencyLevel(decay),
+    revivalCount,
+    pubDate,
+  };
+}
+
+const blogPosts = await getCollection('blog');
+
+const blogEndangered = blogPosts
+  .filter(p => p.data.pubDate != null)
+  .map(p => buildEntry(p.slug, p.data.title, p.data.pubDate!.toISOString()))
+  .filter(p => isEndangered(p.decay));
+
+const communityEndangered = getLivePosts()
+  .map(p => buildEntry(p.slug, p.title, p.submitted_at, COMMUNITY_MAX_DAYS))
+  .filter(p => isEndangered(p.decay));
+
+const posts = sortByUrgency([...blogEndangered, ...communityEndangered]);
+const count = posts.length;
+
+// ---------------------------------------------------------------------------
+// OG meta — dynamic copy based on live count
+// ---------------------------------------------------------------------------
+
+const ogTitle    = count > 0
+  ? `${count} ${count === 1 ? 'post needs' : 'posts need'} saving today`
+  : 'Endangered — no posts at risk right now';
+const ogDesc     = count > 0
+  ? `These ideas are fading. ${posts[0]?.title} has ${posts[0]?.daysLeft} days left. Can you keep them alive?`
+  : 'All posts are safe for now. Check back soon — some ideas fade faster than others.';
+---
+
+<BaseLayout
+  title={`Endangered — ${ogTitle}`}
+  description={ogDesc}
+>
+  <main class="endangered-page">
+
+    <header class="page-header">
+      <div class="page-header-inner">
+        <h1 class="page-title">Endangered</h1>
+        <p class="page-subtitle">
+          {count > 0
+            ? 'These ideas are fading. Hold to keep them alive.'
+            : 'All posts are safe for now.'}
+        </p>
+      </div>
+      {count > 0 && (
+        <div class="page-header-stat" aria-label={`${count} posts at risk`}>
+          <span class="stat-number">{count}</span>
+          <span class="stat-label">{count === 1 ? 'post at risk' : 'posts at risk'}</span>
+        </div>
+      )}
+    </header>
+
+    <!-- EndangeredFeed — SSR render + client script opens EventSource on load -->
+    <EndangeredFeed posts={posts} />
+
+  </main>
+</BaseLayout>
+
+<style>
+  .endangered-page {
+    min-height: 100vh;
+    padding-top: var(--space-8);
+  }
+
+  /* ── Page header ──────────────────────────────────────────────────────── */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    max-width: 720px;
+    margin: 0 auto var(--space-8);
+    padding: 0 var(--space-4);
+    gap: var(--space-4);
+  }
+
+  .page-header-inner { flex: 1; }
+
+  .page-title {
+    font-family: var(--font-mono);
+    font-size: var(--text-3xl);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-2);
+  }
+
+  .page-subtitle {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: var(--leading-normal);
+  }
+
+  /* ── Live count stat ──────────────────────────────────────────────────── */
+  .page-header-stat {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .stat-number {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--urgency-warning-color);
+    line-height: 1;
+  }
+
+  .stat-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-tertiary);
+    margin-top: var(--space-1);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Responsive ───────────────────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .page-header { flex-direction: column; }
+    .page-header-stat { text-align: left; }
+  }
+</style>

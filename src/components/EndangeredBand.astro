@@ -31,11 +31,14 @@ function byMostEndangered(a: PostDisplayData, b: PostDisplayData): number {
   data-endangered-count={sorted.length}
 >
   <div class="endangered-header">
-    <h2 class="endangered-label">
-      <span class="endangered-pulse-dot"></span>
-      Fading away
-    </h2>
-    <p class="endangered-hint">These posts die without your attention</p>
+    <div class="endangered-header-left">
+      <h2 class="endangered-label">
+        <span class="endangered-pulse-dot"></span>
+        Fading away
+      </h2>
+      <p class="endangered-hint">These posts die without your attention</p>
+    </div>
+    <a href="/endangered" class="endangered-view-all">view all &rarr;</a>
   </div>
 
   <div class="endangered-cards" data-endangered-count={sorted.length}>

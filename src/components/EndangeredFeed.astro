@@ -1,0 +1,306 @@
+---
+// src/components/EndangeredFeed.astro
+// Endangered discovery feed — client:load island for /endangered page.
+// Opens EventSource to /api/endangered-sse; re-sorts cards via CSS `order`.
+// Initial data provided by SSR prop — zero flicker on hydration.
+//
+// Live updates: each SSE emission is the full sorted EndangeredPost[].
+// Client updates card counts, decays, order. Zero DOM re-mount (CSS order).
+//
+// Credits: Mike (architecture §6 — client island, CSS order re-sort),
+//          Tanya (UX spec §25 — urgency pulse tokens, amber header bar)
+
+import type { EndangeredPost } from '../lib/endangered';
+
+interface Props {
+  posts: EndangeredPost[];
+}
+
+const { posts } = Astro.props;
+const hasAny = posts.length > 0;
+---
+
+<section
+  class="endangered-feed"
+  id="endangered-feed"
+  aria-label="Posts at risk of being lost"
+  aria-live="polite"
+>
+  {hasAny ? (
+    <>
+      <header class="feed-header">
+        <span class="feed-label">FADING NOW</span>
+        <span class="feed-count" id="feed-count">{posts.length} {posts.length === 1 ? 'post' : 'posts'} at risk</span>
+      </header>
+
+      <div class="feed-cards" id="feed-cards">
+        {posts.map((post, i) => (
+          <div
+            class={'feed-card-wrap urgency-' + post.urgency}
+            data-slug={post.slug}
+            style={'order: ' + i}
+          >
+            <article class="feed-card" data-decay={post.decay.toFixed(4)} data-revival-count={post.revivalCount}>
+              <div class="feed-card-urgency-bar" aria-hidden="true" />
+
+              <div class="feed-card-body">
+                <div class="feed-card-meta">
+                  <span class={'urgency-chip urgency-chip--' + post.urgency}>{post.urgency}</span>
+                  <span class="days-left">
+                    {post.daysLeft <= 1
+                      ? 'hours remaining'
+                      : post.daysLeft + ' days left'}
+                  </span>
+                </div>
+
+                <h2 class="feed-card-title">
+                  <a href={'/blog/' + post.slug} class="feed-card-link">{post.title}</a>
+                </h2>
+
+                <div class="feed-card-footer">
+                  <span class="revival-count" id={'count-' + post.slug}>
+                    {post.revivalCount === 0
+                      ? 'not yet revived'
+                      : post.revivalCount + ' ' + (post.revivalCount === 1 ? 'revival' : 'revivals')}
+                  </span>
+                  <a href={'/blog/' + post.slug} class="feed-card-cta">hold to revive &rarr;</a>
+                </div>
+              </div>
+            </article>
+          </div>
+        ))}
+      </div>
+    </>
+  ) : (
+    <div class="feed-empty" role="status">
+      <p class="feed-empty-headline">No posts are currently endangered.</p>
+      <p class="feed-empty-sub">When posts approach their final days, they appear here.</p>
+    </div>
+  )}
+</section>
+
+<script>
+// Client-side SSE consumer for the endangered feed.
+// Opens /api/endangered-sse, receives EndangeredPost[] snapshots.
+// Updates card data and re-sorts via CSS `order` — zero DOM re-mount.
+(function () {
+  var feed = document.getElementById('feed-cards');
+  var countEl = document.getElementById('feed-count');
+  if (!feed) return;
+
+  var es = new EventSource('/api/endangered-sse');
+
+  es.onmessage = function (e) {
+    try {
+      var posts = JSON.parse(e.data);
+      if (!Array.isArray(posts)) return;
+      updateFeed(posts);
+    } catch { /* ignore malformed frames */ }
+  };
+
+  es.onerror = function () {
+    // Browser auto-reconnects; nothing needed here.
+  };
+
+  function updateFeed(posts) {
+    if (countEl) {
+      countEl.textContent = posts.length + ' ' + (posts.length === 1 ? 'post' : 'posts') + ' at risk';
+    }
+    posts.forEach(function (post, i) {
+      var wrap = feed.querySelector('[data-slug="' + post.slug + '"]');
+      if (!wrap) return;
+      wrap.style.order = i;
+      updateUrgencyClass(wrap, post.urgency);
+      updateCountLabel(post.slug, post.revivalCount);
+    });
+  }
+
+  function updateUrgencyClass(el, urgency) {
+    ['warning', 'critical', 'final'].forEach(function (u) {
+      el.classList.toggle('urgency-' + u, u === urgency);
+    });
+  }
+
+  function updateCountLabel(slug, count) {
+    var el = document.getElementById('count-' + slug);
+    if (!el) return;
+    el.textContent = count === 0
+      ? 'not yet revived'
+      : count + ' ' + (count === 1 ? 'revival' : 'revivals');
+  }
+
+  window.addEventListener('unload', function () { es.close(); });
+})();
+</script>
+
+<style>
+  /* ── Feed layout ──────────────────────────────────────────────────────── */
+  .endangered-feed {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .feed-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .feed-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.12em;
+    color: var(--urgency-warning-color);
+    text-transform: uppercase;
+  }
+
+  .feed-count {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+  }
+
+  /* ── Card list — flex column; CSS `order` drives live sort ───────────── */
+  .feed-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .feed-card-wrap {
+    transition: order 300ms ease;
+  }
+
+  /* ── Urgency-tier left border stripe ─────────────────────────────────── */
+  .feed-card {
+    position: relative;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .feed-card-urgency-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 3px;
+  }
+
+  .urgency-warning  .feed-card-urgency-bar { background: var(--urgency-warning-color); }
+  .urgency-critical .feed-card-urgency-bar { background: var(--urgency-critical-color); }
+  .urgency-final    .feed-card-urgency-bar { background: var(--urgency-final-color); }
+
+  /* ── Pulse animation on the urgency bar — CSS-only, no JS ──────────────*/
+  @keyframes urgency-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  .urgency-warning  .feed-card-urgency-bar { animation: urgency-pulse var(--urgency-pulse-speed-warning)  ease-in-out infinite; }
+  .urgency-critical .feed-card-urgency-bar { animation: urgency-pulse var(--urgency-pulse-speed-critical) ease-in-out infinite; }
+  .urgency-final    .feed-card-urgency-bar { animation: urgency-pulse var(--urgency-pulse-speed-final)    ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feed-card-urgency-bar { animation: none !important; }
+  }
+
+  /* ── Card body ────────────────────────────────────────────────────────── */
+  .feed-card-body {
+    padding: var(--space-5) var(--space-5) var(--space-5) calc(var(--space-5) + 3px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .feed-card-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  /* ── Urgency chip ─────────────────────────────────────────────────────── */
+  .urgency-chip {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .urgency-chip--warning  { color: var(--urgency-warning-color);  background: rgba(245, 166, 35, 0.10); }
+  .urgency-chip--critical { color: var(--urgency-critical-color); background: rgba(220, 120, 40,  0.10); }
+  .urgency-chip--final    { color: var(--urgency-final-color);    background: rgba(239, 68, 68,   0.10); }
+
+  .days-left {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+
+  /* ── Title ────────────────────────────────────────────────────────────── */
+  .feed-card-title {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
+    margin: 0;
+  }
+
+  .feed-card-link {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .feed-card-link:hover { text-decoration: underline; }
+
+  /* ── Footer ───────────────────────────────────────────────────────────── */
+  .feed-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-1);
+  }
+
+  .revival-count {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .feed-card-cta {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--color-revival);
+    text-decoration: none;
+  }
+
+  .feed-card-cta:hover { text-decoration: underline; }
+
+  /* ── Empty state ──────────────────────────────────────────────────────── */
+  .feed-empty {
+    text-align: center;
+    padding: var(--space-16) var(--space-4);
+    color: var(--text-secondary);
+  }
+
+  .feed-empty-headline {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+    color: var(--text-primary);
+  }
+
+  .feed-empty-sub {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+  }
+</style>
