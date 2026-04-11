@@ -9,12 +9,27 @@ import { createHash, createHmac } from 'crypto';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 import { getLockedScore } from './conviction-ledger';
+import { getDisputeResolution, getResolvedVerdictCount as _getResolvedCount } from './verdict-dispute';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type VerdictOutcome = 'still-true' | 'evolved' | 'wrong' | 'abandoned';
+
+/**
+ * Full lifecycle state of a post's verdict + community dispute outcome.
+ * Mike §1 state machine: unaudited → pending → contested → upheld | overturned.
+ */
+export type VerdictState = 'unaudited' | 'pending' | 'contested' | 'upheld' | 'overturned';
+
+export interface VerdictTransition {
+  slug:              string;
+  from:              VerdictState;
+  to:                VerdictState;
+  resolvedAt:        number;
+  challengeSharePct: number;
+}
 
 export interface VerdictRecord {
   post_slug:    string;
@@ -161,6 +176,31 @@ export function getVerdictRecord(slug: string): VerdictRecord | null {
     )
     .get(slug) as Parameters<typeof rowToVerdictRecord>[0] | undefined;
   return row ? rowToVerdictRecord(row) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Public — verdict state machine reads
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute the full VerdictState for a post.
+ * Combines sealed verdict + community dispute resolution into one value.
+ * Read-only: safe to call from any SSR route.
+ */
+export function getVerdictState(slug: string): VerdictState {
+  const verdict = getVerdictRecord(slug);
+  if (!verdict) return 'unaudited';
+  const resolution = getDisputeResolution(slug);
+  if (!resolution) return 'pending';       // verdict sealed, window still open
+  return resolution.state;                 // 'upheld' or 'overturned'
+}
+
+/**
+ * Count posts with a final community verdict resolution.
+ * BattingAverageHero gate: hide % until ≥3 resolved verdicts (Mike §4).
+ */
+export function getResolvedVerdictCount(): number {
+  return _getResolvedCount();
 }
 
 // ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { findExpiredUnsealed, autoSealExpired } from '../../lib/deadline-enforcer';
 import type { PostDeadlineRecord } from '../../lib/deadline-enforcer';
+import { resolveAllExpiredDisputes } from '../../lib/dispute-quorum';
 
 export const prerender = false;
 
@@ -60,11 +61,17 @@ export const POST: APIRoute = async ({ request }) => {
   const expired = findExpiredUnsealed(records);
   const results = expired.map(p => autoSealExpired(p.slug, secret));
 
+  // Also sweep expired dispute windows and resolve upheld/overturned
+  const disputeResults = resolveAllExpiredDisputes();
+  const disputeResolved = disputeResults.filter(r => r.resolved).length;
+
   return json({
-    ok:      true,
-    swept:   tally(results, 'sealed'),
-    skipped: tally(results, 'skipped'),
-    errors:  tally(results, 'error'),
+    ok:              true,
+    swept:           tally(results, 'sealed'),
+    skipped:         tally(results, 'skipped'),
+    errors:          tally(results, 'error'),
     results,
+    disputeResolved,
+    disputeResults,
   });
 };

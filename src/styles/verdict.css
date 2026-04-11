@@ -242,3 +242,93 @@
   .verdict-stats    { gap: 1rem; }
   .verdict-filters  { gap: 0.3rem; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Community verdict resolution tokens — Mike §5 / Tanya §3.1
+   Three-tier convention: semantic → bg → border/glow (no raw values)
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Upheld — conviction validated by community (green tier) */
+  --verdict-upheld:        var(--clr-green-400);
+  --verdict-upheld-bg:     color-mix(in oklch, var(--clr-green-400) 8%, transparent);
+  --verdict-upheld-border: color-mix(in oklch, var(--clr-green-400) 20%, transparent);
+  --verdict-upheld-glow:   0 0 18px color-mix(in oklch, var(--clr-green-400) 25%, transparent);
+
+  /* Overturned — conviction reversed by community (violet tier, not red = recalibration) */
+  --verdict-overturned:        var(--clr-violet-400);
+  --verdict-overturned-bg:     color-mix(in oklch, var(--clr-violet-400) 8%, transparent);
+  --verdict-overturned-border: color-mix(in oklch, var(--clr-violet-400) 20%, transparent);
+  --verdict-overturned-glow:   0 0 18px color-mix(in oklch, var(--clr-violet-400) 22%, transparent);
+}
+
+/* ── VerdictReveal ceremony classes ─────────────────────────────── */
+
+.verdict-reveal {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-8);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  overflow: hidden;
+  transition: background 600ms ease, border-color 600ms ease, box-shadow 600ms ease;
+}
+
+.verdict-reveal[data-state="upheld"] {
+  background: var(--verdict-upheld-bg);
+  border-color: var(--verdict-upheld-border);
+  box-shadow: var(--verdict-upheld-glow);
+}
+
+.verdict-reveal[data-state="overturned"] {
+  background: var(--verdict-overturned-bg);
+  border-color: var(--verdict-overturned-border);
+  box-shadow: var(--verdict-overturned-glow);
+}
+
+/* Reveal animation — toggled by .reveal-active class via inline script */
+.verdict-reveal__word {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 600ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.verdict-reveal.reveal-active .verdict-reveal__word {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.verdict-reveal__word--upheld    { color: var(--verdict-upheld); }
+.verdict-reveal__word--overturned { color: var(--verdict-overturned); }
+
+/* Bloom: background flood animation on reveal */
+@keyframes verdict-bloom {
+  0%   { opacity: 0; transform: scale(0.95); }
+  50%  { opacity: 1; transform: scale(1.01); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Settle: secondary element entrance after bloom */
+@keyframes verdict-settle {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.verdict-reveal.reveal-active .verdict-reveal__meta {
+  animation: verdict-settle 400ms 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Reduced motion: collapse ceremony to instant opacity change */
+@media (prefers-reduced-motion: reduce) {
+  .verdict-reveal__word,
+  .verdict-reveal.reveal-active .verdict-reveal__meta {
+    animation: none;
+    transition: opacity 150ms ease;
+    transform: none;
+  }
+}

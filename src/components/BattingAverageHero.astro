@@ -11,8 +11,10 @@
 // No error state, no spinner — the site is honest about its cold start.
 //
 // Credits: Mike (arch spec — BattingAverageHero), Tanya (UX §18 — Conviction Hero)
+//          Elon (kill item: hide % until ≥3 resolved verdicts — prevents self-grading)
 
 import type { BattingAverage } from '../lib/batting-average';
+import { getResolvedVerdictCount } from '../lib/verdict-resolver';
 
 interface Props {
   avg: BattingAverage;
@@ -20,7 +22,12 @@ interface Props {
 
 const { avg } = Astro.props;
 
-const isLive = avg.status === 'live';
+// Gate: hide batting % until ≥3 verdicts cleared the community dispute window (Mike §4).
+// SSR-only — zero hydration, zero layout shift. Cold copy is same-size placeholder.
+const resolvedCount = getResolvedVerdictCount();
+const showPct = avg.status === 'live' && resolvedCount >= 3;
+
+const isLive = showPct;
 const pctMod = isLive
   ? avg.pct >= 80 ? 'bah--strong' : avg.pct >= 60 ? 'bah--mid' : 'bah--weak'
   : 'bah--cold';
@@ -55,11 +62,21 @@ const pctMod = isLive
     </div>
   ) : (
     <div class="bah-score bah-score--cold">
-      <span class="bah-pct bah-pct--cold" aria-label="No verdicts yet">—</span>
-      <span class="bah-subtitle bah-subtitle--cold">no verdicts sealed yet</span>
+      <span class="bah-pct bah-pct--cold" aria-label="Track record pending">—</span>
+      {resolvedCount > 0 ? (
+        <span class="bah-subtitle bah-subtitle--cold">
+          {resolvedCount} verdict{resolvedCount === 1 ? '' : 's'} pending resolution
+        </span>
+      ) : (
+        <span class="bah-subtitle bah-subtitle--cold">no verdicts sealed yet</span>
+      )}
     </div>
 
-    <p class="bah-clock">The clock is running.</p>
+    <p class="bah-clock">
+      {resolvedCount > 0
+        ? `Track record activates after 3 resolved verdicts. (${3 - resolvedCount} to go)`
+        : 'The clock is running.'}
+    </p>
   )}
 
   <div class="bah-scroll-cue" aria-hidden="true">↓ see the bets</div>

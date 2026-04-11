@@ -4,6 +4,54 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v60 — Quorum Resolution Engine + VerdictReveal Ceremony (2026-04-11)
+#   Sprint: 72h dispute window; upheld/overturned final states; VerdictReveal
+#     ceremony component; deadline-sweep now co-sweeps expired dispute windows.
+#   New files:
+#     src/components/VerdictReveal.astro — dispute resolution ceremony; SSR +
+#       live SSE reveal via /api/dispute-sse; two-outcome CSS token sets
+#       (upheld/overturned); quorum share bar with 30% threshold marker;
+#       inline script closes SSE once resolution received; data-state drives
+#       all branching (Mike §3); prefers-reduced-motion collapses to opacity.
+#   Updated files:
+#     src/lib/dispute-quorum.ts — QUORUM_WINDOW_MS = 72h from first dispute;
+#       resolveIfQuorumExpired() closes window → writes upheld|overturned to
+#       dispute_resolutions; resolveAllExpiredDisputes() sweeps all contested
+#       slugs; resolvedState() maps challenge count to final outcome; imports
+#       resolution accessors from verdict-dispute.ts.
+#     src/lib/verdict-dispute.ts — dispute_resolutions table auto-created
+#       in revivals.db (PRIMARY KEY post_slug, state, resolved_at,
+#       challenge_share_pct REAL); getWindowOpenedAt() reads MIN(timestamp)
+#       from verdict_disputes; getDisputeResolution() / writeDisputeResolution()
+#       read/write final state (INSERT OR IGNORE — idempotent); getResolvedVerdictCount()
+#       for BattingAverageHero gate; getContestedSlugs() returns slugs with
+#       disputes but no resolution yet. DisputeResolutionState + DisputeResolution
+#       types exported.
+#     src/lib/verdict-resolver.ts — VerdictState type (unaudited → pending →
+#       contested → upheld | overturned) Mike §1 state machine; getVerdictState()
+#       combines sealed verdict + community resolution into one value; safe SSR
+#       read. getResolvedVerdictCount() re-exported for convenience.
+#     src/pages/api/deadline-sweep.ts — resolveAllExpiredDisputes() called
+#       alongside autoSealExpired(); disputeResolved count + disputeResults
+#       array added to JSON response; one sweep closes both expired post
+#       verdicts and expired dispute windows.
+#     src/pages/api/verdict-dispute.ts — resolveIfQuorumExpired() called on
+#       each new dispute recording; resolution field added to response so
+#       client knows immediately if window just closed.
+#     src/pages/verdict/[slug].astro — VerdictReveal rendered when resolution
+#       exists; SSR serves resolved state; SSE patches live for concurrent
+#       visitors.
+#     src/styles/verdict.css — VerdictReveal ceremony styles; --verdict-upheld /
+#       --verdict-overturned colour tokens; verdict-reveal__word variant classes.
+#     src/components/BattingAverageHero.astro — getResolvedVerdictCount() gate
+#       (hide % until ≥3 resolved verdicts — Mike §4 cold-start rule).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     dispute_resolutions table auto-created in revivals.db on first run
+#     (same SQLITE_VOLUME — no migration needed). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor). DISPUTE_QUORUM_RATIO optional.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (now also
+#       sweeps expired dispute windows via resolveAllExpiredDisputes()).
+#
 # Architecture v59 — Revival Orchestrator Unification (2026-04-11)
 #   Sprint: Single-source-of-truth hold-to-revive lifecycle; state machine
 #     promoted to dedicated RevivalOrchestrator class; CSS extracted to

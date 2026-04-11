@@ -10,6 +10,13 @@
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
+import {
+  getWindowOpenedAt,
+  getDisputeResolution,
+  writeDisputeResolution,
+  getContestedSlugs,
+} from './verdict-dispute';
+import type { DisputeResolutionState } from './verdict-dispute';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,7 +36,8 @@ export interface DisputeSummary {
 // Config
 // ---------------------------------------------------------------------------
 
-const QUORUM_RATIO = parseFloat(process.env.DISPUTE_QUORUM_RATIO ?? '0.3');
+const QUORUM_RATIO      = parseFloat(process.env.DISPUTE_QUORUM_RATIO ?? '0.3');
+const QUORUM_WINDOW_MS  = 72 * 60 * 60 * 1000;  // 72h window from first dispute
 
 // ---------------------------------------------------------------------------
 // DB singleton — same revivals.db as conviction-ledger (WAL mode)
@@ -93,26 +101,82 @@ function resolveStatus(challenges: number, threshold: number): QuorumStatus {
   return challenges >= threshold ? 'contested' : 'open';
 }
 
+function toSharePct(challenges: number, total: number): number {
+  return total > 0 ? Math.round((challenges / total) * 100) / 100 : 0;
+}
+
+function resolvedState(challenges: number, threshold: number): DisputeResolutionState {
+  return challenges >= threshold ? 'overturned' : 'upheld';
+}
+
+function windowExpired(windowOpenedAt: number): boolean {
+  return Date.now() - windowOpenedAt >= QUORUM_WINDOW_MS;
+}
+
 // ---------------------------------------------------------------------------
 // Public — summary read
 // ---------------------------------------------------------------------------
 
 /**
  * Compute a full dispute summary for a post's verdict.
+ * Checks dispute_resolutions first — final state is authoritative.
  * Safe to call at build time; returns inert open state on any error.
  * Called by DisputeTally (SSR), dispute-sse (SSE poll), verdict page.
  */
 export function getDisputeSummary(slug: string): DisputeSummary {
   try {
+    const resolution = getDisputeResolution(slug);
     const totalStances = countAllStances(slug);
     const threshold    = getQuorumThreshold(Math.max(totalStances, 1));
     const challenges   = countChallenges(slug);
-    const status       = resolveStatus(challenges, threshold);
     const ratio        = clampRatio(challenges, threshold);
+    if (resolution) {
+      return { status: resolution.state, challenges, threshold, totalStances, ratio };
+    }
+    const status = resolveStatus(challenges, threshold);
     return { status, challenges, threshold, totalStances, ratio };
   } catch {
     return { status: 'open', challenges: 0, threshold: 1, totalStances: 0, ratio: 0 };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Public — quorum resolution
+// ---------------------------------------------------------------------------
+
+export interface QuorumResolutionResult {
+  alreadyResolved: boolean;
+  windowOpen:      boolean;   // true = 72h not yet elapsed
+  resolved:        boolean;   // true = newly resolved this call
+  state?:          QuorumStatus;
+}
+
+/**
+ * Attempt to close the dispute window for a slug.
+ * Idempotent: repeated calls on an already-resolved slug return immediately.
+ * Called by: verdict-dispute API on each new dispute, deadline-sweep cron.
+ */
+export function resolveIfQuorumExpired(slug: string): QuorumResolutionResult {
+  try {
+    const existing = getDisputeResolution(slug);
+    if (existing) return { alreadyResolved: true, windowOpen: false, resolved: false, state: existing.state };
+    const openedAt = getWindowOpenedAt(slug);
+    if (!openedAt || !windowExpired(openedAt)) return { alreadyResolved: false, windowOpen: true, resolved: false };
+    const totalStances = countAllStances(slug);
+    const threshold    = getQuorumThreshold(Math.max(totalStances, 1));
+    const challenges   = countChallenges(slug);
+    const state        = resolvedState(challenges, threshold);
+    const sharePct     = toSharePct(challenges, Math.max(totalStances, 1));
+    writeDisputeResolution(slug, state, sharePct);
+    return { alreadyResolved: false, windowOpen: false, resolved: true, state };
+  } catch {
+    return { alreadyResolved: false, windowOpen: false, resolved: false };
+  }
+}
+
+/** Sweep all contested (unresolved) slugs through the quorum window check. */
+export function resolveAllExpiredDisputes(): QuorumResolutionResult[] {
+  return getContestedSlugs().map(slug => ({ slug, ...resolveIfQuorumExpired(slug) })) as unknown as QuorumResolutionResult[];
 }
 
 // ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { getStanceForSession } from '../../lib/stance-ledger';
 import { recordDispute, disputeAlreadyRecorded, getDisputeState } from '../../lib/verdict-dispute';
-import { getDisputeSummary } from '../../lib/dispute-quorum';
+import { getDisputeSummary, resolveIfQuorumExpired } from '../../lib/dispute-quorum';
 import { SESSION_HEADER } from '../../lib/sessionToken';
 
 export const prerender = false;
@@ -77,5 +77,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   recordDispute(slug, sid);
-  return buildReply(true, { disputed: true }, slug);
+  // Attempt immediate window resolution (usually windowOpen=true; resolved when 72h elapsed)
+  const resolution = resolveIfQuorumExpired(slug);
+  return buildReply(true, { disputed: true, resolution }, slug);
 };

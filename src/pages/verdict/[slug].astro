@@ -26,11 +26,12 @@ import DisputeChallenge     from '../../components/DisputeChallenge.astro';
 import DisputeTally         from '../../components/DisputeTally.astro';
 import DisputeQuorum        from '../../components/DisputeQuorum.astro';
 import { getSealEntry, getAnchorData } from '../../lib/conviction-ledger';
-import { getVerdictRecord }  from '../../lib/verdict-resolver';
+import { getVerdictRecord, getVerdictState } from '../../lib/verdict-resolver';
 import { computeBattingAverage } from '../../lib/batting-average';
-import { getDisputeState }   from '../../lib/verdict-dispute';
+import { getDisputeState, getDisputeResolution } from '../../lib/verdict-dispute';
 import { getDisputeSummary } from '../../lib/dispute-quorum';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
+import VerdictReveal from '../../components/VerdictReveal.astro';
 
 // ── Route param ───────────────────────────────────────────────────────────────
 const { slug } = Astro.params;
@@ -42,13 +43,15 @@ const post  = posts.find(p => p.slug === slug);
 if (!post) return Astro.redirect('/404');
 
 // ── DB reads — all safe (return null on empty DB) ─────────────────────────────
-const seal         = safeRead(() => getSealEntry(slug));
-const verdict      = safeRead(() => getVerdictRecord(slug));
-const avg          = safeRead(() => computeBattingAverage()) ?? { status: 'cold' as const, total: 0 };
-const anchor       = seal ? safeRead(() => getAnchorData(slug)) : null;
-const disputeState = safeRead(() => getDisputeState(slug)) ?? { status: 'no-verdict' as const };
+const seal          = safeRead(() => getSealEntry(slug));
+const verdict       = safeRead(() => getVerdictRecord(slug));
+const avg           = safeRead(() => computeBattingAverage()) ?? { status: 'cold' as const, total: 0 };
+const anchor        = seal ? safeRead(() => getAnchorData(slug)) : null;
+const disputeState  = safeRead(() => getDisputeState(slug)) ?? { status: 'no-verdict' as const };
 const quorumSummary = safeRead(() => getDisputeSummary(slug)) ?? { status: 'open' as const, challenges: 0, threshold: 1, totalStances: 0, ratio: 0 };
 const verdictSealed = verdict !== null;
+const verdictState  = safeRead(() => getVerdictState(slug)) ?? 'unaudited';
+const resolution    = safeRead(() => getDisputeResolution(slug));
 
 // ── Page meta ─────────────────────────────────────────────────────────────────
 const VERDICT_LABELS: Record<VerdictOutcome, string> = {
@@ -136,6 +139,16 @@ function safeRead<T>(fn: () => T): T | null {
       </section>
     )}
 
+    <!-- Community Resolution — rendered when dispute window has closed (upheld/overturned) -->
+    {(verdictState === 'upheld' || verdictState === 'overturned') && resolution && (
+      <VerdictReveal
+        state={verdictState}
+        challengeSharePct={resolution.challenge_share_pct}
+        resolvedAt={new Date(resolution.resolved_at).toISOString()}
+        slug={slug}
+      />
+    )}
+
     <!-- Footer: audit trail link -->
     <footer class="ceremony-footer">
       <a href={`/audit/${slug}/`} class="ceremony-audit-link">
@@ -149,6 +162,7 @@ function safeRead<T>(fn: () => T): T | null {
 
 <style is:global>
   @import '../../styles/dispute.css';
+  @import '../../styles/verdict.css';
 </style>
 
 <style>

@@ -1,0 +1,210 @@
+---
+// src/components/VerdictReveal.astro
+// Dispute resolution ceremony — fires when community verdict tips to upheld/overturned.
+// One component, two CSS token sets. data-state attribute drives all branching (Mike §3).
+//
+// SSR renders the resolved state when page loads after resolution.
+// Inline script listens to dispute-sse for live reveal (no page reload needed).
+//
+// Motion: CSS spring via verdict.css keyframes. prefers-reduced-motion collapses to
+// instant opacity change (Tanya §6 — VerdictCeremony motion spec).
+//
+// Credits: Mike (napkin plan §3 VerdictReveal — one ceremony, two outcomes),
+//          Tanya (UX §6 VerdictCeremony motion spec, §3.1 verdict color semantics)
+
+interface Props {
+  state:             'upheld' | 'overturned';
+  challengeSharePct: number;   // 0.0–1.0 (e.g. 0.31 = 31%)
+  resolvedAt:        string;   // ISO date string
+  authorNote?:       string;
+  slug:              string;
+}
+
+const { state, challengeSharePct, resolvedAt, authorNote, slug } = Astro.props;
+
+const isUpheld    = state === 'upheld';
+const pctDisplay  = Math.round(challengeSharePct * 100);
+const resolvedFmt = new Date(resolvedAt).toLocaleDateString('en-US', {
+  year: 'numeric', month: 'long', day: 'numeric',
+});
+
+const LABELS = {
+  upheld:     { word: 'Upheld',     glyph: '✓', eyebrow: 'Community Verdict', desc: "The author's conviction held." },
+  overturned: { word: 'Overturned', glyph: '↺', eyebrow: 'Community Verdict', desc: 'The community challenged and won.' },
+} as const;
+
+const label = LABELS[state];
+---
+
+<div
+  class:list={['verdict-reveal', 'reveal-active']}
+  data-state={state}
+  data-slug={slug}
+  aria-label={`Community verdict: ${label.word}`}
+  role="region"
+>
+
+  <p class="verdict-reveal__eyebrow" aria-hidden="true">{label.eyebrow}</p>
+
+  <!-- The verdict word — primary emotional signal (Tanya §3.1) -->
+  <div class="verdict-reveal__headline">
+    <span class="verdict-reveal__glyph" aria-hidden="true">{label.glyph}</span>
+    <span class:list={['verdict-reveal__word', `verdict-reveal__word--${state}`]} aria-live="polite">
+      {label.word}
+    </span>
+  </div>
+
+  <p class="verdict-reveal__desc">{label.desc}</p>
+
+  <!-- Resolution metadata -->
+  <dl class="verdict-reveal__meta">
+    <div class="verdict-reveal__meta-row">
+      <dt>Challenge share</dt>
+      <dd>{pctDisplay}% of readers disputed</dd>
+    </div>
+    <div class="verdict-reveal__meta-row">
+      <dt>Resolved</dt>
+      <dd>{resolvedFmt}</dd>
+    </div>
+    {authorNote && (
+      <div class="verdict-reveal__meta-row verdict-reveal__meta-row--note">
+        <dt>Author note</dt>
+        <dd>{authorNote}</dd>
+      </div>
+    )}
+  </dl>
+
+  <!-- Quorum share bar — visual proof of community weight -->
+  <div class="verdict-reveal__bar-wrap" aria-hidden="true">
+    <div
+      class="verdict-reveal__bar-fill"
+      style={`width: ${pctDisplay}%; --bar-color: var(--verdict-${state})`}
+    ></div>
+    <span class="verdict-reveal__bar-label">30% quorum threshold</span>
+    <div class="verdict-reveal__bar-threshold"></div>
+  </div>
+
+</div>
+
+<!-- Inline SSE listener: reveals component live when dispute resolves -->
+<!-- Separated from verdict-reveal.ts to keep SSE concern local (Mike §2) -->
+<script define:vars={{ slug, state }}>
+  (function () {
+    const root = document.querySelector(`[data-slug="${slug}"].verdict-reveal`);
+    if (!root || root.classList.contains('reveal-active')) return;
+
+    const sse = new EventSource(`/api/dispute-sse?slug=${encodeURIComponent(slug)}`);
+    sse.onmessage = function (e) {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.status === 'upheld' || data.status === 'overturned') {
+          root.dataset.state = data.status;
+          root.classList.add('reveal-active');
+          sse.close();
+        }
+      } catch { /* malformed SSE frame — skip */ }
+    };
+    sse.onerror = function () { sse.close(); };
+  })();
+</script>
+
+<style>
+  /* Component-scoped styles — global ceremony classes live in verdict.css */
+
+  .verdict-reveal__eyebrow {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--text-ghost);
+    margin: 0 0 var(--space-4);
+  }
+
+  .verdict-reveal__headline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .verdict-reveal__glyph {
+    font-size: var(--text-2xl);
+    line-height: 1;
+    opacity: 0.7;
+  }
+
+  .verdict-reveal__desc {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-6);
+    line-height: var(--leading-normal);
+  }
+
+  /* Metadata table */
+  .verdict-reveal__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-6);
+  }
+
+  .verdict-reveal__meta-row {
+    display: flex;
+    gap: var(--space-4);
+    font-size: var(--text-xs);
+    align-items: baseline;
+  }
+
+  .verdict-reveal__meta-row dt {
+    color: var(--text-ghost);
+    min-width: 9rem;
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+  }
+
+  .verdict-reveal__meta-row dd {
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .verdict-reveal__meta-row--note dd {
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  /* Quorum bar */
+  .verdict-reveal__bar-wrap {
+    position: relative;
+    height: 4px;
+    background: var(--border-subtle);
+    border-radius: var(--radius-full);
+    overflow: visible;
+  }
+
+  .verdict-reveal__bar-fill {
+    height: 100%;
+    background: var(--bar-color, var(--text-ghost));
+    border-radius: var(--radius-full);
+    transition: width 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 100%;
+  }
+
+  /* 30% threshold marker */
+  .verdict-reveal__bar-threshold {
+    position: absolute;
+    top: -3px;
+    left: 30%;
+    width: 1px;
+    height: 10px;
+    background: var(--border-medium);
+  }
+
+  .verdict-reveal__bar-label {
+    display: block;
+    margin-top: var(--space-2);
+    font-size: var(--text-2xs);
+    color: var(--text-ghost);
+    font-family: var(--font-mono);
+    letter-spacing: var(--tracking-wide);
+  }
+</style>
