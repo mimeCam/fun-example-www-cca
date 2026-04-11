@@ -279,4 +279,18 @@
   --shadow-card-disputed:
     0 4px 16px color-mix(in oklch, var(--clr-red-500) 10%, transparent),
     0 2px 8px rgba(0, 0, 0, 0.3);
+
+  /* ── Atmosphere Tokens — stage-scoped page surface layer ─────────────── */
+  /* Default (fresh/neutral) values live here on :root.                     */
+  /* Stage overrides in atmosphere.css shadow these at [data-atmosphere].   */
+  /* Rule: only atmosphere.css writes --atm-* tokens.                       */
+  /* Rule: all --atm-* values must reference existing primitives — no hex.  */
+  --atm-bg-primary:    #0c0c0e;               /* mirrors --surface-base default  */
+  --atm-bg-secondary:  var(--surface-raised);
+  --atm-tint:          transparent;           /* ::after overlay — zero by default */
+  --atm-border-color:  var(--border-subtle);
+  --atm-shadow-lift:   var(--shadow-card-fresh);
+  --atm-grain-opacity: 0;                     /* entombed museum-glass grain      */
+  --atm-sepia-filter:  0%;                    /* entombed age tone — 15% at max   */
+  --atm-glow-color:    transparent;           /* risen revival bloom              */
 }

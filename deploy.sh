@@ -4,6 +4,40 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v70 — Atmosphere System (2026-04-11)
+#   Sprint: Stage-scoped page atmosphere — body[data-atmosphere] CSS palette shift
+#     driven SSR-side and updated client-side on river filter pill change.
+#     Each lifecycle stage (fresh / endangered / entombed / risen / verdict)
+#     paints its own surface token set so the whole page breathes the stage mood.
+#     Pure UIX/design-system sprint — zero infrastructure changes.
+#   New files:
+#     src/lib/atmosphere.ts — client-side atmosphere controller; single mutation
+#       point for body[data-atmosphere]; RIVER_TO_ATMOSPHERE map; MutationObserver
+#       watches river-filter aria-pressed changes; re-boots on astro:page-load
+#       (View Transitions safe).
+#     src/styles/atmosphere.css — [data-atmosphere] attribute CSS; stage overrides
+#       (endangered: amber tension; entombed: fossil charcoal + grain; risen: dawn
+#       luminous; verdict: outcome-conditional 4% color-mix into near-black);
+#       [data-disputed="true"] composable modifier; TensionBadge heartbeat keyframe;
+#       share-confirm-pulse glow animation; body transition uses --motion-drift-*.
+#   Updated files:
+#     src/layouts/BaseLayout.astro — imports atmosphere.css; Props extended with
+#       atmosphere, verdictOutcome, disputed; data-atmosphere / data-disputed /
+#       data-verdict-outcome attrs on <body>; <script> imports atmosphere.ts for
+#       client-side observer boot.
+#     src/pages/index.astro — STAGE_TO_ATMOSPHERE map; atmosphere SSR-set from
+#       currentStage; atmosphere prop passed to <BaseLayout>.
+#     src/pages/blog/[slug].astro — atmosphere='fresh' passed to <BaseLayout>.
+#     src/pages/verdict/[slug].astro — atmosphere='verdict' + verdictOutcome +
+#       disputed forwarded to <BaseLayout>.
+#     src/styles/tokens.css — --atm-* token family added to :root defaults
+#       (--atm-bg-primary, --atm-bg-secondary, --atm-tint, --atm-border-color,
+#       --atm-shadow-lift, --atm-grain-opacity, --atm-sepia-filter, --atm-glow-color).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v69 — Design Token Standardization (2026-04-11)
 #   Sprint: Replaced hardcoded hex colours in VerdictCard, TombstoneCard,
 #     keep-button.css and verdict.css with design-system tokens from tokens.css.

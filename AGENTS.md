@@ -7,12 +7,14 @@
 - `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, RFC 3161 + OTS clients, river-data, pagination
 - `src/components/` — ConvictionSeal, KeepButton, VerdictReveal, BattingAverageHero, DecayBar, OpenLoopCard, StagePill, RiverFilter, Pagination, TombstoneCard, VerdictCard
 - `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep, stage-counts, graveyard-page
-- `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes + duration scale
+- `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes + duration scale · `src/styles/atmosphere.css` — stage palette shifts
+- `src/lib/atmosphere.ts` — client-side atmosphere controller (body[data-atmosphere] mutations, river filter observer)
 
 ## WIP
 
 - Seal posts via `/admin` to activate TrustBadge + batting average
 - Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
 - P1: Migrate remaining hardcoded rgba → token in StanceDrawer, DisputeTally, VerdictCeremony, TrackRecord, TensionBadge, dispute.css
-- P1: Section break standardisation, stage-transition atmosphere palette shift
-- P2: BattingAverageHero cold-state ghost progress indicator, share button glow-on-confirm
+- P1: Section break standardisation (`.section-break`, `.section-rule` utility classes)
+- P2: BattingAverageHero cold-state ghost progress indicator
+

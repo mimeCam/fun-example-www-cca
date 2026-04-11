@@ -14,8 +14,9 @@ import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import SiteNav from '../components/SiteNav.astro';
 import OnboardingOverlay from '../components/OnboardingOverlay.astro';
-// Design system: tokens → motion → feature CSS layers
+// Design system: tokens → motion → atmosphere → feature CSS layers
 import '../styles/global.css';
+import '../styles/atmosphere.css';
 import '../styles/decay.css';
 import '../styles/revival.css';
 import '../styles/ambient.css';
@@ -32,6 +33,9 @@ const revivalScript = revivalEngineScript();
 const presenceScript = presenceUnifiedScript();
 const ceremonyScript = verdictCeremonyScript();
 
+type AtmosphereStage = 'fresh' | 'endangered' | 'entombed' | 'risen' | 'verdict';
+type VerdictOutcomeAtm = 'correct' | 'wrong' | 'evolved' | undefined;
+
 interface Props {
   title: string;
   description?: string;
@@ -40,9 +44,20 @@ interface Props {
   ogSlug?: string;
   /** Pre-serialized JSON-LD strings — passed through to SEOMeta for <script> injection. */
   jsonLd?: string | string[];
+  /** Stage atmosphere painted on <body> via data-atmosphere. Defaults to 'fresh'. */
+  atmosphere?: AtmosphereStage;
+  /** Outcome tint for verdict pages. Only used when atmosphere='verdict'. */
+  verdictOutcome?: VerdictOutcomeAtm;
+  /** Marks the page as disputed — composable modifier on any atmosphere stage. */
+  disputed?: boolean;
 }
 
-const { title, description, type, publishedAt, ogSlug, jsonLd } = Astro.props;
+const {
+  title, description, type, publishedAt, ogSlug, jsonLd,
+  atmosphere = 'fresh',
+  verdictOutcome,
+  disputed = false,
+} = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
 
 // Onboarding overlay gate — SSR cookie check.
@@ -80,8 +95,9 @@ const showOnboarding = onboardingForced || !onboardingSeen;
       }
       /* Simple mood-tinted gradient replaces AmbientLayer.
          One gradient. Warm center. Dark edges. Done. */
+      /* background-color defers to atmosphere.css via --atm-bg-primary token. */
       body {
-        background: #0c0c0e;
+        background-color: var(--atm-bg-primary);
         color: rgba(255, 255, 255, 0.88);
       }
       body::before {
@@ -112,12 +128,20 @@ const showOnboarding = onboardingForced || !onboardingSeen;
       .site-footer__write:hover { color: rgba(255, 255, 255, 0.50); }
     </style>
   </head>
-  <body>
+  <body
+    data-atmosphere={atmosphere}
+    data-disputed={String(disputed)}
+    data-verdict-outcome={verdictOutcome}
+  >
     <SiteNav />
     {showOnboarding && <OnboardingOverlay />}
     <slot />
     <footer class="site-footer">
       <a href="/author" class="site-footer__write">✍ write for this blog →</a>
     </footer>
+    <!-- Atmosphere controller: re-applies on View Transitions, watches river filter -->
+    <script>
+      import '../lib/atmosphere';
+    </script>
   </body>
 </html>

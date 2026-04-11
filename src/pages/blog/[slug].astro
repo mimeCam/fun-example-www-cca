@@ -104,6 +104,17 @@ const convictionState = buildConvictionState(
   sealEntry?.timestamp ?? null,
 );
 const decayState  = { lifecycle: postDecay >= 0.95 ? 'DEAD' as const : postDecay >= 0.8 ? 'ENDANGERED' as const : 'LIVING' as const, daysRemaining, decayFactor: postDecay };
+
+// Atmosphere — derived from decay factor + dispute state.
+// SSR-sets data-atmosphere on <body> for zero-FOUC first paint.
+type AtmStage = 'fresh' | 'endangered' | 'entombed';
+function postAtmosphere(decay: number): AtmStage {
+  if (decay >= 0.95) return 'entombed';
+  if (decay >= 0.65) return 'endangered';
+  return 'fresh';
+}
+const atmosphere  = postAtmosphere(postDecay);
+const isDisputed  = disputeState.status === 'open' || disputeState.status === 'contested';
 const jsonLd      = [
   serializeJsonLd(buildArticleSchema(postMeta, convictionState, decayState)),
   serializeJsonLd(buildBreadcrumbSchema([
@@ -113,7 +124,16 @@ const jsonLd      = [
 ];
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description} type="article" publishedAt={pubDateISO} ogSlug={post.slug} jsonLd={jsonLd}>
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  type="article"
+  publishedAt={pubDateISO}
+  ogSlug={post.slug}
+  jsonLd={jsonLd}
+  atmosphere={atmosphere}
+  disputed={isDisputed}
+>
   <main class="post-detail">
     <nav class="post-nav-row" aria-label="Post navigation">
       <a href="/" class="back-link">← back to field</a>

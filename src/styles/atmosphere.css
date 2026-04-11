@@ -1,0 +1,138 @@
+/* src/styles/atmosphere.css
+ * Stage-transition atmosphere palette shift.
+ * Single [data-atmosphere] attribute on <body> drives the whole page.
+ * All components inherit via CSS custom property cascade — zero component changes.
+ *
+ * Stages: fresh (default) | endangered | entombed | risen | verdict
+ * Modifier: [data-disputed="true"] — composable on any stage.
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-11
+ */
+
+/* ── Body: background driven by atmosphere token ──────────────────────────── */
+/* Transition uses DRIFT profile (500ms) — atmosphere breathes, not snaps.    */
+/* prefers-reduced-motion: motion.css collapses all --motion-* to 0ms.        */
+body {
+  background-color: var(--atm-bg-primary);
+  transition:
+    background-color var(--motion-drift-duration) var(--motion-drift-easing),
+    color            var(--motion-drift-duration) var(--motion-drift-easing);
+}
+
+/* ── Atmosphere tint overlay ─────────────────────────────────────────────── */
+/* Uses ::after to avoid colliding with existing ::before mood gradient.      */
+/* Fixed + pointer-events:none → never blocks interaction.                    */
+/* z-index:0 keeps it below all content (--z-card: 1 and above).              */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--atm-tint);
+  pointer-events: none;
+  z-index: var(--z-base);
+  transition: background var(--motion-drift-duration) var(--motion-drift-easing);
+}
+
+/* ── Stage: endangered — amber tension, urgency without alarm ─────────────── */
+/* Room lit by a low amber lamp: visible only on neutral surfaces.            */
+[data-atmosphere="endangered"] {
+  --atm-bg-primary:   oklch(12% 0.018 55);
+  --atm-tint:         rgba(245, 166, 35, 0.018);
+  --atm-border-color: var(--urgency-warning-color);
+  --atm-shadow-lift:  var(--shadow-card-fresh);
+  /* Override base surface tokens so components inherit atmosphere for free */
+  --surface-base:     oklch(12% 0.018 55);
+  --surface-raised:   rgba(245, 166, 35, 0.035);
+  --border-subtle:    rgba(245, 166, 35, 0.09);
+}
+
+/* ── Stage: entombed — warm charcoal, heavy, still, fossil flatness ──────── */
+/* Graveyard tokens already nail this — wired to body attribute.             */
+[data-atmosphere="entombed"] {
+  --atm-bg-primary:    var(--color-grave-bg);
+  --atm-grain-opacity: 0.04;
+  --atm-sepia-filter:  15%;
+  --atm-shadow-lift:   var(--shadow-card-fossil);
+  /* Override base surface tokens */
+  --surface-base:      var(--color-grave-bg);
+  --surface-raised:    var(--color-grave-surface);
+  --border-subtle:     var(--color-grave-border);
+}
+
+/* ── Stage: risen — dawn warmth, luminous, earned revival ────────────────── */
+/* Same amber warmth as endangered but more luminous: dawn after a long night */
+[data-atmosphere="risen"] {
+  --atm-bg-primary:   oklch(12% 0.022 70);
+  --atm-tint:         rgba(245, 166, 35, 0.015);
+  --atm-glow-color:   var(--color-revival);
+  --atm-border-color: var(--clr-emerald-500);
+  /* Override base surface tokens */
+  --surface-base:     oklch(12% 0.022 70);
+  --surface-raised:   rgba(245, 166, 35, 0.06);
+  --border-subtle:    rgba(245, 166, 35, 0.12);
+}
+
+/* ── Stage: verdict — courtroom, outcome-conditional color at 4% ─────────── */
+/* 4% color-mix into near-black: peripheral vision picks this up first.      */
+[data-atmosphere="verdict"][data-verdict-outcome="correct"] {
+  --atm-bg-primary: color-mix(in oklch, var(--clr-green-400)   4%, oklch(12% 0.008 220));
+  --surface-base:   color-mix(in oklch, var(--clr-green-400)   4%, oklch(12% 0.008 220));
+  --border-subtle:  color-mix(in oklch, var(--clr-green-400)  12%, transparent);
+}
+
+[data-atmosphere="verdict"][data-verdict-outcome="wrong"] {
+  --atm-bg-primary: color-mix(in oklch, var(--clr-red-500)     4%, oklch(12% 0.008 220));
+  --surface-base:   color-mix(in oklch, var(--clr-red-500)     4%, oklch(12% 0.008 220));
+  --border-subtle:  color-mix(in oklch, var(--clr-red-500)    12%, transparent);
+}
+
+[data-atmosphere="verdict"][data-verdict-outcome="evolved"] {
+  --atm-bg-primary: color-mix(in oklch, var(--clr-violet-400)  4%, oklch(12% 0.008 220));
+  --surface-base:   color-mix(in oklch, var(--clr-violet-400)  4%, oklch(12% 0.008 220));
+  --border-subtle:  color-mix(in oklch, var(--clr-violet-400) 12%, transparent);
+}
+
+/* ── Disputed modifier — composable on any stage ─────────────────────────── */
+/* A post can be entombed AND disputed simultaneously.                        */
+[data-atmosphere][data-disputed="true"] {
+  --atm-border-color: var(--urgency-critical-color);
+  --border-subtle:    rgba(245, 166, 35, 0.14);
+}
+
+/* ── TensionBadge micro-animation (Tanya §6) ─────────────────────────────── */
+/* Contested state only — consensus and indifferent stay static.              */
+/* 2s: subliminal. User perceives alive without consciously registering it.   */
+.tension-badge[data-tension="contested"] {
+  animation: tension-heartbeat var(--urgency-pulse-speed-warning) ease-in-out infinite;
+}
+
+.tension-badge[data-tension="contested"] .tension-glyph {
+  display: inline-block;
+  animation: tension-glyph-pulse 2s ease-in-out infinite;
+  animation-delay: 0.25s;
+}
+
+@keyframes tension-heartbeat {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(245, 166, 35, 0); }
+  50%       { box-shadow: 0 0 0 5px rgba(245, 166, 35, 0.14); }
+}
+
+@keyframes tension-glyph-pulse {
+  0%, 100% { transform: scale(1.00); opacity: 0.70; }
+  50%       { transform: scale(1.08); opacity: 0.90; }
+}
+
+/* ── Share button glow-on-confirm (Tanya §5) ─────────────────────────────── */
+/* Three phases — all use existing tokens. Phase 3: confirmed 1800ms flash.  */
+.bah-share--confirmed {
+  background:   var(--gold-bg)     !important;
+  border-color: var(--gold-border) !important;
+  color:        var(--gold)        !important;
+  animation: share-confirm-pulse var(--duration-slow) var(--ease-out) forwards;
+}
+
+@keyframes share-confirm-pulse {
+  0%   { box-shadow: 0 0 0 0   var(--gold-glow); }
+  30%  { box-shadow: 0 0 0 8px var(--gold-glow); }
+  100% { box-shadow: 0 0 0 4px var(--gold-glow); }
+}

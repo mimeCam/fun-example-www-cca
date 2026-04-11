@@ -72,6 +72,19 @@ function pageDesc(): string {
   return `Loop closed. Verdict: ${verdict.verdict}. Original conviction: ${seal.conviction_score}/10. "${post.data.title}"`;
 }
 
+// ── Atmosphere ────────────────────────────────────────────────────────────────
+// Verdict pages always use 'verdict' atmosphere; outcome tints the room at 4%.
+type VerdictOutcomeAtm = 'correct' | 'wrong' | 'evolved' | undefined;
+function mapVerdictOutcome(v: VerdictOutcome | null): VerdictOutcomeAtm {
+  if (!v) return undefined;
+  if (v === 'still-true') return 'correct';
+  if (v === 'wrong')      return 'wrong';
+  if (v === 'evolved')    return 'evolved';
+  return undefined;
+}
+const verdictOutcome = mapVerdictOutcome(verdict?.verdict ?? null);
+const isDisputed     = disputeState.status === 'open' || disputeState.status === 'contested';
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Graceful DB read: returns null if DB unavailable (cold boot, SSG, etc.). */
@@ -80,7 +93,14 @@ function safeRead<T>(fn: () => T): T | null {
 }
 ---
 
-<BaseLayout title={pageTitle()} description={pageDesc()} ogSlug={slug}>
+<BaseLayout
+  title={pageTitle()}
+  description={pageDesc()}
+  ogSlug={slug}
+  atmosphere="verdict"
+  verdictOutcome={verdictOutcome}
+  disputed={isDisputed}
+>
 
   <main class="ceremony-page">
 

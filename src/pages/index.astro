@@ -92,6 +92,16 @@ const STAGE_LABEL: Record<StageFilter, string> = {
 // ─── JSON-LD ──────────────────────────────────────────────────────────────────
 
 const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
+
+// ─── Atmosphere — SSR-set based on active stage filter ────────────────────────
+// Client-side watchRiverFilter() in atmosphere.ts updates this on pill click.
+const STAGE_TO_ATMOSPHERE = {
+  live:      'fresh',
+  endangered:'endangered',
+  graveyard: 'entombed',
+  all:       'fresh',
+} as const;
+const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
 ---
 
 <BaseLayout
@@ -99,6 +109,7 @@ const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
   description="Public predictions, sealed before publication. Batting average updated live."
   ogSlug="batting-average"
   jsonLd={jsonLd}
+  atmosphere={atmosphere}
 >
   <script set:html={endangeredClientScript()} />
 
