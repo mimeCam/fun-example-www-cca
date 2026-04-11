@@ -1,0 +1,150 @@
+/* src/styles/keep-button.css
+ * KeepButton CSS — state-driven via data-keep-state attribute + CSS custom properties.
+ * Zero JS in this file. The RevivalOrchestrator writes the props; CSS does the rest.
+ *
+ * --keep-progress (0–1) : drives arc fill, border-radius pill transition
+ * --keep-heat     (0–1) : drives color temperature cool → warm
+ * data-keep-state       : idle | holding | threshold_reached | submitting | revived | error
+ *
+ * Spring: CSS linear() from --motion-spring-easing (motion.css) — no GSAP, no Lottie.
+ * Color:  color-mix(in oklch, ...) for perceptually uniform cool→warm shift.
+ *         hsl would look muddy through yellow midpoint; oklch stays clean. (Mike §5)
+ *
+ * Architecture: Mike Koch · UX: Tanya Donska · 2026-04-11
+ */
+
+/* ── @property declarations ── */
+
+@property --keep-progress {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@property --keep-heat {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+/* ── Color temperature tokens (local to this component) ── */
+
+.keep-btn {
+  --color-keep-cool: oklch(0.65 0.10 220);  /* cool blue — resting */
+  --color-keep-hot:  oklch(0.78 0.22 55);   /* warm gold — commitment */
+  --keep-arc-dim:    rgba(245, 166, 35, 0.45);
+  --keep-arc-hot:    var(--gold, #F5A623);
+}
+
+/* ── Temperature-driven color (oklch avoids yellow mudpatch) ── */
+
+.keep-btn[data-keep-state="holding"],
+.keep-btn[data-keep-state="threshold_reached"],
+.keep-btn[data-keep-state="submitting"] {
+  color: color-mix(
+    in oklch,
+    var(--color-keep-cool),
+    var(--color-keep-hot) calc(var(--keep-heat, 0) * 100%)
+  );
+}
+
+/* ── Arc visibility by state ── */
+
+.keep-btn[data-keep-state="holding"] .keep-arc,
+.keep-btn[data-keep-state="threshold_reached"] .keep-arc,
+.keep-btn[data-keep-state="submitting"] .keep-arc { opacity: 1; }
+
+/* Arc thickness swells with hold progress */
+.keep-btn[data-keep-state="holding"] .keep-arc-circle {
+  stroke-width: calc(2.5 + var(--keep-progress, 0) * 1.5);
+  stroke: var(--keep-arc-dim);
+}
+
+/* Gold stroke at commitment threshold */
+.keep-btn[data-keep-state="threshold_reached"] .keep-arc-circle,
+.keep-btn[data-keep-state="submitting"] .keep-arc-circle {
+  stroke: var(--keep-arc-hot);
+  stroke-width: 4;
+}
+
+/* ── Arc complete: spring overshoot keyframe ── */
+
+@keyframes arc-complete {
+  0%   { --keep-progress: 1;    }
+  35%  { --keep-progress: 1.06; }  /* overshoot */
+  65%  { --keep-progress: 0.98; }  /* undershoot */
+  100% { --keep-progress: 1;    }
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  .keep-btn[data-keep-state="threshold_reached"] {
+    animation: arc-complete 400ms var(--motion-spring-easing) forwards;
+  }
+}
+
+/* Fallback for non-supporting browsers */
+@supports not (transition-timing-function: linear(0, 1)) {
+  .keep-btn[data-keep-state="threshold_reached"] {
+    animation: arc-complete 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+}
+
+/* ── Submitting — gentle pulse to signal API in flight ── */
+
+@keyframes keep-submitting-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.70; }
+}
+
+.keep-btn[data-keep-state="submitting"] {
+  animation: keep-submitting-pulse 600ms ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Revived — muted settled confirmation ── */
+
+.keep-btn[data-keep-state="revived"] {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  transition: opacity var(--motion-flow-duration) var(--motion-flow-easing);
+}
+
+/* ── Error — brief horizontal shake ── */
+
+@keyframes keep-error-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-3px); }
+  60%       { transform: translateX(3px); }
+}
+
+.keep-btn[data-keep-state="error"] {
+  animation: keep-error-shake 300ms var(--motion-flow-easing, ease) forwards;
+  color: var(--verdict-wrong, #f87171);
+}
+
+/* ── Critical urgency ring (gold pulse, per Tanya §4.3) ── */
+
+.keep-btn--critical[data-keep-state="idle"] {
+  border-color: rgba(245, 166, 35, 0.40);
+  box-shadow:   0 0 12px rgba(245, 166, 35, 0.20);
+  animation: pulse-warm 2s ease-in-out infinite;
+}
+
+/* ── Cursor intent (Mike §2: cursor:grab invites holding) ── */
+
+.keep-btn { cursor: grab; }
+.keep-btn:active { cursor: grabbing; }
+.keep-btn[data-keep-state="revived"] { cursor: default; }
+
+/* ── Reduced motion: remove all hold choreography ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .keep-btn { cursor: pointer; }
+  .keep-btn[data-keep-state="holding"] .keep-arc { display: none; }
+  .keep-btn[data-keep-state="threshold_reached"] { animation: none; }
+  .keep-btn[data-keep-state="submitting"] { animation: none; opacity: 0.7; }
+  .keep-btn[data-keep-state="error"] { animation: none; color: var(--verdict-wrong, #f87171); }
+  .keep-btn--critical[data-keep-state="idle"] { animation: none; }
+}

@@ -14,6 +14,7 @@ import {
   recordRevival,
   recordRevivalBySession,
   getMonthlyRevivalCount,
+  getRevivalCounts,
 } from '../../lib/collectiveMemory';
 import { broadcast, broadcastNamed } from '../../lib/heartbeat';
 import { revive as presenceRevive } from '../../lib/presence-hub';
@@ -84,8 +85,8 @@ export const POST: APIRoute = async ({ request }) => {
   if (!guard.allowed) return tooManyRequests(guard.reason);
 
   // Session idempotency: one revival per tab per post (permanent lock).
-  // Returns a distinct payload so the client can show "already kept" vs rollback.
-  if (!checkRateLimit(sessionId, ip, slug)) return sessionConflict();
+  // Returns 200 with ok:false so the client animation doesn't break on double-tap.
+  if (!checkRateLimit(sessionId, ip, slug)) return alreadyRevived();
 
   const count = incrementRevival(slug);
   stampRateLimit(sessionId, ip, slug);
@@ -118,13 +119,14 @@ export const POST: APIRoute = async ({ request }) => {
   return jsonOk({
     ok: true,
     count,
-    revivalCount:       count,       // alias — ceremony controller reads this
-    battingAverageDelta: 0,          // placeholder; verdicts drive batting avg, not revivals
-    relatedSlugs,                    // slugs for cascade bloom in cascade-bloom.ts
+    revivalCount:        count,       // alias — orchestrator reads this
+    battingAverageDelta: 0,           // placeholder; verdicts drive batting avg, not revivals
+    relatedSlugs,                     // slugs for cascade bloom in cascade-bloom.ts
     decayAfterRevival,
     decayPct,
     monthlyCount,
-    resonance: resonance ?? [],
+    survivorRank:        survivorRank(slug, count), // percentile vs all posts
+    resonance:           resonance ?? [],
   });
 };
 
@@ -148,13 +150,29 @@ function jsonOk(data: Record<string, unknown>): Response {
 
 /** Generic guard rejection (velocity, fingerprint cap, etc.). */
 function tooManyRequests(reason?: string): Response {
-  const body = reason ? JSON.stringify({ error: reason }) : null;
-  const headers = reason ? { 'Content-Type': 'application/json' } : {};
+  const body    = reason ? JSON.stringify({ error: reason }) : null;
+  const headers: HeadersInit = reason ? { 'Content-Type': 'application/json' } : {};
   return new Response(body, { status: 429, headers });
 }
 
-/** Session-scoped idempotency conflict: this tab already revived this post. */
-function sessionConflict(): Response {
-  const body = JSON.stringify({ ok: false, alreadyRevived: true });
-  return new Response(body, { status: 429, headers: { 'Content-Type': 'application/json' } });
+/**
+ * Idempotent "already revived" response — always 200 so the client animation
+ * doesn't break on double-tap. Reason field lets client show "already kept" copy.
+ * (Mike Koch arch spec §6: "double-taps don't break the client animation")
+ */
+function alreadyRevived(): Response {
+  const body = JSON.stringify({ ok: false, reason: 'already_revived' });
+  return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
+
+/**
+ * Percentile rank (0–100) of this post's revival count vs all others.
+ * 100 = more revived than every other post. Feeds copy in RevivalMoment badge.
+ */
+function survivorRank(slug: string, count: number): number {
+  const all    = getRevivalCounts();
+  const values = [...all.values()].filter((_, i) => [...all.keys()][i] !== slug);
+  if (!values.length) return 100;
+  const lower  = values.filter(v => v <= count).length;
+  return Math.round((lower / values.length) * 100);
 }

@@ -4,6 +4,48 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v59 — Revival Orchestrator Unification (2026-04-11)
+#   Sprint: Single-source-of-truth hold-to-revive lifecycle; state machine
+#     promoted to dedicated RevivalOrchestrator class; CSS extracted to
+#     design-system stylesheets; haptic milestones granularised.
+#   New files:
+#     src/lib/client/revival-orchestrator.ts — RevivalOrchestrator class;
+#       idle→holding→threshold_reached→submitting→revived|error state machine;
+#       pure springStep() rAF loop; haptic milestones at 25/50/75/100% arc;
+#       AbortController for in-flight fetch cancel; dispatches revival:confirmed
+#       CustomEvent; initOrchestrators() auto-wires every .keep-btn in the DOM.
+#     src/styles/keep-button.css — extracted KeepButton CSS; @property
+#       --keep-progress and --keep-heat; color-mix(in oklch) temperature shift
+#       cool→warm; arc-complete spring keyframe; submitting pulse; error shake;
+#       critical urgency ring; cursor:grab UX grammar (Mike §2); reduced-motion
+#       guard removes all hold choreography.
+#     src/styles/revival-moment.css — bloom choreography for post detail page;
+#       revival-scale-spring; revival-bloom radial glow (oklch warm amber);
+#       revival-count-tick spring; badge-slide-up; sympathetic-echo for adjacent
+#       cards; reduced-motion guard collapses all to badge-only feedback.
+#   Updated files:
+#     src/components/KeepButton.astro — data-state → data-keep-state; aria-pressed
+#       + role="button" added; initCeremonies → initOrchestrators; CSS state
+#       selectors aligned to new state names; SETTLED state removed (revived
+#       handles settle inline); data-orchestrated guard prevents double-wiring.
+#     src/layouts/BaseLayout.astro — imports keep-button.css + revival-moment.css
+#       globally so both stylesheets are available on every page (design system
+#       layering: tokens → motion → feature CSS).
+#     src/lib/client/haptics.ts — HOLD_25 / HOLD_50 / HOLD_75 milestone patterns
+#       added alongside existing TENSION_RAMP alias (backward-compatible).
+#     src/pages/api/revive.ts — sessionConflict() (429) replaced by alreadyRevived()
+#       (200 ok:false reason:'already_revived') so double-tap never breaks client
+#       animation; survivorRank field added to success response (percentile of this
+#       post's revival count vs all others — feeds RevivalMoment copy);
+#       getRevivalCounts() imported from collectiveMemory.
+#     src/styles/tokens.css — interaction state tokens (--surface-focus,
+#       --border-focus, --border-interactive, --border-interactive-hover);
+#       layout container tokens (--container-read/wide/nav, --gutter clamp).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor). DISPUTE_QUORUM_RATIO optional.
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v58 — Endangered Discovery Feed (2026-04-11)
 #   Sprint: Dedicated /endangered discovery page; GET /api/endangered +
 #     GET /api/endangered-sse endpoints; logarithmic decay curve; urgency tokens.

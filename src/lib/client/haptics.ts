@@ -8,10 +8,13 @@
 export type HapticPattern = number | number[];
 
 /** Named patterns — keys map to Hold-to-Revive ceremony state transitions. */
-export const PRESS_START:  HapticPattern = [10];               // subtle: "I felt you"
-export const TENSION_RAMP: HapticPattern = [10, 20, 10, 20, 30]; // escalating: "hold…"
-export const PEAK_CONFIRM: HapticPattern = [40];               // decisive: "kept ✓"
-export const CANCEL:       HapticPattern = [5];                // quiet abort
+export const PRESS_START:  HapticPattern = [10];                  // subtle: "I felt you"
+export const HOLD_25:      HapticPattern = [8];                   // 25% arc milestone
+export const HOLD_50:      HapticPattern = [12];                  // 50% arc milestone
+export const HOLD_75:      HapticPattern = [10, 20, 10, 20, 30]; // 75% — escalating: "almost…"
+export const TENSION_RAMP: HapticPattern = [10, 20, 10, 20, 30]; // alias for legacy callers
+export const PEAK_CONFIRM: HapticPattern = [40];                  // decisive: "kept ✓"
+export const CANCEL:       HapticPattern = [5];                   // quiet abort
 
 /** True when the Vibration API is available on this device. */
 export function canHaptic(): boolean {

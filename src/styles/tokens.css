@@ -208,4 +208,18 @@
   --sympathetic-duration:          1000ms;
   --sympathetic-settle-duration:   1000ms;
   --sympathetic-lift-y:            -1.5px;
+
+  /* ── Interaction State Tokens (Tanya §8 — Addition 1) ──────────────── */
+  /* Gold-tinted focus/hover surfaces for interactive elements            */
+  --surface-focus:            rgba(245, 166, 35, 0.08);
+  --border-focus:             rgba(245, 166, 35, 0.60);
+  --border-interactive:       rgba(255, 255, 255, 0.12);
+  --border-interactive-hover: rgba(255, 255, 255, 0.22);
+
+  /* ── Layout Container Tokens (Tanya §8 — Addition 2) ───────────────── */
+  /* Single source of truth for column widths — never hardcode these.    */
+  --container-read: 720px;              /* reading column: post detail, submit form */
+  --container-wide: 1080px;             /* wide column: card grids */
+  --container-nav:  800px;              /* navigation bar max-width */
+  --gutter: clamp(16px, 4vw, 48px);    /* responsive side padding */
 }

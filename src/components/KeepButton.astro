@@ -37,8 +37,10 @@ const hasPact     = decayFactor !== undefined;
     class:list={['keep-btn', isCritical && 'keep-btn--critical', isStillTrue && 'keep-btn--still-true']}
     data-keep-slug={slug}
     data-pact-trigger={hasPact ? '' : undefined}
-    data-state="idle"
+    data-keep-state="idle"
     aria-label="Keep this post alive"
+    aria-pressed="false"
+    role="button"
     type="button"
   >
     <!-- Arc ring: JS sets strokeDashoffset; CSS state selectors colour it.
@@ -178,10 +180,10 @@ const hasPact     = decayFactor !== undefined;
     overflow: visible;
   }
 
-  /* Arc visible only while pressing/tension/peak */
-  .keep-btn[data-state="pressing"] .keep-arc,
-  .keep-btn[data-state="tension"]  .keep-arc,
-  .keep-btn[data-state="peak"]     .keep-arc { opacity: 1; }
+  /* Arc visible while holding/at-threshold/submitting */
+  .keep-btn[data-keep-state="holding"]           .keep-arc,
+  .keep-btn[data-keep-state="threshold_reached"] .keep-arc,
+  .keep-btn[data-keep-state="submitting"]        .keep-arc { opacity: 1; }
 
   .keep-arc-track {
     fill: none;
@@ -197,14 +199,14 @@ const hasPact     = decayFactor !== undefined;
     transition: stroke 200ms ease;   /* colour shift at TENSION */
   }
 
-  /* Gold stroke at tension — "commitment colour" */
-  .keep-btn[data-state="tension"] .keep-arc-circle,
-  .keep-btn[data-state="peak"]    .keep-arc-circle {
+  /* Gold stroke at threshold — "commitment colour" */
+  .keep-btn[data-keep-state="threshold_reached"] .keep-arc-circle,
+  .keep-btn[data-keep-state="submitting"]        .keep-arc-circle {
     stroke: var(--gold, #F5A623);
   }
 
-  /* ── State: PEAK — brief scale overshoot ──────────────────────── */
-  .keep-btn[data-state="peak"] {
+  /* ── State: threshold_reached — brief scale overshoot ─────────── */
+  .keep-btn[data-keep-state="threshold_reached"] {
     animation: keep-peak-burst 400ms var(--ease-spring, cubic-bezier(0.34,1.56,0.64,1)) forwards;
   }
 
@@ -214,12 +216,15 @@ const hasPact     = decayFactor !== undefined;
     100% { transform: scale(1); }
   }
 
-  /* ── State: BLOOM — warm glow from center ─────────────────────── */
-  .keep-btn[data-state="bloom"] {
+  /* ── State: revived — warm glow then settle ───────────────────── */
+  .keep-btn[data-keep-state="revived"] {
     background:    rgba(var(--mood-accent-rgb, 212,149,106), 0.14);
     border-color:  rgba(var(--mood-accent-rgb, 212,149,106), 0.50);
     box-shadow:    0 0 20px rgba(var(--mood-accent-rgb, 212,149,106), 0.22);
     animation: keep-bloom-glow var(--duration-bloom, 1200ms) ease-out forwards;
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
   }
 
   @keyframes keep-bloom-glow {
@@ -227,24 +232,17 @@ const hasPact     = decayFactor !== undefined;
     30%  { box-shadow: 0 0 24px rgba(var(--mood-accent-rgb, 212,149,106), 0.28); }
     100% { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb, 212,149,106), 0); }
   }
-
-  /* ── State: SETTLED — kept confirmation; muted until cooldown ends ── */
-  .keep-btn[data-state="settled"] {
-    opacity: 0.55;
-    cursor: default;
-    pointer-events: none;
-    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
-  }
 </style>
 
-<!-- Ceremony bootstrap: wires CeremonyController to feed-card KeepButtons.
+<!-- Orchestrator bootstrap: wires RevivalOrchestrator to all feed-card KeepButtons.
+     Single source of truth for hold-to-revive interaction. (Mike Koch arch spec §1)
      Astro bundles this via Vite — imports TypeScript from src/lib/client/. -->
 <script>
-  import { initCeremonies } from '../lib/client/revival-ceremony';
+  import { initOrchestrators } from '../lib/client/revival-orchestrator';
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCeremonies);
+    document.addEventListener('DOMContentLoaded', initOrchestrators);
   } else {
-    initCeremonies();
+    initOrchestrators();
   }
 </script>
 
@@ -284,8 +282,9 @@ const hasPact     = decayFactor !== undefined;
     }
 
     function handleClick(btn: HTMLButtonElement): void {
-      if (btn.dataset.wired) return;        // pact or revival-counter owns this
-      if (btn.dataset.pactTrigger !== undefined) return; // pact-enabled, skip
+      if (btn.dataset.orchestrated) return; // orchestrator owns this (pointerdown)
+      if (btn.dataset.wired) return;        // revival-counter.ts owns this
+      if (btn.dataset.pactTrigger !== undefined) return; // keep-pact.ts owns this
       if (btn.classList.contains('kept')) return;
       const slug = btn.dataset.keepSlug;
       if (!slug) return;

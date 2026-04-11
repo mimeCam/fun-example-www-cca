@@ -1,0 +1,105 @@
+/* src/styles/revival-moment.css
+ * Revival Moment CSS — bloom choreography for the post detail page.
+ * Drives the 5-phase resuscitation sequence when a revival is confirmed.
+ *
+ * Bloom sequence (driven by RevivalMoment.astro on revival:confirmed):
+ *   1. Scale spring    — card breathes in (600ms)
+ *   2. Radial glow     — oklch warm bloom from card center (1200ms)
+ *   3. Counter tick    — revival count springs up (600ms, from revival-counter.ts)
+ *   4. aria-live       — screen reader announcement (instant)
+ *   5. Badge settle    — "Kept alive" slides up, auto-fades (5s)
+ *
+ * Color: oklch(0.9 0.25 85) — warm amber in perceptual space.
+ *        Shifts through warm spectrum naturally; hsl would go muddy. (Mike §5)
+ * Spring: CSS linear() from --motion-spring-easing (motion.css Baseline 2024).
+ *
+ * Architecture: Mike Koch · UX: Tanya Donska · 2026-04-11
+ */
+
+/* ── Scale spring on post card ── */
+
+@keyframes revival-scale-spring {
+  0%   { transform: scale(1);     }
+  25%  { transform: scale(1.003); }
+  55%  { transform: scale(0.999); }
+  80%  { transform: scale(1.001); }
+  100% { transform: scale(1);     }
+}
+
+/* data-reviving is set by RevivalMoment.astro trigger() */
+.revival-stage[data-reviving] {
+  animation: revival-scale-spring var(--motion-spring-duration, 800ms)
+             var(--motion-spring-easing, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+}
+
+/* Progressive enhancement: true spring timing when supported */
+@supports (animation-timing-function: linear(0, 1)) {
+  .revival-stage[data-reviving] {
+    animation-timing-function: var(--motion-spring-easing);
+  }
+}
+
+/* ── Radial glow bloom — oklch warm amber ── */
+
+@keyframes revival-bloom {
+  0%   { box-shadow: 0 0  0px  0px oklch(0.7 0.20 85 / 0.00); }
+  20%  { box-shadow: 0 0 24px  8px oklch(0.9 0.25 85 / 0.35); }
+  55%  { box-shadow: 0 0 48px 20px oklch(0.9 0.25 85 / 0.50); }
+  100% { box-shadow: 0 0  0px  0px oklch(0.7 0.20 85 / 0.00); }
+}
+
+.revival-stage[data-reviving] .revival-ring {
+  animation: revival-bloom var(--duration-bloom, 1200ms)
+             var(--motion-drift-easing, cubic-bezier(0.4, 0, 1, 1)) forwards;
+}
+
+/* ── Revival counter tick spring ── */
+
+@keyframes revival-count-tick {
+  0%   { transform: translateY(0)    scale(1);    }
+  25%  { transform: translateY(-5px) scale(1.18); }
+  60%  { transform: translateY(1px)  scale(0.97); }
+  85%  { transform: translateY(-1px) scale(1.02); }
+  100% { transform: translateY(0)    scale(1);    }
+}
+
+.revival-counter[data-ticking] {
+  display: inline-block;
+  animation: revival-count-tick var(--motion-ceremony-duration, 600ms)
+             var(--motion-spring-easing, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+}
+
+/* ── Revival badge: "Kept alive ✦" slides up ── */
+
+@keyframes badge-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.revival-badge[data-visible] {
+  animation: badge-slide-up var(--motion-flow-duration, 200ms)
+             var(--motion-flow-easing, cubic-bezier(0.4, 0, 0.2, 1)) forwards;
+}
+
+/* ── Sympathetic bloom — adjacent cards echo the revival ── */
+
+@keyframes sympathetic-echo {
+  0%   { box-shadow: 0 0 0 0   oklch(0.7 0.18 85 / 0.00); }
+  30%  { box-shadow: 0 0 0 6px oklch(0.8 0.20 85 / 0.12); }
+  100% { box-shadow: 0 0 0 var(--sympathetic-ring-spread, 14px) oklch(0.7 0.18 85 / 0.00); }
+}
+
+.revival-stage[data-sympathetic] {
+  animation: sympathetic-echo var(--sympathetic-duration, 1000ms) ease-out forwards;
+}
+
+/* ── Reduced motion: all durations → 0ms (motion.css handles the vars) ── */
+/* The revival badge is the sole feedback in reduced-motion mode.          */
+
+@media (prefers-reduced-motion: reduce) {
+  .revival-stage[data-reviving]              { animation: none; }
+  .revival-stage[data-reviving] .revival-ring { animation: none; display: none; }
+  .revival-counter[data-ticking]             { animation: none; }
+  .revival-badge[data-visible]               { animation: none; opacity: 1; transform: translateX(-50%) translateY(0); }
+  .revival-stage[data-sympathetic]           { animation: none; }
+}
