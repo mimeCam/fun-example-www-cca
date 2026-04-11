@@ -17,6 +17,10 @@ import ConvictionTimeline from '../../components/ConvictionTimeline.astro';
 import { assembleAuditPayload } from '../../lib/audit-verifier';
 import { verifyAnchor }         from '../../lib/anchor-verifier';
 import { getTstForSeal }        from '../../lib/timestamp-store';
+import { getOtsProof }          from '../../lib/conviction-ledger';
+import { verify as otsVerify }  from '../../lib/ots-verifier';
+import { hashContent }          from '../../lib/rfc3161-client';
+import { getSealEntry }         from '../../lib/conviction-ledger';
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect('/404');
@@ -35,6 +39,18 @@ const anchorVerification = payload.seal
 
 // RFC 3161 TST data — null for pre-stamp posts (graceful degradation).
 const tstData = payload.seal ? getTstForSeal(slug) : null;
+
+// OTS Bitcoin anchor — verify if confirmed, pass status if pending.
+async function resolveOtsData() {
+  const otsProof = getOtsProof(slug);
+  if (!otsProof) return null;
+  if (otsProof.status !== 'confirmed') return { status: otsProof.status, calendarUrl: otsProof.calendarUrl ?? undefined };
+  const seal = getSealEntry(slug);
+  if (!seal) return { status: 'unverifiable' as const };
+  const original = hashContent(`${slug}:${seal.conviction_score}:${seal.timestamp}`);
+  return otsVerify(otsProof.proof, original).catch(() => ({ status: 'unverifiable' as const }));
+}
+const otsData = payload.seal ? await resolveOtsData() : null;
 
 const pageTitle       = `Conviction Audit — ${post.data.title}`;
 const pageDescription = payload.seal
@@ -71,6 +87,7 @@ const pageDescription = payload.seal
       postTitle={payload.postTitle}
       anchorVerification={anchorVerification}
       tstData={tstData}
+      otsData={otsData}
     />
 
     <!-- Event timeline — chronological history -->

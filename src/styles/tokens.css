@@ -31,7 +31,7 @@
   /* ── Text Alpha Ramp (white-on-dark) ───────────────────────────────── */
   --text-primary:   rgba(255, 255, 255, 0.88);
   --text-secondary: rgba(255, 255, 255, 0.55);
-  --text-muted:     rgba(255, 255, 255, 0.60);  /* banner body copy */
+  --text-muted: var(--text-secondary);  /* semantic alias — banner body copy that steps back */
   --text-tertiary:  rgba(255, 255, 255, 0.38);
   --text-ghost:     rgba(255, 255, 255, 0.22);
   --text-disabled:  rgba(255, 255, 255, 0.12);
@@ -222,6 +222,7 @@
   --border-focus:             rgba(245, 166, 35, 0.60);
   --border-interactive:       rgba(255, 255, 255, 0.12);
   --border-interactive-hover: rgba(255, 255, 255, 0.22);
+  --border-active: rgba(245, 166, 35, 0.35);  /* pressed — between hover and focus */
 
   /* ── Layout Container Tokens (Tanya §8 — Addition 2) ───────────────── */
   /* Single source of truth for column widths — never hardcode these.    */

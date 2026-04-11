@@ -19,9 +19,10 @@ interface Props {
   postTitle:          string;
   anchorVerification?: AnchorVerification | null;
   tstData?:           TstData | null;
+  otsData?: { status: string; blockHeight?: number; blockTime?: number; calendarUrl?: string } | null;
 }
 
-const { seal, postTitle, anchorVerification = null, tstData = null } = Astro.props;
+const { seal, postTitle, anchorVerification = null, tstData = null, otsData = null } = Astro.props;
 const tstVerification = tstData ? await verifyToken(tstData.tst_token) : null;
 
 const ANCHOR_BADGE: Record<string, { label: string; cls: string }> = {
@@ -107,6 +108,25 @@ function fmtDate(ts: number): string {
             <code class="receipt-tst-token" title="Base64 TimeStampToken — copy for offline verification">
               {tstData.tst_token.slice(0, 32)}…
             </code>
+          </div>
+        </div>
+      )}
+
+      <!-- OTS Bitcoin anchor row -->
+      {otsData && otsData.status !== 'none' && (
+        <div class="receipt-row">
+          <span class="receipt-label">Bitcoin anchor</span>
+          <div class="receipt-anchor-cell">
+            {otsData.status === 'confirmed' && otsData.blockHeight ? (
+              <span class="receipt-ots-confirmed">
+                &#8383; Anchored in block #{otsData.blockHeight}
+                {otsData.blockTime ? ` · ${new Date(otsData.blockTime * 1000).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC` : ''}
+              </span>
+            ) : otsData.status === 'pending' ? (
+              <span class="receipt-anchor-pending">&#8987; Pending Bitcoin confirmation (~60 min)</span>
+            ) : (
+              <span class="receipt-anchor-pending">~ Verifying…</span>
+            )}
           </div>
         </div>
       )}
@@ -329,6 +349,13 @@ function fmtDate(ts: number): string {
     color:       rgba(255, 255, 255, 0.25);
     letter-spacing: 0.01em;
     word-break:  break-all;
+  }
+
+  .receipt-ots-confirmed {
+    font-size:   0.8rem;
+    color:       var(--gold);
+    font-weight: 500;
+    font-family: ui-monospace, 'Cascadia Code', monospace;
   }
 
   .verify-link {

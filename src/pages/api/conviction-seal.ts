@@ -21,8 +21,10 @@ import {
   ConvictionAlreadySealedError,
 } from '../../lib/conviction-ledger';
 import { anchorConviction }     from '../../lib/conviction-anchor';
-import { stamp, hashContent }   from '../../lib/rfc3161-client';
-import { storeTst }             from '../../lib/timestamp-store';
+import { hashContent }           from '../../lib/rfc3161-client';
+import { storeTst }              from '../../lib/timestamp-store';
+import { stampAll }              from '../../lib/timestamp-facade';
+import { updateOtsProof }        from '../../lib/conviction-ledger';
 
 export const prerender = false;
 
@@ -110,15 +112,24 @@ export const POST: APIRoute = async ({ request }) => {
       } catch { /* GitHub down or PAT invalid — anchor pending, seal still valid */ }
     }
 
-    // RFC 3161 trusted timestamp — fail-open: HMAC seal is valid without it.
+    // Dual timestamp: RFC 3161 (instant) + OTS Bitcoin anchor (~60 min) — both fail-open.
     let tstToken: string | null = null;
     try {
-      const preimage  = `${slug}:${entry.conviction_score}:${entry.timestamp}`;
-      const tst       = await stamp(hashContent(preimage));
-      storeTst(entry.hash, tst.token, tst.tsaName);
-      tstToken = tst.token;
+      const preimage    = `${slug}:${entry.conviction_score}:${entry.timestamp}`;
+      const contentHash = hashContent(preimage);
+      const composite   = await stampAll(contentHash);
+      if (composite.rfc3161) {
+        storeTst(entry.hash, composite.rfc3161.token, composite.tsaName);
+        tstToken = composite.rfc3161.token;
+      }
+      if (composite.ots) {
+        updateOtsProof(entry.hash, composite.ots.proofBytes, 'pending', composite.ots.calendarUrl);
+      }
+      if (composite.errors.length) {
+        console.warn('[conviction-seal] stamp errors (seal still valid):', composite.errors);
+      }
     } catch (tstErr) {
-      console.warn('[conviction-seal] RFC 3161 stamp failed (seal still valid):', tstErr);
+      console.warn('[conviction-seal] stampAll failed (seal still valid):', tstErr);
     }
 
     // Broadcast conviction:sealed so live-conviction-hero.ts can update open tabs.

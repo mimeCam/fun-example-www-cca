@@ -105,6 +105,13 @@ function initTable(d: Database.Database): void {
     d.exec(`ALTER TABLE conviction_ledger ADD COLUMN author_slug TEXT DEFAULT 'host'`);
     d.exec(`UPDATE conviction_ledger SET author_slug = 'host' WHERE author_slug IS NULL`);
   } catch { /* already exists */ }
+  // Migrate: OTS Bitcoin anchor columns (2026-04-11).
+  try { d.exec(`ALTER TABLE conviction_ledger ADD COLUMN ots_proof BLOB DEFAULT NULL`); }
+  catch { /* already exists */ }
+  try { d.exec(`ALTER TABLE conviction_ledger ADD COLUMN ots_status TEXT DEFAULT 'none'`); }
+  catch { /* already exists */ }
+  try { d.exec(`ALTER TABLE conviction_ledger ADD COLUMN ots_calendar_url TEXT DEFAULT NULL`); }
+  catch { /* already exists */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -317,4 +324,44 @@ export function getVerdictEventsForSlugs(slugs: string[]): { post_slug: string; 
   return db()
     .prepare(`SELECT post_slug, payload_json FROM conviction_ledger WHERE event_type = 'verdict' AND post_slug IN (${placeholders}) ORDER BY id ASC`)
     .all(...slugs) as { post_slug: string; payload_json: string | null }[];
+}
+
+// ---------------------------------------------------------------------------
+// OTS Bitcoin anchor read/write — OpenTimestamps proof storage
+// ---------------------------------------------------------------------------
+
+/** Persist OTS proof bytes and status on the conviction seal row (by chain hash). */
+export function updateOtsProof(
+  hash: string,
+  proofBytes: Buffer,
+  status: 'pending' | 'confirmed',
+  calendarUrl?: string,
+): void {
+  db().prepare(`
+    UPDATE conviction_ledger
+    SET ots_proof = ?, ots_status = ?, ots_calendar_url = COALESCE(?, ots_calendar_url)
+    WHERE hash = ?
+  `).run(proofBytes, status, calendarUrl ?? null, hash);
+}
+
+/** Return OTS proof data for the seal row of a slug, or null if no proof exists. */
+export function getOtsProof(slug: string): { proof: Buffer; status: string; calendarUrl: string | null } | null {
+  const row = db().prepare(
+    "SELECT ots_proof, ots_status, ots_calendar_url FROM conviction_ledger " +
+    "WHERE post_slug = ? AND event_type = 'seal' LIMIT 1",
+  ).get(slug) as { ots_proof: Buffer | null; ots_status: string; ots_calendar_url: string | null } | undefined;
+  if (!row?.ots_proof || row.ots_status === 'none') return null;
+  return { proof: row.ots_proof, status: row.ots_status, calendarUrl: row.ots_calendar_url };
+}
+
+/** Return all seal rows with ots_status='pending', for the cron upgrade job. */
+export function getPendingOtsSeals(limit = 20): Array<{
+  hash: string; post_slug: string; conviction_score: number;
+  timestamp: number; ots_proof: Buffer; ots_calendar_url: string;
+}> {
+  return db().prepare(
+    "SELECT hash, post_slug, conviction_score, timestamp, ots_proof, ots_calendar_url " +
+    "FROM conviction_ledger WHERE event_type = 'seal' AND ots_status = 'pending' " +
+    "AND ots_proof IS NOT NULL AND ots_calendar_url IS NOT NULL LIMIT ?",
+  ).all(limit) as any[];
 }

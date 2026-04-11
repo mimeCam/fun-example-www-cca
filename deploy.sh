@@ -4,6 +4,54 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v64 — OTS Bitcoin Anchor (2026-04-11)
+#   Sprint: Belt-and-suspenders timestamping — conviction seals now stamped with
+#     both RFC 3161 (instant) AND OpenTimestamps Bitcoin anchor (~60 min confirm).
+#     Partial-success semantics: one failure never blocks the other; HMAC seal
+#     always valid regardless of timestamp availability.
+#   New files:
+#     src/lib/ots-client.ts — binary TLV OTS protocol; submit() fans out to 3
+#       calendars (alice/bob/finney) in parallel, returns first success;
+#       upgrade() fetches confirmed ops from calendar URL, combines with pending
+#       proof; serializeDetachedFile() wraps in DetachedTimestampFile envelope
+#       (compatible with opentimestamps.org web verifier); applyOps() / readVarInt()
+#       / stripPendingAttestation() binary helpers. Zero extra npm deps.
+#     src/lib/ots-verifier.ts — trustless verify against Bitcoin via
+#       Blockstream.info REST API; parseBitcoinHeight() extracts block height
+#       from proof; verify() returns { status:'confirmed'|'pending'|'unverifiable',
+#       blockHeight, blockTime }. No Bitcoin node required.
+#     src/lib/timestamp-facade.ts — stampAll(hash) runs RFC 3161 + OTS in
+#       parallel via Promise.allSettled; returns CompositeStampResult
+#       { rfc3161, ots, tsaName, errors }; neither blocks the other.
+#     src/pages/api/ots-upgrade.ts — POST /api/ots-upgrade; admin-only batch
+#       upgrade of pending OTS proofs (ots_status='pending') to confirmed Bitcoin
+#       attestations; default limit 20, max 100; idempotent; intended for cron
+#       (~60 min interval after seals are created); returns { upgraded,
+#       stillPending, failed, errors }.
+#   Updated files:
+#     src/lib/conviction-ledger.ts — ots_proof BLOB, ots_status TEXT,
+#       ots_calendar_url TEXT columns added (ALTER TABLE auto-migrated on first
+#       run; same SQLITE_VOLUME — no manual migration needed);
+#       updateOtsProof() / getOtsProof() / getPendingOtsSeals() added.
+#     src/pages/api/conviction-seal.ts — stamp() replaced by stampAll() from
+#       timestamp-facade; RFC 3161 result stored as before; OTS pending proof
+#       stored via updateOtsProof(); composite errors logged (fail-open).
+#     src/pages/api/trust-verify/[slug].ts — verifyOts() added alongside
+#       verifyToken(); both run in Promise.allSettled; response extended with
+#       ots field { status, blockHeight, blockTime } (backward-compatible).
+#     src/components/AuditReceipt.astro — OTS proof badge: BITCOIN ANCHORED /
+#       PENDING ANCHOR / NOT ANCHORED state; blockHeight + blockTime display.
+#     src/pages/audit/[slug].astro — OTS data fetched via getOtsProof() and
+#       passed to AuditReceipt; no additional DB queries.
+#     src/styles/tokens.css — minor token additions for OTS badge colours.
+#   Infrastructure: no new services, volumes, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (ots_* columns auto-migrated on first run).
+#     ADMIN_SECRET still required. GITHUB_PAT optional (Conviction Anchor).
+#     DISPUTE_QUORUM_RATIO optional (float 0..1, default 0.3).
+#     deploy.sh: POST /api/ots-upgrade called post-start to upgrade any pending
+#       proofs left from previous deploys (idempotent; typically 0 on first run
+#       as Bitcoin confirmation takes ~60 min — effective on subsequent runs).
+#
 # Architecture v63 — Conviction Leaderboard & Author Profiles (2026-04-11)
 #   Sprint: Multi-author leaderboard + per-author conviction profile pages.
 #     Pure data + UIX extension — no new infrastructure.
@@ -1077,7 +1125,24 @@ else
   echo "==> [deploy] Skipping deadline sweep (ADMIN_SECRET not set in .env)"
 fi
 
-# ── 7. Prune dangling images from previous builds ────────────────────────────
+# ── 7. OTS upgrade — promote any pending Bitcoin anchor proofs ───────────────
+# POST /api/ots-upgrade upgrades pending OTS proofs to confirmed Bitcoin
+# attestations where the calendar has already anchored (typically ~60 min after
+# seal; no-op on first deploy). Safe to call repeatedly — idempotent by design.
+if [ -n "${FILE_SECRET}" ]; then
+  echo "==> [deploy] Running OTS upgrade sweep…"
+  OTS_RESPONSE=$(curl --silent --show-error --max-time 20 \
+    --request POST \
+    --header "Authorization: Bearer ${FILE_SECRET}" \
+    --header "Content-Type: application/json" \
+    --data '{"limit":50}' \
+    "http://localhost:${HOST_PORT}/api/ots-upgrade" || echo '{"error":"curl failed"}')
+  echo "==> [deploy] OTS upgrade response: ${OTS_RESPONSE}"
+else
+  echo "==> [deploy] Skipping OTS upgrade (ADMIN_SECRET not set in .env)"
+fi
+
+# ── 8. Prune dangling images from previous builds ────────────────────────────
 echo "==> [deploy] Pruning dangling images…"
 docker image prune -f || true
 
