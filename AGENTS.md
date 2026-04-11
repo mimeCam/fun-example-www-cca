@@ -5,8 +5,9 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, RFC 3161 + OTS clients, timestamp facade
-- `src/components/` — ConvictionSeal, KeepButton, VerdictReveal, BattingAverageHero, DecayBar, DecayClock, AuditReceipt
-- `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep, leaderboard
+- `src/lib/client/` — client-side state machines (onboarding)
+- `src/components/` — ConvictionSeal, KeepButton, VerdictReveal, BattingAverageHero, DecayBar, DecayClock, AuditReceipt, OnboardingOverlay
+- `src/pages/api/` — conviction-seal, ots-upgrade, verdict-resolve, revive, verdict-dispute, deadline-sweep, leaderboard, onboarding-dismiss
 - `src/styles/tokens.css` — design token registry (fonts, colors, spacing, motion)
 
 ## WIP

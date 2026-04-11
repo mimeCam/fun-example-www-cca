@@ -16,7 +16,7 @@ import { mkdirSync } from 'fs';
 // Types
 // ---------------------------------------------------------------------------
 
-export type LedgerEventType = 'seal' | 'revival' | 'death' | 'resurrection' | 'verdict';
+export type LedgerEventType = 'seal' | 'revival' | 'death' | 'resurrection' | 'verdict' | 'onboarding_dismiss';
 
 export interface LedgerEntry {
   id: number;
@@ -364,4 +364,16 @@ export function getPendingOtsSeals(limit = 20): Array<{
     "FROM conviction_ledger WHERE event_type = 'seal' AND ots_status = 'pending' " +
     "AND ots_proof IS NOT NULL AND ots_calendar_url IS NOT NULL LIMIT ?",
   ).all(limit) as any[];
+}
+
+// ---------------------------------------------------------------------------
+// Analytics events — drop-off tracking, A/B signals, onboarding telemetry
+// ---------------------------------------------------------------------------
+
+/** Append a lightweight analytics event to the ledger. Best-effort — never throws. */
+export function appendAnalytic(slug: string, eventType: LedgerEventType, payload: object): void {
+  try {
+    const { ts, prevHash, hash, payloadJson } = buildChainParams(slug, eventType, null, payload);
+    runInsert(slug, eventType, null, null, 0, 0, payloadJson, ts, prevHash, hash, null, 'system');
+  } catch { /* analytics is best-effort — never break caller */ }
 }

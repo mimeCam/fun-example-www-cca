@@ -13,6 +13,7 @@ import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import SiteNav from '../components/SiteNav.astro';
+import OnboardingOverlay from '../components/OnboardingOverlay.astro';
 // Design system: tokens → motion → feature CSS layers
 import '../styles/global.css';
 import '../styles/decay.css';
@@ -43,6 +44,13 @@ interface Props {
 
 const { title, description, type, publishedAt, ogSlug, jsonLd } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
+
+// Onboarding overlay gate — SSR cookie check.
+// SSR pages: zero HTML emitted for return visitors (cookie set).
+// Prerendered pages: overlay always rendered; onboarding.ts JS handles dismiss via localStorage.
+const onboardingSeen = Astro.cookies.has('onboarding_seen');
+const onboardingForced = Astro.url.searchParams.get('onboarding') === '1';
+const showOnboarding = onboardingForced || !onboardingSeen;
 ---
 
 <!doctype html>
@@ -106,6 +114,7 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
   </head>
   <body>
     <SiteNav />
+    {showOnboarding && <OnboardingOverlay />}
     <slot />
     <footer class="site-footer">
       <a href="/author" class="site-footer__write">✍ write for this blog →</a>

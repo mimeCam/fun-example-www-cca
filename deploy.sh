@@ -4,6 +4,46 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v65 — First-Visit Onboarding Overlay (2026-04-11)
+#   Sprint: 3-step full-screen onboarding overlay for first-time visitors;
+#     explains the post lifecycle (decay → conviction seal → verdict tracking).
+#     Pure UIX/frontend feature — no infrastructure changes.
+#   New files:
+#     src/components/OnboardingOverlay.astro — fixed-position overlay dialog;
+#       3 steps (Posts decay / Authors seal bets / Truth is tracked); CSS state
+#       machine driven by [data-step="1|2|3"] on overlay root; entrance
+#       (ov-enter spring) and exit (ov-exit fade) animations; mobile bottom-sheet
+#       layout (≤480px); reduced-motion guard; Escape/arrow-key/swipe navigation.
+#     src/components/ConvictionDemo.astro — hardcoded ghost post cycling through
+#       lifecycle states; pure presentational, zero lib imports, zero DB calls;
+#       step visibility via :global([data-step]) CSS selectors; avoids 3× HTML
+#       duplication. Values frozen: decay=0.42, conviction=8/10, avg=73%.
+#     src/lib/client/onboarding.ts — client-side state machine; localStorage
+#       ov_seen + SSR cookie gate (return visitors skip overlay without a round-
+#       trip); shouldShow() checks both gates + ?onboarding=1 URL override;
+#       dismiss() fires POST /api/onboarding-dismiss (best-effort analytics) then
+#       exits overlay with CSS exit animation; keyboard (Escape/←/→) + swipe
+#       (±50 px threshold) + dot navigation wired at requestIdleCallback idle.
+#     src/pages/api/onboarding-dismiss.ts — POST /api/onboarding-dismiss;
+#       sets onboarding_seen cookie (1yr, SameSite=Lax) for SSR gate;
+#       records drop-off step via appendAnalytic() in conviction_ledger
+#       (event_type='onboarding_dismiss', slug='__onboarding__'); always 200;
+#       analytics is best-effort (never throws). prerender=false.
+#   Updated files:
+#     src/layouts/BaseLayout.astro — imports OnboardingOverlay; SSR cookie check
+#       (Astro.cookies.has('onboarding_seen')); ?onboarding=1 URL override;
+#       <OnboardingOverlay> rendered after <SiteNav> when showOnboarding=true;
+#       zero HTML emitted for return visitors on SSR pages.
+#     src/lib/conviction-ledger.ts — 'onboarding_dismiss' added to
+#       LedgerEventType union; appendAnalytic(slug, eventType, payload) helper
+#       added — best-effort ledger write for analytics events; never throws.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (onboarding_dismiss events written to
+#       existing conviction_ledger table — no schema changes needed).
+#     ADMIN_SECRET still required. GITHUB_PAT optional (Conviction Anchor).
+#     DISPUTE_QUORUM_RATIO optional (float 0..1, default 0.3).
+#     deploy.sh: no changes to startup sequence or post-start hooks.
+#
 # Architecture v64 — OTS Bitcoin Anchor (2026-04-11)
 #   Sprint: Belt-and-suspenders timestamping — conviction seals now stamped with
 #     both RFC 3161 (instant) AND OpenTimestamps Bitcoin anchor (~60 min confirm).
