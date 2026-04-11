@@ -3,7 +3,7 @@
 // /now is a first-class page (Tanya §3 — sitemap revision).
 
 /** Canonical page IDs for the sitemap. */
-export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'verdict' | 'track-record' | 'predictions' | 'audit' | 'map' | 'author' | 'community' | 'unknown';
+export type PageId = 'home' | 'blog' | 'graveyard' | 'now' | 'verdict' | 'track-record' | 'leaderboard' | 'predictions' | 'audit' | 'map' | 'author' | 'community' | 'unknown';
 
 const PAGE_PREFIXES: [string, PageId][] = [
   ['/blog',         'blog'],
@@ -11,6 +11,7 @@ const PAGE_PREFIXES: [string, PageId][] = [
   ['/now',          'now'],
   ['/verdict',      'verdict'],
   ['/track-record', 'track-record'],
+  ['/leaderboard',  'leaderboard'],
   ['/predictions',  'predictions'],
   ['/audit',        'audit'],
   ['/map',          'map'],

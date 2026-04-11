@@ -31,6 +31,7 @@ export interface LedgerEntry {
   prev_hash: string;
   hash: string;
   hmac_seal: string | null;
+  author_slug: string;
 }
 
 export class ConvictionAlreadySealedError extends Error {
@@ -98,6 +99,12 @@ function initTable(d: Database.Database): void {
   try {
     d.exec(`ALTER TABLE conviction_ledger ADD COLUMN anchor_raw_url TEXT DEFAULT NULL`);
   } catch { /* already exists */ }
+  // Migrate: author_slug for multi-author leaderboard (2026-04-11).
+  // Nullable with default 'host' — all existing seals belong to the host author.
+  try {
+    d.exec(`ALTER TABLE conviction_ledger ADD COLUMN author_slug TEXT DEFAULT 'host'`);
+    d.exec(`UPDATE conviction_ledger SET author_slug = 'host' WHERE author_slug IS NULL`);
+  } catch { /* already exists */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -158,14 +165,15 @@ function runInsert(
   prevHash: string,
   hash: string,
   hmac: string | null,
+  authorSlug = 'host',
 ): void {
   db().prepare(`
     INSERT INTO conviction_ledger
       (post_slug, event_type, conviction_score, author_note, revival_count,
-       reader_seconds, payload_json, timestamp, prev_hash, hash, hmac_seal)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       reader_seconds, payload_json, timestamp, prev_hash, hash, hmac_seal, author_slug)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(slug, eventType, score, authorNote, revivalCount, readerSeconds,
-         payloadJson, ts, prevHash, hash, hmac);
+         payloadJson, ts, prevHash, hash, hmac, authorSlug);
 }
 
 function insertEvent(
@@ -177,9 +185,10 @@ function insertEvent(
   readerSeconds: number,
   payload: object | null,
   hmac: string | null = null,
+  authorSlug = 'host',
 ): LedgerEntry {
   const { ts, prevHash, hash, payloadJson } = buildChainParams(slug, eventType, score, payload);
-  runInsert(slug, eventType, score, authorNote, revivalCount, readerSeconds, payloadJson, ts, prevHash, hash, hmac);
+  runInsert(slug, eventType, score, authorNote, revivalCount, readerSeconds, payloadJson, ts, prevHash, hash, hmac, authorSlug);
   return db().prepare('SELECT * FROM conviction_ledger WHERE hash = ?').get(hash) as LedgerEntry;
 }
 
@@ -192,7 +201,7 @@ function insertEvent(
  * Idempotent-guarded: throws ConvictionAlreadySealedError if already sealed.
  * Attaches HMAC proof using ADMIN_SECRET (server-side only — never in HTML).
  */
-export function sealConviction(slug: string, score: number, authorNote: string): LedgerEntry {
+export function sealConviction(slug: string, score: number, authorNote: string, authorSlug = 'host'): LedgerEntry {
   const existing = db()
     .prepare("SELECT id FROM conviction_ledger WHERE post_slug = ? AND event_type = 'seal'")
     .get(slug);
@@ -204,7 +213,7 @@ export function sealConviction(slug: string, score: number, authorNote: string):
   // Use a fixed timestamp so HMAC and chain hash share the same ts.
   const prevHash = prevHashForSlug(slug);
   const hash = computeHash(slug, 'seal', score, ts, prevHash);
-  runInsert(slug, 'seal', score, authorNote, 0, 0, null, ts, prevHash, hash, hmac);
+  runInsert(slug, 'seal', score, authorNote, 0, 0, null, ts, prevHash, hash, hmac, authorSlug);
   return db().prepare('SELECT * FROM conviction_ledger WHERE hash = ?').get(hash) as LedgerEntry;
 }
 
@@ -280,4 +289,32 @@ export function getAnchorData(slug: string): { gistId: string; url: string; rawU
 /** Convenience read: returns just the Gist ID for verdict append calls. */
 export function getAnchorGistId(slug: string): string | null {
   return getAnchorData(slug)?.gistId ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Leaderboard reads — multi-author aggregation support
+// ---------------------------------------------------------------------------
+
+/** Returns all distinct author slugs that have at least one sealed conviction. */
+export function getAllAuthorSlugs(): string[] {
+  const rows = db()
+    .prepare("SELECT DISTINCT author_slug FROM conviction_ledger WHERE event_type = 'seal'")
+    .all() as { author_slug: string }[];
+  return rows.map(r => r.author_slug);
+}
+
+/** Returns seal rows for a specific author (post_slug + timestamp). */
+export function getSealsByAuthor(authorSlug: string): { post_slug: string; timestamp: number }[] {
+  return db()
+    .prepare("SELECT post_slug, timestamp FROM conviction_ledger WHERE event_type = 'seal' AND author_slug = ? ORDER BY timestamp ASC")
+    .all(authorSlug) as { post_slug: string; timestamp: number }[];
+}
+
+/** Returns verdict events for a given set of post slugs (for leaderboard per-author tally). */
+export function getVerdictEventsForSlugs(slugs: string[]): { post_slug: string; payload_json: string | null }[] {
+  if (!slugs.length) return [];
+  const placeholders = slugs.map(() => '?').join(', ');
+  return db()
+    .prepare(`SELECT post_slug, payload_json FROM conviction_ledger WHERE event_type = 'verdict' AND post_slug IN (${placeholders}) ORDER BY id ASC`)
+    .all(...slugs) as { post_slug: string; payload_json: string | null }[];
 }

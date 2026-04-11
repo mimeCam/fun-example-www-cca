@@ -1,0 +1,73 @@
+---
+// src/pages/leaderboard.astro
+// Public leaderboard — conviction accuracy ranked across all authors.
+// SSR: live ledger data, never cached at build time.
+// Cold state: interesting, not apologetic — explains what populates the board.
+//
+// Credits: Mike (arch spec §leaderboard page), Tanya (UX §10 — transparency board)
+
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LeaderboardCard from '../components/LeaderboardCard.astro';
+import { getLeaderboard } from '../lib/leaderboard';
+
+const board = getLeaderboard();
+const hasEntries = board.length > 0;
+
+const pageTitle = hasEntries
+  ? `Conviction Leaderboard — ${board.length} author${board.length === 1 ? '' : 's'} ranked`
+  : 'Conviction Leaderboard';
+const pageDesc = 'Every author ranked by conviction accuracy. The score only exists when it\'s been tested.';
+---
+
+<BaseLayout title={pageTitle} description={pageDesc}>
+  <main class="lb-page">
+
+    <header class="lb-header">
+      <h1 class="lb-title">Leaderboard</h1>
+      <p class="lb-subtitle">
+        Authors ranked by conviction accuracy — correct predictions divided by resolved bets.
+        The score only means something because it can't be faked.
+      </p>
+    </header>
+
+    {hasEntries ? (
+      <ol class="lb-list" aria-label="Author conviction leaderboard">
+        {board.map(author => (
+          <li>
+            <LeaderboardCard author={author} />
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <div class="lb-cold">
+        <span class="lb-cold-dash" aria-hidden="true">—</span>
+        <span class="lb-cold-label">no verdicts resolved yet</span>
+        <p class="lb-cold-note">
+          The leaderboard populates after the first sealed conviction reaches a verdict.
+          That's the point — the score only exists when it's been tested.
+        </p>
+        <a href="/track-record" class="lb-cold-link">How this works →</a>
+      </div>
+    )}
+
+  </main>
+</BaseLayout>
+
+<style>
+  @import '../styles/leaderboard.css';
+
+  /* Cold state link — inline text, no button theatrics */
+  .lb-cold-link {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .lb-cold-link:hover {
+    color: var(--text-primary);
+    border-bottom-color: rgba(255,255,255,0.35);
+  }
+</style>

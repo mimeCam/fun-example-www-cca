@@ -1,0 +1,89 @@
+---
+// src/pages/author/[slug].astro
+// Per-author conviction profile — their track record, scored.
+// Scoped to a single author_slug from the leaderboard.
+// Empty state when author has no sealed convictions yet.
+//
+// Credits: Mike (arch spec §author profile page), Tanya (UX §10)
+
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TrackRecord from '../../components/TrackRecord.astro';
+import { getAuthorStats } from '../../lib/leaderboard';
+import { getSealsByAuthor } from '../../lib/conviction-ledger';
+import { buildTrackRecord } from '../../lib/track-record';
+import { getCollection } from 'astro:content';
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/leaderboard');
+
+const stats = getAuthorStats(slug);
+
+// Build author-scoped track record: filter posts to those sealed by this author.
+const allPosts   = await getCollection('blog');
+const sealedByAuthor = getSealsByAuthor(slug).map(s => s.post_slug);
+const authorPosts = allPosts.filter(p => sealedByAuthor.includes(p.slug));
+const trackData  = buildTrackRecord(authorPosts);
+
+// Override avg with the author-specific one (buildTrackRecord computes sitewide avg).
+const displayAvg = stats?.avg ?? { status: 'cold' as const, total: 0 };
+const data       = { ...trackData, avg: displayAvg };
+
+const initial  = slug.charAt(0).toUpperCase();
+
+function fmtDate(ts: number | null | undefined): string {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+const pageTitle = stats
+  ? `${slug} — ${stats.avg.status === 'live' ? stats.avg.pct + '% accuracy' : 'no verdicts yet'}`
+  : `${slug} — Author Profile`;
+---
+
+<BaseLayout title={pageTitle} description={`Conviction track record for ${slug}.`}>
+  <main class="ap-page">
+
+    <a href="/leaderboard" class="ap-back">← Leaderboard</a>
+
+    <!-- Author header -->
+    <header class="ap-header">
+      <div class="ap-avatar-lg" aria-hidden="true">{initial}</div>
+      <div class="ap-identity">
+        <h1 class="ap-slug">{slug}</h1>
+        {stats?.firstSeal && (
+          <span class="ap-since">on record since {fmtDate(stats.firstSeal)}</span>
+        )}
+      </div>
+    </header>
+
+    {stats?.avg.status === 'live' ? (
+      <!-- Stats panel -->
+      <div class="ap-stats" role="group" aria-label="Conviction accuracy summary">
+        <div class="ap-stat">
+          <span class="ap-stat-value">{stats.avg.pct}%</span>
+          <span class="ap-stat-label">accuracy</span>
+        </div>
+        <div class="ap-stat">
+          <span class="ap-stat-value ap-stat-value--correct">{stats.avg.correct}</span>
+          <span class="ap-stat-label">correct</span>
+        </div>
+        <div class="ap-stat">
+          <span class="ap-stat-value ap-stat-value--wrong">{stats.avg.wrong}</span>
+          <span class="ap-stat-label">wrong</span>
+        </div>
+      </div>
+    ) : (
+      <div class="ap-empty">This author hasn't staked a claim yet.</div>
+    )}
+
+    <!-- Conviction ledger (reuses existing TrackRecord component) -->
+    {data.entries.length > 0 && <TrackRecord data={data} />}
+
+  </main>
+</BaseLayout>
+
+<style>
+  @import '../../styles/leaderboard.css';
+</style>

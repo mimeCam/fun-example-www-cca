@@ -4,6 +4,55 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v63 — Conviction Leaderboard & Author Profiles (2026-04-11)
+#   Sprint: Multi-author leaderboard + per-author conviction profile pages.
+#     Pure data + UIX extension — no new infrastructure.
+#   New files:
+#     src/lib/leaderboard.ts — per-author batting average aggregation; reuses
+#       tallyVerdicts() / toPercent() from batting-average.ts; AuthorStats type
+#       (slug, avg, firstSeal, rank, isActive); getLeaderboard() ranks all authors
+#       with ≥1 seal by pct DESC → total DESC → firstSeal ASC; getAuthorStats()
+#       returns a single author's stats or null.
+#     src/pages/leaderboard.astro — SSR public leaderboard at /leaderboard;
+#       ranked LeaderboardCard list; cold state ("no verdicts resolved yet") when
+#       board is empty; prerender=false.
+#     src/components/LeaderboardCard.astro — single ranked author row; rank badge
+#       (gold/silver/bronze/rest); avatar initial; slug link to /author/[slug];
+#       pct score; W/L/P record; isActive dot; links to author profile page.
+#     src/pages/author/[slug].astro — per-author conviction profile at
+#       /author/[slug]; author-scoped TrackRecord (filters posts to seals by this
+#       author); displayAvg from getAuthorStats(); avatar + firstSeal date header;
+#       404-redirect to /leaderboard for unknown authors; prerender=false.
+#     src/pages/api/leaderboard.ts — GET /api/leaderboard → full ranked list
+#       (AuthorStats[]); GET /api/leaderboard?author=X → single author stats (404
+#       if not found); public read, no auth; Content-Type: application/json.
+#     src/styles/leaderboard.css — design-token-compliant stylesheet for
+#       leaderboard page + LeaderboardCard + author profile page; zero hardcoded
+#       colours; rank badge colour tokens lb-rank--gold/silver/bronze/rest;
+#       isActive indicator dot; responsive grid.
+#   Updated files:
+#     src/lib/batting-average.ts — tallyVerdicts() + toPercent() exported
+#       (previously private); Counts + VerdictEventRow interfaces exported; allows
+#       leaderboard.ts to reuse the single verdict-tally algorithm without
+#       duplicating logic.
+#     src/lib/conviction-ledger.ts — author_slug column added to conviction_ledger
+#       (ALTER TABLE auto-migrated; nullable DEFAULT 'host' — all existing seals
+#       get author_slug = 'host' on first run); runInsert() + insertEvent() +
+#       sealConviction() accept optional authorSlug='host'; getAllAuthorSlugs() +
+#       getSealsByAuthor() + getVerdictEventsForSlugs() added for leaderboard reads.
+#     src/lib/nav.ts — 'leaderboard' added to PageId union + PAGE_PREFIXES mapping.
+#     src/components/SiteNav.astro — /leaderboard nav link added after verdict
+#       (nav-link--overflow so it collapses on narrow viewports).
+#     src/pages/api/conviction-seal.ts — optional author_slug field accepted in
+#       POST body; SLUG_RE validation (lowercase alphanumeric + hyphens, 2–32
+#       chars); defaults to 'host' when omitted; backward-compatible.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     conviction_ledger gets author_slug column auto-migrated on first run
+#     (same SQLITE_VOLUME — no manual migration needed).
+#     ADMIN_SECRET still required. GITHUB_PAT optional (Conviction Anchor).
+#     DISPUTE_QUORUM_RATIO optional (float 0..1, default 0.3).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v62 — Conviction Seal Unification (2026-04-11)
 #   Sprint: ConvictionSeal unified component — replaces AdminSealForm +
 #     ConvictionHero + ConvictionDeclaration with a single context-aware

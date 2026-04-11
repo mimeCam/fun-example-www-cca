@@ -40,9 +40,9 @@ export type PredictionAccuracy =
   | { status: 'cold' }
   | { status: 'live'; total: number; correct: number; incorrect: number; partial: number; pending: number; overdue: number; accuracy: number };
 
-interface SealRow        { post_slug: string }
-interface VerdictEventRow { post_slug: string; payload_json: string | null }
-interface Counts          { correct: number; wrong: number; evolved: number; pending: number }
+interface SealRow                  { post_slug: string }
+export interface VerdictEventRow  { post_slug: string; payload_json: string | null }
+export interface Counts           { correct: number; wrong: number; evolved: number; pending: number }
 type VerdictTally = 'correct' | 'wrong' | 'neutral';
 
 // ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ function isContested(slug: string): boolean {
   try { return getDisputeState(slug).status === 'contested'; } catch { return false; }
 }
 
-function tallyVerdicts(verdictEvents: VerdictEventRow[], totalSealed: number): Counts {
+export function tallyVerdicts(verdictEvents: VerdictEventRow[], totalSealed: number): Counts {
   const c: Counts = { correct: 0, wrong: 0, evolved: 0, pending: 0 };
   const resolvedSlugs = new Set<string>();
   for (const v of verdictEvents) {
@@ -114,7 +114,7 @@ function tallyVerdicts(verdictEvents: VerdictEventRow[], totalSealed: number): C
 }
 
 /** evolved counts as 0.5 wrong in denominator (prevents author self-grading via "evolved" loophole). */
-function toPercent(correct: number, wrong: number, evolved: number): number {
+export function toPercent(correct: number, wrong: number, evolved: number): number {
   const denom = correct + wrong + evolved * 0.5;
   return denom > 0 ? Math.round((correct / denom) * 100) : 0;
 }

@@ -1,0 +1,62 @@
+---
+// src/components/LeaderboardCard.astro
+// Single ranked author card for the leaderboard.
+// Design: transparency board — names + numbers, ranked by accuracy. No trophies.
+// Credits: Tanya (UX §10 — no gamification), Mike (arch spec §LeaderboardCard)
+
+import type { AuthorStats } from '../lib/leaderboard';
+
+interface Props {
+  author: AuthorStats;
+}
+
+const { author } = Astro.props;
+const { slug, avg, firstSeal, rank, isActive } = author;
+
+const initial = slug.charAt(0).toUpperCase();
+
+function rankClass(r: number): string {
+  if (r === 1) return 'lb-rank--gold';
+  if (r === 2) return 'lb-rank--silver';
+  if (r === 3) return 'lb-rank--bronze';
+  return 'lb-rank--rest';
+}
+
+function fmtDate(ts: number | null): string {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
+function recordLabel(a: typeof avg): string {
+  if (a.status !== 'live') return '—';
+  return `${a.correct}W ${a.wrong}L ${a.pending}P`;
+}
+---
+
+<a href={`/author/${slug}`} class:list={['lb-card', isActive ? 'lb-card--active' : 'lb-card--aged']}>
+
+  <!-- Rank -->
+  <span class:list={['lb-rank', rankClass(rank)]} aria-label={`Rank ${rank}`}>
+    #{rank}
+  </span>
+
+  <!-- Author info -->
+  <div class="lb-author">
+    <div class="lb-author-row">
+      <div class="lb-avatar" aria-hidden="true">{initial}</div>
+      <span class="lb-slug">{slug}</span>
+    </div>
+    <span class="lb-meta">On record since {fmtDate(firstSeal)}</span>
+  </div>
+
+  <!-- Stats: pct + record -->
+  <div class="lb-stats">
+    {avg.status === 'live' ? (
+      <span class="lb-pct">{avg.pct}%</span>
+    ) : (
+      <span class="lb-pct lb-pct--cold">—</span>
+    )}
+    <span class="lb-record">{recordLabel(avg)}</span>
+  </div>
+
+</a>

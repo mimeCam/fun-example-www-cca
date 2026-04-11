@@ -54,6 +54,12 @@ function json(data: unknown, status = 200): Response {
 function badRequest(msg: string): Response { return json({ error: msg }, 400); }
 function forbidden(): Response { return json({ error: 'Forbidden' }, 403); }
 
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$/;
+
+function validAuthorSlug(s: unknown): s is string {
+  return typeof s === 'string' && SLUG_RE.test(s);
+}
+
 /** Check cookie-based auth (admin web UI). */
 function cookieAuthed(request: Request): boolean {
   const secret = adminSecret();
@@ -73,7 +79,7 @@ export const POST: APIRoute = async ({ request }) => {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return badRequest('Invalid JSON');
 
-  const { slug, score, authorNote, adminSecret: bodySecret } = body;
+  const { slug, score, authorNote, adminSecret: bodySecret, author_slug: rawAuthorSlug } = body;
 
   if (!cookieAuthed(request) && !bodyAuthed(bodySecret)) return forbidden();
   if (!slug || typeof slug !== 'string') return badRequest('Missing slug');
@@ -81,10 +87,15 @@ export const POST: APIRoute = async ({ request }) => {
   if (!authorNote || typeof authorNote !== 'string' || !authorNote.trim()) {
     return badRequest('authorNote is required');
   }
+  // author_slug is optional; if provided it must be slug-safe (prevents injection).
+  if (rawAuthorSlug !== undefined && !validAuthorSlug(rawAuthorSlug)) {
+    return badRequest('author_slug must be lowercase alphanumeric with hyphens, 2–32 chars');
+  }
+  const authorSlug = (rawAuthorSlug as string | undefined) ?? 'host';
   if (!(await slugExists(slug))) return badRequest('Unknown slug');
 
   try {
-    const entry = sealConviction(slug, score, authorNote.trim());
+    const entry = sealConviction(slug, score, authorNote.trim(), authorSlug);
 
     // Anchor to GitHub Gist — fail-open: local seal is the source of truth.
     let anchorUrl: string | null = null;
@@ -117,6 +128,7 @@ export const POST: APIRoute = async ({ request }) => {
       sealedAt:        entry.timestamp,
       score:           entry.conviction_score,
       authorNote:      entry.author_note,
+      authorSlug:      entry.author_slug,
       anchorUrl,
       tst_token:       tstToken,
       ceremony_phase:  4,  // client uses this to advance to receipt phase
