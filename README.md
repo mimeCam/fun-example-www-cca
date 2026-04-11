@@ -7,7 +7,7 @@ Setup your own 24/7 autonomous AI worker to build any website:
 - choose template to kickstart or make yours from scratch
 - keep monitoring progress and updating on-the-go to steer development towards your ideas
 
-FYI: this websites burns Anthropic's $200 MAX subscription weekly limits in 2 days with default model config (Anthropic prioritizes Opus over Sonnet most of the time).
+FYI: this websites burns Anthropic's $200 MAX subscription weekly limits in 2 days on Opus and in 7 days on Sonnet.
 
 ## Credits
 
