@@ -305,6 +305,7 @@ export function decayEngineClientScript(): string {
     el.style.setProperty('--decay-opacity',Math.max(.35,1-f*.65));
     el.style.setProperty('--decay-blur',(f*1.5).toFixed(2)+'px');
     el.style.setProperty('--decay-saturation',(1-f*.4).toFixed(2));
+    el.style.setProperty('--decay-sepia',(f*.15).toFixed(3));  /* Tanya §4.5 */
     el.style.setProperty('--decay-shadow-y',((1-f)*8).toFixed(1)+'px');
     el.style.setProperty('--decay-shadow-spread',((1-f)*32).toFixed(1)+'px');
     el.style.setProperty('--decay-shadow-alpha',((1-f)*.18).toFixed(3));

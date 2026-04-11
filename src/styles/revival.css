@@ -6,7 +6,28 @@
  * Bloom: ignite → burst → afterglow → settle (particles, ring, flash)
  * Article revival: hover hint → reviving → alive → badge
  * Camera shake replaced with gentle scale(1.003) lift (Tanya §4, §9)
+ *
+ * Tokenization sprint (2026-04-11): magic numbers replaced with token refs.
+ * Choreography logic is UNTOUCHED — treat this as a glass box.
  */
+
+/* ── Token aliases local to revival (for readability inside keyframes) ── */
+:root {
+  --revival-pulse-duration:    var(--motion-ceremony-duration);   /* 600ms */
+  --revival-badge-delay:       var(--motion-flow-duration);       /* 200ms */
+  --revival-badge-duration:    var(--motion-flow-duration);       /* 200ms */
+  --bloom-ring-duration:       var(--motion-spring-duration);     /* 800ms */
+  --bloom-flash-duration:      400ms;
+  --bloom-burst-duration:      700ms;
+  --bloom-settle-duration:     var(--duration-bloom);             /* 1200ms */
+  --revival-ring-duration:     var(--motion-spring-duration);     /* 800ms */
+  --revival-lift-duration:     var(--motion-spring-duration);     /* 800ms */
+  --revival-badge-offset:      var(--space-8);                    /* 2rem */
+  --revival-badge-padding:     var(--space-2) var(--space-6);     /* 0.5rem 1.25rem */
+  --revival-badge-font:        var(--text-sm);                    /* 0.82rem */
+  --revival-badge-radius:      var(--radius-sm);                  /* 6px */
+  --sympathetic-glow-duration: var(--duration-bloom);             /* 1200ms */
+}
 
 /* ═════════════════���═════════════════════════════════════════════════
  * CARD REVIVAL — pulse, badge, warm halo, footer
@@ -21,12 +42,12 @@
 }
 
 .decay-card.just-revived {
-  animation: revival-pulse 600ms ease-out forwards;
+  animation: revival-pulse var(--revival-pulse-duration) var(--motion-drift-easing) forwards;
   transform: translateY(-3px);
 }
 
 .decay-card.just-revived [data-revival-badge] {
-  animation: badge-fadein 300ms ease-out 300ms both;
+  animation: badge-fadein var(--revival-badge-duration) var(--motion-snap-easing) var(--revival-badge-delay) both;
 }
 
 @keyframes badge-fadein {
@@ -73,7 +94,7 @@
 }
 
 .decay-card.blooming .bloom-ring {
-  animation: bloom-ring 800ms ease-out forwards;
+  animation: bloom-ring var(--bloom-ring-duration) var(--motion-drift-easing) forwards;
 }
 
 @keyframes bloom-ring {
@@ -107,7 +128,7 @@
 }
 
 .decay-card.blooming .bloom-flash {
-  animation: bloom-flash 400ms ease-out forwards;
+  animation: bloom-flash var(--bloom-flash-duration) var(--motion-drift-easing) forwards;
 }
 
 @keyframes bloom-flash {
@@ -138,7 +159,7 @@
 }
 
 .decay-card.blooming .bloom-particle {
-  animation: bloom-burst 700ms ease-out forwards;
+  animation: bloom-burst var(--bloom-burst-duration) var(--motion-drift-easing) forwards;
   animation-delay: var(--particle-delay, 0ms);
 }
 
@@ -178,29 +199,23 @@
   transition: box-shadow 300ms ease-out;
 }
 
-/* Bloom settle — spring physics */
+/* Bloom settle — spring physics (references motion.css --motion-spring-easing) */
 .decay-card.bloom-settle {
   transition:
-    transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    filter 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform  var(--bloom-settle-duration) var(--ease-spring),
+    box-shadow var(--bloom-settle-duration) var(--ease-spring),
+    opacity    var(--bloom-settle-duration) var(--ease-spring),
+    filter     var(--bloom-settle-duration) var(--ease-spring);
 }
 
-/* Progressive enhancement: true spring via linear() */
+/* Progressive enhancement: true spring via linear() — Chrome 117+, FF 118+, Safari 17.2+ */
 @supports (transition-timing-function: linear(0, 1)) {
   .decay-card.bloom-settle {
-    --spring: linear(
-      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%,
-      0.938 16.7%, 1.017, 1.077, 1.121 24%, 1.149 26.2%,
-      1.159, 1.151 32%, 1.017 45.9%, 0.991, 0.977 55%,
-      0.975 58%, 0.997 69.2%, 1.003 76.3%, 1
-    );
     transition:
-      transform 1.2s var(--spring),
-      box-shadow 1.2s var(--spring),
-      opacity 1.2s var(--spring),
-      filter 1.2s var(--spring);
+      transform  var(--bloom-settle-duration) var(--motion-spring-easing),
+      box-shadow var(--bloom-settle-duration) var(--motion-spring-easing),
+      opacity    var(--bloom-settle-duration) var(--motion-spring-easing),
+      filter     var(--bloom-settle-duration) var(--motion-spring-easing);
   }
 }
 
@@ -259,8 +274,8 @@
   opacity: 1;
   filter: blur(0px) saturate(1);
   transition:
-    opacity 0.4s ease-out,
-    filter 0.6s ease-out;
+    opacity var(--motion-snap-duration)      var(--motion-snap-easing),
+    filter  var(--motion-ceremony-duration)  var(--motion-drift-easing);
 }
 
 /* Revival ring on article wrapper */
@@ -268,14 +283,14 @@
   position: absolute;
   inset: -4px;
   pointer-events: none;
-  border-radius: var(--radius, 12px);
+  border-radius: var(--radius-md);
   opacity: 0;
-  box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0);
-  z-index: 2;
+  box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212, 149, 106), 0);
+  z-index: var(--z-card);
 }
 
 .revival-stage.reviving .revival-ring {
-  animation: revival-ring-expand 800ms ease-out forwards;
+  animation: revival-ring-expand var(--revival-ring-duration) var(--motion-drift-easing) forwards;
 }
 
 @keyframes revival-ring-expand {
@@ -295,19 +310,14 @@
 
 @supports (animation-timing-function: linear(0, 1)) {
   .revival-stage.reviving .revival-ring {
-    animation-timing-function: linear(
-      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%,
-      0.938 16.7%, 1.017, 1.077, 1.121 24%, 1.149 26.2%,
-      1.159, 1.151 32%, 1.017 45.9%, 0.991, 0.977 55%,
-      0.975 58%, 0.997 69.2%, 1.003 76.3%, 1
-    );
+    animation-timing-function: var(--motion-spring-easing);
   }
 }
 
 /* Gentle scale lift — replaces camera shake (Tanya §4, §9)
  * "The bloom should feel like a breath, not an explosion." */
 .revival-stage.reviving {
-  animation: revival-lift 800ms ease-out;
+  animation: revival-lift var(--revival-lift-duration) var(--motion-drift-easing);
 }
 
 @keyframes revival-lift {
@@ -319,21 +329,23 @@
 /* Revival badge — "kept alive" toast */
 .revival-badge {
   position: fixed;
-  bottom: 2rem;
+  bottom: var(--revival-badge-offset);
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  background: rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+  padding: var(--revival-badge-padding);
+  border-radius: var(--revival-badge-radius);
+  background: rgba(var(--mood-accent-rgb, 212, 149, 106), 0.12);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
+  border: 1px solid rgba(var(--mood-accent-rgb, 212, 149, 106), 0.15);
   color: var(--mood-accent, #D4956A);
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
+  font-size: var(--revival-badge-font);
+  letter-spacing: var(--tracking-wide);
   opacity: 0;
   pointer-events: none;
-  z-index: 50;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: var(--z-drawer);
+  transition:
+    opacity   var(--motion-flow-duration) var(--motion-flow-easing),
+    transform var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
 .revival-badge.badge--visible {

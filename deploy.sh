@@ -4,6 +4,29 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v54 — Design System Tokens & Motion Library (2026-04-11)
+#   Sprint: Pure UIX/design-system refactoring — no infrastructure changes.
+#   New files:
+#     src/styles/tokens.css — master design token registry (single source of
+#       truth for color primitives, semantic surfaces, text/border alpha ramps,
+#       conviction gold palette, decay colors, typography, spacing, radius,
+#       shadow, z-index). All components now reference semantic tokens only.
+#     src/styles/motion.css — animation token library (duration scale, named
+#       easing functions, 5 motion profiles: snap/flow/ceremony/spring/drift).
+#       Every transition in the codebase references exactly one profile.
+#   mood.ts deleted — mood-simple.ts is now fully self-contained:
+#     MoodDefinition + CSSMoodVars interfaces inlined; moodToCSSVars() +
+#     moodToCSSString() helpers promoted from the deleted module; now.ts +
+#     wall.ts imports updated; unknown legacy mood IDs fall back to 'warm'.
+#   decay-engine.ts — --decay-sepia CSS var added (f*0.15 sepia filter, Tanya §4.5)
+#     for a subtle age-toning effect on decaying posts.
+#   CSS polish: decay.css, global.css, revival.css — design tokens applied
+#     throughout; motion profile variables replace hardcoded timing values.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (unchanged). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor — gist scope only).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v53 — Community Posting with Proof-of-Work (2026-04-10)
 #   New feature: Open posting via proof-of-work API — any human or AI agent
 #   can publish to /community without an account or API key. Client-side

@@ -1,19 +1,36 @@
 // src/lib/mood-simple.ts
-// FROZEN — do not import in new code.
-// Active existing import in BaseLayout.astro is intentional — do not remove.
-// No new features should depend on the mood system until post count grows.
-//
-// Simplified mood system — 3 moods only: warm, sharp, raw.
+// Canonical mood system — 3 moods: warm, sharp, raw.
+// Self-contained: no imports from the deleted mood.ts.
 // Expressed as an 8px colored dot, not pills. Decay is the star;
 // mood is background seasoning.
 //
-// Outputs the same CSSMoodVars interface the site already consumes,
-// so zero downstream changes needed.
+// Tanya §4.7: mood-simple.ts is the surviving file. mood.ts is deleted.
+// TODO: map old article moods (contemplative, etc.) → closest simple mood
 
-import type { MoodDefinition, CSSMoodVars } from './mood';
-import { moodToCSSVars, moodToCSSString } from './mood';
-
+export type Temperature = 'warm' | 'cool' | 'neutral';
 export type SimpleMoodId = 'warm' | 'sharp' | 'raw';
+
+export interface MoodDefinition {
+  label: string;
+  gradient_from: string;
+  gradient_to: string;
+  temperature: Temperature;
+  opacity: number;
+  animation_duration: string;
+  shadow_rgb: string;
+  accent: string;
+  accent_rgb: string;
+}
+
+export interface CSSMoodVars {
+  '--mood-from': string;
+  '--mood-to': string;
+  '--mood-opacity': string;
+  '--mood-speed': string;
+  '--mood-shadow-rgb': string;
+  '--mood-accent': string;
+  '--mood-accent-rgb': string;
+}
 
 const SIMPLE_MOODS: Record<SimpleMoodId, MoodDefinition> = {
   warm: {
@@ -38,7 +55,7 @@ const SIMPLE_MOODS: Record<SimpleMoodId, MoodDefinition> = {
 
 const VALID_IDS = new Set<string>(Object.keys(SIMPLE_MOODS));
 
-/** Resolve a mood ID; unknown values fall back to 'warm'. */
+/** Resolve a mood ID; unknown values (including old 5-mood IDs) fall back to 'warm'. */
 export function resolveSimpleMood(id: string): MoodDefinition {
   return SIMPLE_MOODS[id as SimpleMoodId] ?? SIMPLE_MOODS.warm;
 }
@@ -48,7 +65,25 @@ export function simpleMoodIds(): SimpleMoodId[] {
   return Object.keys(SIMPLE_MOODS) as SimpleMoodId[];
 }
 
-/** CSS vars for a simple mood — same shape as the old system. */
+/** Convert a MoodDefinition to CSS custom property map. */
+export function moodToCSSVars(mood: MoodDefinition): CSSMoodVars {
+  return {
+    '--mood-from':       mood.gradient_from,
+    '--mood-to':         mood.gradient_to,
+    '--mood-opacity':    String(mood.opacity),
+    '--mood-speed':      mood.animation_duration,
+    '--mood-shadow-rgb': mood.shadow_rgb,
+    '--mood-accent':     mood.accent,
+    '--mood-accent-rgb': mood.accent_rgb,
+  };
+}
+
+/** Serialise CSS vars map to a :root { … } inner string for <style> tags. */
+export function moodToCSSString(vars: CSSMoodVars): string {
+  return Object.entries(vars).map(([k, v]) => `  ${k}: ${v};`).join('\n');
+}
+
+/** CSS vars for a mood by ID. */
 export function simpleMoodCSSVars(id: string): CSSMoodVars {
   return moodToCSSVars(resolveSimpleMood(id));
 }
@@ -68,10 +103,8 @@ export function isSimpleMood(value: unknown): value is SimpleMoodId {
   return typeof value === 'string' && VALID_IDS.has(value);
 }
 
-// TODO: map old article moods (contemplative, etc.) → closest simple mood
-
 // ---------------------------------------------------------------------------
-// Sanity check
+// Sanity check (see inplace-testing-howto.md)
 // ---------------------------------------------------------------------------
 
 export function _testMoodSimple(): void {
@@ -83,7 +116,8 @@ export function _testMoodSimple(): void {
     console.assert(moodDotColor(id).startsWith('#'), `${id}: dot color`);
   }
   console.assert(resolveSimpleMood('unknown').label === 'warm', 'fallback');
-  console.assert(!isSimpleMood('jazz'), 'old mood rejected');
+  console.assert(resolveSimpleMood('jazz').label === 'warm', 'old mood falls back');
+  console.assert(!isSimpleMood('jazz'), 'old mood rejected by isSimpleMood');
   console.assert(isSimpleMood('raw'), 'valid mood accepted');
   console.log('[mood-simple] OK — 3 moods, CSS vars, dot colors verified');
 }

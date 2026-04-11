@@ -1,0 +1,169 @@
+/* src/styles/tokens.css
+ * Master design token registry — single source of truth.
+ * Hierarchy: color → typography → spacing → radius → shadow → z-index → border
+ *
+ * Rule: primitives are internal; components reference semantic or component tokens only.
+ * Rule: if a value appears in >1 place, it belongs here.
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-11
+ */
+
+:root {
+
+  /* ── Color Primitives (internal — never use directly in components) ── */
+  --clr-earth-50:   hsl(35 20% 98%);
+  --clr-earth-100:  hsl(35 20% 96%);
+  --clr-earth-900:  hsl(25 15% 12%);
+  --clr-amber-400:  hsl(38 90% 58%);
+  --clr-red-500:    hsl(0 72% 51%);
+  --clr-green-400:  hsl(142 70% 45%);
+  --clr-violet-400: hsl(262 83% 74%);
+  --clr-slate-400:  hsl(215 20% 65%);
+
+  /* ── Page Surface ──────────────────────────────────────────────────── */
+  --surface-base:    #0c0c0e;
+  --surface-raised:  rgba(255, 255, 255, 0.04);
+  --surface-hover:   rgba(255, 255, 255, 0.06);
+  --surface-overlay: rgba(12, 12, 14, 0.75);
+
+  /* ── Text Alpha Ramp (white-on-dark) ───────────────────────────────── */
+  --text-primary:   rgba(255, 255, 255, 0.88);
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary:  rgba(255, 255, 255, 0.38);
+  --text-ghost:     rgba(255, 255, 255, 0.22);
+  --text-disabled:  rgba(255, 255, 255, 0.12);
+
+  /* ── Border Alpha Ramp ─────────────────────────────────────────────── */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-faint:  rgba(255, 255, 255, 0.04);
+  --border-medium: rgba(255, 255, 255, 0.12);
+
+  /* ── Conviction Gold — the accountability color ─────────────────────── */
+  --gold:        #F5A623;
+  --gold-dim:    rgba(245, 166, 35, 0.55);
+  --gold-glow:   rgba(245, 166, 35, 0.18);
+  --gold-bg:     rgba(245, 166, 35, 0.08);
+  --gold-border: rgba(245, 166, 35, 0.22);
+
+  /* ── Semantic Decay Colors ──────────────────────────────────────────── */
+  --color-decay-fresh:  var(--clr-green-400);
+  --color-decay-fossil: var(--clr-red-500);
+  --color-revival:      var(--clr-amber-400);
+
+  /* ── Verdict Semantic Colors ─────────────────────────────────────────── */
+  --verdict-true:    #4ade80;  /* green — still true */
+  --verdict-wrong:   #f87171;  /* red — wrong / abandoned */
+  --verdict-pending: #94a3b8;  /* slate — unaudited */
+  --verdict-evolved: #a78bfa;  /* violet — evolved */
+
+  /* ── Typography Scale (Major Third ratio 1.25, base-16) ─────────────── */
+  --text-2xs:  0.64rem;   /* 10.2px — dates, labels, ghost chips */
+  --text-xs:   0.72rem;   /* 11.5px — nav links, badges, meta */
+  --text-sm:   0.82rem;   /* 13.1px — card excerpts, secondary body */
+  --text-base: 1rem;      /* 16px   — primary body copy */
+  --text-lg:   1.25rem;   /* 20px   — card titles */
+  --text-xl:   1.5rem;    /* 24px   — section headings */
+  --text-2xl:  2rem;      /* 32px   — hero batting % */
+  --text-3xl:  2.5rem;    /* 40px   — hero display */
+  --text-hero: clamp(3rem, 8vw, 5.5rem);   /* BattingAverageHero % */
+
+  /* ── Font Families ──────────────────────────────────────────────────── */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
+
+  /* ── Font Weights ────────────────────────────────────────────────────── */
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ── Line Heights ────────────────────────────────────────────────────── */
+  --leading-tight:  1.2;
+  --leading-snug:   1.35;
+  --leading-normal: 1.55;
+  --leading-prose:  1.75;
+
+  /* ── Letter Spacing ──────────────────────────────────────────────────── */
+  --tracking-tight:   -0.01em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.04em;
+  --tracking-widest:   0.10em;
+
+  /* ── Spacing Scale (4pt grid) ────────────────────────────────────────── */
+  --space-1:  0.25rem;   /* 4px  */
+  --space-2:  0.5rem;    /* 8px  */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.25rem;   /* 20px */
+  --space-6:  1.5rem;    /* 24px */
+  --space-8:  2rem;      /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+
+  /* ── Border Radius — shape is identity; only glow/shadow signals age ── */
+  --radius-sm:        6px;      /* chips, badges, tooltips, pills */
+  --radius-md:        12px;     /* cards, nav elements */
+  --radius-lg:        16px;     /* modal sheets, drawer overlays */
+  --radius-xl:        24px;     /* hero panels, wide feature blocks */
+  --radius-full:      9999px;   /* presence dot, loaders */
+  --radius-tombstone: 8px;      /* fossils: intentionally crisper — calcified */
+  /* Alias for backward-compat (existing code uses --radius) */
+  --radius: var(--radius-md);
+
+  /* ── Shadow System (age ↔ elevation; shadow is the PRIMARY age signal) ── */
+
+  /* Fresh — generous warm lift; communicates alive and present */
+  --shadow-card-fresh:
+    0 var(--shadow-fresh-y) var(--shadow-fresh-spread)
+    rgba(var(--mood-accent-rgb, 212, 149, 106), var(--shadow-fresh-alpha));
+
+  /* Hover — card invited upward, warmth intensifies */
+  --shadow-card-hover:
+    0 12px 40px rgba(var(--mood-accent-rgb, 212, 149, 106), 0.28),
+    0 2px  8px  rgba(0, 0, 0, 0.4);
+
+  /* Aged — faint, cold, losing color signal */
+  --shadow-card-aged: 0 4px 16px rgba(0, 0, 0, 0.22);
+
+  /* Fossil — flat; no elevation; dead weight */
+  --shadow-card-fossil: none;
+
+  /* UI structural shadows — not age-dependent */
+  --shadow-chip:    0 0 10px rgba(245, 166, 35, 0.18);
+  --shadow-tooltip: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-modal:
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* ── Shadow Primitive Tokens (consumed by fresh shadow + revival ring) ── */
+  --shadow-fresh-y:      8px;
+  --shadow-fresh-spread: 32px;
+  --shadow-fresh-alpha:  0.22;
+
+  /* ── Z-Index Scale ──────────────────────────────────────────────────── */
+  --z-base:    0;
+  --z-card:    1;
+  --z-nav:     10;
+  --z-tooltip: 20;
+  --z-drawer:  50;
+  --z-modal:   100;
+  --z-toast:   200;
+
+  /* ── Decay Card Defaults (overridden by JS decay-engine at runtime) ──── */
+  --decay-bg-fresh:       var(--surface-raised);
+  --decay-bg-fossil:      rgba(255, 255, 255, 0.02);
+  --decay-border-alpha:   0.06;
+  --decay-grain:          0;
+  --decay-sepia:          0;   /* sepia(0.15) at full fossil — Tanya §4.5 */
+
+  /* ── Sympathetic Bloom (cascade glow on connected posts) ────────────── */
+  --sympathetic-ring-spread:       14px;
+  --sympathetic-ring-alpha:        0.10;
+  --sympathetic-opacity-lift:      0.15;
+  --sympathetic-shadow-lift:       4px;
+  --sympathetic-shadow-alpha-lift: 0.06;
+  --sympathetic-duration:          1000ms;
+  --sympathetic-settle-duration:   1000ms;
+  --sympathetic-lift-y:            -1.5px;
+}

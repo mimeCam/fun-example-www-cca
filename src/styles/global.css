@@ -1,32 +1,31 @@
+/* src/styles/global.css
+ * Entry point for the design system. Imports tokens → motion → feature CSS.
+ * Tailwind @theme bridges our tokens into utility class generation.
+ *
+ * Rule: this file is a router — no raw values live here.
+ *       All values belong in tokens.css or motion.css.
+ */
+
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./motion.css";
 @import "./death-clock.css";
 
-/* ── Design tokens (from UX spec) ────────────────────────────── */
+/* ── Tailwind 4 bridge: token vars → utility class generation ──────────── */
+@theme {
+  /* Colors */
+  --color-surface:  rgba(255, 255, 255, 0.04);
+  --color-gold:     #F5A623;
+  --color-revival:  hsl(38 90% 58%);
 
-:root {
-  /* Identity: constant corners — decay changes vitality, never shape */
-  --radius: 12px;
+  /* Typography */
+  --font-family-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-family-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
 
-  /* Warm decay palette — low-saturation earth tones */
-  --decay-bg-fresh: rgba(255, 255, 255, 0.06);
-  --decay-bg-fossil: rgba(255, 255, 255, 0.02);
-  --decay-border-alpha: 0.06;
-
-  /* Shadow depth tokens — shadow is the PRIMARY age signal */
-  --shadow-fresh-y: 8px;
-  --shadow-fresh-spread: 32px;
-  --shadow-fresh-alpha: 0.22;
-
-  /* Grain texture token — noise overlay for aging cards */
-  --decay-grain: 0;
-
-  /* Sympathetic bloom tokens — cascade glow on connected posts */
-  --sympathetic-ring-spread: 14px;
-  --sympathetic-ring-alpha: 0.10;
-  --sympathetic-opacity-lift: 0.15;
-  --sympathetic-shadow-lift: 4px;
-  --sympathetic-shadow-alpha-lift: 0.06;
-  --sympathetic-duration: 1000ms;
-  --sympathetic-settle-duration: 1000ms;
-  --sympathetic-lift-y: -1.5px;
+  /* Radii — maps tw rounded-* to our named tokens */
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 9999px;
 }

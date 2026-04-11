@@ -2,12 +2,12 @@
  * Consolidated decay visual system — cards + blog article extremes.
  * Merged: decay.css + decay-extremes.css (Tanya §12 CSS consolidation)
  *
- * Four decay signals: opacity, blur, saturation, shadow + grain overlay.
+ * All timing values → motion.css tokens.  All magic numbers → tokens.css.
+ * Four decay signals: opacity, blur, saturation, shadow + grain + sepia overlay.
  * Fresh posts cast generous accent-tinted shadows. Fossils cast none.
- * Hover "revival" uses a springy bezier — cards physically lift off the page.
- *
- * First-Visit Clarity: widened contrast ranges so a 2-day-old post
- * at 0.85 decay looks noticeably different from a fresh one at 1.0.
+ * Hover "revival" uses spring easing — cards physically lift off the page.
+ * Tanya §4.5: sepia(0.15) at full fossil — archived, not just dimmed.
+ * Tanya §4.6: decay-aware lift — fossil cards barely move (heavy from age).
  */
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -18,23 +18,25 @@
   opacity: var(--decay-opacity, 1);
   filter:
     blur(var(--decay-blur, 0px))
-    saturate(var(--decay-saturation, 1));
+    saturate(var(--decay-saturation, 1))
+    sepia(var(--decay-sepia, 0));  /* 0 → 0.15 at full fossil; Tanya §4.5 */
   box-shadow:
     0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
-    rgba(var(--mood-accent-rgb, 212,149,106), var(--decay-shadow-alpha, 0.22)),
-    0 2px 8px rgba(0, 0, 0, 0.12);
+    rgba(var(--mood-accent-rgb, 212, 149, 106), var(--decay-shadow-alpha, 0.22)),
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.08 * var(--decay-opacity, 1)));
   transition:
-    opacity 0.5s ease,
-    filter 0.5s ease,
-    box-shadow 0.5s ease,
-    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity    var(--motion-drift-duration) var(--motion-drift-easing),
+    filter     var(--motion-drift-duration) var(--motion-drift-easing),
+    box-shadow var(--motion-drift-duration) var(--motion-drift-easing),
+    transform  var(--motion-spring-duration) var(--motion-spring-easing);
   transform: translateY(0);
-  border-radius: var(--radius, 12px);
+  border-radius: var(--radius-md);
   will-change: transform, box-shadow;
 }
 
 /* Aging grain overlay — noise texture via SVG.
- * Opacity driven by --decay-grain custom property. */
+ * Opacity driven by --decay-grain (set by decay-engine JS). */
 .decay-card::after {
   content: '';
   position: absolute;
@@ -46,26 +48,26 @@
   background-size: 128px 128px;
   mix-blend-mode: overlay;
   z-index: 1;
-  transition: opacity 0.5s ease;
+  transition: opacity var(--motion-drift-duration) var(--motion-drift-easing);
 }
 
 /* Revival: hover (desktop) + long-press class (mobile).
- * Two-phase: opacity/blur snap fast, shadow/transform spring slower. */
+ * Tanya §4.6: decay-aware lift — fossil barely moves (heavy from age).
+ * Two-phase: opacity/filter snap fast; shadow/transform spring slower. */
 .decay-card:hover,
 .decay-card:focus-within,
 .decay-card.revived {
   opacity: 1;
-  filter: blur(0px) saturate(1);
-  box-shadow:
-    0 12px 40px rgba(var(--mood-accent-rgb, 212,149,106), 0.28),
-    0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
-  transform: translateY(-3px);
+  filter: blur(0px) saturate(1) sepia(0);
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgba(var(--mood-accent-rgb, 212, 149, 106), 0.15);
+  /* Decay-aware lift: fresh lifts 2px, fossil barely moves — it's heavy. */
+  transform: translateY(calc(-2px * var(--decay-opacity, 1)));
   transition:
-    opacity 0.35s ease-out,
-    filter 0.35s ease-out,
-    box-shadow 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity    var(--motion-snap-duration) var(--motion-snap-easing),
+    filter     var(--motion-snap-duration) var(--motion-snap-easing),
+    box-shadow var(--motion-spring-duration) var(--motion-spring-easing),
+    transform  var(--motion-spring-duration) var(--motion-spring-easing);
 }
 
 /* Hide grain on revival */
@@ -77,17 +79,17 @@
 
 /* Freshness tag */
 .decay-freshness {
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   opacity: 0.55;
-  padding: 0.15rem 0.5rem;
-  border-radius: 6px;
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-sm);
   backdrop-filter: blur(6px);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-raised);
 }
 
-/* First-Visit Quiet Mode — amplified decay contrast */
+/* First-Visit Quiet Mode — amplified decay contrast for new visitors */
 .fvh-quiet .decay-card {
   --decay-opacity-floor: 0.30;
 }
@@ -100,8 +102,8 @@
 .revival-stage {
   position: relative;
   transition:
-    opacity 0.6s ease,
-    filter 0.8s ease;
+    opacity var(--motion-drift-duration)    var(--motion-drift-easing),
+    filter  var(--motion-ceremony-duration) var(--motion-drift-easing);
 }
 
 /* Grain overlay on article wrapper */
@@ -116,7 +118,7 @@
   background-size: 128px 128px;
   mix-blend-mode: overlay;
   z-index: 1;
-  transition: opacity 0.6s ease;
+  transition: opacity var(--motion-drift-duration) var(--motion-drift-easing);
 }
 
 /* Cursor affordance: decayed text invites interaction */

@@ -9,8 +9,7 @@
 // Mood accent tints the background. Decay controls opacity + saturation.
 
 import type { FreshnessTag } from '../decay';
-import type { MoodId } from '../mood';
-import { resolveMood } from '../mood';
+import { resolveSimpleMood } from '../mood-simple';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -86,7 +85,7 @@ function footerParts(data: OGImageData): string[] {
 
 /** Build the satori-compatible element tree for a 1200×630 OG image. */
 export function ogLayout(data: OGImageData): Record<string, unknown> {
-  const mood = resolveMood(data.mood ?? 'default');
+  const mood = resolveSimpleMood(data.mood ?? 'warm');
   const bgFrom = desaturate(mood.gradient_from, data.decay * 0.7);
   const bgTo = desaturate(mood.gradient_to, data.decay * 0.7);
   const footer = footerParts(data).join('  ·  ');

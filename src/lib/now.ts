@@ -8,7 +8,7 @@
 //
 // TODO: wire _testNowLib() into a build sanity step
 
-import type { MoodId } from './mood';
+import type { SimpleMoodId } from './mood-simple';
 import { daysSince as _daysSince, decay } from './temporal';
 
 // Re-export for backward compat — canonical home is temporal.ts
@@ -28,7 +28,7 @@ export interface NowItem {
 
 /** Three-tier data shape stored in now.json. */
 export interface NowTiered {
-  mood: MoodId;
+  mood: SimpleMoodId | string;  /* string allows legacy 5-mood IDs from now.json */
   rightNow: NowItem;
   season: NowItem[];
   residue: NowItem[];

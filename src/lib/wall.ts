@@ -7,7 +7,7 @@
 // TODO: add optional `link` field to WallEntry once external references ship
 // TODO: wire _testWallLib() into a build sanity step
 
-import type { MoodId } from './mood';
+import type { SimpleMoodId } from './mood-simple';
 import { daysSince } from './temporal';
 
 // ---------------------------------------------------------------------------
@@ -18,7 +18,7 @@ export interface WallEntry {
   id: string;
   text: string;
   posted: string;        // ISO date, e.g. "2026-04-01"
-  mood: MoodId;
+  mood: SimpleMoodId | string;  /* string allows legacy 5-mood IDs from wall.json */
 }
 
 export type WallState = 'glowing' | 'active' | 'fading' | 'fossil';

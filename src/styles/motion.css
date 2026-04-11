@@ -1,0 +1,116 @@
+/* src/styles/motion.css
+ * Animation token library — duration scale, named easing functions, shared keyframes.
+ * Three motion profiles: snap (micro-interaction), flow (standard), ceremony (emotional).
+ *
+ * Rule: every transition in the codebase must reference exactly one profile.
+ *       Never hardcode timing values outside this file.
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-11
+ */
+
+:root {
+
+  /* ── Duration Scale ─────────────────────────────────────────────────── */
+  --duration-instant:  80ms;
+  --duration-fast:     150ms;
+  --duration-normal:   300ms;
+  --duration-slow:     500ms;
+  --duration-dramatic: 800ms;
+  --duration-bloom:    1200ms;
+
+  /* ── Named Easing Functions ─────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);      /* snappy exit */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* springy bounce */
+  --ease-decay:  cubic-bezier(0.4, 0, 1, 1);         /* slow fade → fast drop */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);     /* smooth pivot */
+
+  /* ── Motion Profiles (3 named — the only ones to use) ───────────────── */
+
+  /* SNAP — instant feedback, micro-interactions (hover, focus, border) */
+  --motion-snap-duration: 120ms;
+  --motion-snap-easing:   cubic-bezier(0.25, 0, 0, 1);
+
+  /* FLOW — standard state changes, badge appear, filter pills */
+  --motion-flow-duration: 200ms;
+  --motion-flow-easing:   cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* CEREMONY — emotional moments: revival bloom, verdict reveal */
+  --motion-ceremony-duration: 600ms;
+  --motion-ceremony-easing:   cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* SPRING — hold-to-revive arc, bloom-settle physics */
+  --motion-spring-duration: 800ms;
+  --motion-spring-easing: linear(
+    0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%,
+    0.938 16.7%, 1.017, 1.077, 1.121 24%, 1.149 26.2%,
+    1.159, 1.151 32%, 1.017 45.9%, 0.991, 0.977 55%,
+    0.975 58%, 0.997 69.2%, 1.003 76.3%, 1
+  );
+
+  /* DRIFT — slow ambient transitions, age rendering */
+  --motion-drift-duration: 500ms;
+  --motion-drift-easing:   cubic-bezier(0.4, 0, 1, 1);
+
+  /* ── Convenience Composites ─────────────────────────────────────────── */
+  --transition-hover:   var(--motion-snap-duration) var(--motion-snap-easing);
+  --transition-flow:    var(--motion-flow-duration)  var(--motion-flow-easing);
+  --transition-revival: var(--duration-bloom)        var(--ease-spring);
+  --transition-decay:   var(--motion-drift-duration) var(--motion-drift-easing);
+}
+
+/* ── Accessibility Override ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-snap-duration:     0ms;
+    --motion-flow-duration:     0ms;
+    --motion-ceremony-duration: 0ms;
+    --motion-spring-duration:   0ms;
+    --motion-drift-duration:    0ms;
+    --duration-instant:         0ms;
+    --duration-fast:            0ms;
+    --duration-normal:          0ms;
+    --duration-slow:            0ms;
+    --duration-dramatic:        0ms;
+    --duration-bloom:           0ms;
+  }
+}
+
+/* ── Shared Keyframe Library ─────────────────────────────────────────────── */
+
+/* Presence dot heartbeat — scale + opacity = biological pulse, not a spinner.
+ * Tanya §4.1: double plateau at 45-55% gives a "held" moment. */
+@keyframes nav-breathe {
+  0%, 100% { opacity: 0.3; transform: scale(0.65); }
+  45%       { opacity: 0.9; transform: scale(1.05); }
+  55%       { opacity: 0.9; transform: scale(1.05); }
+}
+
+/* Badge enter — slides up from slightly below */
+@keyframes badge-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Tombstone / graveyard page arrival */
+@keyframes tombstone-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Periodic warm amber heartbeat — urgent but quiet */
+@keyframes pulse-warm {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0); }
+  50%       { box-shadow: 0 0 0 6px rgba(245, 166, 35, 0.12); }
+}
+
+/* Shimmer sweep — "perfect" batting average easter egg (100% score) */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* Endangered heartbeat — scale pulse for urgency strip */
+@keyframes heartbeat-scale {
+  0%, 100% { transform: scale(1.0); }
+  50%       { transform: scale(0.97); }
+}
