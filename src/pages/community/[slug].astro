@@ -1,0 +1,163 @@
+---
+// src/pages/community/[slug].astro
+// GET /community/[slug] — SSR detail page for a community-submitted post.
+// Full Markdown rendering, live decay CSS vars, KeepButton wired to /api/revive.
+// Client IIFE (decay-engine.ts) refreshes decay vars every 60s automatically.
+// SSE bloom fires via revival-engine.ts when any reader revives this post.
+//
+// Credits: Mike (arch spec — community decay integration),
+//          Tanya (UX §2.2 detail layout spec),
+//          Elon (token audit — zero hardcoded values)
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DeathClock from '../../components/DeathClock.astro';
+import KeepButton from '../../components/KeepButton.astro';
+import '../../styles/community.css';
+import { getPostBySlug, COMMUNITY_MAX_DAYS } from '../../lib/communityPosts';
+import { getRevivalCount } from '../../lib/collectiveMemory';
+import { decayFactor, decayStyleString } from '../../lib/decay-engine';
+import { daysUntilEntombment, clockUrgency } from '../../lib/death-clock';
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/community');
+
+const post = getPostBySlug(slug);
+if (!post) return new Response(null, { status: 404 });
+
+const revivalCount = getRevivalCount(slug);
+const factor = decayFactor(post.submitted_at, COMMUNITY_MAX_DAYS, new Date(), revivalCount);
+const daysLeft = daysUntilEntombment(post.submitted_at, revivalCount, 0, COMMUNITY_MAX_DAYS);
+const urgency = clockUrgency(daysLeft);
+const inlineStyle = decayStyleString(factor);
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch { return iso; }
+}
+
+/** Server-side Markdown → sanitized HTML (no new deps, ~40 LOC).
+ *  Allowlist: p, h2, h3, h4, ul, ol, li, strong, em, code, pre, blockquote.
+ *  No <script>, <iframe>, raw <a href="javascript:">, etc.
+ */
+function renderMarkdown(md: string): string {
+  // Fenced code blocks — capture before inline rules touch them
+  let html = md.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) =>
+    `<pre><code>${escHtml(code.trim())}</code></pre>`
+  );
+  // Headings
+  html = html
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm,  '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,   '<h2>$1</h2>');
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>');
+  // Unordered / ordered lists (simple — single level)
+  html = html.replace(/((?:^[-*] .+\n?)+)/gm, match =>
+    `<ul>${match.replace(/^[-*] (.+)/gm, '<li>$1</li>')}</ul>`
+  );
+  html = html.replace(/((?:^\d+\. .+\n?)+)/gm, match =>
+    `<ol>${match.replace(/^\d+\. (.+)/gm, '<li>$1</li>')}</ol>`
+  );
+  // Inline: bold, italic, inline code
+  html = html
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+    .replace(/`([^`]+)`/g,     '<code>$1</code>');
+  // Paragraphs — blank-line-delimited runs not already wrapped
+  html = html
+    .split(/\n{2,}/)
+    .map(block => {
+      const t = block.trim();
+      if (!t) return '';
+      if (/^<(h[234]|ul|ol|pre|blockquote)/.test(t)) return t;
+      return `<p>${t.replace(/\n/g, ' ')}</p>`;
+    })
+    .join('\n');
+  return html;
+}
+
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+const bodyHtml = renderMarkdown(post.body);
+---
+
+<BaseLayout
+  title={`${post.title} — Community — Octopoid`}
+  description={post.body.slice(0, 200).replace(/\n/g, ' ')}
+>
+  <main class="community-detail">
+
+    <a href="/community" class="community-detail__back">← community</a>
+
+    <!-- Meta: date + author chip -->
+    <div class="community-detail__meta">
+      <span class="community-detail__chip">{formatDate(post.submitted_at)}</span>
+      {post.author_label && (
+        <span class="community-detail__chip">{post.author_label}</span>
+      )}
+      <!-- PoW hash chip — truncated; full hash in title attr; click to copy -->
+      <button
+        class="community-detail__chip community-detail__chip--pow"
+        title={post.pow_hash}
+        data-copy={post.pow_hash}
+        aria-label="Copy proof-of-work hash"
+        type="button"
+      >
+        PoW {post.pow_hash.slice(0, 8)}…
+      </button>
+      <span class="community-detail__chip community-detail__chip--clock">
+        <DeathClock daysRemaining={daysLeft} urgency={urgency} compact={true} />
+        {daysLeft > 0 ? `${daysLeft}d left` : 'entombed'}
+      </span>
+    </div>
+
+    <!-- Title + gold accent line -->
+    <h1 class="community-detail__title">{post.title}</h1>
+    <div class="community-detail__accent" aria-hidden="true"></div>
+
+    <!-- Prose body — rendered Markdown -->
+    <article
+      class="decay-card choreo-pending community-detail__body"
+      data-slug={slug}
+      data-pub-date={post.submitted_at}
+      data-revival-count={revivalCount}
+      style={inlineStyle}
+      set:html={bodyHtml}
+    />
+
+    <!-- Revival footer: KeepButton + clock label -->
+    <div class="community-detail__revival">
+      <KeepButton
+        slug={slug}
+        count={revivalCount}
+        urgency={urgency}
+        decayFactor={factor}
+        lifespan={COMMUNITY_MAX_DAYS}
+      />
+      <span class="community-detail__clock-label">
+        {daysLeft > 0
+          ? `The clock on this post: ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`
+          : 'This post has been entombed.'}
+      </span>
+    </div>
+
+  </main>
+</BaseLayout>
+
+<script>
+  // Copy PoW hash to clipboard on click — same micro-interaction as share button.
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const hash = btn.dataset.copy ?? '';
+      navigator.clipboard?.writeText(hash).then(() => {
+        const orig = btn.textContent ?? '';
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      });
+    });
+  });
+</script>

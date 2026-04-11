@@ -29,6 +29,7 @@
   /* ── Text Alpha Ramp (white-on-dark) ───────────────────────────────── */
   --text-primary:   rgba(255, 255, 255, 0.88);
   --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-muted:     rgba(255, 255, 255, 0.60);  /* banner body copy */
   --text-tertiary:  rgba(255, 255, 255, 0.38);
   --text-ghost:     rgba(255, 255, 255, 0.22);
   --text-disabled:  rgba(255, 255, 255, 0.12);
@@ -57,6 +58,7 @@
   --verdict-evolved: #a78bfa;  /* violet — evolved */
 
   /* ── Typography Scale (Major Third ratio 1.25, base-16) ─────────────── */
+  --text-3xs:  0.58rem;   /* 9.3px  — stat row labels only */
   --text-2xs:  0.64rem;   /* 10.2px — dates, labels, ghost chips */
   --text-xs:   0.72rem;   /* 11.5px — nav links, badges, meta */
   --text-sm:   0.82rem;   /* 13.1px — card excerpts, secondary body */
@@ -72,10 +74,11 @@
   --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
 
   /* ── Font Weights ────────────────────────────────────────────────────── */
-  --weight-normal:   400;
-  --weight-medium:   500;
-  --weight-semibold: 600;
-  --weight-bold:     700;
+  --weight-normal:    400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;  /* verdict outcome label, hero titles */
 
   /* ── Line Heights ────────────────────────────────────────────────────── */
   --leading-tight:  1.2;
@@ -84,10 +87,11 @@
   --leading-prose:  1.75;
 
   /* ── Letter Spacing ──────────────────────────────────────────────────── */
-  --tracking-tight:   -0.01em;
-  --tracking-normal:   0;
-  --tracking-wide:     0.04em;
-  --tracking-widest:   0.10em;
+  --tracking-tight:    -0.01em;
+  --tracking-display:  -0.03em;  /* hero titles, large score numerals */
+  --tracking-normal:    0;
+  --tracking-wide:      0.04em;
+  --tracking-widest:    0.10em;
 
   /* ── Spacing Scale (4pt grid) ────────────────────────────────────────── */
   --space-1:  0.25rem;   /* 4px  */
@@ -146,6 +150,7 @@
   --z-card:    1;
   --z-nav:     10;
   --z-tooltip: 20;
+  --z-sticky:  40;   /* sticky banners: death-clock-banner, cookie notice */
   --z-drawer:  50;
   --z-modal:   100;
   --z-toast:   200;
@@ -156,6 +161,19 @@
   --decay-border-alpha:   0.06;
   --decay-grain:          0;
   --decay-sepia:          0;   /* sepia(0.15) at full fossil — Tanya §4.5 */
+
+  /* ── Graveyard tokens — OKLCH warm charcoal (prevents OLED halation) ── */
+  /* Note: this section uses OKLCH; all other primitives use hsl/rgba.
+     Migration to OKLCH is planned for the full token registry. */
+  --color-grave-bg:      oklch(14% 0.015 50);
+  --color-grave-surface: oklch(19% 0.012 50);
+  --color-grave-border:  oklch(28% 0.010 50);
+  --color-grave-text:    oklch(65% 0.008 50);
+  --color-grave-ghost:   oklch(40% 0.006 50);
+  /* Shadow: inset = sunken / buried feeling */
+  --shadow-grave-card:
+    inset 0 1px 0 oklch(28% 0.01 50 / 0.6),
+    0 2px 8px oklch(8% 0.01 50 / 0.4);
 
   /* ── Sympathetic Bloom (cascade glow on connected posts) ────────────── */
   --sympathetic-ring-spread:       14px;

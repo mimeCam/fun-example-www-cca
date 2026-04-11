@@ -5,6 +5,7 @@
 
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import { getPostBySlug as getCommunityPost } from '../../lib/communityPosts';
 import {
   canRevive,
   canReviveBySession,
@@ -52,11 +53,13 @@ function clientIp(request: Request): string {
   );
 }
 
-/** Find a post by slug, returning its pubDate if it exists. */
+/** Find a post by slug — blog collection first, community DB fallback. */
 async function findPost(slug: string): Promise<string | null> {
   const posts = await getCollection('blog');
-  const post = posts.find(p => p.slug === slug);
-  return post?.data.pubDate?.toISOString() ?? null;
+  const blog = posts.find(p => p.slug === slug);
+  if (blog?.data.pubDate) return blog.data.pubDate.toISOString();
+  const community = getCommunityPost(slug);
+  return community?.submitted_at ?? null;
 }
 
 export const POST: APIRoute = async ({ request }) => {

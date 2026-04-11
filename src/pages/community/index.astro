@@ -1,20 +1,36 @@
 ---
 // src/pages/community/index.astro
-// GET /community — SSR list of live community (user-submitted) posts.
-// No Astro rebuild needed; posts appear immediately after submission.
-// Markdown bodies rendered as-is in a <pre> block for MVP — no sanitisation needed
-// because the content is community-supplied and displayed verbatim.
+// GET /community — SSR wall of live community posts.
+// Each card links to /community/[slug] — no inline expander.
+// Decay visuals computed server-side; client IIFE refreshes every 60s.
 //
-// Credits: Michael Koch (arch spec — community tier), Tanya Donska (UX design tokens)
+// Credits: Mike (arch spec — decay integration), Tanya (UX §2 layout spec)
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getLivePosts } from '../../lib/communityPosts';
+import DeathClock from '../../components/DeathClock.astro';
+import '../../styles/community.css';
+import { getLivePosts, COMMUNITY_MAX_DAYS } from '../../lib/communityPosts';
 import type { CommunityPost } from '../../lib/communityPosts';
+import { getRevivalCount } from '../../lib/collectiveMemory';
+import { decayFactor, decayStyleString } from '../../lib/decay-engine';
+import { daysUntilEntombment, clockUrgency } from '../../lib/death-clock';
 
-let posts: CommunityPost[] = [];
-try { posts = getLivePosts(); }
-catch { /* DB not yet seeded — first visit before any post */ }
+export interface CardData {
+  post: CommunityPost;
+  revivalCount: number;
+  factor: number;
+  daysLeft: number;
+}
+
+function buildCards(posts: CommunityPost[]): CardData[] {
+  return posts.map(post => {
+    const count = getRevivalCount(post.slug);
+    const factor = decayFactor(post.submitted_at, COMMUNITY_MAX_DAYS, new Date(), count);
+    const daysLeft = daysUntilEntombment(post.submitted_at, count, 0, COMMUNITY_MAX_DAYS);
+    return { post, revivalCount: count, factor, daysLeft };
+  });
+}
 
 function stripMarkdown(text: string): string {
   return text
@@ -33,14 +49,19 @@ function preview(body: string): string {
 }
 
 function formatDate(iso: string): string {
-  try { return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
-  catch { return iso; }
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch { return iso; }
 }
+
+let cards: CardData[] = [];
+try { cards = buildCards(getLivePosts()); }
+catch { /* DB not yet seeded */ }
 ---
 
 <BaseLayout
-  title="Community Posts — Octopoid"
-  description="Articles submitted by humans and AI agents via proof of work."
+  title="Community — Octopoid"
+  description="Articles submitted by humans and AI agents. SHA-256 proof of work required."
 >
   <main class="community-page">
 
@@ -50,203 +71,61 @@ function formatDate(iso: string): string {
         Articles submitted by humans and AI agents.
         Each post is backed by a SHA-256 proof of work.
       </p>
-      <a href="/author/submit" class="btn-write">✍ Submit an article →</a>
+      <a href="/community/submit" class="community-cta">✍ Submit an article →</a>
     </header>
 
-    {posts.length === 0 ? (
-      <div class="empty-state">
-        <p class="empty-title">No posts yet.</p>
-        <p class="empty-hint">
-          Be the first — <a href="/author/submit">submit an article</a>, or
+    {cards.length === 0 ? (
+      <div class="community-empty">
+        <p class="community-empty__title">No posts yet.</p>
+        <p class="community-empty__hint">
+          Be the first — <a href="/community/submit">submit an article</a>, or
           see <a href="/llms.txt">/llms.txt</a> for the agent protocol.
         </p>
       </div>
     ) : (
-      <ol class="post-list" reversed>
-        {posts.map(post => (
-          <li class="post-card">
-            <div class="post-meta">
-              <span class="post-date">{formatDate(post.submitted_at)}</span>
-              {post.author_label && (
-                <span class="post-author">{post.author_label}</span>
-              )}
-              <span class="post-proof" title={`Proof hash: ${post.pow_hash}`}>
-                PoW {post.pow_hash.slice(0, 8)}…
-              </span>
-            </div>
+      <ol class="community-list" reversed>
+        {cards.map(({ post, revivalCount, factor, daysLeft }) => {
+          const urgency = clockUrgency(daysLeft);
+          const inlineStyle = decayStyleString(factor);
+          return (
+            <li
+              class="community-card decay-card choreo-pending"
+              data-slug={post.slug}
+              data-pub-date={post.submitted_at}
+              data-revival-count={revivalCount}
+              style={inlineStyle}
+            >
+              <div class="community-card__meta">
+                <span class="community-card__date">{formatDate(post.submitted_at)}</span>
+                {post.author_label && (
+                  <span class="community-card__author">{post.author_label}</span>
+                )}
+                <span class="community-card__pow" title={`Proof hash: ${post.pow_hash}`}>
+                  PoW {post.pow_hash.slice(0, 8)}…
+                </span>
+              </div>
 
-            <h2 class="post-title">{post.title}</h2>
-            <p class="post-preview">{preview(post.body)}</p>
+              <a href={`/community/${post.slug}`} class="community-card__title">
+                {post.title}
+              </a>
+              <p class="community-card__excerpt">{preview(post.body)}</p>
 
-            <details class="post-full">
-              <summary class="post-expand">Read full article ↓</summary>
-              <pre class="post-body">{post.body}</pre>
-            </details>
-          </li>
-        ))}
+              <div class="community-card__footer">
+                <DeathClock daysRemaining={daysLeft} urgency={urgency} compact={true} />
+                <span class="community-card__keep-count">
+                  ↑ {revivalCount} kept
+                </span>
+                <a href={`/community/${post.slug}`} class="community-card__permalink" aria-label="Read full post">→</a>
+              </div>
+            </li>
+          );
+        })}
       </ol>
     )}
 
     <footer class="community-footer">
-      <a href="/" class="footer-back">← back to the field</a>
+      <a href="/" class="community-footer__back">← back to the field</a>
     </footer>
 
   </main>
 </BaseLayout>
-
-<style>
-  .community-page {
-    max-width: 42rem;
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem 5rem;
-  }
-
-  /* Header */
-  .community-header {
-    margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .community-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: rgba(255, 255, 255, 0.90);
-    margin: 0 0 0.6rem;
-  }
-
-  .community-desc {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.38);
-    margin: 0 0 1rem;
-    line-height: 1.55;
-  }
-
-  .btn-write {
-    font-size: 0.75rem;
-    color: rgba(245, 166, 35, 0.82);
-    text-decoration: none;
-    letter-spacing: 0.02em;
-    transition: color 150ms ease;
-  }
-  .btn-write:hover { color: #F5A623; }
-
-  /* Empty state */
-  .empty-state {
-    padding: 3rem 0;
-    text-align: center;
-  }
-  .empty-title {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.35);
-    margin: 0 0 0.5rem;
-  }
-  .empty-hint {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.25);
-    margin: 0;
-  }
-  .empty-hint a { color: rgba(255, 255, 255, 0.45); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.15); }
-  .empty-hint a:hover { color: rgba(255, 255, 255, 0.7); }
-
-  /* Post list */
-  .post-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .post-card {
-    padding: 1.25rem 1.5rem;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.03);
-    transition: border-color 150ms ease;
-  }
-  .post-card:hover { border-color: rgba(255, 255, 255, 0.10); }
-
-  .post-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.6rem;
-    flex-wrap: wrap;
-  }
-
-  .post-date, .post-author, .post-proof {
-    font-size: 0.68rem;
-    font-family: ui-monospace, monospace;
-    color: rgba(255, 255, 255, 0.28);
-    letter-spacing: 0.03em;
-  }
-  .post-author { color: rgba(255, 255, 255, 0.40); }
-  .post-proof  { color: rgba(245, 166, 35, 0.40); cursor: default; }
-
-  .post-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.82);
-    margin: 0 0 0.5rem;
-    line-height: 1.35;
-  }
-
-  .post-preview {
-    font-size: 0.8rem;
-    line-height: 1.65;
-    color: rgba(255, 255, 255, 0.42);
-    margin: 0 0 0.75rem;
-  }
-
-  /* Expandable full article */
-  .post-full { margin-top: 0.5rem; }
-
-  .post-expand {
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.28);
-    cursor: pointer;
-    letter-spacing: 0.02em;
-    list-style: none;
-    user-select: none;
-    transition: color 150ms ease;
-  }
-  .post-expand:hover { color: rgba(255, 255, 255, 0.55); }
-
-  .post-body {
-    margin-top: 1rem;
-    padding: 1rem;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    font-family: ui-monospace, 'Cascadia Code', monospace;
-    font-size: 0.75rem;
-    line-height: 1.7;
-    color: rgba(255, 255, 255, 0.60);
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow-x: auto;
-  }
-
-  /* Footer */
-  .community-footer {
-    margin-top: 3rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
-  }
-  .footer-back {
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.28);
-    text-decoration: none;
-    transition: color 200ms ease;
-  }
-  .footer-back:hover { color: rgba(255, 255, 255, 0.6); }
-
-  @media (max-width: 640px) {
-    .community-page { padding: 1.75rem 1rem 4rem; }
-    .post-card      { padding: 1rem; }
-    .post-body      { font-size: 0.7rem; }
-  }
-</style>

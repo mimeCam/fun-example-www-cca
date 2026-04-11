@@ -34,7 +34,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 40;
+    z-index: var(--z-sticky);
     padding: 0.65rem 1.25rem;
     background: rgba(8, 6, 4, 0.90);
     border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -51,8 +51,8 @@
 
   .death-clock-banner__text {
     flex: 1;
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
     line-height: 1.45;
   }
 
@@ -73,8 +73,8 @@
     border: none;
     cursor: pointer;
     padding: 0.2rem 0.35rem;
-    border-radius: 4px;
-    transition: color 150ms ease, background 150ms ease;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-hover), background var(--transition-hover);
     flex-shrink: 0;
   }
 
@@ -83,9 +83,6 @@
     background: rgba(255, 255, 255, 0.05);
   }
 
-  @keyframes clock-pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.45; }
-  }
+  /* clock-pulse keyframe lives in motion.css — shared keyframe library */
 
 }

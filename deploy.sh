@@ -4,6 +4,43 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v55 — Community Decay Integration & Detail Pages (2026-04-11)
+#   Sprint: Community posts now fully participate in the decay + revival loop.
+#   New files:
+#     src/pages/community/[slug].astro — SSR detail page per community post;
+#       full Markdown rendering, live decay CSS vars (DeathClock ring, decay
+#       factor, urgency band), KeepButton wired to /api/revive; client IIFE
+#       refreshes decay vars every 60s. COMMUNITY_MAX_DAYS=180 (half blog
+#       lifetime → faster decay → higher revival urgency).
+#     src/pages/community/submit.astro — 301 redirect to /author/submit;
+#       canonical /community/submit URL established for future content move.
+#     src/styles/community.css — full design-token-compliant stylesheet for
+#       /community index + detail pages; zero hardcoded colours, radii, or
+#       transitions; all values reference tokens.css / motion.css.
+#   Updated files:
+#     src/lib/communityPosts.ts — COMMUNITY_MAX_DAYS=180 exported constant;
+#       referenced by both the index wall and the detail page.
+#     src/pages/community/index.astro — refactored from raw-text preview to
+#       decay card wall: DeathClock ring per card, decay factor computed
+#       server-side (buildCards()), links to /community/[slug]; client IIFE
+#       refreshes CSS vars every 60s without page reload.
+#     src/pages/api/revive.ts — findPost() now checks blog collection first
+#       then falls back to community DB (getCommunityPost); community posts are
+#       fully revivable via the same /api/revive endpoint.
+#     src/components/SiteNav.astro — "community" nav link added between posts
+#       and verdict; collapses on mobile (≤640px) via .nav-link--community and
+#       .nav-link--overflow classes so the core posts↔verdict loop stays visible.
+#     src/components/VerdictCeremony.astro — design-token polish; motion profile
+#       variables replace hardcoded timing; semantic colour tokens applied.
+#     src/styles/tokens.css, motion.css, verdict.css, graveyard.css,
+#       death-clock.css — continued design-system refinement; additional token
+#       aliases and motion profile completions.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts revivals.db (community_posts table auto-created by
+#       v53; no schema changes this sprint). ADMIN_SECRET still required.
+#     GITHUB_PAT optional (Conviction Anchor — gist scope only).
+#     deploy.sh: POST /api/deadline-sweep still called post-start (unchanged).
+#
 # Architecture v54 — Design System Tokens & Motion Library (2026-04-11)
 #   Sprint: Pure UIX/design-system refactoring — no infrastructure changes.
 #   New files:

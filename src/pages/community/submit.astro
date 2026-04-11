@@ -1,0 +1,9 @@
+---
+// src/pages/community/submit.astro
+// 301 redirect to /author/submit — the form lives there until the full rename
+// is completed in a follow-on sprint. Tanya §9: /community/submit is the
+// canonical URL; /author/submit will eventually 301 here, not the other way.
+// TODO: move /author/submit.astro content here and have /author/submit redirect to this page.
+export const prerender = false;
+return Astro.redirect('/author/submit', 301);
+---

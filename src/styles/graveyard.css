@@ -14,23 +14,10 @@
   initial-value: 60%;
 }
 
-/* ── Graveyard design tokens ─────────────────────────────────────
-   OKLCH gives perceptually-uniform colour across OLED + IPS displays.
-   Pure black causes halation; warm charcoal (14%) does not. — Tanya §1.1
+/* ── Graveyard design tokens live in tokens.css (Tanya §1.4) ────────
+   OKLCH tokens migrated: --color-grave-bg/surface/border/text/ghost,
+   --shadow-grave-card. --radius-grave aliased to --radius-sm (both 6px).
 */
-:root {
-  --color-grave-bg:      oklch(14% 0.015 50);
-  --color-grave-surface: oklch(19% 0.012 50);
-  --color-grave-border:  oklch(28% 0.010 50);
-  --color-grave-text:    oklch(65% 0.008 50);
-  --color-grave-ghost:   oklch(40% 0.006 50);
-  --radius-grave: 6px;
-
-  /* Inset shadow: sunken/buried feeling. — Tanya §1.2 */
-  --shadow-grave-card:
-    inset 0 1px 0 oklch(28% 0.01 50 / 0.6),
-    0 2px 8px oklch(8% 0.01 50 / 0.4);
-}
 
 /* ── Keyframes ───────────────────────────────────────────────────── */
 
@@ -60,10 +47,10 @@
   100% { color: var(--color-grave-text); }
 }
 
-/* Single quiet bloom ring — no particle burst, graveyard is silent — Tanya §3.5 */
+/* Single quiet bloom ring — no particle burst, graveyard is silent — Tanya §3.5, §8 */
 @keyframes bloom-ring-once {
-  0%   { box-shadow: var(--shadow-grave-card), 0 0 0 0 oklch(72% 0.12 65 / 0.35); }
-  100% { box-shadow: var(--shadow-grave-card), 0 0 0 20px oklch(72% 0.12 65 / 0); }
+  0%   { box-shadow: var(--shadow-grave-card), 0 0 0 0   var(--mood-accent, oklch(72% 0.12 65 / 0.35)); }
+  100% { box-shadow: var(--shadow-grave-card), 0 0 0 20px var(--mood-accent, oklch(72% 0.12 65 / 0)); }
 }
 
 /* ── Page: dark warm charcoal background ─────────────────────────── */
@@ -91,6 +78,10 @@
   animation-timeline: view();
   animation-range: entry 0% entry 40%;
 }
+
+/* Column entrance stagger: left leads, right follows — Tanya §8 */
+.tombs > .tombstone-card:nth-child(odd)  { animation-delay: 0ms; }
+.tombs > .tombstone-card:nth-child(even) { animation-delay: 80ms; }
 
 /* Browsers without scroll-driven animation support */
 @supports not (animation-timeline: view()) {

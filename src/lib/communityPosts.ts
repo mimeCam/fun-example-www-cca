@@ -47,6 +47,14 @@ function ensureTable(d: Database.Database): void {
 }
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Community posts decay twice as fast as blog posts (180d vs 365d).
+ *  Faster decay increases revival urgency — the product's emotional core. */
+export const COMMUNITY_MAX_DAYS = 180;
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 

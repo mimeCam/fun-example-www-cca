@@ -114,3 +114,9 @@
   0%, 100% { transform: scale(1.0); }
   50%       { transform: scale(0.97); }
 }
+
+/* Death clock ring — fades in/out for critical + dying urgency tiers — Tanya §1.5 */
+@keyframes clock-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}

@@ -41,12 +41,7 @@ const VERDICT_LABELS: Record<string, string> = {
   'abandoned':  'Abandoned',
 };
 
-const VERDICT_COLORS: Record<string, string> = {
-  'still-true': '#10b981',
-  'evolved':    '#f59e0b',
-  'wrong':      '#f87171',
-  'abandoned':  '#6b7280',
-};
+// Color is now driven by CSS via data-verdict attribute — zero hardcoded hex (Tanya §3).
 
 const VERDICT_ICONS: Record<string, string> = {
   'still-true': '✓',
@@ -57,7 +52,6 @@ const VERDICT_ICONS: Record<string, string> = {
 
 const verdictOutcome  = verdict?.verdict           ?? null;
 const verdictLabel    = verdictOutcome ? (VERDICT_LABELS[verdictOutcome] ?? verdictOutcome) : null;
-const verdictColor    = verdictOutcome ? (VERDICT_COLORS[verdictOutcome] ?? '#6b7280')      : null;
 const verdictIcon     = verdictOutcome ? (VERDICT_ICONS[verdictOutcome]  ?? '◈')            : null;
 const verdictNote     = verdict?.note              ?? null;
 const verdictSealedAt = verdict?.sealedAt          ?? null;
@@ -146,10 +140,10 @@ function fmtTs(ts: number): string {
     {verdict ? (
       <div class="vc-verdict-block">
 
-        <!-- Outcome badge — the centrepiece of Act II -->
+        <!-- Outcome badge — color driven by data-verdict CSS, not inline style (Tanya §3) -->
         <div
           class="vc-outcome-badge"
-          style={`color: ${verdictColor};`}
+          data-verdict={verdictOutcome ?? undefined}
           aria-label={`Verdict: ${verdictLabel}`}
         >
           <span class="vc-outcome-icon" aria-hidden="true">{verdictIcon}</span>
@@ -372,7 +366,15 @@ function fmtTs(ts: number): string {
     align-items: center;
     gap: 0.55rem;
     margin-bottom: 1rem;
+    /* default: neutral tone when no data-verdict */
+    color: var(--verdict-pending);
   }
+
+  /* data-verdict drives color — single tokens.css change propagates everywhere */
+  .vc-outcome-badge[data-verdict="still-true"] { color: var(--verdict-true); }
+  .vc-outcome-badge[data-verdict="evolved"]    { color: var(--gold); }
+  .vc-outcome-badge[data-verdict="wrong"]      { color: var(--verdict-wrong); }
+  .vc-outcome-badge[data-verdict="abandoned"]  { color: var(--verdict-pending); }
 
   .vc-outcome-icon {
     font-size: 1.5rem;
