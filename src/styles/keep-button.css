@@ -121,7 +121,7 @@
 
 .keep-btn[data-keep-state="error"] {
   animation: keep-error-shake 300ms var(--motion-flow-easing, ease) forwards;
-  color: var(--verdict-wrong, #f87171);
+  color: var(--verdict-wrong);
 }
 
 /* ── Critical urgency ring (gold pulse, per Tanya §4.3) ── */
@@ -145,6 +145,6 @@
   .keep-btn[data-keep-state="holding"] .keep-arc { display: none; }
   .keep-btn[data-keep-state="threshold_reached"] { animation: none; }
   .keep-btn[data-keep-state="submitting"] { animation: none; opacity: 0.7; }
-  .keep-btn[data-keep-state="error"] { animation: none; color: var(--verdict-wrong, #f87171); }
+  .keep-btn[data-keep-state="error"] { animation: none; color: var(--verdict-wrong); }
   .keep-btn--critical[data-keep-state="idle"] { animation: none; }
 }

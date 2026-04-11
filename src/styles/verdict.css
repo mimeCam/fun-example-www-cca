@@ -134,20 +134,20 @@
 
 .verdict-filter-tab--correct.verdict-filter-tab--active {
   color: var(--verdict-true);
-  border-color: rgba(74, 222, 128, 0.35);
-  background: rgba(74, 222, 128, 0.07);
+  border-color: var(--verdict-true-border);
+  background: var(--verdict-true-bg);
 }
 
 .verdict-filter-tab--wrong.verdict-filter-tab--active {
-  color: rgba(220, 80, 80, 0.9);
-  border-color: rgba(220, 80, 80, 0.35);
-  background: rgba(220, 80, 80, 0.07);
+  color: var(--verdict-wrong);
+  border-color: var(--verdict-wrong-border);
+  background: var(--verdict-wrong-bg);
 }
 
 .verdict-filter-tab--pending.verdict-filter-tab--active {
-  color: rgba(255, 255, 255, 0.65);
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--verdict-pending);
+  border-color: var(--verdict-pending-border);
+  background: var(--verdict-pending-bg);
 }
 
 /* Outcome stat value colors — outcome pair in stats bar */

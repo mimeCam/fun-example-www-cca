@@ -21,6 +21,8 @@
   --clr-green-400:  oklch(64%  0.190 145);   /* was hsl(142 70% 45%) */
   --clr-violet-400: oklch(70%  0.180 300);   /* was hsl(262 83% 74%) */
   --clr-slate-400:  oklch(67%  0.030 250);   /* was hsl(215 20% 65%) */
+  --clr-emerald-500: oklch(59%  0.175 163);   /* stance agree — #10b981 equiv  */
+  --clr-amber-500:   oklch(74%  0.170  58);   /* stance torn  — #f59e0b equiv  */
 
   /* ── Page Surface ──────────────────────────────────────────────────── */
   --surface-base:    #0c0c0e;
@@ -54,10 +56,25 @@
   --color-revival:      var(--clr-amber-400);
 
   /* ── Verdict Semantic Colors ─────────────────────────────────────────── */
-  --verdict-true:    #4ade80;  /* green — still true */
-  --verdict-wrong:   #f87171;  /* red — wrong / abandoned */
-  --verdict-pending: #94a3b8;  /* slate — unaudited */
-  --verdict-evolved: #a78bfa;  /* violet — evolved */
+  --verdict-true:    var(--clr-green-400);    /* oklch(64% 0.190 145) — perceptually uniform green */
+  --verdict-wrong:   var(--clr-red-500);      /* oklch(55% 0.220  25) — perceptually uniform red   */
+  --verdict-pending: var(--clr-slate-400);    /* oklch(67% 0.030 250) — neutral, cool slate        */
+  --verdict-evolved: var(--clr-violet-400);   /* oklch(70% 0.180 300) — violet evolution signal    */
+
+  /* Verdict bg/border tints — color-mix preserves P3 gamut expansion (Mike §1) */
+  --verdict-true-bg:        color-mix(in oklch, var(--clr-green-400)   8%, transparent);
+  --verdict-true-border:    color-mix(in oklch, var(--clr-green-400)  20%, transparent);
+  --verdict-wrong-bg:       color-mix(in oklch, var(--clr-red-500)     8%, transparent);
+  --verdict-wrong-border:   color-mix(in oklch, var(--clr-red-500)    20%, transparent);
+  --verdict-pending-bg:     color-mix(in oklch, var(--clr-slate-400)   6%, transparent);
+  --verdict-pending-border: color-mix(in oklch, var(--clr-slate-400)  14%, transparent);
+  --verdict-evolved-bg:     color-mix(in oklch, var(--clr-violet-400)  8%, transparent);
+  --verdict-evolved-border: color-mix(in oklch, var(--clr-violet-400) 20%, transparent);
+
+  /* Stance Semantic Colors (community agree/torn/disagree bar in VerdictCard) */
+  --stance-agree:    var(--clr-emerald-500);
+  --stance-torn:     var(--clr-amber-500);
+  --stance-disagree: var(--verdict-wrong);
 
   /* ── Typography Scale (Major Third ratio 1.25, base-16) ─────────────── */
   --text-3xs:  0.58rem;   /* 9.3px  — stat row labels only */
@@ -115,7 +132,7 @@
   --radius-lg:        16px;     /* modal sheets, drawer overlays */
   --radius-xl:        24px;     /* hero panels, wide feature blocks */
   --radius-full:      9999px;   /* presence dot, loaders */
-  --radius-tombstone: 8px;      /* fossils: intentionally crisper — calcified */
+  --radius-tombstone: 8px 8px 0 0;  /* crown-rounded, flat base — sits in ground (Tanya §5) */
   /* Alias for backward-compat (existing code uses --radius) */
   --radius: var(--radius-md);
 
@@ -242,10 +259,11 @@
 
   /* ── Verdict Outcome Backgrounds (Tanya §10) ────────────────────────── */
   /* Pills, ceremony sections, VerdictCard — all 6% alpha tints.          */
-  --correct-bg:  rgba(74,  222, 128, 0.10);
-  --wrong-bg:    rgba(248, 113, 113, 0.10);
-  --pending-bg:  rgba(255, 255, 255, 0.05);
-  --evolved-bg:  rgba(167, 139, 250, 0.10);
+  /* Backward-compat aliases — remove after burn-in confirms all refs migrated (Mike §1) */
+  --correct-bg:  var(--verdict-true-bg);
+  --wrong-bg:    var(--verdict-wrong-bg);
+  --pending-bg:  var(--verdict-pending-bg);
+  --evolved-bg:  var(--verdict-evolved-bg);
 
   /* ── Deep Surface (Tanya §10) ───────────────────────────────────────── */
   /* VerdictCeremony shell, audit pages, admin dark panels                 */
@@ -259,6 +277,6 @@
     0 2px 8px rgba(0, 0, 0, 0.4);
   /* Disputed: a card under scrutiny has a subtle red cast                */
   --shadow-card-disputed:
-    0 4px 16px rgba(248, 113, 113, 0.10),
+    0 4px 16px color-mix(in oklch, var(--clr-red-500) 10%, transparent),
     0 2px 8px rgba(0, 0, 0, 0.3);
 }

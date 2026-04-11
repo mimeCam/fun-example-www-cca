@@ -4,6 +4,31 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v69 — Design Token Standardization (2026-04-11)
+#   Sprint: Replaced hardcoded hex colours in VerdictCard, TombstoneCard,
+#     keep-button.css and verdict.css with design-system tokens from tokens.css.
+#     Pure UIX/design-system polish sprint — zero infrastructure changes.
+#   Updated files:
+#     src/styles/tokens.css — added --clr-emerald-500, --clr-amber-500 (oklch);
+#       --stance-agree/torn/disagree semantic aliases; --verdict-*-bg and
+#       --verdict-*-border color-mix tints (oklch P3-safe); backward-compat
+#       --correct-bg/wrong-bg/pending-bg/evolved-bg aliases preserved;
+#       --radius-tombstone updated to "8px 8px 0 0" (crown-rounded, flat base);
+#       --shadow-card-disputed now uses color-mix(oklch) instead of rgba().
+#     src/components/VerdictCard.astro — all hardcoded #f59e0b/#10b981/#f87171
+#       replaced with --gold, --stance-agree, --stance-torn, --stance-disagree.
+#     src/components/TombstoneCard.astro — border-radius switched from literal
+#       "8px 8px 0 0" to var(--radius-tombstone) (single source of truth).
+#     src/styles/keep-button.css — removed #f87171 fallback from --verdict-wrong
+#       (token now always defined; fallback was a dead letter).
+#     src/styles/verdict.css — filter-tab border/background replaced with
+#       --verdict-*-border / --verdict-*-bg token pairs.
+#     AGENTS.md — sprint logged.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v68 — Graveyard Pagination (2026-04-11)
 #   Sprint: Server-side paginated graveyard view (?stage=graveyard&page=N);
 #     20 tombstones/page; URL-driven, crawlable, shareable. Pure SSR/UIX sprint.

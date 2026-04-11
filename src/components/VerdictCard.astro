@@ -179,7 +179,7 @@ const cardStyle = `--state-color: ${stateColor};`;
     position: relative;
     background: #1a1612;
     border: 1px solid #2a2420;
-    border-left: 3px solid var(--state-color, #f59e0b);
+    border-left: 3px solid var(--state-color, var(--gold));
     border-radius: 12px;
     padding: 1rem 1.1rem 0.9rem;
     display: flex;
@@ -228,7 +228,7 @@ const cardStyle = `--state-color: ${stateColor};`;
     transition: color 150ms ease;
   }
 
-  .vc-title-link:hover { color: #f59e0b; }
+  .vc-title-link:hover { color: var(--gold); }
 
   .vc-state-badge {
     align-self: flex-start;
@@ -294,9 +294,9 @@ const cardStyle = `--state-color: ${stateColor};`;
     min-width: 4px; /* always visible even at 1% */
   }
 
-  .vc-stance-seg--agree    { background: #10b981; } /* emerald */
-  .vc-stance-seg--torn     { background: #f59e0b; } /* amber   */
-  .vc-stance-seg--disagree { background: #f87171; } /* red     */
+  .vc-stance-seg--agree    { background: var(--stance-agree); }
+  .vc-stance-seg--torn     { background: var(--stance-torn); }
+  .vc-stance-seg--disagree { background: var(--stance-disagree); }
 
   .vc-stance-legend {
     display: flex;
@@ -310,9 +310,9 @@ const cardStyle = `--state-color: ${stateColor};`;
     font-family: ui-monospace, 'Cascadia Code', monospace;
   }
 
-  .vc-leg--agree    { color: #10b981; }
-  .vc-leg--torn     { color: #f59e0b; }
-  .vc-leg--disagree { color: #f87171; }
+  .vc-leg--agree    { color: var(--stance-agree); }
+  .vc-leg--torn     { color: var(--stance-torn); }
+  .vc-leg--disagree { color: var(--stance-disagree); }
 
   .vc-leg-total {
     font-size: 0.58rem;
@@ -341,7 +341,7 @@ const cardStyle = `--state-color: ${stateColor};`;
     font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.03em;
-    color: #f59e0b;
+    color: var(--gold);
     text-decoration: none;
     transition: opacity 150ms ease;
   }
@@ -349,7 +349,7 @@ const cardStyle = `--state-color: ${stateColor};`;
   .vc-cta:hover { opacity: 0.7; }
 
   .vc-cta--ghost    { color: rgba(255, 255, 255, 0.35); }
-  .vc-cta--verdict  { color: #10b981; } /* emerald — loop closed */
+  .vc-cta--verdict  { color: var(--stance-agree); } /* emerald — loop closed */
 
   .vc-audit-link {
     font-size: 0.62rem;

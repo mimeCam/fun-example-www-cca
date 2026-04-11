@@ -134,7 +134,7 @@ function calcSurvivalDays(p: PostDisplayData): number {
   .tombstone {
     background: oklch(calc(12% + var(--tomb-age, 0.5) * 6%) 0.01 50 / 0.95);
     border: 1px solid var(--color-grave-border);
-    border-radius: 8px 8px 0 0;   /* Tanya: tombstones sit in the ground */
+    border-radius: var(--radius-tombstone);  /* Tanya §5: crown-rounded, flat base */
     box-shadow: none;              /* Tanya: the dead cast no shadow */
     padding: 0;
     overflow: hidden;
@@ -145,7 +145,7 @@ function calcSurvivalDays(p: PostDisplayData): number {
     width: 100%;
     aspect-ratio: 16 / 5;
     overflow: hidden;
-    border-radius: 8px 8px 0 0;
+    border-radius: var(--radius-tombstone);
   }
 
   .tomb-cover-img {
