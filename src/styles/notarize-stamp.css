@@ -1,0 +1,193 @@
+/* src/styles/notarize-stamp.css
+ * Phase 3.5 notarize ceremony — wax bloom, RFC 3161 timestamp hero, hash reveal.
+ * All selectors scoped to .notarize-stamp. Zero global pollution.
+ * Triggered exclusively by [data-seal-phase="3.5"] on the ceremony container.
+ *
+ * Motion budget: bloom 500ms · stamp-settle 300ms · ts-appear 400ms · hash 800ms
+ * Uses existing motion tokens: --motion-duration-deliberate / base / --ease-spring.
+ *
+ * Credits: Mike (§NotarizeStamp §wax-bloom §graceful-null-path), Tanya (§5 Phase 3.5)
+ */
+
+/* ── @property: animated SVG circle radius ──────────────────────── */
+/* Enables CSS-driven r animation on <circle> — GPU composited.      */
+/* Chrome 100+, Firefox 128+, Safari 17.2+ — degrades to opacity fade. */
+
+@property --ns-bloom-r {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* ── Base: stamp hidden until phase 3.5 ─────────────────────────── */
+
+.notarize-stamp {
+  display:         none;
+  flex-direction:  column;
+  align-items:     center;
+  gap:             var(--space-3);
+  padding:         var(--space-6) var(--space-5);
+  text-align:      center;
+  position:        relative;
+  overflow:        hidden;
+  box-shadow:      var(--notarize-shadow);
+  border-radius:   var(--radius-lg);
+}
+
+/* Show at phase 3.5 — the notarize moment */
+[data-seal-phase="3.5"] .notarize-stamp {
+  display: flex;
+}
+
+/* At phase 3.5, hide the form so stamp has full focus */
+[data-seal-phase="3.5"] .seal-form {
+  display: none;
+}
+
+/* ── Entry: @starting-style mount animation ──────────────────────── */
+
+.notarize-stamp {
+  opacity:   1;
+  translate: 0 0;
+  transition:
+    opacity   var(--motion-duration-base) var(--motion-easing-standard),
+    translate var(--motion-duration-base) var(--motion-easing-standard);
+}
+
+@starting-style {
+  .notarize-stamp {
+    opacity:   0;
+    translate: 0 10px;
+  }
+}
+
+/* ── Wax bloom: SVG radial gradient, r animated via @property ─────── */
+
+.ns-bloom-svg {
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  pointer-events: none;
+  z-index:    0;
+}
+
+.ns-bloom-circle {
+  r:          var(--ns-bloom-r);
+  cx:         50%;
+  cy:         50%;
+  transition: --ns-bloom-r var(--notarize-bloom-duration) var(--motion-easing-standard);
+}
+
+[data-seal-phase="3.5"] .ns-bloom-circle {
+  --ns-bloom-r: 120px;
+}
+
+/* ── Seal mark: ⬡ arrives with spring overshoot ─────────────────── */
+
+@keyframes stamp-settle {
+  0%   { transform: scale(0.4) translateY(-6px); opacity: 0; }
+  60%  { transform: scale(1.1) translateY(1px);  opacity: 1; }
+  80%  { transform: scale(0.95) translateY(0);   opacity: 1; }
+  100% { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+
+.ns-seal-mark {
+  font-size:   var(--notarize-mark-size);
+  color:       var(--gold);
+  line-height: 1;
+  position:    relative;
+  z-index:     1;
+  opacity:     0;
+}
+
+[data-seal-phase="3.5"] .ns-seal-mark {
+  animation: stamp-settle var(--motion-duration-base) var(--ease-spring) 80ms forwards;
+}
+
+/* ── Status label ────────────────────────────────────────────────── */
+
+.ns-label {
+  font-size:      var(--text-3xs);
+  font-weight:    var(--weight-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--gold-dim);
+  position:       relative;
+  z-index:        1;
+  opacity:        0;
+  transition:     opacity var(--motion-duration-base) var(--motion-easing-standard);
+  transition-delay: 120ms;
+}
+
+[data-seal-phase="3.5"] .ns-label {
+  opacity: 1;
+}
+
+/* ── RFC 3161 timestamp: the hero ───────────────────────────────── */
+
+@keyframes ts-appear {
+  from { opacity: 0; translate: 0 4px; }
+  to   { opacity: 1; translate: 0 0;   }
+}
+
+.ns-ts {
+  font-size:    var(--notarize-ts-size);
+  font-family:  var(--font-mono);
+  font-weight:  var(--weight-bold);
+  color:        var(--gold);
+  line-height:  1.1;
+  letter-spacing: var(--tracking-tight);
+  position:     relative;
+  z-index:      1;
+  opacity:      0;
+}
+
+[data-seal-phase="3.5"] .ns-ts {
+  animation: ts-appear var(--motion-duration-deliberate) var(--motion-easing-standard) 200ms forwards;
+}
+
+/* ── Hash: clip-path ink-dry reveal ─────────────────────────────── */
+/* Reuses the same reveal + ink-dry technique as seal-ceremony.css.  */
+
+@keyframes ns-reveal-hash {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0%   0 0); }
+}
+
+@keyframes ns-hash-ink-dry {
+  from { color: var(--text-ghost); }
+  to   { color: var(--gold-dim);   }
+}
+
+.ns-hash {
+  font-family:    var(--font-mono);
+  font-size:      var(--text-3xs);
+  letter-spacing: var(--tracking-normal);
+  color:          var(--text-ghost);
+  clip-path:      inset(0 0% 0 0);
+  position:       relative;
+  z-index:        1;
+  margin:         0;
+  min-height:     1em;  /* reserves space before populated */
+}
+
+[data-seal-phase="3.5"] .ns-hash {
+  animation:
+    ns-reveal-hash  800ms linear     350ms forwards,
+    ns-hash-ink-dry   2s  ease-in-out 350ms forwards;
+}
+
+/* ── Reduced motion: collapse all to opacity-only transitions ─────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .notarize-stamp,
+  .ns-seal-mark,
+  .ns-label,
+  .ns-ts,
+  .ns-hash               { transition: opacity var(--motion-duration-fast) linear; }
+  .ns-bloom-circle       { transition: none; }
+  [data-seal-phase="3.5"] .ns-seal-mark { animation: none; opacity: 1; }
+  [data-seal-phase="3.5"] .ns-ts        { animation: none; opacity: 1; }
+  [data-seal-phase="3.5"] .ns-hash      { animation: none; clip-path: none; color: var(--gold-dim); }
+}

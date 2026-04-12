@@ -1,0 +1,47 @@
+---
+// src/components/NotarizeStamp.astro
+// Phase 3.5 ceremony visual — wax bloom, RFC 3161 timestamp hero, hash ink-dry.
+//
+// Static shell only: ConvictionSeal.astro's script populates the data slots:
+//   [data-ns-label] — "NOTARIZED" | "Anchoring locally…" (null tst_token path)
+//   [data-ns-ts]    — sealedAt in UTC, e.g. "Apr 12, 2026, 5:32 AM"
+//   [data-ns-hash]  — first 32 chars of hash + "…"
+//
+// No client JS here. Pure CSS phase-driven via [data-seal-phase="3.5"] ancestor.
+// sealedAt is always the hero. tst_token is additive proof, not a precondition.
+//
+// Credits: Mike (§NotarizeStamp §wax-bloom §graceful-null-path), Tanya (§5 Phase 3.5)
+---
+
+<div class="notarize-stamp" data-notarize-stamp aria-live="polite" aria-label="Sealing in progress">
+
+  <!-- Wax bloom: radial gradient, r animated by @property --ns-bloom-r -->
+  <!-- GPU composited — respects prefers-reduced-motion via CSS @media   -->
+  <svg class="ns-bloom-svg" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="ns-bloom-grad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="var(--notarize-bloom-core)" stop-opacity="0.85" />
+        <stop offset="50%"  stop-color="var(--notarize-bloom-mid)"  stop-opacity="0.40" />
+        <stop offset="100%" stop-color="var(--notarize-bloom-edge)" stop-opacity="0"   />
+      </radialGradient>
+    </defs>
+    <circle class="ns-bloom-circle" cx="100" cy="100" fill="url(#ns-bloom-grad)" />
+  </svg>
+
+  <!-- Seal mark: springs in with overshoot on phase 3.5 -->
+  <span class="ns-seal-mark" aria-hidden="true">⬡</span>
+
+  <!-- Status label: NOTARIZED or "Anchoring locally…" on null tst_token -->
+  <p class="ns-label" data-ns-label>NOTARIZED</p>
+
+  <!-- RFC 3161 timestamp: the hero — gold, 2rem, deliberate -->
+  <time class="ns-ts" data-ns-ts datetime="">—</time>
+
+  <!-- Hash: ink-dry clip-path reveal, ghost → gold -->
+  <p class="ns-hash" data-ns-hash aria-label="Content hash"></p>
+
+</div>
+
+<style>
+  @import '../styles/notarize-stamp.css';
+</style>

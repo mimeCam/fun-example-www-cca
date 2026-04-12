@@ -376,4 +376,19 @@
   --atm-sepia-filter:  0%;                    /* entombed age tone — 15% at max   */
   --atm-glow-color:    transparent;           /* risen revival bloom              */
   --atm-bloom-color:   var(--keep-accent);    /* bloom particle color per stage   */
+
+  /* ── Notarize Moment tokens (Phase 3.5 ceremony) ────────────────────────── */
+  /* Referenced exclusively by notarize-stamp.css — no other consumers.        */
+  /* Palette: OKLCH amber — extends existing conviction-gold primitives.        */
+  /* Credits: Mike (§NotarizeStamp §wax-bloom), Tanya (§5 Phase 3.5 spec)      */
+  --notarize-bloom-core:     oklch(78% 0.20 68);   /* amber bright — bloom center    */
+  --notarize-bloom-mid:      oklch(72% 0.14 60);   /* amber warm  — mid gradient     */
+  --notarize-bloom-edge:     oklch(55% 0.08 50);   /* amber deep  — fades to nothing */
+  --notarize-ts-size:        2rem;                  /* RFC 3161 hero timestamp size   */
+  --notarize-mark-size:      2.4rem;                /* ⬡ seal mark in bloom           */
+  --notarize-bloom-duration: var(--motion-duration-deliberate); /* 500ms primary     */
+  --notarize-pause-duration: 800ms;                 /* ceremonial pause — do not change */
+  --notarize-shadow:
+    0 0 40px oklch(78% 0.14 68 / 18%),
+    0 8px 32px rgba(0, 0, 0, 0.40);
 }

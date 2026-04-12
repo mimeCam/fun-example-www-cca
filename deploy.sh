@@ -4,6 +4,43 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v78 — Phase 3.5 Notarize Moment (2026-04-12)
+#   Sprint: Cinematic seal ceremony gains a Phase 3.5 (NOTARIZE) interstitial
+#     between lock (POST resolves) and receipt (phase 4). Pure UIX/animation
+#     sprint — zero infrastructure changes.
+#   New files:
+#     src/lib/seal-phases.ts — pure state machine: SealPhase = 0|1|2|3|3.5|4;
+#       transition() is side-effect-free and safe to unit-test; NOTARIZE=3.5
+#       named constant; isLocked() guards escape abort; SealEvent union type.
+#     src/components/NotarizeStamp.astro — static shell for phase 3.5 ceremony;
+#       wax-bloom SVG (radial gradient, @property --ns-bloom-r GPU-composited r
+#       animation), ⬡ seal mark (stamp-settle spring keyframe), RFC 3161 timestamp
+#       hero (ts-appear, 2rem gold mono), hash ink-dry clip-path reveal;
+#       [data-notarize-stamp] data slots populated by ConvictionSeal.astro script;
+#       null tst_token path plays ceremony with "Anchoring locally…" — no JS error.
+#     src/styles/notarize-stamp.css — all selectors scoped to .notarize-stamp;
+#       triggered exclusively by [data-seal-phase="3.5"] ancestor selector;
+#       @starting-style mount animation; prefers-reduced-motion guard collapses
+#       all to opacity-only; zero hardcoded hex/rgb — 100% token-driven.
+#   Modified files:
+#     src/lib/seal-ceremony.ts — re-exports SealPhase from seal-phases; adds
+#       tst_token: string|null to ReceiptData; onNotarize callback added to
+#       CeremonyCallbacks (fires at 3.5 before 800ms ceremonial pause);
+#       notarize() async helper: setPhase(3.5) → cb.onNotarize → delay(800) →
+#       setPhase(4) → cb.onReceipt; submit() calls notarize() instead of direct
+#       setPhase(4)+onReceipt.
+#     src/styles/tokens.css — 8 new --notarize-* tokens: bloom-core/mid/edge
+#       (OKLCH amber scale), bloom-duration (500ms), mark-size (3rem), ts-size
+#       (2rem), shadow (color-mix oklch gold 12%), gold-dim bridge alias.
+#     src/components/ConvictionSeal.astro — imports NotarizeStamp; adds
+#       onNotarize handler + populateNotarize() to fill [data-ns-ts], [data-ns-hash],
+#       [data-ns-label] slots; stamp ref captured at init; NotarizeStamp rendered
+#       outside <form> so form display:none at phase 4 doesn't hide it.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v77 — AuditVerdictPanel + Audit OG Image Pipeline (2026-04-12)
 #   Sprint: Conviction audit page gains a verdict outcome panel (AuditVerdictPanel)
 #     and a dedicated OG image endpoint. Pure SSR code & UI polish — zero infra

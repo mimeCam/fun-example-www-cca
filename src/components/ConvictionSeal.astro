@@ -4,7 +4,7 @@
 // Sealed state: full conviction display (score, clock, tension, trust badge).
 // Unsealed state: 5-phase ceremony form (idle → hover → press → lock → receipt).
 //
-// CSS custom property --seal-phase (0–4) drives all visual transitions.
+// CSS custom property --seal-phase (0–3.5–4) drives all visual transitions.
 // Progressive enhancement: works as plain <form> without JS.
 //
 // Credits: Mike (§Architecture, §CSS-state-machine), Tanya (§Moment-1 ceremony spec),
@@ -14,6 +14,7 @@ import { getSealEntry }   from '../lib/conviction-ledger';
 import DecayClock         from './DecayClock.astro';
 import TrustBadge         from './TrustBadge.astro';
 import TensionBadge       from './TensionBadge.astro';
+import NotarizeStamp      from './NotarizeStamp.astro';
 import { clockUrgency }   from '../lib/death-clock';
 import type { GraceState }          from '../lib/cold-start';
 import type { ConvictionVerdict }   from '../lib/decay-engine';
@@ -215,6 +216,10 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
       </a>
     </div>
   </form>
+
+  <!-- Phase 3.5 notarize ceremony — outside form so form display:none doesn't hide it -->
+  <!-- Shown by [data-seal-phase="3.5"] selector; hidden at all other phases            -->
+  <NotarizeStamp />
 </div>
 )}
 
@@ -633,8 +638,8 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
 </style>
 
 <script>
-  import { createCeremony }    from '../lib/seal-ceremony';
-  import type { SealPhase }    from '../lib/seal-ceremony';
+  import { createCeremony }         from '../lib/seal-ceremony';
+  import type { SealPhase, ReceiptData } from '../lib/seal-ceremony';
   import { ceremonyStart, ceremonyAbort, ceremonyResolve } from '../lib/ceremony-atmosphere';
 
   /** Map seal phase transitions to atmosphere lifecycle. */
@@ -652,6 +657,7 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     const arc        = container.querySelector<SVGCircleElement>('[data-arc]')!;
     const errorEl    = container.querySelector<HTMLElement>('[data-error]')!;
     const receipt    = container.querySelector<HTMLElement>('[data-receipt]')!;
+    const stamp      = container.querySelector<HTMLElement>('[data-notarize-stamp]')!;
     const slug       = container.dataset.slug!;
 
     let score    = 5;
@@ -667,8 +673,9 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
         arc.classList.toggle('is-filling', phase === 2);
         handleCeremonyAtmosphere(phase, slug, active);
       },
-      onReceipt: (data) => populateReceipt(receipt, data),
-      onError:   (msg)  => { errorEl.textContent = msg; errorEl.style.display = 'block'; },
+      onNotarize: (data) => populateNotarize(stamp, data),
+      onReceipt:  (data) => populateReceipt(receipt, data),
+      onError:    (msg)  => { errorEl.textContent = msg; errorEl.style.display = 'block'; },
     });
 
     // Escape key: abort only when not locked (phase < 3 = POST not yet in flight).
@@ -729,6 +736,19 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
       ?.addEventListener('mouseleave', () => ceremony.unhover());
 
     setScore(5);
+  }
+
+  /** Populates the phase 3.5 NotarizeStamp shell with live seal data. */
+  function populateNotarize(el: HTMLElement, data: ReceiptData): void {
+    const tsEl    = el.querySelector<HTMLElement>('[data-ns-ts]')!;
+    const hashEl  = el.querySelector<HTMLElement>('[data-ns-hash]')!;
+    const labelEl = el.querySelector<HTMLElement>('[data-ns-label]')!;
+    const dt      = new Date(data.sealedAt);
+    tsEl.textContent  = dt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
+    tsEl.setAttribute('datetime', dt.toISOString());
+    hashEl.textContent  = data.hash.slice(0, 32) + '…';
+    // Null tst_token path: ceremony still plays, label explains state — no JS error.
+    labelEl.textContent = data.tst_token ? 'NOTARIZED' : 'Anchoring locally…';
   }
 
   function populateReceipt(el: HTMLElement, data: { hash: string; sealedAt: string; score: number; anchorUrl: string | null }): void {
