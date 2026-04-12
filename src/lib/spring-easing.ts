@@ -52,3 +52,20 @@ function frame(
 export function countUp(from: number, to: number, onTick: TickFn, onDone: DoneFn): void {
   requestAnimationFrame(now => frame(now, from, to, onTick, onDone, now));
 }
+
+// ---------------------------------------------------------------------------
+// Heartbeat profiles — 3 named rhythms for DecayClock pulse animation.
+// Values are CSS-ready: duration (ms), easing string, delay (ms).
+// Credits: Mike §3 heartbeat spec · Tanya §4.3 clock visibility rules.
+// ---------------------------------------------------------------------------
+
+/** Steady 72bpm — fresh posts are alive and confident. */
+export const HEARTBEAT_FRESH    = { duration: 833,  easing: 'ease-in-out', delay: 0   } as const;
+
+/** Slow-irregular 55bpm — fading, slight hesitation on each beat. */
+export const HEARTBEAT_FADING   = { duration: 1090, easing: 'ease-in-out', delay: 200 } as const;
+
+/** Erratic 38bpm — critical, no spring, each beat earned not guaranteed. */
+export const HEARTBEAT_CRITICAL = { duration: 1578, easing: 'linear',      delay: 600 } as const;
+
+export type HeartbeatProfile = typeof HEARTBEAT_FRESH;

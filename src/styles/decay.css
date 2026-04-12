@@ -20,23 +20,25 @@
     blur(var(--decay-blur, 0px))
     saturate(var(--decay-saturation, 1))
     sepia(var(--decay-sepia, 0));  /* 0 → 0.15 at full fossil; Tanya §4.5 */
+  /* Shadow uses atmosphere bloom color — joins the cascade (Mike §2, Tanya §1.2) */
   box-shadow:
     0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
-    rgba(var(--mood-accent-rgb, 212, 149, 106), var(--decay-shadow-alpha, 0.22)),
+    color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent, oklch(80% 0.22 80))) calc(var(--decay-shadow-alpha, 0.22) * 100%), transparent),
     0 2px 8px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, calc(0.08 * var(--decay-opacity, 1)));
   transition:
-    opacity       var(--motion-drift-duration)   var(--motion-drift-easing),
-    filter        var(--motion-drift-duration)   var(--motion-drift-easing),
-    box-shadow    var(--motion-drift-duration)   var(--motion-drift-easing),
-    border-radius var(--motion-drift-duration)   var(--motion-drift-easing),
-    transform     var(--motion-spring-duration)  var(--motion-spring-easing);
+    opacity       var(--motion-drift-duration)    var(--motion-drift-easing),
+    filter        var(--motion-drift-duration)    var(--motion-drift-easing),
+    /* Priority 1 fix (Elon §1, Tanya §1.2): shadow = elevation = gravity = ease-in-out */
+    box-shadow    var(--motion-duration-deliberate) var(--motion-easing-standard),
+    border-radius var(--motion-duration-deliberate) var(--motion-easing-standard),
+    transform     var(--motion-spring-duration)   var(--motion-spring-easing);
   transform: translateY(0);
-  /* Calcification: fresh=16px soft → fossil=8px crisp. Tanya §4 "corners calcify."
+  /* Calcification: fresh=20px organic → fossil=4px stone. Tanya §1.3 expanded range.
      --decay-factor is 0 (fresh) → 1 (fossil), set by decay-engine JS per card.
-     calc(16px − factor × 8px): 0→16px, 0.5→12px, 1→8px.
-     Uses --radius-md (16px token alias via --radius) down to --radius-tombstone (8px). */
-  border-radius: calc(var(--radius, 16px) - var(--decay-factor, 0) * 8px);
+     calc(20px − factor × 16px): 0→20px, 0.5→12px, 0.875→6px, 1→4px.          */
+  --card-computed-radius: calc(20px - var(--decay-factor, 0) * 16px);
+  border-radius: var(--card-computed-radius);
   will-change: transform, box-shadow;
 }
 
@@ -65,7 +67,7 @@
   opacity: 1;
   filter: blur(0px) saturate(1) sepia(0);
   box-shadow: var(--shadow-card-hover);
-  border-color: rgba(var(--mood-accent-rgb, 212, 149, 106), 0.15);
+  border-color: color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 15%, transparent);
   /* Decay-aware lift: fresh lifts 2px, fossil barely moves — it's heavy. */
   transform: translateY(calc(-2px * var(--decay-opacity, 1)));
   transition:

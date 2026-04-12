@@ -44,7 +44,8 @@
   --border-medium: rgba(255, 255, 255, 0.12);
 
   /* ── Conviction Gold — the accountability color ─────────────────────── */
-  --gold:        #F5A623;
+  --clr-gold-400: oklch(78% 0.14 68deg);  /* perceptual match to #F5A623 — Tanya §1 */
+  --gold:        var(--clr-gold-400);     /* backward-compat bridge; was hardcoded hex */
   --gold-dim:    rgba(245, 166, 35, 0.55);
   --gold-glow:   rgba(245, 166, 35, 0.18);
   --gold-bg:     rgba(245, 166, 35, 0.08);
@@ -350,6 +351,16 @@
   --keep-pressed: oklch(55% 0.20 145);   /* phase 1: deeper on press         */
   --keep-accent:  oklch(80% 0.22 80);    /* bloom particles — warm gold      */
   --keep-warm:    oklch(85% 0.15 80);    /* post-keep breath tint            */
+
+  /* ── Heartbeat Motion Profiles (3 stage-driven rhythms for DecayClock) ── */
+  /* Fresh = 72bpm steady · Fading = 55bpm hesitant · Critical = 38bpm erratic */
+  /* Spec: Mike §3 heartbeat profiles; Tanya §4.3 clock visibility rules.       */
+  --motion-heartbeat-fresh-duration:    833ms;  /* 72bpm   */
+  --motion-heartbeat-fresh-easing:      ease-in-out;
+  --motion-heartbeat-fading-duration:   1090ms; /* 55bpm — slight hesitation */
+  --motion-heartbeat-fading-easing:     ease-in-out;
+  --motion-heartbeat-critical-duration: 1578ms; /* 38bpm — erratic, no spring */
+  --motion-heartbeat-critical-easing:   linear;
 
   /* ── Atmosphere Tokens — stage-scoped page surface layer ─────────────── */
   /* Default (fresh/neutral) values live here on :root.                     */

@@ -29,11 +29,23 @@ const daysRemaining = post.endangeredDaysLeft;
 const urgency = clockUrgency(daysRemaining);
 // conviction is null when no beliefs declared — maps to transparent tint
 const conviction = post.conviction ?? null;
+
+// Atmosphere stage from decay factor — drives card-scoped color cascade.
+// Tanya §2: endangered cards get data-atmosphere scoped to their cell, not page-wide.
+function cardAtmosphere(factor: number): string {
+  if (factor < 0.25) return 'fresh';
+  if (factor < 0.50) return 'fading';
+  if (factor < 0.75) return 'endangered';
+  if (factor < 0.95) return 'ghost';
+  return 'entombed';
+}
+const atmosphere = cardAtmosphere(post.decay);
 ---
 
 <article
   class="decay-card post-card choreo-pending"
   style={post.decayStyle}
+  data-atmosphere={atmosphere}
   data-slug={post.slug}
   data-pub-date={post.pubDateISO}
   data-decay-factor={post.decay.toFixed(4)}
@@ -59,7 +71,7 @@ const conviction = post.conviction ?? null;
   <PostBadge readingTime={post.readingTime} badge={post.badge} />
   {post.description && <p class="post-excerpt">{post.description}</p>}
   <div class="card-footer">
-    <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} />
+    <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} decayFactor={post.decay} />
     {/* Single badge slot — priority: risen > tension > revival > empty.
         Mutually exclusive: only ONE badge renders (Mike Koch arch §2).
         TensionBadge embedded=true suppresses the tension-memory sub-label. */}
@@ -84,7 +96,7 @@ const conviction = post.conviction ?? null;
     padding: 0;                         /* cover image bleeds edge-to-edge */
     border-radius: var(--radius-card, var(--radius, 12px));
     background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
+    border: 1px solid color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 6%, transparent);
     max-width: 40rem;
     margin: 0 auto 1.25rem;
     display: flex;
@@ -96,7 +108,8 @@ const conviction = post.conviction ?? null;
     width: 100%;
     aspect-ratio: 16 / 7;
     overflow: hidden;
-    border-radius: var(--radius, 16px) var(--radius, 16px) 0 0;
+    /* Matches card top corners — concentric with card border-radius */
+    border-radius: var(--card-computed-radius, 20px) var(--card-computed-radius, 20px) 0 0;
   }
 
   .cover-img {
@@ -113,16 +126,16 @@ const conviction = post.conviction ?? null;
     will-change: filter;
   }
 
-  /* Fallback gradient — same slot, same height, mood-tinted */
+  /* Fallback gradient — same slot, same height, atmosphere-tinted */
   .cover-gradient {
     width: 100%;
     aspect-ratio: 16 / 7;
     background: linear-gradient(
       135deg,
-      rgba(var(--mood-accent-rgb, 120,120,120), calc(0.12 - var(--decay-factor, 0) * 0.08)),
+      color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) calc((0.12 - var(--decay-factor, 0) * 0.08) * 100%), transparent),
       rgba(0, 0, 0, 0.15)
     );
-    border-radius: var(--radius, 16px) var(--radius, 16px) 0 0;
+    border-radius: var(--card-computed-radius, var(--radius, 20px)) var(--card-computed-radius, var(--radius, 20px)) 0 0;
   }
 
   /* Body: inner padding lives here now (removed from .post-card) */
@@ -183,10 +196,11 @@ const conviction = post.conviction ?? null;
     border-top: 1px solid var(--border-subtle);
     background: rgba(12, 12, 14, 0.95);
     backdrop-filter: blur(8px);
+    /* Concentric corners: footer bottom matches card bottom (Tanya §1.3) */
     border-radius:
       0 0
-      var(--radius-card, var(--radius, 12px))
-      var(--radius-card, var(--radius, 12px));
+      var(--card-computed-radius, var(--radius-card, 12px))
+      var(--card-computed-radius, var(--radius-card, 12px));
   }
 
   /* Center badge slot — natural width, no flex-grow */

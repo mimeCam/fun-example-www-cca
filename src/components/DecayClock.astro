@@ -23,8 +23,12 @@ import {
 } from '../lib/death-clock';
 import { getDeadlineStatus } from '../lib/deadline-enforcer';
 import { buildDeadlineDisplay } from '../lib/deadline-clock';
+import { HEARTBEAT_FRESH, HEARTBEAT_FADING, HEARTBEAT_CRITICAL } from '../lib/spring-easing';
 
 type DecayVariant = 'ring' | 'bar' | 'banner';
+
+// Tanya §4.3: five stages, two of which hide the clock entirely.
+type DecayStage = 'fresh' | 'fading' | 'endangered' | 'ghost' | 'fossil';
 
 interface Props {
   variant?:      DecayVariant;
@@ -33,6 +37,8 @@ interface Props {
   urgency?:       ClockUrgency;
   compact?:       boolean;
   conviction?:    ConvictionVerdict | null;
+  /** Decimal 0–1 decay factor. When provided, enables visibility rules + heartbeat. */
+  decayFactor?:  number;
   /** For variant="bar" */
   slug?:        string;
   publishDate?: Date;
@@ -45,16 +51,57 @@ const {
   urgency       = 'aging',
   compact       = false,
   conviction    = null,
+  decayFactor,
   slug,
   publishDate,
   deadline,
 } = Astro.props;
 
+// ── Decay stage from factor (Tanya §4.3 visibility thresholds) ────────────────
+function toDecayStage(f: number): DecayStage {
+  if (f < 0.25) return 'fresh';
+  if (f < 0.50) return 'fading';
+  if (f < 0.75) return 'endangered';
+  if (f < 0.95) return 'ghost';
+  return 'fossil';
+}
+
+const decayStage = decayFactor !== undefined ? toDecayStage(decayFactor) : null;
+
+// Tanya §4.3: no clock on fresh (post thriving) or fossil (no time left).
+const hiddenByStage = variant === 'ring' && (decayStage === 'fresh' || decayStage === 'fossil');
+
+// ── Heartbeat profile from stage ─────────────────────────────────────────────
+function heartbeatForStage(stage: DecayStage | null) {
+  if (stage === 'ghost')     return HEARTBEAT_CRITICAL;
+  if (stage === 'endangered') return HEARTBEAT_CRITICAL;
+  if (stage === 'fading')    return HEARTBEAT_FADING;
+  return HEARTBEAT_FRESH;
+}
+
+const heartbeat = heartbeatForStage(decayStage);
+
+// Fading stage: 30% opacity — ambient, not urgent (Tanya §4.3).
+const ringOpacity = decayStage === 'fading' ? 0.30 : 1;
+
 // ── ring/banner helpers ────────────────────────────────────────────────────────
 const dayDisplay  = deathClockDayDisplay(daysRemaining, urgency);
 const unitDisplay = deathClockUnitDisplay(daysRemaining);
-const a11yLabel   = deathClockA11yLabel(daysRemaining);
-const inlineStyle = clockStyleString(urgency, daysRemaining, conviction);
+
+// Richer aria-label when decay factor is available (Tanya §8 a11y checklist).
+const a11yLabel = decayFactor !== undefined
+  ? `Post is ${Math.round(decayFactor * 100)}% toward expiration — ${deathClockA11yLabel(daysRemaining)}`
+  : deathClockA11yLabel(daysRemaining);
+
+// Merge base clock style with heartbeat CSS vars for stage-driven animation.
+const baseStyle   = clockStyleString(urgency, daysRemaining, conviction);
+const heartbeatStyle = [
+  `--heartbeat-duration:${heartbeat.duration}ms`,
+  `--heartbeat-easing:${heartbeat.easing}`,
+  `--heartbeat-delay:${heartbeat.delay}ms`,
+  `--clock-ring-opacity:${ringOpacity}`,
+].join(';');
+const inlineStyle = baseStyle ? `${baseStyle};${heartbeatStyle}` : heartbeatStyle;
 
 // Urgency tier mapping (ring CSS data-attribute drives pulse token)
 function urgencyTier(u: ClockUrgency): 'warning' | 'critical' | 'final' {
@@ -89,11 +136,12 @@ const deadlineFmt = deadline
   : '';
 ---
 
-{variant === 'ring' && (
+{variant === 'ring' && !hiddenByStage && (
   <div
     class:list={['decay-clock', compact && 'decay-clock--compact']}
     data-urgency={urgency}
     data-tier={tier}
+    data-decay-stage={decayStage ?? undefined}
     data-days-remaining={daysRemaining}
     data-conviction={conviction ?? undefined}
     style={inlineStyle}
@@ -214,7 +262,19 @@ const deadlineFmt = deadline
     transition: stroke-dashoffset 600ms ease, stroke 300ms ease;
     filter: drop-shadow(0 0 4px var(--clock-conviction-tint, transparent));
   }
-  /* Final tier: ring strokes breathe, numbers stay still */
+  /* Ring opacity: fading stage = 30% ambient (Tanya §4.3) */
+  .decay-clock { opacity: var(--clock-ring-opacity, 1); }
+
+  /* Heartbeat: stage-driven via CSS vars (Mike §3, Tanya §4.3).
+     ghost/endangered = erratic slow; fading = hesitant; urgency tiers = fast. */
+  .decay-clock[data-decay-stage] .decay-clock__ring {
+    animation: dc-ring-pulse
+      var(--heartbeat-duration, var(--motion-heartbeat-fresh-duration))
+      var(--heartbeat-easing,   var(--motion-heartbeat-fresh-easing))
+      var(--heartbeat-delay,    0ms) infinite;
+  }
+
+  /* Urgency-tier overrides: final/critical pulse faster than heartbeat rhythm */
   .decay-clock[data-tier="final"] .decay-clock__ring {
     animation: dc-ring-pulse var(--urgency-pulse-speed-final, 0.4s) ease-in-out infinite;
   }

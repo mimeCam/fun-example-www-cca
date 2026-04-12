@@ -166,4 +166,13 @@ const particles = buildParticles(PARTICLE_COUNT);
     0%   { opacity: 0.15; }
     100% { opacity: 0; }
   }
+
+  /* Reduced-motion: hide all bloom elements entirely (Mike §6, Tanya §8).
+     motion.css zeroes --motion-* durations to 0ms, but particles that
+     rely on JS-added .blooming class are hidden here for safety.         */
+  @media (prefers-reduced-motion: reduce) {
+    .bloom-particles,
+    .bloom-ring,
+    .bloom-flash { display: none; }
+  }
 </style>

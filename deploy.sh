@@ -4,6 +4,43 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v76 — DecayClock Heartbeat + Atmosphere Cascade (2026-04-12)
+#   Sprint: Pure UIX polish — DecayClock stage visibility rules, three heartbeat
+#     profiles, card-scoped atmosphere, and a full color-mix() migration away from
+#     the illegal rgba(var(--rgb), var(--alpha)) two-argument pattern.
+#   Key changes:
+#     src/lib/spring-easing.ts — HEARTBEAT_FRESH (833ms 72bpm ease-in-out delay:0),
+#       HEARTBEAT_FADING (1090ms 55bpm ease-in-out delay:200ms), HEARTBEAT_CRITICAL
+#       (1578ms 38bpm linear delay:600ms) typed profile constants; HeartbeatProfile
+#       type exported. CSS vars --heartbeat-duration/easing/delay injected into
+#       DecayClock inline style string.
+#     src/styles/tokens.css — --clr-gold-400 (oklch(78% 0.14 68deg)) + --gold
+#       backward-compat bridge; three --motion-heartbeat-{fresh/fading/critical}-*
+#       duration/easing tokens matching profile constants above.
+#     src/components/DecayClock.astro — decayFactor prop added; toDecayStage()
+#       maps factor to fresh/fading/endangered/ghost/fossil; ring hidden for fresh
+#       (<0.25) and fossil (>0.95); 30% opacity for fading; heartbeat CSS vars
+#       emitted per stage; --clock-ring-opacity drives opacity rule; data-decay-stage
+#       attr enables CSS [data-decay-stage] heartbeat animation selector.
+#     src/components/DecayCard.astro — cardAtmosphere() computes per-card
+#       fresh/fading/endangered/ghost/entombed; data-atmosphere attr scopes
+#       --atm-bloom-color cascade to the card cell; decayFactor passed to DecayClock;
+#       border + cover-gradient migrate rgba(--mood-accent-rgb) → color-mix(oklch).
+#     src/components/KeepButton.astro — all six rgba(--mood-accent-rgb) usages
+#       replaced with color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) N%,
+#       transparent); pact-seal-pulse @keyframes migrated to color-mix too.
+#     src/components/BloomParticles.astro — @media prefers-reduced-motion guard:
+#       .bloom-particles, .bloom-ring, .bloom-flash { display: none } (Mike §6).
+#     src/styles/decay.css — box-shadow migrated to color-mix(oklch); shadow
+#       transition fixed to var(--motion-duration-deliberate) ease-in-out (was
+#       --motion-drift-easing — Priority 1 bug); --card-computed-radius CSS var
+#       introduced (calc: 20px → 4px, expanded from 16→8px); footer + cover-wrap
+#       use var(--card-computed-radius) for concentric corners (Tanya §1.3).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v75 — Ghost Ring + Handle Polish (2026-04-12)
 #   Sprint: Pure UIX polish — two P0 micro-details and one CSS correctness fix.
 #     BattingAverageHero cold-state gets a dashed ghost ring (SVG, 10s linear

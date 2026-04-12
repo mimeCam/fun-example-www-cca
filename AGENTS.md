@@ -13,4 +13,4 @@
 
 - [wip] Seal posts via `/admin` to activate TrustBadge + batting average
 - [wip] Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
-- [wip] DecayCard shadow transitions (500ms deliberate ease-in-out between stages)
+

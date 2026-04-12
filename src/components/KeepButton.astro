@@ -95,9 +95,10 @@ const hasPact     = decayFactor !== undefined;
     font-weight: var(--weight-semibold, 600);
     font-family: var(--font-mono);
     letter-spacing: var(--tracking-widest, 0.10em);
-    color: rgba(var(--mood-accent-rgb, 120,120,120), 0.80);
-    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
-    border: 1.5px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
+    /* color-mix joins the atmosphere cascade — replaces rgba(--mood-accent-rgb) */
+    color: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 80%, transparent);
+    background: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 6%, transparent);
+    border: 1.5px solid color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 25%, transparent);
     border-radius: var(--radius-pill, 9999px);
     cursor: pointer;
     transition:
@@ -109,9 +110,9 @@ const hasPact     = decayFactor !== undefined;
   }
 
   .keep-btn:hover {
-    background:   rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.14);
-    border-color: rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.45);
-    box-shadow:   0 0 16px rgba(var(--clock-urgency-color, var(--mood-accent-rgb, 120,120,120)), 0.18);
+    background:   color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 14%, transparent);
+    border-color: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 45%, transparent);
+    box-shadow:   0 0 16px color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 18%, transparent);
     transform: scale(1.02);
   }
 
@@ -119,13 +120,13 @@ const hasPact     = decayFactor !== undefined;
   .keep-btn:active {
     transform: scale(0.96);
     cursor: grabbing;
-    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.10);
+    background: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 10%, transparent);
   }
 
   /* Pact open — button glows subtly */
   .keep-btn[data-pact-state="open"] {
-    border-color: rgba(var(--mood-accent-rgb, 200,160,60), 0.55);
-    box-shadow:   0 0 12px rgba(var(--mood-accent-rgb, 200,160,60), 0.20);
+    border-color: color-mix(in oklch, var(--keep-accent) 55%, transparent);
+    box-shadow:   0 0 12px color-mix(in oklch, var(--keep-accent) 20%, transparent);
   }
 
   /* Sealing state — brief pulse */
@@ -134,9 +135,9 @@ const hasPact     = decayFactor !== undefined;
   }
 
   @keyframes pact-seal-pulse {
-    0%   { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb,200,160,60), 0); }
-    50%  { box-shadow: 0 0 20px rgba(var(--mood-accent-rgb,200,160,60), 0.35); }
-    100% { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb,200,160,60), 0); }
+    0%   { box-shadow: 0 0 0   color-mix(in oklch, var(--keep-accent) 0%,  transparent); }
+    50%  { box-shadow: 0 0 20px color-mix(in oklch, var(--keep-accent) 35%, transparent); }
+    100% { box-shadow: 0 0 0   color-mix(in oklch, var(--keep-accent) 0%,  transparent); }
   }
 
   /* Kept state — status, not disabled */
@@ -144,8 +145,8 @@ const hasPact     = decayFactor !== undefined;
     opacity: 0.55;
     cursor: default;
     pointer-events: none;
-    background:   rgba(var(--mood-accent-rgb, 120,120,120), 0.08);
-    border-color: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+    background:   color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 8%, transparent);
+    border-color: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 12%, transparent);
   }
 
   /* Critical urgency — pulsing ring */
@@ -192,13 +193,13 @@ const hasPact     = decayFactor !== undefined;
 
   .keep-arc-track {
     fill: none;
-    stroke: rgba(var(--mood-accent-rgb, 120,120,120), 0.12);
+    stroke: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 12%, transparent);
     stroke-width: 2;
   }
 
   .keep-arc-circle {
     fill: none;
-    stroke: rgba(var(--mood-accent-rgb, 212,149,106), 0.65);
+    stroke: color-mix(in oklch, var(--keep-accent) 65%, transparent);
     stroke-width: 2.5;
     stroke-linecap: round;
     transition: stroke 200ms ease;   /* colour shift at TENSION */
@@ -223,9 +224,9 @@ const hasPact     = decayFactor !== undefined;
 
   /* ── State: revived — warm glow then settle ───────────────────── */
   .keep-btn[data-keep-state="revived"] {
-    background:    rgba(var(--mood-accent-rgb, 212,149,106), 0.14);
-    border-color:  rgba(var(--mood-accent-rgb, 212,149,106), 0.50);
-    box-shadow:    0 0 20px rgba(var(--mood-accent-rgb, 212,149,106), 0.22);
+    background:    color-mix(in oklch, var(--keep-accent) 14%, transparent);
+    border-color:  color-mix(in oklch, var(--keep-accent) 50%, transparent);
+    box-shadow:    0 0 20px color-mix(in oklch, var(--keep-accent) 22%, transparent);
     animation: keep-bloom-glow var(--duration-bloom, 1200ms) ease-out forwards;
     opacity: 0.55;
     cursor: default;
@@ -233,11 +234,42 @@ const hasPact     = decayFactor !== undefined;
   }
 
   @keyframes keep-bloom-glow {
-    0%   { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb, 212,149,106), 0.35); }
-    30%  { box-shadow: 0 0 24px rgba(var(--mood-accent-rgb, 212,149,106), 0.28); }
-    100% { box-shadow: 0 0 0   rgba(var(--mood-accent-rgb, 212,149,106), 0); }
+    0%   { box-shadow: 0 0 0   color-mix(in oklch, var(--keep-accent) 35%, transparent); }
+    30%  { box-shadow: 0 0 24px color-mix(in oklch, var(--keep-accent) 28%, transparent); }
+    100% { box-shadow: 0 0 0   color-mix(in oklch, var(--keep-accent) 0%,  transparent); }
+  }
+
+  /* ── Breath-bloom — one pulse of light on click (Mike §4, Tanya §6) ── */
+  /* Triggered by .keep-activated class; JS removes it after animationend. */
+  @keyframes breath-bloom {
+    0%   { box-shadow: 0 0 0 0   var(--atm-bloom-color, var(--keep-accent)); }
+    40%  { box-shadow: 0 0 24px 12px color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 40%, transparent); }
+    100% { box-shadow: 0 0 0 0   transparent; }
+  }
+
+  .keep-btn.keep-activated {
+    animation: breath-bloom 600ms var(--motion-easing-standard, ease-in-out) forwards;
   }
 </style>
+
+<!-- Breath-bloom + haptic feedback on keep-button click (Mike §4, Tanya §6).
+     Runs alongside the revive API call; fully independent of that logic.  -->
+<script>
+  import { haptic, PEAK_CONFIRM } from '../lib/client/haptics';
+
+  function addBloom(btn: HTMLButtonElement): void {
+    btn.classList.add('keep-activated');
+    btn.addEventListener('animationend', () => btn.classList.remove('keep-activated'), { once: true });
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest<HTMLButtonElement>('.keep-btn[data-keep-slug]');
+    if (!btn || btn.classList.contains('kept')) return;
+    if (btn.closest('.revival-footer')) return;
+    haptic(PEAK_CONFIRM);
+    addBloom(btn);
+  });
+</script>
 
 <!-- Orchestrator bootstrap: wires RevivalOrchestrator to all feed-card KeepButtons.
      Single source of truth for hold-to-revive interaction. (Mike Koch arch spec §1)
