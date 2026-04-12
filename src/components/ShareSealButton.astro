@@ -1,0 +1,307 @@
+---
+// src/components/ShareSealButton.astro
+// Phase 5 of the seal ceremony — appears below SealReceipt after a successful seal.
+// Visibility driven by [data-seal-phase="4"] on the ceremony container.
+// Score/date are populated by ConvictionSeal.astro's JS via data attributes.
+//
+// Actions:
+//   "Copy share link" — clipboard API, aria-live "Copied!" confirmation.
+//   "View sealed receipt" — links to /audit/[slug] in a new tab.
+//
+// Animation: CEREMONY motion profile, 200ms delay (after receipt settles).
+// Credits: Mike (napkin plan §ShareSealButton ~150 LOC), Tanya (§5 shareable card spec)
+
+interface Props {
+  slug:  string;
+  title: string;
+}
+
+const { slug, title } = Astro.props;
+const auditUrl  = `/audit/${slug}`;
+const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
+---
+
+<div
+  class="share-seal-card ssc-root"
+  data-share-card
+  data-slug={slug}
+  role="region"
+  aria-label="Share your conviction"
+>
+  <!-- Card grid: title block (3fr) + score block (2fr) -->
+  <div class="ssc-grid">
+    <div class="ssc-title-col">
+      <p class="ssc-post-title">{truncated}</p>
+    </div>
+    <div class="ssc-score-col">
+      <div class="ssc-score-wrap">
+        <span class="ssc-score-num" data-share-score>—</span>
+        <span class="ssc-score-denom">/10</span>
+      </div>
+      <span class="ssc-score-label">conviction</span>
+    </div>
+  </div>
+
+  <!-- Tagline — platform voice, not the author's (Tanya §5) -->
+  <p class="ssc-tagline">I staked my credibility on this. Dispute me.</p>
+
+  <!-- Actions row -->
+  <div class="ssc-actions">
+    <button
+      type="button"
+      class="ssc-copy-btn"
+      data-share-copy
+      aria-label="Copy share link to clipboard"
+    >
+      <span class="ssc-copy-icon" aria-hidden="true">⬡</span>
+      <span class="ssc-copy-label" data-copy-label>Copy share link</span>
+    </button>
+    <!-- Screen readers: copy confirmation announced via aria-live -->
+    <span class="ssc-copy-confirm" data-copy-confirm aria-live="polite" aria-atomic="true"></span>
+
+    <a
+      class="ssc-audit-link"
+      href={auditUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`View sealed receipt for this post (opens new tab)`}
+    >
+      <span aria-hidden="true">↗</span> View sealed receipt
+    </a>
+  </div>
+</div>
+
+<style>
+  /* ── Display control: driven by ancestor [data-seal-phase] ────────────── */
+  .ssc-root { display: none; }
+  [data-seal-phase="4"] .ssc-root { display: block; }
+
+  /* ── Entrance animation: CEREMONY motion, 200ms delay after receipt ────── */
+  .ssc-root {
+    opacity:   1;
+    translate: 0 0;
+    transition:
+      opacity   var(--motion-ceremony-duration, 600ms) var(--motion-ceremony-easing, cubic-bezier(0.34,1.56,0.64,1)),
+      translate var(--motion-ceremony-duration, 600ms) var(--motion-ceremony-easing, cubic-bezier(0.34,1.56,0.64,1));
+    transition-delay: 200ms;
+  }
+
+  @starting-style {
+    .ssc-root { opacity: 0; translate: 0 12px; }
+  }
+
+  /* ── Card shell: gold wash (Tanya §5 token map) ─────────────────────────── */
+  .ssc-root {
+    background:    var(--clr-gold-bg, rgba(245,166,35,0.06));
+    border:        2px solid var(--clr-gold-border, rgba(245,166,35,0.30));
+    border-radius: var(--radius-xl, 24px);
+    box-shadow:    var(--shadow-ceremony, 0 8px 40px rgba(245,166,35,0.18));
+    padding:       var(--space-6, 24px);
+    margin-top:    var(--space-6, 24px);
+  }
+
+  /* ── Grid: 3fr title + 2fr score ──────────────────────────────────────── */
+  .ssc-grid {
+    display:               grid;
+    grid-template-columns: 3fr 2fr;
+    gap:                   var(--space-4, 16px);
+    margin-bottom:         var(--space-4, 16px);
+    align-items:           center;
+  }
+
+  /* ── Title column ─────────────────────────────────────────────────────── */
+  .ssc-post-title {
+    font-size:     var(--text-lg, 1.125rem);
+    font-weight:   600;
+    color:         var(--text-primary);
+    line-height:   1.4;
+    margin:        0;
+    display:       -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow:      hidden;
+  }
+
+  /* ── Score column ─────────────────────────────────────────────────────── */
+  .ssc-score-col {
+    display:        flex;
+    flex-direction: column;
+    align-items:    flex-end;
+    gap:            var(--space-1, 4px);
+  }
+
+  .ssc-score-wrap {
+    display:     flex;
+    align-items: baseline;
+    gap:         2px;
+  }
+
+  .ssc-score-num {
+    font-family:    var(--font-mono, ui-monospace, monospace);
+    font-size:      var(--text-hero, 3rem);
+    font-weight:    700;
+    color:          var(--clr-gold-400, #F5A623);
+    letter-spacing: -0.03em;
+    line-height:    1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ssc-score-denom {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size:   var(--text-base, 1rem);
+    color:       var(--text-secondary);
+  }
+
+  .ssc-score-label {
+    font-size:      var(--text-xs, 0.75rem);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color:          var(--text-secondary);
+  }
+
+  /* ── Tagline ──────────────────────────────────────────────────────────── */
+  .ssc-tagline {
+    font-size:   var(--text-sm, 0.875rem);
+    font-style:  italic;
+    color:       var(--text-secondary);
+    margin:      0 0 var(--space-4, 16px);
+    line-height: 1.5;
+  }
+
+  /* ── Actions row ─────────────────────────────────────────────────────── */
+  .ssc-actions {
+    display:      flex;
+    align-items:  center;
+    gap:          var(--space-4, 16px);
+    padding-top:  var(--space-4, 16px);
+    border-top:   1px solid color-mix(in oklch, var(--clr-gold-border, rgba(245,166,35,0.3)) 50%, transparent);
+    flex-wrap:    wrap;
+  }
+
+  /* ── Copy button ─────────────────────────────────────────────────────── */
+  .ssc-copy-btn {
+    display:        flex;
+    align-items:    center;
+    gap:            var(--space-2, 8px);
+    background:     transparent;
+    border:         1px solid var(--clr-gold-border, rgba(245,166,35,0.30));
+    border-radius:  var(--radius-md, 12px);
+    color:          var(--clr-gold-400, #F5A623);
+    cursor:         pointer;
+    font-size:      var(--text-xs, 0.75rem);
+    font-weight:    600;
+    letter-spacing: 0.06em;
+    padding:        var(--space-2, 8px) var(--space-4, 16px);
+    transition:
+      background   var(--motion-snap-duration, 100ms) ease,
+      border-color var(--motion-snap-duration, 100ms) ease;
+  }
+
+  .ssc-copy-btn:hover {
+    background:   var(--clr-gold-bg, rgba(245,166,35,0.06));
+    border-color: var(--clr-gold-400, #F5A623);
+  }
+
+  .ssc-copy-btn:focus-visible {
+    outline:        2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  /* share-confirm-pulse: brief border flash on copy success */
+  .ssc-copy-btn.is-copied {
+    animation: share-confirm-pulse var(--motion-duration-base, 300ms) ease;
+  }
+
+  @keyframes share-confirm-pulse {
+    0%   { border-color: var(--clr-gold-400, #F5A623); box-shadow: 0 0 0 3px rgba(245,166,35,0.25); }
+    100% { border-color: var(--clr-gold-border, rgba(245,166,35,0.30)); box-shadow: none; }
+  }
+
+  .ssc-copy-icon { font-size: 0.95rem; }
+
+  /* ── Confirm span: visually hidden, announced via aria-live ────────────── */
+  .ssc-copy-confirm {
+    position:    absolute;
+    width:       1px;
+    height:      1px;
+    overflow:    hidden;
+    clip:        rect(0,0,0,0);
+    white-space: nowrap;
+  }
+
+  /* ── Audit link ──────────────────────────────────────────────────────── */
+  .ssc-audit-link {
+    font-size:   var(--text-xs, 0.75rem);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    color:       var(--color-interactive, var(--text-secondary));
+    text-decoration: none;
+    margin-left: auto;
+    letter-spacing: -0.01em;
+    transition: color var(--motion-snap-duration, 100ms) ease;
+  }
+
+  .ssc-audit-link:hover { color: var(--color-interactive-hover, var(--text-primary)); }
+
+  .ssc-audit-link:focus-visible {
+    outline:        2px solid var(--border-focus);
+    outline-offset: 2px;
+    border-radius:  2px;
+  }
+
+  /* ── Mobile: stack grid ──────────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .ssc-grid { grid-template-columns: 1fr; }
+    .ssc-score-col { align-items: flex-start; flex-direction: row; gap: var(--space-2, 8px); align-items: center; }
+  }
+
+  /* ── Reduced motion ──────────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .ssc-root               { transition: none; animation: none; }
+    .ssc-copy-btn           { transition: none; }
+    .ssc-copy-btn.is-copied { animation: none; }
+  }
+</style>
+
+<script>
+  function initShareCard(card: HTMLElement): void {
+    const copyBtn     = card.querySelector<HTMLButtonElement>('[data-share-copy]')!;
+    const copyLabel   = card.querySelector<HTMLElement>('[data-copy-label]')!;
+    const copyConfirm = card.querySelector<HTMLElement>('[data-copy-confirm]')!;
+    const slug        = card.dataset.slug ?? '';
+
+    copyBtn.addEventListener('click', () => handleCopy(copyBtn, copyLabel, copyConfirm, slug));
+  }
+
+  async function handleCopy(
+    btn: HTMLButtonElement, label: HTMLElement,
+    confirm: HTMLElement, slug: string,
+  ): Promise<void> {
+    const url = `${window.location.origin}/blog/${slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showCopied(btn, label, confirm);
+    } catch {
+      // Fallback: execCommand (legacy browsers)
+      legacyCopy(url);
+      showCopied(btn, label, confirm);
+    }
+  }
+
+  function showCopied(btn: HTMLButtonElement, label: HTMLElement, confirm: HTMLElement): void {
+    label.textContent   = 'Copied!';
+    confirm.textContent = 'Link copied — challenge them to dispute it.';
+    btn.classList.add('is-copied');
+    btn.addEventListener('animationend', () => btn.classList.remove('is-copied'), { once: true });
+    setTimeout(() => { label.textContent = 'Copy share link'; confirm.textContent = ''; }, 2500);
+  }
+
+  function legacyCopy(text: string): void {
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-share-card]').forEach(initShareCard);
+</script>

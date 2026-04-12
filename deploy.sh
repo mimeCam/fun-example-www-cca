@@ -4,6 +4,41 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v87 — Seal Share Card + Phase 5 ShareSealButton (2026-04-12)
+#   Sprint: Conviction loop closure — Phase 5 ShareSealButton rises below the
+#     SealReceipt after a successful seal; shareable 1200×630 OG conviction card
+#     endpoint /api/og/seal/[slug].png wired end-to-end via Satori → resvg pipeline.
+#   New files:
+#     src/components/ShareSealButton.astro — Phase 5 share card; gold-wash surface;
+#       3fr title + 2fr score grid; "Copy share link" (clipboard API, legacyCopy
+#       fallback, is-copied pulse, aria-live confirm) + "View sealed receipt" (↗
+#       new-tab audit link); @starting-style slide-up entrance (CEREMONY motion
+#       200ms delay); fully token-driven; prefers-reduced-motion guard;
+#       data-share-card / data-share-score / data-share-copy attribute hooks.
+#     src/lib/og/sealLayout.ts — Satori element tree for 1200×630 conviction seal
+#       share card; locked amber token set (C constants); eyebrow date, titleBlock,
+#       scoreBar (fill-px proportional to score/10), metaBlock (HMAC fingerprint
+#       hint + batting-average pct), tagline; SealOGData interface exported;
+#       mirrors auditLayout.ts design discipline (Tanya §9 gold discipline).
+#     src/pages/api/og/seal/[slug].png.ts — GET /api/og/seal/[slug].png; builds
+#       SealOGData from getSealEntry + getBattingAverageResult; renders via
+#       renderSealImage(); 1h fresh + 24h stale-while-revalidate Cache-Control;
+#       prerender=false; 404 on unknown slug; 500 on render failure.
+#   Modified files:
+#     src/components/ConvictionSeal.astro — imports ShareSealButton; renders
+#       <ShareSealButton slug title /> after <SealReceipt />; populateShareCard()
+#       fills [data-share-score] from receipt data.score on onReceipt callback;
+#       conviction:sealed CustomEvent dispatched after populateShareCard().
+#     src/lib/og/renderOGImage.ts — renderSealImage(data: SealOGData): Promise
+#       <Uint8Array> exported (sealLayout → toSVG → toPNG pipeline); SealOGData
+#       type re-exported.
+#     AGENTS.md — Conviction Loop — Closed section added; WIP item updated to
+#       reflect env-var-gating-only status (all code is wired).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO
+#     unchanged. In-process cron runner (v82) continues to own ongoing scheduling.
+#     deploy.sh startup sequence unchanged (steps 1–8 identical to v86).
+#
 # Architecture v86 — BA Integrity Overhaul: TrophyTier + Selectivity Rate (2026-04-12)
 #   Sprint: Full batting-average integrity system. TrophyTier polymorphism anchor
 #     (locked/bronze/silver/gold/diamond) replaces binary live/cold display.

@@ -18,6 +18,7 @@ import type { ConvictionStage } from './TrustBadge.astro';
 import TensionBadge             from './TensionBadge.astro';
 import NotarizeStamp            from './NotarizeStamp.astro';
 import SealReceipt              from './SealReceipt.astro';
+import ShareSealButton          from './ShareSealButton.astro';
 import { clockUrgency }         from '../lib/death-clock';
 import type { GraceState }          from '../lib/cold-start';
 import type { ConvictionVerdict }   from '../lib/decay-engine';
@@ -229,6 +230,10 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
   <!-- Phase 4 receipt: SealReceipt notary document — outside form, shown at phase 4 -->
   <!-- Visibility driven by [data-seal-phase="4"] in seal-ceremony.css              -->
   <SealReceipt />
+
+  <!-- Phase 5: ShareSealButton — share card rises below receipt after seal (Tanya §5) -->
+  <!-- Score populated by JS via [data-share-score]; visibility driven by phase 4 CSS  -->
+  <ShareSealButton slug={slug} title={title ?? slug} />
 
   <!-- Phase 3.5 notarize ceremony — outside form so form display:none doesn't hide it -->
   <!-- Shown by [data-seal-phase="3.5"] selector; hidden at all other phases            -->
@@ -646,6 +651,7 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
       onNotarize: (data) => populateNotarize(stamp, data),
       onReceipt:  (data) => {
         populateReceipt(receipt, data, slug);
+        populateShareCard(container, data);
         container.dispatchEvent(new CustomEvent('conviction:sealed', { bubbles: true, detail: { slug } }));
       },
       onError:    (msg)  => { errorEl.textContent = msg; errorEl.style.display = 'block'; },
@@ -757,6 +763,13 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     }
 
     wireDownload(downloadBtn, data);
+  }
+
+  /** Populates the Phase 5 share card score slot — title is SSR-baked. */
+  function populateShareCard(container: HTMLElement, data: ReceiptData): void {
+    const card    = container.querySelector<HTMLElement>('[data-share-card]');
+    const scoreEl = card?.querySelector<HTMLElement>('[data-share-score]');
+    if (scoreEl) scoreEl.textContent = String(data.score);
   }
 
   /** Create a Blob URL download from the full receipt payload. */

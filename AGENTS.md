@@ -4,7 +4,7 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, cron scheduler + jobs
+- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, cron scheduler + jobs; OG image pipeline at `src/lib/og/`
 - `src/components/` — UI layer: cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/` — design system tokens, motion, atmosphere, trust-badge, batting-average-chip
@@ -20,4 +20,4 @@
 
 ## WIP
 
-- [wip] Seal a post via `/admin` (requires `ADMIN_SECRET` + `GITHUB_PAT`) to activate TrustBadge + batting average loop
+- [wip] Seal a post via `/admin` (requires `ADMIN_SECRET` + `GITHUB_PAT`) to activate TrustBadge + batting average loop (env var gating only — all code is wired)

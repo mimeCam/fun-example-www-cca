@@ -14,6 +14,8 @@ import { battingAverageLayout } from './battingAverageLayout';
 import type { BattingAverage } from '../batting-average';
 import { auditLayout } from './auditLayout';
 import type { AuditOGData } from './auditLayout';
+import { sealLayout } from './sealLayout';
+import type { SealOGData } from './sealLayout';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -51,4 +53,9 @@ export async function renderAuditImage(data: AuditOGData): Promise<Uint8Array> {
   return toPNG(await toSVG(auditLayout(data)));
 }
 
-export type { OGImageData, AuditOGData };
+/** Conviction seal share card pipeline: SealOGData → PNG buffer. */
+export async function renderSealImage(data: SealOGData): Promise<Uint8Array> {
+  return toPNG(await toSVG(sealLayout(data)));
+}
+
+export type { OGImageData, AuditOGData, SealOGData };
