@@ -8,6 +8,7 @@
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters; sticky stance bar at `src/components/StickyStanceBar.astro`
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/` — design tokens (`tokens.css`), shared card geometry (`card-base.css`), motion, atmosphere
+- `scripts/` — dev tooling; `check-token-compliance.ts` lints all component CSS for raw color/font-size literals (`npm run lint:tokens`)
 
 ## Env
 

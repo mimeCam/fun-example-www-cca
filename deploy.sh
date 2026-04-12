@@ -4,6 +4,53 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v94 — Design Token Compliance Pass (2026-04-12)
+#   Sprint: Full design-system token compliance enforcement. All raw hex, rgba(),
+#     hsl() and bare-rem font-size literals eliminated from component stylesheets;
+#     every value now routes through tokens.css as the single source of truth.
+#     New dev-side linting tool (scripts/check-token-compliance.ts + lint:tokens
+#     npm script) enforces the constraint going forward. Pure UIX — zero infra
+#     changes.
+#   New files:
+#     scripts/check-token-compliance.ts — design token compliance linter; scans
+#       src/styles/*.css for raw hex (#xxx), rgba()/rgb(), hsla()/hsl(), and bare
+#       rem on font-size declarations; skips tokens.css (primitives live there by
+#       design); allows oklch(), color-mix(), calc(), and rem in layout properties;
+#       clamp() rem exemption for responsive typography; exit 0 = clean, exit 1 =
+#       violations; run via `npm run lint:tokens` (npx tsx).
+#   Modified files:
+#     package.json — `lint:tokens` script added: `npx tsx scripts/check-token-compliance.ts`.
+#     src/styles/tokens.css — four new token groups:
+#       --gold-mid (fills gap between gold-dim and border-focus — river-now hairline);
+#       --mood-accent: oklch(72% 0.09 55) (warm amber — restores dead token used as
+#         fallback across SiteNav, revival.css, ambient.css, endangered.css);
+#       river component tokens: --river-card-surface, --river-filter-bg,
+#         --river-filter-border, --river-meta-color (prevent per-rule invention);
+#       Tailwind v4 bridge anchors: --background, --foreground, --muted,
+#         --muted-foreground, --border, --ring (referenced by global.css @theme);
+#       --notarize-shadow rgba(0,0,0,0.40) → oklch(0 0 0 / 0.40).
+#     src/styles/global.css — @theme block migrated: all raw values replaced with
+#       token references (--color-surface → var(--surface-raised),
+#       --color-gold → var(--clr-gold-400), --color-revival → var(--clr-amber-400),
+#       --font-family-* → var(--font-*), --radius-* → var(--radius-*));
+#       new page-level anchors: --color-background/foreground/muted/border.
+#     src/components/SiteNav.astro — raw literals migrated:
+#       rgba(255,255,255,0.75) → var(--text-secondary);
+#       #F5A623 → var(--gold); rgba(245,166,35,0.55) → var(--gold-dim);
+#       var(--mood-accent, #D4956A) fallback removed (token now defined);
+#       nav-accent gradient/shadow migrated from rgba(--mood-accent-rgb) to
+#       color-mix(in oklch, var(--mood-accent) N%, transparent).
+#     src/styles/revival.css — raw values replaced with --mood-accent + tokens.
+#     src/styles/ambient.css — raw values replaced with --mood-accent + tokens.
+#     src/styles/endangered.css — raw values replaced with design tokens.
+#     src/styles/river.css — raw values replaced with --river-* component tokens.
+#     src/styles/verdict.css — raw values replaced with design tokens.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v93).
+#
 # Architecture v93 — Crowd Verdict Ceremony (2026-04-12)
 #   Sprint: Post-vote emotional payoff — after casting a stance, StickyStanceBar
 #     now plays a 650ms ceremony: bar transitions at CEREMONY speed, voted segment

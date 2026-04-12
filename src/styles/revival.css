@@ -7,8 +7,9 @@
  * Article revival: hover hint → reviving → alive → badge
  * Camera shake replaced with gentle scale(1.003) lift (Tanya §4, §9)
  *
- * Tokenization sprint (2026-04-11): magic numbers replaced with token refs.
- * Choreography logic is UNTOUCHED — treat this as a glass box.
+ * Token compliance: rgba(var(--mood-accent-rgb,...)) replaced with color-mix().
+ * --mood-accent token restored in tokens.css (oklch 72% 0.09 55).
+ * Choreography logic is UNTOUCHED — only color expressions updated.
  */
 
 /* ── Token aliases local to revival (for readability inside keyframes) ── */
@@ -29,16 +30,16 @@
   --sympathetic-glow-duration: var(--duration-bloom);             /* 1200ms */
 }
 
-/* ═════════════════���═════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════
  * CARD REVIVAL — pulse, badge, warm halo, footer
- * ═════════════��═══════════════════════════════════��═════════════════ */
+ * ═══════════════════════════════════════════════════════════════════ */
 
 @keyframes revival-pulse {
-  0%   { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 212,149,106), 0.35); }
-  50%  { box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 212,149,106), 0.25),
-                     0 0 24px rgba(var(--mood-accent-rgb, 212,149,106), 0.08); }
+  0%   { box-shadow: 0 8px 32px color-mix(in oklch, var(--mood-accent) 35%, transparent); }
+  50%  { box-shadow: 0 8px 32px color-mix(in oklch, var(--mood-accent) 25%, transparent),
+                     0 0 24px   color-mix(in oklch, var(--mood-accent) 8%, transparent); }
   100% { box-shadow: 0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
-                     rgba(var(--mood-accent-rgb, 212,149,106), var(--decay-shadow-alpha, 0.18)); }
+                     color-mix(in oklch, var(--mood-accent) calc(var(--decay-shadow-alpha, 0.18) * 100%), transparent); }
 }
 
 .decay-card.just-revived {
@@ -57,7 +58,7 @@
 
 /* Warm halo: recently-revived cards */
 .decay-card[data-revival-warm="true"] {
-  border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+  border-color: color-mix(in oklch, var(--mood-accent) 12%, transparent);
 }
 
 /* Card footer layout */
@@ -70,12 +71,12 @@
 }
 
 .card-footer .decay-freshness { margin: 0; }
-.card-footer .footer-dot { font-size: 0.6rem; opacity: 0.3; }
+.card-footer .footer-dot { font-size: var(--text-3xs); opacity: 0.3; }
 .card-footer .keep-btn { margin-left: auto; }
 
 /* ═══════════════════════════════════════════════════════════════════
  * BLOOM — dramatic multi-phase visual feedback
- * ═══════════════════════════════════════════════════���═══════════════ */
+ * ═══════════════════════════════════════════════════════════════════ */
 
 .decay-card.blooming {
   pointer-events: none;
@@ -89,7 +90,7 @@
   border-radius: inherit;
   pointer-events: none;
   opacity: 0;
-  box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--mood-accent) 0%, transparent);
   z-index: -1;
 }
 
@@ -100,15 +101,15 @@
 @keyframes bloom-ring {
   0% {
     opacity: 1;
-    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0.25);
+    box-shadow: 0 0 0 0   color-mix(in oklch, var(--mood-accent) 25%, transparent);
   }
   40% {
     opacity: 0.7;
-    box-shadow: 0 0 0 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+    box-shadow: 0 0 0 8px color-mix(in oklch, var(--mood-accent) 12%, transparent);
   }
   100% {
     opacity: 0;
-    box-shadow: 0 0 0 20px rgba(var(--mood-accent-rgb, 212,149,106), 0);
+    box-shadow: 0 0 0 20px color-mix(in oklch, var(--mood-accent) 0%, transparent);
   }
 }
 
@@ -121,7 +122,7 @@
   opacity: 0;
   background: radial-gradient(
     ellipse at 50% 50%,
-    rgba(var(--mood-accent-rgb, 212,149,106), 0.08) 0%,
+    color-mix(in oklch, var(--mood-accent) 8%, transparent) 0%,
     transparent 70%
   );
   z-index: 1;
@@ -153,7 +154,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(var(--mood-accent-rgb, 212,149,106), 0.5);
+  background: color-mix(in oklch, var(--mood-accent) 50%, transparent);
   opacity: 0;
   will-change: transform, opacity;
 }
@@ -194,8 +195,8 @@
 /* Bloom afterglow — 900ms emotional anchor */
 .decay-card.bloom-afterglow {
   box-shadow:
-    0 4px 20px rgba(var(--mood-accent-rgb, 212,149,106), 0.18),
-    0 0 0 1px rgba(var(--mood-accent-rgb, 212,149,106), 0.10);
+    0 4px 20px color-mix(in oklch, var(--mood-accent) 18%, transparent),
+    0 0 0 1px  color-mix(in oklch, var(--mood-accent) 10%, transparent);
   transition: box-shadow 300ms ease-out;
 }
 
@@ -236,25 +237,22 @@
 @keyframes sympathetic-ring {
   0% {
     opacity: 0;
-    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0);
+    box-shadow: 0 0 0 0   color-mix(in oklch, var(--mood-accent) 0%, transparent);
   }
   25% {
     opacity: calc(var(--bloom-intensity, 0.5) * 1);
-    box-shadow:
-      0 0 0 6px rgba(var(--mood-accent-rgb, 212,149,106),
-      var(--sympathetic-ring-alpha, 0.10));
+    box-shadow: 0 0 0 6px color-mix(in oklch, var(--mood-accent) calc(var(--sympathetic-ring-alpha, 0.10) * 100%), transparent);
   }
   100% {
     opacity: 0;
-    box-shadow:
-      0 0 0 var(--sympathetic-ring-spread, 14px)
-      rgba(var(--mood-accent-rgb, 212,149,106), 0);
+    box-shadow: 0 0 0 var(--sympathetic-ring-spread, 14px)
+                color-mix(in oklch, var(--mood-accent) 0%, transparent);
   }
 }
 
-/* ═════════════════════════���═════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════
  * ARTICLE REVIVAL MOMENT (blog post detail)
- * ══════════════════════════════════════════════��════════════════════ */
+ * ═══════════════════════════════════════════════════════════════════ */
 
 /* Micro-feedback: hover hint BEFORE dwell threshold */
 .revival-stage:hover {
@@ -285,7 +283,7 @@
   pointer-events: none;
   border-radius: var(--radius-md);
   opacity: 0;
-  box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212, 149, 106), 0);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--mood-accent) 0%, transparent);
   z-index: var(--z-card);
 }
 
@@ -296,15 +294,15 @@
 @keyframes revival-ring-expand {
   0% {
     opacity: 1;
-    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0.3);
+    box-shadow: 0 0 0 0   color-mix(in oklch, var(--mood-accent) 30%, transparent);
   }
   40% {
     opacity: 0.7;
-    box-shadow: 0 0 0 12px rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
+    box-shadow: 0 0 0 12px color-mix(in oklch, var(--mood-accent) 12%, transparent);
   }
   100% {
     opacity: 0;
-    box-shadow: 0 0 0 28px rgba(var(--mood-accent-rgb, 212,149,106), 0);
+    box-shadow: 0 0 0 28px color-mix(in oklch, var(--mood-accent) 0%, transparent);
   }
 }
 
@@ -334,10 +332,10 @@
   transform: translateX(-50%) translateY(20px);
   padding: var(--revival-badge-padding);
   border-radius: var(--revival-badge-radius);
-  background: rgba(var(--mood-accent-rgb, 212, 149, 106), 0.12);
+  background: color-mix(in oklch, var(--mood-accent) 12%, transparent);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(var(--mood-accent-rgb, 212, 149, 106), 0.15);
-  color: var(--mood-accent, #D4956A);
+  border: 1px solid color-mix(in oklch, var(--mood-accent) 15%, transparent);
+  color: var(--mood-accent);
   font-size: var(--revival-badge-font);
   letter-spacing: var(--tracking-wide);
   opacity: 0;
@@ -360,9 +358,9 @@
 }
 
 @keyframes sympathetic-article-glow {
-  0%   { box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0); }
-  30%  { box-shadow: 0 0 20px 4px rgba(var(--mood-accent-rgb, 212,149,106), 0.08); }
-  100% { box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0); }
+  0%   { box-shadow: 0 0 0  0   color-mix(in oklch, var(--mood-accent) 0%, transparent); }
+  30%  { box-shadow: 0 0 20px 4px color-mix(in oklch, var(--mood-accent) 8%, transparent); }
+  100% { box-shadow: 0 0 0  0   color-mix(in oklch, var(--mood-accent) 0%, transparent); }
 }
 
 /* Aria live region for screen readers */
@@ -393,7 +391,7 @@
 }
 
 .anticipation-arc circle {
-  stroke: rgba(var(--mood-accent-rgb, 212,149,106), 0.6);
+  stroke: color-mix(in oklch, var(--mood-accent) 60%, transparent);
   stroke-width: 3;
   stroke-linecap: round;
   transition: stroke-dashoffset 0ms linear; /* JS drives this, no CSS transition */
@@ -408,14 +406,14 @@
   0%   { text-shadow: none; filter: none; }
   15%  {
     text-shadow:
-      -2px 0 rgba(255, 60, 120, 0.55),
-       2px 0 rgba(0, 210, 255, 0.55);
+      -2px 0 oklch(60% 0.30 0   / 0.55),
+       2px 0 oklch(80% 0.20 200 / 0.55);
     filter: brightness(1.15);
   }
   50%  {
     text-shadow:
-      -1px 0 rgba(255, 60, 120, 0.25),
-       1px 0 rgba(0, 210, 255, 0.25);
+      -1px 0 oklch(60% 0.30 0   / 0.25),
+       1px 0 oklch(80% 0.20 200 / 0.25);
     filter: brightness(1.05);
   }
   100% { text-shadow: none; filter: none; }
@@ -425,7 +423,7 @@
   animation: chroma-flash 600ms ease-out forwards;
 }
 
-/* ═════════════════════��═════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════
  * REDUCED MOTION
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -433,7 +431,7 @@
   /* Card revival */
   .decay-card.just-revived {
     animation: none;
-    box-shadow: 0 8px 32px rgba(var(--mood-accent-rgb, 212,149,106), 0.22);
+    box-shadow: 0 8px 32px color-mix(in oklch, var(--mood-accent) 22%, transparent);
   }
   .decay-card.just-revived [data-revival-badge] {
     animation: none;
@@ -455,7 +453,7 @@
     transform: none;
   }
   .decay-card.sympathetic {
-    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.20);
+    border-color: color-mix(in oklch, var(--mood-accent) 20%, transparent);
     transition: border-color 400ms ease;
   }
   .decay-card.sympathetic .bloom-ring {
@@ -475,7 +473,7 @@
   }
   .revival-stage.sympathetic {
     animation: none;
-    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
+    border-color: color-mix(in oklch, var(--mood-accent) 15%, transparent);
   }
   .revival-badge {
     transition: opacity 0.2s ease;
@@ -510,7 +508,7 @@
 
 /* Tombstone resurrection: warm glow on the risen state (mirrors decay-card warm) */
 .tombstone.risen {
-  border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.18);
+  border-color: color-mix(in oklch, var(--mood-accent) 18%, transparent);
   opacity: 0.7;
   filter: saturate(0.35);
   transition: border-color 600ms ease, opacity 600ms ease, filter 600ms ease;
@@ -560,16 +558,16 @@
 
 @keyframes cascade-glow {
   0%   {
-    box-shadow: 0 0 0 0  rgba(var(--mood-accent-rgb, 212,149,106), 0);
-    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.06);
+    box-shadow:  0 0 0 0   color-mix(in oklch, var(--mood-accent) 0%, transparent);
+    border-color: color-mix(in oklch, var(--mood-accent) 6%, transparent);
   }
   25%  {
-    box-shadow: 0 0 0 4px rgba(var(--mood-accent-rgb, 212,149,106), 0.12);
-    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.20);
+    box-shadow:  0 0 0 4px color-mix(in oklch, var(--mood-accent) 12%, transparent);
+    border-color: color-mix(in oklch, var(--mood-accent) 20%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 0  rgba(var(--mood-accent-rgb, 212,149,106), 0);
-    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.06);
+    box-shadow:  0 0 0 0   color-mix(in oklch, var(--mood-accent) 0%, transparent);
+    border-color: color-mix(in oklch, var(--mood-accent) 6%, transparent);
   }
 }
 
@@ -577,7 +575,7 @@
 @media (prefers-reduced-motion: reduce) {
   .decay-card[data-bloom="active"] {
     animation: none;
-    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.18);
+    border-color: color-mix(in oklch, var(--mood-accent) 18%, transparent);
     transition: border-color 300ms ease;
   }
 }

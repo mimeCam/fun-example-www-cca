@@ -50,6 +50,18 @@
   --gold-glow:   rgba(245, 166, 35, 0.18);
   --gold-bg:     rgba(245, 166, 35, 0.08);
   --gold-border: rgba(245, 166, 35, 0.22);
+  --gold-mid:    rgba(245, 166, 35, 0.65);  /* fills gap: gold-dim(0.55)→border-focus(0.60) — river-now hairline, contested borders */
+
+  /* ── Mood Accent — revival/ambient warm amber (restored dead token) ─── */
+  /* All revival.css, ambient.css, endangered.css references route here.   */
+  /* Tanya §3: "--mood-accent, #D4956A" fallback = dead token. Restore it. */
+  --mood-accent: oklch(72% 0.09 55);  /* warm amber — presence, bloom, ambient glow */
+
+  /* ── River Component Tokens (prevent per-rule invention) ───────────── */
+  --river-card-surface:  var(--surface-raised);
+  --river-filter-bg:     var(--surface-raised);
+  --river-filter-border: var(--border-subtle);
+  --river-meta-color:    var(--text-tertiary);
 
   /* ── Semantic Decay Colors ──────────────────────────────────────────── */
   --color-decay-fresh:  var(--clr-green-400);
@@ -488,5 +500,15 @@
   --notarize-pause-duration: 800ms;                 /* ceremonial pause — do not change */
   --notarize-shadow:
     0 0 40px oklch(78% 0.14 68 / 18%),
-    0 8px 32px rgba(0, 0, 0, 0.40);
+    0 8px 32px oklch(0 0 0 / 0.40);
+
+  /* ── Global @theme Anchors — Tailwind v4 bridge (Mike §global.css P1) ─ */
+  /* These bridge tokens.css primitives into Tailwind utility generation.  */
+  /* global.css @theme block references these — zero raw values there.     */
+  --background:        var(--surface-base);
+  --foreground:        var(--text-primary);
+  --muted:             var(--surface-raised);
+  --muted-foreground:  var(--text-secondary);
+  --border:            var(--border-subtle);
+  --ring:              var(--border-focus);
 }

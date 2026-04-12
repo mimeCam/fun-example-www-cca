@@ -22,27 +22,27 @@
 }
 
 .verdict-hero-title {
-  font-size: clamp(1.5rem, 5vw, 2.4rem);
+  font-size: clamp(var(--text-xl), 5vw, 2.4rem);
   font-weight: var(--weight-extrabold);
   letter-spacing: var(--tracking-display);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   margin: 0 0 0.4rem;
-  line-height: 1.1;
+  line-height: var(--leading-tight);
 }
 
 .verdict-hero-tagline {
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
-  margin: 0 0 var(--space-2, 0.5rem);
+  margin: 0 0 var(--space-2);
   letter-spacing: 0.01em;
   max-width: 38rem;
 }
 
 /* Accountability arc cross-link — prose bridge to /predictions (Tanya §18) */
 .verdict-hero-crosslink {
-  font-size: var(--text-sm, 0.82rem);
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
-  margin: 0 0 var(--space-4, 1rem);
+  margin: 0 0 var(--space-4);
 }
 
 .verdict-crosslink-a {
@@ -70,10 +70,10 @@
 }
 
 .verdict-avg-chip__label {
-  font-size: 0.65rem;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.4);
-  letter-spacing: 0.04em;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-normal);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
 }
 
 /* ── Stats bar ───────────────────────────────────────────────────── */
@@ -84,7 +84,7 @@
   flex-wrap: wrap;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .verdict-stat {
@@ -94,9 +94,9 @@
 }
 
 .verdict-stat__value {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -133,8 +133,8 @@
 }
 
 .verdict-filter-tab:hover {
-  color: rgba(255, 255, 255, 0.75);
-  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--text-secondary);
+  border-color: var(--border-medium);
 }
 
 /* Default active state — no outcome variant */
@@ -197,8 +197,8 @@
 }
 
 .verdict-empty p {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.28);
+  font-size: var(--text-sm);
+  color: var(--text-dim);
   font-style: italic;
   margin: 0;
 }
@@ -209,7 +209,7 @@
   margin-top: 3rem;
   text-align: center;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border-faint);
 }
 
 .verdict-footer-link {
@@ -222,7 +222,7 @@
   padding: 8px 0;
 }
 
-.verdict-footer-link:hover { color: rgba(255, 255, 255, 0.65); }
+.verdict-footer-link:hover { color: var(--text-secondary); }
 
 /* ── Contested signal banner ─────────────────────────────────────── */
 
@@ -232,16 +232,16 @@
   gap: 0.6rem;
   padding: 0.6rem 0.9rem;
   margin-bottom: 1.5rem;
-  border-radius: 8px;
-  background: rgba(245, 158, 11, 0.06);
-  border: 1px solid rgba(245, 158, 11, 0.18);
-  font-size: 0.7rem;
-  color: rgba(245, 158, 11, 0.85);
+  border-radius: var(--radius-input);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
+  font-size: var(--text-xs);
+  color: var(--gold-dim);
   letter-spacing: 0.03em;
 }
 
 .verdict-contested-banner__glyph {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   animation: pulse-glyph 2.4s ease-in-out infinite;
 }
 

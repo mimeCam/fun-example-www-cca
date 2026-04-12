@@ -2,6 +2,9 @@
  * Consolidated ambient visual system — presence breathing + first-visit UX.
  * Merged: presence.css + first-visit.css (Tanya §12 CSS consolidation)
  *
+ * Token compliance: --mood-accent token restored in tokens.css (oklch 72% 0.09 55).
+ * All rgba(var(--mood-accent-rgb, ...)) patterns replaced with color-mix().
+ *
  * 3 files. 3 concerns. Clean:
  *   decay.css   → all decay-related visual rules
  *   revival.css → all revival + bloom visual rules
@@ -44,13 +47,13 @@
 
 @keyframes presence-ripple-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(var(--mood-accent-rgb, 212,149,106), 0.20);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--mood-accent) 20%, transparent);
   }
   40% {
-    box-shadow: 0 0 0 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.08);
+    box-shadow: 0 0 0 8px color-mix(in oklch, var(--mood-accent) 8%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 16px rgba(var(--mood-accent-rgb, 212,149,106), 0);
+    box-shadow: 0 0 0 16px color-mix(in oklch, var(--mood-accent) 0%, transparent);
   }
 }
 
@@ -76,9 +79,8 @@
   box-shadow:
     0 calc((1 - var(--decay-factor, 0)) * 8px)
       calc((1 - var(--decay-factor, 0)) * 24px)
-    rgba(var(--mood-accent-rgb, 212,149,106),
-         calc((1 - var(--decay-factor, 0)) * 0.22)),
-    0 1px 4px rgba(0, 0, 0, 0.10);
+    color-mix(in oklch, var(--mood-accent) calc((1 - var(--decay-factor, 0)) * 22%), transparent),
+    0 1px 4px oklch(0 0 0 / 0.10);
 }
 
 /* Demo glow — CSS-only visual hint on most-decayed card. Not a real revival. */
@@ -89,20 +91,20 @@
 @keyframes demo-glow {
   0% {
     box-shadow:
-      0 2px 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.06),
-      0 1px 3px rgba(0, 0, 0, 0.10);
+      0 2px 8px  color-mix(in oklch, var(--mood-accent) 6%, transparent),
+      0 1px 3px oklch(0 0 0 / 0.10);
   }
   40% {
     box-shadow:
-      0 6px 20px rgba(var(--mood-accent-rgb, 212,149,106), 0.20),
-      0 3px 10px rgba(0, 0, 0, 0.12);
+      0 6px 20px color-mix(in oklch, var(--mood-accent) 20%, transparent),
+      0 3px 10px oklch(0 0 0 / 0.12);
     opacity: 0.85;
     filter: blur(0.3px) saturate(0.85);
   }
   100% {
     box-shadow:
-      0 2px 8px rgba(var(--mood-accent-rgb, 212,149,106), 0.06),
-      0 1px 3px rgba(0, 0, 0, 0.10);
+      0 2px 8px  color-mix(in oklch, var(--mood-accent) 6%, transparent),
+      0 1px 3px oklch(0 0 0 / 0.10);
   }
 }
 
@@ -134,7 +136,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--mood-accent, #D4956A);
+  background: var(--mood-accent);
   animation: reading-breathe 4s ease-in-out infinite;
 }
 
@@ -159,7 +161,7 @@
 
   #presence-band.presence-ripple {
     animation: none;
-    border-color: rgba(var(--mood-accent-rgb, 212,149,106), 0.15);
+    border-color: color-mix(in oklch, var(--mood-accent) 15%, transparent);
   }
 
   /* Reading pulse */

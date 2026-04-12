@@ -155,13 +155,13 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   /* Active page: amber underline — conviction gold is the active signal */
   .nav-link--active,
   .site-name.nav-link--active {
-    color: rgba(255, 255, 255, 0.75);
-    border-bottom-color: #F5A623;
+    color: var(--text-secondary);
+    border-bottom-color: var(--gold);
   }
 
   /* Contested signal: 4px amber underline on verdict link (Tanya §2) */
   .nav-link--contested {
-    border-bottom: 4px solid rgba(245, 166, 35, 0.55);
+    border-bottom: 4px solid var(--gold-dim);
     padding-bottom: 0;
   }
 
@@ -292,7 +292,7 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--mood-accent, #D4956A);
+    background: var(--mood-accent);
     animation: nav-breathe 3.5s ease-in-out infinite;
   }
 
@@ -329,12 +329,8 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     width: 100%;
     height: 2px;
     border-radius: 0 0 2px 2px;
-    background: linear-gradient(
-      90deg,
-      rgba(var(--mood-accent-rgb, 212,149,106), 0.18),
-      rgba(var(--mood-accent-rgb, 212,149,106), 0.18)
-    );
-    box-shadow: 0 1px 6px rgba(var(--mood-accent-rgb, 212,149,106), 0.10);
+    background: color-mix(in oklch, var(--mood-accent) 18%, transparent);
+    box-shadow: 0 1px 6px color-mix(in oklch, var(--mood-accent) 10%, transparent);
     transform-origin: left;
     transform: scaleX(var(--erosion-progress, 1));
     opacity: calc(
