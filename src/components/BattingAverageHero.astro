@@ -92,13 +92,141 @@ const pctMod = isLive
 </section>
 
 <script>
-  // Share button: clipboard API with prompt() fallback (Tanya §18, Mike §3)
-  const btn = document.querySelector('.bah-share') as HTMLButtonElement | null;
-  if (btn) {
-    btn.addEventListener('click', () => {
+  // BattingAverageHero — client ceremony layer
+  // Two responsibilities:
+  //   1. Share button: clipboard API with prompt() fallback
+  //   2. Count-up ceremony on verdict:declared SSE events
+  //
+  // Credits: Mike (arch §3 SSE lifecycle) · Tanya (UX §3 count-up ceremony)
+  //          Elon (reduced-motion guard + bah:ceremony-done CustomEvent)
+
+  import { countUp } from '../lib/spring-easing';
+
+  // ── Shared SSE stream ───────────────────────────────────────────────────
+  declare global { interface Window { __heartbeat?: EventSource; } }
+
+  function getStream(): EventSource {
+    if (window.__heartbeat?.readyState !== EventSource.CLOSED) return window.__heartbeat!;
+    return (window.__heartbeat = new EventSource('/api/heartbeat'));
+  }
+
+  // ── DOM selectors ────────────────────────────────────────────────────────
+  function getPctEl(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('.bah-pct[data-cm-pct]');
+  }
+
+  function getPillEls() {
+    return {
+      correct: document.querySelector<HTMLElement>('.bah-pill--correct'),
+      wrong:   document.querySelector<HTMLElement>('.bah-pill--wrong'),
+      pending: document.querySelector<HTMLElement>('.bah-pill--pending'),
+    };
+  }
+
+  // ── Ceremony phases ──────────────────────────────────────────────────────
+
+  /** Phase 1: briefly dim the number (200ms) — "the moment before" */
+  function anticipate(el: HTMLElement): Promise<void> {
+    el.style.opacity = '0.12';
+    return new Promise(r => setTimeout(r, 200));
+  }
+
+  /** Phase 3: flash gold (improved) or red (worsened), then settle */
+  function arrivalFlash(el: HTMLElement, improved: boolean): void {
+    const flashColor = improved ? 'var(--gold)' : 'var(--clr-red-500, oklch(55% 0.22 25))';
+    el.style.transition = 'color 400ms ease';
+    el.style.color = flashColor;
+    setTimeout(() => { el.style.color = ''; el.style.transition = ''; }, 800);
+  }
+
+  /** Patch all pill text content after count-up completes */
+  function patchPills(correct: number, wrong: number, pending: number): void {
+    const pills = getPillEls();
+    if (pills.correct) pills.correct.textContent = `✓ ${correct} correct`;
+    if (pills.wrong)   pills.wrong.textContent   = `✗ ${wrong} wrong`;
+    if (pills.pending) pills.pending.textContent = `◌ ${pending} pending`;
+  }
+
+  /** Dispatch bah:ceremony-done — allows downstream components to react (Elon spec) */
+  function fireCeremonyDone(pct: number): void {
+    document.dispatchEvent(new CustomEvent('bah:ceremony-done', { detail: { pct } }));
+  }
+
+  /** Full ceremony: anticipate → count-up → arrival flash → patch pills → done */
+  async function runCeremony(
+    el: HTMLElement, from: number, to: number,
+    correct: number, wrong: number, pending: number,
+  ): Promise<void> {
+    await anticipate(el);
+    el.style.opacity = '1';
+    await new Promise<void>(resolve => {
+      countUp(from, to, val => { el.textContent = `${val}%`; }, resolve);
+    });
+    el.dataset.cmPct = String(to);
+    arrivalFlash(el, to > from);
+    patchPills(correct, wrong, pending);
+    fireCeremonyDone(to);
+  }
+
+  /** Reduced-motion path: snap to final value, still dispatch ceremony-done */
+  function snapCeremony(
+    el: HTMLElement, to: number,
+    correct: number, wrong: number, pending: number,
+  ): void {
+    el.textContent   = `${to}%`;
+    el.dataset.cmPct = String(to);
+    patchPills(correct, wrong, pending);
+    fireCeremonyDone(to);
+  }
+
+  // ── SSE verdict handler ─────────────────────────────────────────────────
+
+  interface VerdictPayload {
+    newBattingAvg: number | null;
+    correct: number; wrong: number; pending: number;
+  }
+
+  function handleVerdict(payload: VerdictPayload): void {
+    if (payload.newBattingAvg === null) return;
+    const el = getPctEl();
+    if (!el) return;
+    const from = parseInt(el.dataset.cmPct ?? '0', 10);
+    const to   = payload.newBattingAvg;
+    if (from === to) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      snapCeremony(el, to, payload.correct, payload.wrong, payload.pending);
+    } else {
+      runCeremony(el, from, to, payload.correct, payload.wrong, payload.pending);
+    }
+  }
+
+  // ── Boot ─────────────────────────────────────────────────────────────────
+
+  function boot(): void {
+    const es = getStream();
+    es.addEventListener('verdict:declared', (e: MessageEvent) => {
+      try { handleVerdict(JSON.parse(e.data) as VerdictPayload); } catch { /* ignore */ }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+
+  // ── Share button ─────────────────────────────────────────────────────────
+
+  const shareBtn = document.querySelector('.bah-share') as HTMLButtonElement | null;
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => {
       const url = window.location.href;
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(() => { btn.textContent = 'copied ✓'; setTimeout(() => { btn.textContent = 'share score ↗'; }, 2000); });
+        navigator.clipboard.writeText(url).then(() => {
+          shareBtn.textContent = 'copied ✓';
+          setTimeout(() => { shareBtn.textContent = 'share score ↗'; }, 2000);
+        });
       } else {
         window.prompt('Copy this link:', url);
       }
@@ -119,10 +247,11 @@ const pctMod = isLive
     margin: 0 auto;
   }
 
-  /* ── Intro tagline ── */
+  /* ── Intro tagline — italic medium: authority without shouting (Tanya §7) ── */
   .bah-tagline {
     font-size: 1.1rem;
     font-style: italic;
+    font-weight: var(--weight-medium, 500);
     color: rgba(255, 255, 255, 0.55);
     margin: 0;
     letter-spacing: 0.01em;
