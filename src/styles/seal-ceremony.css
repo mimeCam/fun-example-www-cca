@@ -240,6 +240,30 @@
   }
 }
 
+/* ── SealCeremony.astro: RECEIPT bloom-in keyframe ───────────────── */
+/* Mirrors NotarizeStamp wax-bloom — the receipt surfaces like a stamped document. */
+/* Used by .sc-phase--receipt via animation: sc-receipt-bloom.                     */
+
+@keyframes sc-receipt-bloom {
+  0%   { opacity: 0; transform: scale(0.97) translateY(8px); filter: blur(2px); }
+  60%  { opacity: 1; transform: scale(1.01) translateY(-2px); filter: blur(0);  }
+  100% { opacity: 1; transform: scale(1)   translateY(0);    filter: blur(0);  }
+}
+
+/* Receipt phase entry: CEREMONY duration (600ms) → matches NotarizeStamp rhythm */
+.seal-ceremony[data-phase="receipt"] .sc-phase--receipt {
+  animation: sc-receipt-bloom var(--motion-ceremony-duration) var(--motion-ceremony-easing) both;
+}
+
+/* ── SealCeremony.astro: Gold atmosphere on ceremony ──────────────── */
+/* When [data-atmosphere="gold"] is active (set on .seal-ceremony),   */
+/* the border glows with a soft conviction-gold halo.                 */
+
+[data-atmosphere="gold"].seal-ceremony {
+  border-color: var(--gold-border-strong, rgba(245, 166, 35, 0.35));
+  box-shadow:   var(--shadow-e3), 0 0 24px rgba(245, 166, 35, 0.06);
+}
+
 /* ── Reduced motion: collapse to instant transitions ─────── */
 
 @media (prefers-reduced-motion: reduce) {

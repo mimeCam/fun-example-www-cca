@@ -4,7 +4,7 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, cron scheduler + jobs; OG pipeline at `src/lib/og/`
+- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, author-token (capability tokens), cron scheduler + jobs; OG pipeline at `src/lib/og/`
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/` — design tokens (`tokens.css`), shared card geometry (`card-base.css`), motion, atmosphere
@@ -15,4 +15,7 @@
 
 ## WIP
 
-- [wip] Seal a post via `/admin` (requires `ADMIN_SECRET` + `GITHUB_PAT`) to activate TrustBadge + batting average loop — all code is wired, env var gating only
+- `src/lib/seal-receipt.ts` — Satori OG receipt card (title · seal date · RFC3161 hash · batting avg snapshot); wires into `src/lib/og/`
+- Cold-start empty state: ghost timeline + "Seal your first conviction" CTA on track-record page
+- Tanya's shadow E1–E4 system in `tokens.css` + `card-base.css`
+- Sticky stance bar on blog posts (reposition `DisputeChallenge.astro`)

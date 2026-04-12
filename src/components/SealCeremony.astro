@@ -1,0 +1,661 @@
+---
+// src/components/SealCeremony.astro
+// Self-service conviction seal — 4-phase state machine.
+// data-phase="compose|confirm|anchor|receipt" drives all CSS transitions.
+// Fetches a capability token from /api/author-token, then seals via /api/seal-self.
+// Zero runtime JS framework — vanilla fetch + attribute swap on data-phase.
+//
+// Phases:
+//   compose  → author enters score + conviction note
+//   confirm  → read-only preview + "I stand behind this" checkbox
+//   anchor   → POST in flight, gold arc animation (1800ms minimum)
+//   receipt  → SealReceipt.astro display, share button
+//
+// Credits: Mike (4-phase spec, capability token), Tanya (ceremony UX, motion contract)
+
+import SealReceipt from './SealReceipt.astro';
+
+interface Props {
+  slug:        string;
+  title:       string;
+  authorSlug?: string; // default 'host' for single-author platforms
+}
+
+const { slug, title, authorSlug = 'host' } = Astro.props;
+---
+
+<div
+  class="seal-ceremony"
+  data-phase="compose"
+  data-slug={slug}
+  data-author={authorSlug}
+  aria-label="Seal your conviction"
+  data-atmosphere="gold"
+>
+
+  <!-- ── PHASE: COMPOSE ─────────────────────────────────────────── -->
+  <div class="sc-phase sc-phase--compose">
+    <header class="sc-header">
+      <span class="sc-eyebrow">SEAL YOUR CONVICTION</span>
+      <h2 class="sc-title">{title}</h2>
+      <p class="sc-risk">
+        Once sealed, this enters the accountability loop.
+        The community can dispute within 72 hours.
+        <strong>There is no unseal.</strong>
+      </p>
+    </header>
+
+    <!-- Score selector -->
+    <div class="sc-score-group" role="group" aria-label="Conviction strength 1 to 10">
+      <span class="sc-input-label">Conviction strength</span>
+      <div class="sc-dots cs-dots" data-dots>
+        {Array.from({ length: 10 }, (_, i) => (
+          <button
+            type="button"
+            class={`seal-dot${i < 5 ? ' is-filled' : ''}`}
+            data-value={i + 1}
+            aria-label={`Score ${i + 1} out of 10`}
+            aria-pressed={i < 5 ? 'true' : 'false'}
+          ></button>
+        ))}
+      </div>
+      <span class="sc-score-readout">
+        <span class="sc-score-num" data-score-display>5</span>
+        <span class="sc-score-denom">/10</span>
+      </span>
+    </div>
+
+    <!-- Conviction note -->
+    <label class="sc-input-label" for={`sc-note-${slug}`}>Your conviction in one sentence</label>
+    <textarea
+      id={`sc-note-${slug}`}
+      class="sc-textarea"
+      rows="2"
+      maxlength="280"
+      placeholder="State your conviction clearly. You will be held to this."
+      data-note
+    ></textarea>
+
+    <div class="sc-compose-footer">
+      <button class="sc-cta" data-compose-cta type="button" disabled>
+        Seal this conviction
+        <span class="seal-spinner sc-spinner" aria-hidden="true"></span>
+      </button>
+      <p class="sc-error seal-error" data-error aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- ── PHASE: CONFIRM ─────────────────────────────────────────── -->
+  <div class="sc-phase sc-phase--confirm" aria-hidden="true">
+    <div class="sc-confirm-block">
+      <span class="sc-confirm-eyebrow">Your conviction</span>
+      <blockquote class="sc-confirm-quote" data-confirm-quote></blockquote>
+      <div class="sc-confirm-score-row">
+        <span class="sc-confirm-score-label">Strength</span>
+        <span class="sc-confirm-score-val" data-confirm-score></span>
+        <span class="sc-confirm-score-denom">/10</span>
+      </div>
+    </div>
+
+    <!-- NotarizeStamp preview: SVG lock that morphs on press -->
+    <div class="sc-notarize-preview" aria-hidden="true">
+      <svg class="sc-lock-icon" viewBox="0 0 24 24" width="32" height="32"
+        fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <span class="sc-notarize-label">This cannot be unsaid. The clock starts now.</span>
+    </div>
+
+    <label class="sc-confirm-check-label">
+      <input type="checkbox" class="sc-confirm-check" data-confirm-check />
+      <span>I stand behind this, permanently.</span>
+    </label>
+
+    <button class="sc-cta sc-cta--sign" data-confirm-cta type="button" disabled>
+      Sign &amp; Anchor
+    </button>
+  </div>
+
+  <!-- ── PHASE: ANCHOR ──────────────────────────────────────────── -->
+  <div class="sc-phase sc-phase--anchor" aria-hidden="true" aria-live="polite">
+    <div class="sc-anchor-visual" aria-hidden="true">
+      <!-- Gold progress arc around lock icon -->
+      <svg class="sc-anchor-arc-svg" viewBox="0 0 64 64" width="64" height="64">
+        <circle class="sc-arc-track" cx="32" cy="32" r="28"/>
+        <circle class="sc-arc-fill seal-arc" cx="32" cy="32" r="28" data-arc/>
+      </svg>
+      <svg class="sc-anchor-lock" viewBox="0 0 24 24" width="28" height="28"
+        fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <p class="sc-anchor-label">Anchoring to the public record…</p>
+    <p class="sc-anchor-sub">Generating cryptographic proof. This may take a moment.</p>
+  </div>
+
+  <!-- ── PHASE: RECEIPT ─────────────────────────────────────────── -->
+  <div class="sc-phase sc-phase--receipt" aria-hidden="true" data-receipt-phase>
+    <!-- SealReceipt expects [data-seal-phase="4"] on an ancestor. -->
+    <!-- JS sets data-seal-phase="4" on this wrapper when receipt begins. -->
+    <SealReceipt />
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.seal-ceremony').forEach(initCeremony);
+
+  function initCeremony(el: HTMLElement): void {
+    const slug       = el.dataset.slug!;
+    const authorSlug = el.dataset.author!;
+    let   score      = 5;
+    let   token      = '';
+
+    setupDots(el, (v) => { score = v; });
+
+    const noteEl = el.querySelector<HTMLTextAreaElement>('[data-note]')!;
+    noteEl.addEventListener('input', () => toggleComposeCta(el, noteEl.value.trim()));
+
+    el.querySelector('[data-compose-cta]')!.addEventListener('click', () =>
+      onCompose(el, slug, authorSlug, score, noteEl.value.trim())
+        .then(t => { token = t; })
+        .catch(err => showError(el, err.message))
+    );
+
+    el.querySelector<HTMLInputElement>('[data-confirm-check]')!
+      .addEventListener('change', (e) => {
+        const btn = el.querySelector<HTMLButtonElement>('[data-confirm-cta]')!;
+        btn.disabled = !(e.target as HTMLInputElement).checked;
+      });
+
+    el.querySelector('[data-confirm-cta]')!.addEventListener('click', () =>
+      onConfirm(el, slug, authorSlug, score, noteEl.value.trim(), token)
+        .catch(err => showError(el, err.message))
+    );
+  }
+
+  // ── Score dots ──────────────────────────────────────────────────
+
+  function setupDots(el: HTMLElement, onChange: (v: number) => void): void {
+    const dots = el.querySelectorAll<HTMLElement>('[data-dots] .seal-dot');
+    dots.forEach((dot, i) => dot.addEventListener('click', () => {
+      const val = i + 1;
+      syncDots(dots, val);
+      el.querySelector('[data-score-display]')!.textContent = String(val);
+      onChange(val);
+      toggleComposeCta(el, el.querySelector<HTMLTextAreaElement>('[data-note]')!.value.trim());
+    }));
+  }
+
+  function syncDots(dots: NodeListOf<HTMLElement>, val: number): void {
+    dots.forEach((d, i) => {
+      const active = i < val;
+      d.classList.toggle('is-filled', active);
+      d.setAttribute('aria-pressed', String(active));
+    });
+  }
+
+  // ── CTA enable/disable ───────────────────────────────────────────
+
+  function toggleComposeCta(el: HTMLElement, note: string): void {
+    const btn = el.querySelector<HTMLButtonElement>('[data-compose-cta]')!;
+    btn.disabled = note.length < 10;
+  }
+
+  // ── Phase transitions ────────────────────────────────────────────
+
+  function setPhase(el: HTMLElement, phase: string): void {
+    el.dataset.phase = phase;
+    el.querySelectorAll<HTMLElement>('.sc-phase').forEach(p => {
+      p.setAttribute('aria-hidden', p.classList.contains(`sc-phase--${phase}`) ? 'false' : 'true');
+    });
+  }
+
+  // ── Network calls ─────────────────────────────────────────────────
+
+  async function fetchToken(postSlug: string, authorSlug: string): Promise<string> {
+    const r = await fetch('/api/author-token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ postSlug, authorSlug }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error ?? 'Token request failed');
+    return data.token as string;
+  }
+
+  async function submitSeal(
+    slug: string, authorSlug: string,
+    score: number, note: string, token: string,
+  ): Promise<Record<string, unknown>> {
+    const r = await fetch('/api/seal-self', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ slug, authorSlug, score, authorNote: note, token }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error ?? 'Seal failed');
+    return data as Record<string, unknown>;
+  }
+
+  // ── Phase handlers ─────────────────────────────────────────────────
+
+  async function onCompose(
+    el: HTMLElement, slug: string, authorSlug: string, score: number, note: string,
+  ): Promise<string> {
+    if (note.length < 10) throw new Error('Note too short — be specific.');
+    clearError(el);
+    const btn = el.querySelector<HTMLButtonElement>('[data-compose-cta]')!;
+    btn.disabled = true;
+    btn.classList.add('sc-cta--loading');
+
+    const t = await fetchToken(slug, authorSlug).finally(() => {
+      btn.disabled = false;
+      btn.classList.remove('sc-cta--loading');
+    });
+
+    // Populate confirm phase preview
+    el.querySelector('[data-confirm-quote]')!.textContent = `"${note}"`;
+    el.querySelector('[data-confirm-score]')!.textContent  = String(score);
+    setPhase(el, 'confirm');
+    return t;
+  }
+
+  async function onConfirm(
+    el: HTMLElement, slug: string, authorSlug: string,
+    score: number, note: string, token: string,
+  ): Promise<void> {
+    clearError(el);
+    setPhase(el, 'anchor');
+
+    // Enforce 1800ms minimum — the weight of this action deserves ceremony time
+    const [data] = await Promise.all([
+      submitSeal(slug, authorSlug, score, note, token),
+      new Promise(r => setTimeout(r, 1800)),
+    ]);
+
+    populateReceipt(el, data as Record<string, unknown>, slug);
+    const receiptPhase = el.querySelector<HTMLElement>('[data-receipt-phase]')!;
+    receiptPhase.dataset.sealPhase = '4'; // triggers SealReceipt.astro CSS
+    setPhase(el, 'receipt');
+  }
+
+  // ── Receipt population ─────────────────────────────────────────────
+
+  function populateReceipt(el: HTMLElement, data: Record<string, unknown>, slug: string): void {
+    const sealedAt = new Date((data.sealedAt as number)).toLocaleDateString(
+      'en-US', { month: 'short', day: 'numeric', year: 'numeric' },
+    );
+    setText(el, '[data-receipt-date]',  sealedAt);
+    setText(el, '[data-receipt-score]', String(data.score ?? ''));
+    setText(el, '[data-receipt-hash]',  String(data.hash ?? ''));
+
+    const tstNote = data.tst_token
+      ? `Anchored — token present (${String(data.tst_token).slice(0, 8)}…)`
+      : 'Anchoring locally — OTS proof pending';
+    setText(el, '[data-receipt-tst-note]', tstNote);
+
+    if (data.anchorUrl) {
+      const anchor = el.querySelector<HTMLAnchorElement>('[data-receipt-anchor]');
+      const row    = el.querySelector<HTMLElement>('[data-receipt-anchor-row]');
+      if (anchor) anchor.href = data.anchorUrl as string;
+      if (row)    row.style.display = '';
+    }
+
+    wireDownload(el, data, slug);
+    const auditEl = el.querySelector<HTMLAnchorElement>('[data-receipt-audit]');
+    if (auditEl) auditEl.href = `/audit/${slug}`;
+  }
+
+  function setText(el: HTMLElement, selector: string, text: string): void {
+    const target = el.querySelector<HTMLElement>(selector);
+    if (target) target.textContent = text;
+  }
+
+  function wireDownload(el: HTMLElement, data: Record<string, unknown>, slug: string): void {
+    const btn = el.querySelector<HTMLButtonElement>('[data-receipt-download]');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      Object.assign(document.createElement('a'), {
+        href: url, download: `seal-receipt-${slug}.json`,
+      }).click();
+      URL.revokeObjectURL(url);
+    }, { once: true });
+  }
+
+  // ── Error display ──────────────────────────────────────────────────
+
+  function showError(el: HTMLElement, msg: string): void {
+    const errEl = el.querySelector<HTMLElement>('[data-error]');
+    if (errEl) errEl.textContent = msg;
+    const btn = el.querySelector<HTMLButtonElement>('[data-compose-cta]');
+    if (btn) { btn.disabled = false; btn.classList.remove('sc-cta--loading'); }
+  }
+
+  function clearError(el: HTMLElement): void {
+    const errEl = el.querySelector<HTMLElement>('[data-error]');
+    if (errEl) errEl.textContent = '';
+  }
+</script>
+
+<style>
+  /* ── Outer wrapper: phases shown/hidden via data-phase ───────── */
+
+  .seal-ceremony {
+    container-type: inline-size;
+    border:         1px solid var(--gold-border);
+    border-radius:  var(--radius-xl, 24px);    /* Tanya §4 — premium container */
+    background:     var(--surface-raised);
+    box-shadow:     var(--shadow-e3);
+    padding:        var(--space-7) var(--space-6);
+    margin:         var(--space-6) 0;
+    transition:     box-shadow var(--motion-flow-duration) var(--motion-flow-easing);
+  }
+
+  /* ── Phase visibility: phase div shows only when matching ─────── */
+
+  .sc-phase { display: none; }
+
+  .seal-ceremony[data-phase="compose"]  .sc-phase--compose  { display: block; }
+  .seal-ceremony[data-phase="confirm"]  .sc-phase--confirm  { display: block; }
+  .seal-ceremony[data-phase="anchor"]   .sc-phase--anchor   { display: flex; flex-direction: column; align-items: center; }
+  .seal-ceremony[data-phase="receipt"]  .sc-phase--receipt  { display: block; }
+
+  /* Phase entry animations (FLOW → CONFIRM, SNAP → ANCHOR, CEREMONY → RECEIPT) */
+
+  .sc-phase--confirm,
+  .sc-phase--anchor,
+  .sc-phase--receipt {
+    animation: sc-phase-in var(--motion-flow-duration) var(--motion-flow-easing) both;
+  }
+
+  @keyframes sc-phase-in {
+    from { opacity: 0; translate: 0 6px; }
+    to   { opacity: 1; translate: 0 0;   }
+  }
+
+  /* ── Header ──────────────────────────────────────────────────── */
+
+  .sc-eyebrow {
+    display:        block;
+    font-size:      var(--text-2xs);
+    font-weight:    var(--weight-bold);
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color:          var(--gold-dim);
+    margin-bottom:  var(--space-2);
+  }
+
+  .sc-title {
+    font-size:      var(--text-lg);
+    font-weight:    var(--weight-semibold);
+    line-height:    1.3;
+    letter-spacing: -0.02em;
+    color:          var(--text-primary);
+    margin:         0 0 var(--space-3);
+  }
+
+  .sc-risk {
+    font-size:   var(--text-sm);
+    color:       var(--text-secondary);
+    line-height: 1.5;
+    margin:      0 0 var(--space-5);
+  }
+
+  .sc-risk strong { color: var(--text-primary); }
+
+  /* ── Score dots ───────────────────────────────────────────────── */
+
+  .sc-score-group {
+    margin-bottom: var(--space-4);
+  }
+
+  .sc-input-label {
+    display:        block;
+    font-size:      var(--text-xs);
+    font-weight:    var(--weight-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color:          var(--text-tertiary);
+    margin-bottom:  var(--space-2);
+  }
+
+  .sc-dots {
+    display:     flex;
+    gap:         var(--space-2);
+    align-items: center;
+  }
+
+  .sc-score-readout {
+    display:     inline-flex;
+    align-items: baseline;
+    gap:         2px;
+    margin-left: var(--space-3);
+  }
+
+  .sc-score-num  { font-family: var(--font-mono); font-size: var(--text-lg); color: var(--gold); font-weight: var(--weight-bold); }
+  .sc-score-denom { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--gold-dim); }
+
+  /* ── Textarea ─────────────────────────────────────────────────── */
+
+  .sc-textarea {
+    width:            100%;
+    background:       var(--surface-inset, rgba(0,0,0,0.15));
+    border:           none;
+    border-bottom:    1px solid var(--border-subtle);
+    border-radius:    var(--radius-sm) var(--radius-sm) 0 0;
+    color:            var(--text-primary);
+    font-size:        var(--text-base);
+    line-height:      1.6;
+    padding:          var(--space-3) var(--space-4);
+    resize:           vertical;
+    transition:       border-color var(--motion-snap-duration) var(--motion-snap-easing);
+    box-sizing:       border-box;
+    margin-bottom:    var(--space-5);
+    margin-top:       var(--space-2);
+  }
+
+  .sc-textarea:focus {
+    outline:       none;
+    border-color:  var(--gold-border);
+  }
+
+  /* ── Compose footer ───────────────────────────────────────────── */
+
+  .sc-compose-footer {
+    display:        flex;
+    flex-direction: column;
+    align-items:    flex-start;
+    gap:            var(--space-2);
+  }
+
+  /* ── CTA button ───────────────────────────────────────────────── */
+
+  .sc-cta {
+    display:        inline-flex;
+    align-items:    center;
+    gap:            var(--space-2);
+    background:     var(--gold-bg);
+    border:         1px solid var(--gold-border);
+    border-radius:  var(--radius-full);
+    color:          var(--gold);
+    cursor:         pointer;
+    font-size:      var(--text-sm);
+    font-weight:    var(--weight-semibold);
+    letter-spacing: 0.06em;
+    padding:        var(--space-3) var(--space-6);
+    transition:
+      background   var(--motion-snap-duration) var(--motion-snap-easing),
+      border-color var(--motion-snap-duration) var(--motion-snap-easing),
+      opacity      var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .sc-cta:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .sc-cta:not(:disabled):hover {
+    background:   var(--gold-bg-strong);
+    border-color: var(--gold-border-strong);
+  }
+
+  .sc-cta--sign {
+    margin-top:  var(--space-5);
+    font-weight: var(--weight-bold);
+    background:  var(--gold);
+    color:       oklch(10% 0.01 50);
+    border-color: var(--gold);
+  }
+
+  .sc-cta--sign:not(:disabled):hover {
+    background:   oklch(from var(--gold) calc(l + 0.05) c h);
+    border-color: oklch(from var(--gold) calc(l + 0.05) c h);
+  }
+
+  .sc-cta--loading .sc-spinner { display: inline-block; }
+  .sc-spinner { display: none; }
+
+  /* ── Confirm phase ────────────────────────────────────────────── */
+
+  .sc-confirm-block {
+    background:    var(--surface-inset, rgba(0,0,0,0.12));
+    border:        1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding:       var(--space-4) var(--space-5);
+    margin-bottom: var(--space-5);
+  }
+
+  .sc-confirm-eyebrow {
+    display:        block;
+    font-size:      var(--text-2xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color:          var(--text-ghost);
+    margin-bottom:  var(--space-2);
+  }
+
+  .sc-confirm-quote {
+    font-size:   var(--text-base);
+    line-height: 1.6;
+    color:       var(--text-primary);
+    font-style:  italic;
+    margin:      0 0 var(--space-3);
+    border:      none;
+    padding:     0;
+  }
+
+  .sc-confirm-score-row {
+    display:     flex;
+    align-items: baseline;
+    gap:         var(--space-2);
+  }
+
+  .sc-confirm-score-label { font-size: var(--text-xs); color: var(--text-ghost); }
+  .sc-confirm-score-val   { font-family: var(--font-mono); font-size: var(--text-base); color: var(--gold); font-weight: var(--weight-bold); }
+  .sc-confirm-score-denom { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--gold-dim); }
+
+  /* ── NotarizeStamp preview ─────────────────────────────────────── */
+
+  .sc-notarize-preview {
+    display:       flex;
+    align-items:   center;
+    gap:           var(--space-3);
+    padding:       var(--space-4) 0;
+    border-top:    1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: var(--space-4);
+  }
+
+  .sc-lock-icon        { color: var(--gold-dim); flex-shrink: 0; }
+  .sc-notarize-label   { font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5; }
+
+  .sc-confirm-check-label {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-3);
+    font-size:   var(--text-sm);
+    color:       var(--text-secondary);
+    cursor:      pointer;
+  }
+
+  .sc-confirm-check { width: 16px; height: 16px; accent-color: var(--gold); cursor: pointer; flex-shrink: 0; }
+
+  /* ── Anchor phase ──────────────────────────────────────────────── */
+
+  .sc-phase--anchor {
+    padding:        var(--space-10) 0;
+    gap:            var(--space-4);
+    text-align:     center;
+  }
+
+  .sc-anchor-visual {
+    position:  relative;
+    width:     64px;
+    height:    64px;
+    display:   flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sc-anchor-arc-svg {
+    position: absolute;
+    inset:    0;
+    overflow: visible;
+  }
+
+  .sc-arc-track {
+    fill:         none;
+    stroke:       var(--border-subtle);
+    stroke-width: 3;
+  }
+
+  /* seal-arc inherits from seal-ceremony.css (.seal-arc.is-filling) */
+  .sc-arc-fill {
+    fill:              none;
+    stroke:            var(--gold);
+    stroke-width:      3;
+    stroke-dasharray:  176;          /* 2π × 28 */
+    stroke-dashoffset: 176;
+    stroke-linecap:    round;
+    transform-origin:  center;
+    transform:         rotate(-90deg);
+    transition:        stroke-dashoffset 1800ms linear;
+  }
+
+  /* JS sets .is-filling → offset → 0 for progress fill */
+  .sc-arc-fill.is-filling { stroke-dashoffset: 0; }
+
+  .sc-anchor-lock { color: var(--gold-dim); z-index: 1; }
+
+  .sc-anchor-label {
+    font-size:      var(--text-sm);
+    font-weight:    var(--weight-semibold);
+    color:          var(--text-primary);
+    letter-spacing: 0.03em;
+    margin:         0;
+  }
+
+  .sc-anchor-sub {
+    font-size:  var(--text-xs);
+    color:      var(--text-tertiary);
+    margin:     0;
+    max-width:  30ch;
+    text-align: center;
+  }
+
+  /* Kick off arc fill animation when anchor phase is visible */
+  .seal-ceremony[data-phase="anchor"] .sc-arc-fill { stroke-dashoffset: 0; }
+
+  /* ── Reduced motion ────────────────────────────────────────────── */
+
+  @media (prefers-reduced-motion: reduce) {
+    .sc-phase--confirm,
+    .sc-phase--anchor,
+    .sc-phase--receipt { animation: none; }
+    .sc-arc-fill,
+    .sc-cta            { transition: none; }
+    .sc-textarea       { transition: none; }
+  }
+</style>

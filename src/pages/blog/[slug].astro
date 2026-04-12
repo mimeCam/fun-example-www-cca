@@ -1,11 +1,9 @@
 ---
 // src/pages/blog/[slug].astro
 // Blog detail page — "The Sealed Bet" (Tanya §9).
-// Above-fold: ConvictionSeal (score display when sealed, ceremony when not).
+// Above-fold: ConvictionSeal (sealed display) or SealCeremony (unsealed self-service).
+// SealCeremony replaces the unsealed state — no ADMIN_SECRET needed to seal.
 // Below fold: post content, KeepButton (single CTA), AuditTrail.
-//
-// ConvictionSeal unifies ConvictionHero + ConvictionDeclaration + AdminSealForm.
-// ReadingPulse removed (Tanya §16 — zero reader value).
 //
 // DONE: reading progress "erosion bar" — see SiteNav.astro + inline script below
 
@@ -14,6 +12,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
 import PostNav from '../../components/PostNav.astro';
 import ConvictionSeal from '../../components/ConvictionSeal.astro';
+import SealCeremony from '../../components/SealCeremony.astro';
 import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
@@ -155,18 +154,27 @@ const jsonLd      = [
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
 
-    <!-- ConvictionSeal: above-fold conviction display + author ceremony.
-         Sealed → score/clock/tension display. Unsealed + admin cookie → ceremony form.
-         TensionBadge embedded in status row (Mike §Key Design Decisions #2). -->
-    <ConvictionSeal
-      slug={post.slug}
-      context="post"
-      graceState={safeGraceState}
-      revivalCount={revivalCount}
-      conviction={dominantVerdict}
-      tensionResult={tensionResult}
-      tst={tstData}
-    />
+    <!-- Conviction: sealed display OR self-service seal ceremony.
+         Sealed → ConvictionSeal (score/clock/tension display).
+         Unsealed → SealCeremony (self-service 4-phase ceremony, no admin gate).
+         Admin context preserves ConvictionSeal form via /admin page. -->
+    {sealEntry ? (
+      <ConvictionSeal
+        slug={post.slug}
+        context="post"
+        graceState={safeGraceState}
+        revivalCount={revivalCount}
+        conviction={dominantVerdict}
+        tensionResult={tensionResult}
+        tst={tstData}
+      />
+    ) : (
+      <SealCeremony
+        slug={post.slug}
+        title={post.data.title}
+        authorSlug={post.data.authorSlug ?? 'host'}
+      />
+    )}
 
     <!-- DecayClock bar: renders only when author has set a resolution_deadline.
          Maps to DeadlineStatus discriminated union — no booleans, no nullable flags.

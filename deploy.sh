@@ -4,6 +4,40 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v90 — Self-Service Conviction Seal (2026-04-12)
+#   Sprint: Authors can now seal their own posts without needing ADMIN_SECRET.
+#     A single-use HMAC capability token (15-min TTL) is issued via
+#     POST /api/author-token and consumed by POST /api/seal-self.
+#     Blog post pages now show SealCeremony.astro (4-phase ceremony) when
+#     the post is unsealed — no admin gate needed. API parity maintained:
+#     seal-self response mirrors conviction-seal shape exactly.
+#   New files:
+#     src/lib/author-token.ts — HMAC capability token library; issueToken(),
+#       validateAndConsume(); stores token_hash + expiry in author_tokens
+#       table (auto-created in revivals.db on first run); single-use
+#       replay prevention via used_at column; HMAC_SECRET env var (required).
+#     src/pages/api/author-token.ts — POST /api/author-token; issues 15-min
+#       single-use token for given authorSlug + postSlug pair; validates post
+#       exists in content collection; returns { token, expiresAt }.
+#     src/pages/api/seal-self.ts — POST /api/seal-self; validates & consumes
+#       token via validateAndConsume(); seals conviction via sealConviction();
+#       runs anchor + RFC3161/OTS stamp side-effects (fail-open); broadcasts
+#       conviction:sealed SSE event; response identical to conviction-seal.
+#     src/components/SealCeremony.astro — 4-phase self-service seal ceremony
+#       component for blog post pages (replaces unsealed ConvictionSeal state).
+#   Modified files:
+#     src/pages/blog/[slug].astro — unsealed posts now render SealCeremony
+#       instead of ConvictionSeal; sealed posts continue to render ConvictionSeal.
+#     src/styles/seal-ceremony.css — bloom/receipt animation additions for
+#       SealCeremony component; mobile phase-3 modal additions from v88.
+#     AGENTS.md — Self-Service Seal shipped; HMAC_SECRET marked required.
+#   Infrastructure: NEW required env var HMAC_SECRET.
+#     author_tokens table auto-created in revivals.db (SQLITE_VOLUME) on first
+#     run — no manual migration needed. No new services, volumes, or packages.
+#     ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO unchanged.
+#     deploy.sh: HMAC_SECRET now read from .env and passed to container
+#     (steps 1–8 identical to v89; only docker run gains --env HMAC_SECRET).
+#
 # Architecture v89 — Card Base Design System Unification (2026-04-12)
 #   Sprint: Shared card geometry extracted into a single-source-of-truth
 #     src/styles/card-base.css stylesheet. All card shells now compose via
@@ -1938,6 +1972,7 @@ docker build \
 echo "==> [deploy] Starting container: ${CONTAINER_NAME} on port ${HOST_PORT}"
 GITHUB_PAT_VAL="$(grep -oP '^GITHUB_PAT=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')"
 DISPUTE_QUORUM_RATIO_VAL="$(grep -oP '^DISPUTE_QUORUM_RATIO=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')"
+HMAC_SECRET_VAL="$(grep -oP '^HMAC_SECRET=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')"
 
 docker run \
   --detach \
@@ -1949,6 +1984,7 @@ docker run \
   --volume "${DATA_VOLUME}:/app/dist/server/data" \
   --volume "${SQLITE_VOLUME}:/app/data" \
   --env ADMIN_SECRET="$(grep -oP '^ADMIN_SECRET=\K.*' "${SCRIPT_DIR}/.env" 2>/dev/null || echo '')" \
+  --env HMAC_SECRET="${HMAC_SECRET_VAL}" \
   ${GITHUB_PAT_VAL:+--env GITHUB_PAT="${GITHUB_PAT_VAL}"} \
   ${DISPUTE_QUORUM_RATIO_VAL:+--env DISPUTE_QUORUM_RATIO="${DISPUTE_QUORUM_RATIO_VAL}"} \
   "${IMAGE_NAME}"
