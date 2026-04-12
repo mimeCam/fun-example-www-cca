@@ -1,107 +1,165 @@
 ---
 // src/components/BattingAverageHero.astro
-// Zone 1 conviction hero — the first thing a visitor sees.
-// Full-height above-fold section: large pct, pills, anchor badge, share button.
-// Zero external client JS — share button is 8 lines of inline clipboard API.
+// Trophy-tier BA hero — trustworthy + beautiful (Paul Kim: "a trophy, not a stat").
+// Shows: trophy icon (tier-colored) · BA% + fill bar · selectivity bar · verdict count.
+// Locked state: 🔒 Needs N more resolved verdicts to unlock.
+// SSR only — server-renders BA per request, zero hydration, zero stale cache.
 //
 // Props:
-//   avg            — batting average from buildTrackRecord()
-//   anchorUrl      — GitHub Gist URL when GITHUB_PAT is wired; null otherwise
-//   coldTrajectory — sealed count + days to first verdict; shown in cold state
+//   result    — BattingAverageResult from getBattingAverageResult()
+//   anchorUrl — GitHub Gist URL when GITHUB_PAT is wired; null otherwise
 //
-// SSE hook: data-cm-pct attribute wires into existing initLiveConviction()
-// so the hero number patches live on verdict events — zero SSE code changes.
+// SSE hook: data-cm-pct wires into existing SSE stream; trophy spring fires on
+// verdict:declared + tier change only, never on page load.
 //
-// Credits: Mike (arch spec — BattingAverageHero, anchor URL fix, cold trajectory),
-//          Tanya (UX §14 anchor strip, §15 cold-start trajectory, §18 hero spec),
-//          Elon (kill item: hide % until ≥1 resolved verdict — prevents self-grading)
+// Credits: Mike Koch (arch spec §BA-Integrity), Tanya Donska (UX §4.4 trophy spec),
+//          Elon (selection-bias — selectivityRate visible alongside BA, always)
 
-import type { BattingAverage } from '../lib/batting-average';
-import type { ColdTrajectory } from '../lib/track-record';
-import { getResolvedVerdictCount } from '../lib/verdict-resolver';
+import '../styles/batting-average.css';
+import type { BattingAverageResult, TrophyTier } from '../lib/batting-average';
 
 interface Props {
-  avg:             BattingAverage;
-  anchorUrl?:      string | null;
-  coldTrajectory?: ColdTrajectory;
+  result:     BattingAverageResult;
+  anchorUrl?: string | null;
 }
 
-const { avg, anchorUrl = null, coldTrajectory } = Astro.props;
+const { result, anchorUrl = null } = Astro.props;
 
-// Gate: show batting % after ≥1 resolved verdict (Mike §4 — cold-start visibility matters).
-// Lower gate from 3→1: platform has 6 posts; statistical validity revisited at 50+ posts.
-// SSR-only — zero hydration, zero layout shift. Cold copy is same-size placeholder.
-const resolvedCount = getResolvedVerdictCount();
-const showPct = avg.status === 'live' && resolvedCount >= 1;
+const pctInt    = result.battingAverage !== null ? Math.round(result.battingAverage * 100) : 0;
+const selPctInt = result.selectivityRate !== null ? Math.round(result.selectivityRate * 100) : 0;
 
-const isLive = showPct;
-const pctMod = isLive
-  ? avg.pct >= 80 ? 'bah--strong' : avg.pct >= 60 ? 'bah--mid' : 'bah--weak'
-  : 'bah--cold';
+// Pre-compute style strings — avoids template literals inside JSX attributes
+const fillStyle = `--ba-fill-width: ${pctInt}%`;
+const selStyle  = `--ba-sel-width: ${selPctInt}%; --ba-fill-width: ${selPctInt}%`;
 
-// Cold trajectory copy — meaningful forward momentum (Tanya §15)
-function coldClockCopy(t: ColdTrajectory | undefined): string {
-  if (!t || t.sealedCount === 0) return 'The clock is running.';
-  const posts = `${t.sealedCount} post${t.sealedCount === 1 ? '' : 's'} sealed`;
-  if (t.daysToFirst !== null) return `${posts} · first verdict eligible in ${t.daysToFirst} days`;
-  return `${posts} · awaiting resolution`;
-}
+const tierIcons: Record<TrophyTier, string> = {
+  locked:  '🔒',
+  bronze:  '🏅',
+  silver:  '🥈',
+  gold:    '🏆',
+  diamond: '💎',
+};
+
+const icon        = tierIcons[result.trophyTier];
+const pctDisplay  = result.eligible ? `${pctInt}%` : '—';
+const selDisplay  = result.selectivityRate !== null ? `${selPctInt}%` : '—';
+const needsMore   = 5 - result.resolvedTotal;
+const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
 ---
 
-<section class:list={['bah', pctMod]} aria-label="Conviction batting average">
+<section
+  class="bah"
+  data-ba-tier={result.trophyTier}
+  aria-label="Conviction batting average"
+>
 
-  <p class="bah-tagline">I publish ideas with skin in the game.</p>
+  <!-- Trophy icon — tier-colored, springs in on verdict:declared if tier changed -->
+  <span class="ba-trophy" aria-hidden="true">{icon}</span>
 
-  {isLive ? (
-    <div class="bah-score">
-      <span class="bah-pct" data-cm-pct={avg.pct} aria-label={`${avg.pct} percent accuracy`}>
-        {avg.pct}%
-      </span>
-      <span class="bah-subtitle">of sealed bets held true</span>
-    </div>
-
-    <div class="bah-pills" aria-label="Score breakdown">
-      <span class="bah-pill bah-pill--correct" data-cm-correct={avg.correct}>✓ {avg.correct} correct</span>
-      <span class="bah-pill bah-pill--wrong"   data-cm-wrong={avg.wrong}>✗ {avg.wrong} wrong</span>
-      <span class="bah-pill bah-pill--pending" data-cm-pending={avg.pending}>◌ {avg.pending} pending</span>
-    </div>
-
-    <div class="bah-anchor">
-      {anchorUrl ? (
-        <a href={anchorUrl} target="_blank" rel="noopener noreferrer" class="bah-anchor-link">
-          Anchored on GitHub · tamper-evident ↗
-        </a>
-      ) : (
-        <span>Anchored on GitHub · tamper-evident</span>
-      )}
-    </div>
-
-    <div class="bah-actions">
-      <button class="bah-share" type="button" aria-label="Copy link to batting average">
-        share score ↗
-      </button>
-    </div>
-  ) : (
-    <div class="bah-score bah-score--cold">
-      <!-- Ghost ring: cold-state orbit — clock is running, earning in progress (Mike P0-A, Tanya §18) -->
-      <div class="bah-ghost-ring" aria-hidden="true">
-        <svg class="bah-ring-svg" viewBox="0 0 88 88" overflow="visible" role="presentation">
-          <circle class="bah-ring-outer" cx="44" cy="44" r="38" />
-          <circle class="bah-ring-inner" cx="44" cy="44" r="30" />
-        </svg>
+  <!-- Score block: eligible path -->
+  {result.eligible && (
+    <div class="bah-live">
+      <div class="bah-score">
+        <span
+          class="bah-pct"
+          data-cm-pct={pctInt}
+          aria-label={`${pctInt} percent batting average`}
+        >{pctDisplay}</span>
+        <span class="bah-subtitle">Batting Average</span>
       </div>
-      <span class="bah-pct bah-pct--cold" aria-label="Track record pending">—</span>
-      {resolvedCount > 0 ? (
-        <span class="bah-subtitle bah-subtitle--cold">
-          {resolvedCount} verdict{resolvedCount === 1 ? '' : 's'} pending resolution
+
+      <div
+        class="ba-fill-bar"
+        role="progressbar"
+        aria-valuenow={pctInt}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Batting average"
+        style={fillStyle}
+      >
+        <div class="ba-fill-bar__track"></div>
+      </div>
+
+      <div class="ba-stats">
+        <div class="ba-stats__group">
+          <span class="ba-selectivity">{selDisplay} selectivity</span>
+          <span class="ba-stats__label">{result.totalSealed} sealed of {result.totalPublished} published</span>
+          <div
+            class="ba-sel-bar"
+            role="progressbar"
+            aria-valuenow={selPctInt}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Selectivity"
+            style={selStyle}
+          >
+            <div class="ba-sel-bar__track"></div>
+          </div>
+        </div>
+        <div class="ba-stats__group ba-stats__group--right">
+          <span class="ba-selectivity">{result.resolvedTotal}</span>
+          <span class="ba-stats__label">Verdicts</span>
+        </div>
+      </div>
+
+      <div class="bah-pills" aria-label="Score breakdown">
+        <span class="bah-pill bah-pill--correct" data-cm-correct={result.resolvedCorrect}>
+          ✓ {result.resolvedCorrect} correct
         </span>
-      ) : (
-        <span class="bah-subtitle bah-subtitle--cold">no verdicts sealed yet</span>
+        <span class="bah-pill bah-pill--wrong" data-cm-wrong={wrongCount}>
+          ✗ {wrongCount} wrong
+        </span>
+      </div>
+    </div>
+  )}
+
+  <!-- Score block: locked path (< MIN_VERDICTS resolved) -->
+  {!result.eligible && (
+    <div class="bah-cold">
+      <div class="bah-score bah-score--cold">
+        <div class="bah-ghost-ring" aria-hidden="true">
+          <svg class="bah-ring-svg" viewBox="0 0 88 88" overflow="visible" role="presentation">
+            <circle class="bah-ring-outer" cx="44" cy="44" r="38" />
+            <circle class="bah-ring-inner" cx="44" cy="44" r="30" />
+          </svg>
+        </div>
+        <span class="bah-pct bah-pct--cold" aria-label="Batting average locked">—</span>
+        <span class="bah-subtitle bah-subtitle--cold">Batting Average</span>
+      </div>
+
+      <div class="ba-locked">
+        <span class="ba-locked__icon" aria-hidden="true">🔒</span>
+        <span>Needs {needsMore} more resolved verdict{needsMore !== 1 ? 's' : ''} to unlock</span>
+      </div>
+
+      {result.totalSealed > 0 && (
+        <div class="ba-stats">
+          <div class="ba-stats__group">
+            <span class="ba-selectivity">{result.totalSealed} sealed</span>
+            <span class="ba-stats__label">of {result.totalPublished} published</span>
+          </div>
+          <div class="ba-stats__group ba-stats__group--right">
+            <span class="ba-selectivity">{result.resolvedTotal}</span>
+            <span class="ba-stats__label">of 5 verdicts</span>
+          </div>
+        </div>
       )}
     </div>
-
-    <p class="bah-clock">{coldClockCopy(coldTrajectory)}</p>
   )}
+
+  <!-- Anchor badge — tamper-evidence link -->
+  <div class="bah-anchor">
+    {anchorUrl
+      ? <a href={anchorUrl} target="_blank" rel="noopener noreferrer" class="bah-anchor-link">Anchored on GitHub · tamper-evident ↗</a>
+      : <span>Conviction ledger · tamper-evident</span>
+    }
+  </div>
+
+  <div class="bah-actions">
+    <button class="bah-share" type="button" aria-label="Copy link to batting average">
+      share score ↗
+    </button>
+  </div>
 
   <div class="bah-scroll-cue" aria-hidden="true">↓ see the bets</div>
 
@@ -109,16 +167,15 @@ function coldClockCopy(t: ColdTrajectory | undefined): string {
 
 <script>
   // BattingAverageHero — client ceremony layer
-  // Two responsibilities:
-  //   1. Share button: clipboard API with prompt() fallback
-  //   2. Count-up ceremony on verdict:declared SSE events
+  // 1. Share button (clipboard API with prompt() fallback)
+  // 2. BA count-up + trophy spring on verdict:declared SSE event
+  //    Trophy spring fires on tier CHANGE only — not on every page load.
   //
-  // Credits: Mike (arch §3 SSE lifecycle) · Tanya (UX §3 count-up ceremony)
+  // Credits: Mike (§3 SSE lifecycle), Tanya (§4.4 trophy spring spec),
   //          Elon (reduced-motion guard + bah:ceremony-done CustomEvent)
 
   import { countUp } from '../lib/spring-easing';
 
-  // ── Shared SSE stream ───────────────────────────────────────────────────
   declare global { interface Window { __heartbeat?: EventSource; } }
 
   function getStream(): EventSource {
@@ -126,98 +183,56 @@ function coldClockCopy(t: ColdTrajectory | undefined): string {
     return (window.__heartbeat = new EventSource('/api/heartbeat'));
   }
 
-  // ── DOM selectors ────────────────────────────────────────────────────────
   function getPctEl(): HTMLElement | null {
     return document.querySelector<HTMLElement>('.bah-pct[data-cm-pct]');
   }
 
-  function getPillEls() {
-    return {
-      correct: document.querySelector<HTMLElement>('.bah-pill--correct'),
-      wrong:   document.querySelector<HTMLElement>('.bah-pill--wrong'),
-      pending: document.querySelector<HTMLElement>('.bah-pill--pending'),
-    };
+  function getTrophyEl(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('.ba-trophy');
   }
 
-  // ── Ceremony phases ──────────────────────────────────────────────────────
-
-  /** Phase 1: briefly dim the number (200ms) — "the moment before" */
-  function anticipate(el: HTMLElement): Promise<void> {
-    el.style.opacity = '0.12';
-    return new Promise(r => setTimeout(r, 200));
+  function fireTrophySpring(el: HTMLElement): void {
+    el.classList.remove('ba-trophy--spring');
+    void el.offsetWidth; // reflow to restart animation
+    el.classList.add('ba-trophy--spring');
   }
 
-  /** Phase 3: flash gold (improved) or red (worsened), then settle */
-  function arrivalFlash(el: HTMLElement, improved: boolean): void {
-    const flashColor = improved ? 'var(--gold)' : 'var(--clr-red-500, oklch(55% 0.22 25))';
-    el.style.transition = `color var(--motion-duration-deliberate, 500ms) var(--motion-easing-standard, ease-in-out)`;
-    el.style.color = flashColor;
-    setTimeout(() => { el.style.color = ''; el.style.transition = ''; }, 800);
-  }
-
-  /** Patch all pill text content after count-up completes */
-  function patchPills(correct: number, wrong: number, pending: number): void {
-    const pills = getPillEls();
-    if (pills.correct) pills.correct.textContent = `✓ ${correct} correct`;
-    if (pills.wrong)   pills.wrong.textContent   = `✗ ${wrong} wrong`;
-    if (pills.pending) pills.pending.textContent = `◌ ${pending} pending`;
-  }
-
-  /** Dispatch bah:ceremony-done — allows downstream components to react (Elon spec) */
   function fireCeremonyDone(pct: number): void {
     document.dispatchEvent(new CustomEvent('bah:ceremony-done', { detail: { pct } }));
   }
 
-  /** Full ceremony: anticipate → count-up → arrival flash → patch pills → done */
-  async function runCeremony(
-    el: HTMLElement, from: number, to: number,
-    correct: number, wrong: number, pending: number,
-  ): Promise<void> {
-    await anticipate(el);
-    el.style.opacity = '1';
-    await new Promise<void>(resolve => {
-      countUp(from, to, val => { el.textContent = `${val}%`; }, resolve);
-    });
-    el.dataset.cmPct = String(to);
-    arrivalFlash(el, to > from);
-    patchPills(correct, wrong, pending);
-    fireCeremonyDone(to);
-  }
-
-  /** Reduced-motion path: snap to final value, still dispatch ceremony-done */
-  function snapCeremony(
-    el: HTMLElement, to: number,
-    correct: number, wrong: number, pending: number,
-  ): void {
-    el.textContent   = `${to}%`;
-    el.dataset.cmPct = String(to);
-    patchPills(correct, wrong, pending);
-    fireCeremonyDone(to);
-  }
-
-  // ── SSE verdict handler ─────────────────────────────────────────────────
-
   interface VerdictPayload {
     newBattingAvg: number | null;
-    correct: number; wrong: number; pending: number;
+    correct:       number;
+    wrong:         number;
+    pending:       number;
+    trophyTier?:   string;
+  }
+
+  function snapUpdate(el: HTMLElement, to: number, pct: number): void {
+    el.textContent   = `${pct}%`;
+    el.dataset.cmPct = String(pct);
+    fireCeremonyDone(to);
   }
 
   function handleVerdict(payload: VerdictPayload): void {
     if (payload.newBattingAvg === null) return;
     const el = getPctEl();
     if (!el) return;
-    const from = parseInt(el.dataset.cmPct ?? '0', 10);
-    const to   = payload.newBattingAvg;
-    if (from === to) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) {
-      snapCeremony(el, to, payload.correct, payload.wrong, payload.pending);
-    } else {
-      runCeremony(el, from, to, payload.correct, payload.wrong, payload.pending);
+    const from   = parseInt(el.dataset.cmPct ?? '0', 10);
+    const pct    = Math.round(payload.newBattingAvg * 100);
+    if (from === pct) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      snapUpdate(el, pct, pct);
+      return;
     }
+    countUp(from, pct, val => { el.textContent = `${val}%`; }, () => {
+      el.dataset.cmPct = String(pct);
+      const trophy = getTrophyEl();
+      if (trophy && payload.trophyTier) fireTrophySpring(trophy);
+      fireCeremonyDone(pct);
+    });
   }
-
-  // ── Boot ─────────────────────────────────────────────────────────────────
 
   function boot(): void {
     const es = getStream();
@@ -228,13 +243,9 @@ function coldClockCopy(t: ColdTrajectory | undefined): string {
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    boot();
-  }
+  } else { boot(); }
 
-  // ── Share button ─────────────────────────────────────────────────────────
-
-  const shareBtn = document.querySelector('.bah-share') as HTMLButtonElement | null;
+  const shareBtn = document.querySelector<HTMLButtonElement>('.bah-share');
   if (shareBtn) {
     shareBtn.addEventListener('click', () => {
       const url = window.location.href;
@@ -243,198 +254,155 @@ function coldClockCopy(t: ColdTrajectory | undefined): string {
           shareBtn.textContent = 'copied ✓';
           setTimeout(() => { shareBtn.textContent = 'share score ↗'; }, 2000);
         });
-      } else {
-        window.prompt('Copy this link:', url);
-      }
+      } else { window.prompt('Copy this link:', url); }
     });
   }
 </script>
 
 <style>
-  /* ── Hero section — full height above fold (Tanya §18) ── */
+  /* ── Hero layout ──────────────────────────────────────────────────────── */
   .bah {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 1.5rem;
-    min-height: clamp(480px, 60vh, 680px); /* 60vh: present but not full-screen; invites scroll */
-    padding: 6rem 2rem;
+    gap: var(--space-4);
+    padding: var(--space-12) var(--space-8);
     max-width: 40rem;
     margin: 0 auto;
   }
 
-  /* ── Intro tagline — italic medium: authority without shouting (Tanya §7) ── */
-  .bah-tagline {
-    font-size: 1.1rem;
-    font-style: italic;
-    font-weight: var(--weight-medium, 500);
-    color: var(--text-secondary);
-    margin: 0;
-    letter-spacing: 0.01em;
+  .bah-live, .bah-cold {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
   }
 
-  /* ── Score block: large number + subtitle ── */
+  /* ── Score block ─────────────────────────────────────────────────────── */
   .bah-score {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: var(--space-1);
   }
 
-  /* Cold state: relative container so ring can center over the dash glyph */
   .bah-score--cold { position: relative; }
 
   .bah-pct {
     display: block;
-    font-size: 4.5rem;
-    font-weight: 700;
+    font-size: var(--text-hero);
+    font-weight: var(--weight-bold);
     font-family: var(--font-mono);
-    line-height: 1;
-    letter-spacing: -0.02em;
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+    color: var(--ba-tier-color, var(--ba-tier-locked));
   }
 
-  /* ── Ghost ring — cold state orbit (Mike P0-A, Tanya §18) ── */
+  .bah-pct--cold {
+    color: var(--text-disabled);
+    animation: bah-cold-breathe 4s ease-in-out infinite;
+  }
+
+  .bah-subtitle {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .bah-subtitle--cold { font-style: italic; color: var(--text-ghost); }
+
+  /* ── Stat row groups ─────────────────────────────────────────────────── */
+  .ba-stats__group { display: flex; flex-direction: column; gap: 3px; }
+  .ba-stats__group--right { text-align: right; }
+
+  /* ── Ghost ring (cold state) ─────────────────────────────────────────── */
   .bah-ghost-ring {
     position: absolute;
-    top: 50%;
-    left: 50%;              /* pair with translate(-50%,-50%) in keyframe */
-    width: 5.5rem;
-    height: 5.5rem;
+    top: 50%; left: 50%;
+    width: 5.5rem; height: 5.5rem;
     pointer-events: none;
-    /* translate must live in keyframe (not here) to avoid position jump on first frame */
     animation: bah-ring-spin 10s linear infinite;
   }
 
-  .bah-ring-svg {
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-  }
+  .bah-ring-svg { width: 100%; height: 100%; overflow: visible; }
 
-  .bah-ring-outer,
-  .bah-ring-inner {
+  .bah-ring-outer, .bah-ring-inner {
     fill: none;
     stroke: var(--gold-border);
   }
 
-  .bah-ring-outer {
-    stroke-width: 2;
-    stroke-dasharray: 8 5;
-  }
-
-  .bah-ring-inner {
-    stroke-width: 1.5;
-    stroke-dasharray: 5 8;
-    opacity: 0.6;
-  }
+  .bah-ring-outer { stroke-width: 2; stroke-dasharray: 8 5; }
+  .bah-ring-inner { stroke-width: 1.5; stroke-dasharray: 5 8; opacity: 0.6; }
 
   @keyframes bah-ring-spin {
-    from { transform: translate(-50%, -50%) rotate(0deg);   }
+    from { transform: translate(-50%, -50%) rotate(0deg); }
     to   { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
-  /* Color variants — Tanya §18 + §24 amber system */
-  .bah--strong .bah-pct { color: var(--gold); }
-  .bah--mid    .bah-pct { color: var(--gold-dim); }
-  .bah--weak   .bah-pct { color: var(--text-secondary); }
-  .bah-pct--cold        { color: var(--text-disabled); animation: bah-cold-breathe 4s ease-in-out infinite; }
-
-  .bah-subtitle {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    letter-spacing: 0.02em;
-  }
-
-  .bah-subtitle--cold {
-    font-style: italic;
-    color: var(--text-ghost);
-  }
-
-  /* ── Pill badges ── */
+  /* ── Outcome pills ───────────────────────────────────────────────────── */
   .bah-pills {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--space-2);
     flex-wrap: wrap;
   }
 
   .bah-pill {
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     font-family: var(--font-mono);
-    padding: 3px 8px;
-    border-radius: var(--radius-sm);
+    padding: 3px var(--space-2);
+    border-radius: var(--radius-badge);
     white-space: nowrap;
-    letter-spacing: 0.01em;
   }
 
-  .bah-pill--correct { background: var(--correct-bg);  color: var(--verdict-true); }
+  .bah-pill--correct { background: var(--correct-bg);  color: var(--verdict-true);  }
   .bah-pill--wrong   { background: var(--wrong-bg);    color: var(--verdict-wrong); }
-  .bah-pill--pending { background: var(--pending-bg);  color: var(--text-tertiary); }
 
-  /* ── Anchor badge — dynamic link when GITHUB_PAT is wired (Mike §1, Tanya §14) ── */
+  /* ── Anchor ──────────────────────────────────────────────────────────── */
   .bah-anchor {
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     color: var(--text-ghost);
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-wide);
     border-left: 1px solid var(--gold-border);
-    padding-left: 0.6rem;
+    padding-left: var(--space-2);
   }
 
   .bah-anchor-link {
     color: var(--gold-dim);
     text-decoration: none;
-    transition: color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out);
+    transition: color var(--motion-duration-fast) var(--motion-easing-standard);
   }
 
-  .bah-anchor-link:hover {
-    color: var(--gold);
-    text-decoration: underline;
-  }
+  .bah-anchor-link:hover { color: var(--gold); text-decoration: underline; }
 
-  /* ── Cold state clock copy ── */
-  .bah-clock {
-    font-size: 0.82rem;
-    color: var(--text-tertiary);
-    margin: 0;
-    letter-spacing: 0.02em;
-  }
-
-  /* ── Share button ── */
-  .bah-actions { margin-top: -0.5rem; }
+  /* ── Share + scroll cue ──────────────────────────────────────────────── */
+  .bah-actions { margin-top: calc(-1 * var(--space-1)); }
 
   .bah-share {
     background: none;
     border: 1px solid var(--gold-border);
     color: var(--gold-dim);
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     font-family: var(--font-mono);
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
+    padding: 4px var(--space-3);
+    border-radius: var(--radius-badge);
     cursor: pointer;
-    letter-spacing: 0.04em;
-    transition: color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
-                border-color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out);
+    letter-spacing: var(--tracking-wide);
+    transition: color var(--motion-duration-fast) var(--motion-easing-standard),
+                border-color var(--motion-duration-fast) var(--motion-easing-standard);
   }
 
-  .bah-share:hover {
-    color: var(--gold);
-    border-color: var(--gold-dim);
-  }
+  .bah-share:hover { color: var(--gold); border-color: var(--gold-dim); }
 
-  /* ── Scroll cue ── */
   .bah-scroll-cue {
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     color: var(--text-ghost);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-widest);
     margin-top: auto;
-    padding-top: 2rem;
+    padding-top: var(--space-8);
     border-top: 1px solid var(--border-subtle);
   }
 
-  /* ── Mobile ── */
+  /* ── Mobile ──────────────────────────────────────────────────────────── */
   @media (max-width: 640px) {
-    .bah { padding: 4rem 1rem; gap: 1.25rem; }
-    .bah-pct { font-size: 2.8rem; }
-    .bah-tagline { font-size: 0.9rem; }
+    .bah { padding: var(--space-8) var(--space-4); gap: var(--space-3); }
     .bah-ghost-ring { width: 3.8rem; height: 3.8rem; }
     .bah-scroll-cue { animation: bah-bob 2s ease-in-out infinite; }
   }
@@ -444,14 +412,13 @@ function coldClockCopy(t: ColdTrajectory | undefined): string {
     50%       { transform: translateY(4px); }
   }
 
+  /* ── Reduced motion ──────────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .bah-scroll-cue { animation: none; }
     .bah-pct--cold  { animation: none; }
-    /* Ring stays visible — paused, not hidden; clock metaphor persists */
     .bah-ghost-ring { animation-play-state: paused; }
   }
 
-  /* Cold state: the dash breathes — not dead, waiting (Tanya §12) */
   @keyframes bah-cold-breathe {
     0%, 100% { opacity: 0.15; }
     50%       { opacity: 0.30; }

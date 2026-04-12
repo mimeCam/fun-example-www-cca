@@ -1,45 +1,167 @@
 ---
 // src/components/BattingAverageChip.astro
-// Feed-level conviction signal — SSR only, zero client hydration.
-// 3 states: cold (—, dimmed) | provisional (pct+count, slate) | live (pct, gold-tier).
-// data-bac-slug hooks future SSE verdict:declared live-patch (trust-badge-ceremony pattern).
-// Gold (--clr-gold-400) emitted ONLY at live+strong; BEM modifiers enforce the rule.
+// Compact inline conviction signal — SSR only, zero client hydration.
+// 3 states: locked (🔒 N verdicts) | provisional (pct, slate) | live (🏆 pct · sel%).
+// chip border/bg color = trophy tier color. selectivityRate always shown alongside BA.
 //
-// Credits: Mike Koch (arch spec §BattingAverageChip), Tanya (gold-is-sacred rule),
-//          Elon (n≥5 confidence mandate — provisional state carries thin-sample honesty)
+// totalPublished: caller may pass it; if omitted fetches from content collection.
+// This keeps existing card-level callers (DecayCard, LeaderboardCard) zero-change.
+//
+// Credits: Mike Koch (arch spec §BA-Integrity), Tanya Donska (UX chip spec §4.4),
+//          Elon (selection-bias: show sealed/published ratio always)
 
+import '../styles/batting-average.css';
 import '../styles/batting-average-chip.css';
-import { getBattingAverageChipData } from '../lib/batting-average-chip';
+import { getCollection } from 'astro:content';
+import { getBattingAverageResult } from '../lib/batting-average';
+import type { TrophyTier } from '../lib/batting-average';
 
 interface Props {
-  authorSlug: string;
-  size?: 'sm' | 'md';
+  authorSlug:      string;
+  size?:           'sm' | 'md';
+  totalPublished?: number;
 }
 
-const { authorSlug, size = 'sm' } = Astro.props;
-const chip = getBattingAverageChipData(authorSlug);
+const { authorSlug, size = 'sm', totalPublished: publishedProp } = Astro.props;
 
-function buildTooltip(state: typeof chip.state, count: number): string {
-  if (state === 'cold') return 'No verdicts yet';
-  return `Based on ${count} verdict${count !== 1 ? 's' : ''}`;
-}
+const totalPublished = publishedProp ?? (await getCollection('blog')).length;
+const result         = getBattingAverageResult(authorSlug, totalPublished);
 
-const tooltip  = buildTooltip(chip.state, chip.count);
-const ariaLabel = chip.state === 'cold' ? 'No verdicts resolved yet' : `${chip.pct} batting average`;
+const pctInt    = result.battingAverage !== null ? Math.round(result.battingAverage * 100) : 0;
+const selPctInt = result.selectivityRate !== null ? Math.round(result.selectivityRate * 100) : 0;
+const sizeClass = 'bac--' + size;
+const needsMore = 5 - result.resolvedTotal;
+const needsStr  = needsMore + ' verdict' + (needsMore !== 1 ? 's' : '');
+
+const tierIcons: Record<TrophyTier, string> = {
+  locked:  '🔒',
+  bronze:  '🏅',
+  silver:  '🥈',
+  gold:    '🏆',
+  diamond: '💎',
+};
+
+const isLocked      = !result.eligible && result.resolvedTotal === 0;
+const isProvisional = !result.eligible && result.resolvedTotal > 0;
+const isLive        = result.eligible;
+const stateClass    = isLive ? 'bac--live' : isProvisional ? 'bac--provisional' : 'bac--cold';
+const hasSelectivity = result.selectivityRate !== null;
+
+const ariaLabel = isLocked
+  ? 'Batting average locked — needs ' + needsStr
+  : isProvisional
+    ? pctInt + '% provisional ('+result.resolvedTotal+' of 5 verdicts)'
+    : pctInt + '% batting average, ' + selPctInt + '% selectivity';
+
+const tooltip = isLocked
+  ? 'Needs 5 resolved verdicts to unlock'
+  : result.resolvedTotal + ' resolved · ' + result.totalSealed + ' sealed of ' + result.totalPublished + ' published';
 ---
 
 <span
-  class:list={['bac', `bac--${chip.state}`, `bac--${chip.colorMod}`, `bac--${size}`]}
+  class:list={['bac', sizeClass, stateClass]}
+  data-ba-tier={result.trophyTier}
   data-bac-slug={authorSlug}
   title={tooltip}
   aria-label={ariaLabel}
   role="status"
 >
-  <span class="bac__pct">{chip.pct}</span>
-  {chip.state !== 'cold' && chip.label && (
-    <span class="bac__label">{chip.label}</span>
+  <span class="bac__icon" aria-hidden="true">{tierIcons[result.trophyTier]}</span>
+
+  {isLocked && (
+    <span class="bac__pct bac__pct--locked">{needsStr}</span>
   )}
-  {chip.countStr && (
-    <span class="bac__count">{chip.countStr}</span>
+
+  {isProvisional && (
+    <span class="bac__provisional">
+      <span class="bac__pct">{pctInt}%</span>
+      <span class="bac__label">provisional</span>
+    </span>
+  )}
+
+  {isLive && (
+    <span class="bac__live">
+      <span class="bac__pct">{pctInt}%</span>
+      {hasSelectivity && <span class="bac__sep" aria-hidden="true">·</span>}
+      {hasSelectivity && <span class="bac__sel">{selPctInt}% sel</span>}
+    </span>
   )}
 </span>
+
+<style>
+  /* Supplement batting-average-chip.css — tier-color overrides for live state */
+
+  .bac {
+    transition: border-color var(--motion-duration-fast) var(--motion-easing-standard);
+  }
+
+  .bac--live {
+    border-color: color-mix(in oklch, var(--ba-tier-color, var(--ba-tier-gold)) 40%, transparent);
+    background:   color-mix(in oklch, var(--ba-tier-color, var(--ba-tier-gold)) 10%, transparent);
+    color: var(--ba-tier-color, var(--ba-tier-gold));
+  }
+
+  .bac--live:hover {
+    border-color: color-mix(in oklch, var(--ba-tier-color, var(--ba-tier-gold)) 65%, transparent);
+  }
+
+  .bac__icon { line-height: 1; flex-shrink: 0; }
+
+  .bac__provisional,
+  .bac__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bac__pct {
+    font-family: var(--font-mono);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .bac__pct--locked {
+    font-weight: var(--weight-normal);
+    font-family: var(--font-sans);
+    font-size: var(--text-2xs);
+  }
+
+  .bac__sep {
+    opacity: 0.4;
+    font-size: var(--text-2xs);
+    line-height: 1;
+  }
+
+  .bac__sel {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    opacity: 0.7;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .bac__label {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-medium);
+    opacity: 0.7;
+    line-height: 1;
+  }
+
+  .bac--cold {
+    opacity: 0.45;
+    color: var(--text-ghost);
+    border-color: var(--border-faint);
+    background: transparent;
+  }
+
+  @media (max-width: 480px) {
+    .bac__sel   { display: none; }
+    .bac__sep   { display: none; }
+    .bac__label { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bac { animation: none; }
+  }
+</style>

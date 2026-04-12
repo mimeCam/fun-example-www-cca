@@ -1,0 +1,164 @@
+/* src/styles/batting-average.css
+ * Trophy-tier system: BA fill bar, selectivity bar, eligibility states.
+ * Token discipline: ZERO hardcoded color values — every color references
+ * a --ba-tier-* token or an existing system token from tokens.css.
+ *
+ * Architecture: Sid (BA Integrity Overhaul 2026-04-12)
+ * Credits: Mike Koch (arch spec §BA-Integrity), Tanya Donska (trophy UX §4.4)
+ */
+
+/* ── Trophy tier — data-attribute polymorphism anchor ────────────────────── */
+/* TrophyTier is the single branching point: component, CSS, and API all      */
+/* read from [data-ba-tier]. Adding a new tier = 1 token + 1 rule here only.  */
+
+[data-ba-tier="locked"]  { --ba-tier-color: var(--ba-tier-locked);  }
+[data-ba-tier="bronze"]  { --ba-tier-color: var(--ba-tier-bronze);  }
+[data-ba-tier="silver"]  { --ba-tier-color: var(--ba-tier-silver);  }
+[data-ba-tier="gold"]    { --ba-tier-color: var(--ba-tier-gold);    }
+[data-ba-tier="diamond"] { --ba-tier-color: var(--ba-tier-diamond); }
+
+/* ── Trophy icon ─────────────────────────────────────────────────────────── */
+
+.ba-trophy {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--ba-tier-color, var(--ba-tier-locked));
+  display: block;
+  transform-origin: center bottom;
+}
+
+/* Tier-upgrade spring: fires once on verdict resolve (JS adds .ba-trophy--spring) */
+/* Fallback to ease-out for browsers without linear() support */
+.ba-trophy--spring {
+  animation: ba-trophy-spring 400ms ease-out both;
+}
+
+@supports (animation-timing-function: linear(0, 1)) {
+  .ba-trophy--spring {
+    animation-timing-function: linear(
+      0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.2%, 0.938 16%,
+      1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.160, 1.150 32.3%,
+      1.096 37.5%, 1.013 44.2%, 0.991 48%, 0.983, 0.990, 1.001 59.5%,
+      1.006 63.7%, 1.005 70.5%, 1
+    );
+  }
+}
+
+@keyframes ba-trophy-spring {
+  0%   { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+/* ── BA fill bar ─────────────────────────────────────────────────────────── */
+
+.ba-fill-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--surface-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.ba-fill-bar__track {
+  height: 100%;
+  background: var(--ba-tier-color, var(--ba-tier-locked));
+  border-radius: var(--radius-pill);
+  width: var(--ba-fill-width, 0%);
+  transform-origin: left center;
+}
+
+/* Selectivity bar — same shape, slightly muted tint */
+.ba-sel-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--surface-hover);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.ba-sel-bar__track {
+  height: 100%;
+  background: color-mix(in oklch, var(--ba-tier-color, var(--ba-tier-locked)) 55%, transparent);
+  border-radius: var(--radius-pill);
+  width: var(--ba-sel-width, 0%);
+  transform-origin: left center;
+}
+
+/* ── Page-load bar entrance — fires once, respects reduced-motion ─────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .ba-fill-bar__track {
+    animation: ba-bar-fill 600ms var(--motion-easing-spring) both;
+  }
+
+  .ba-sel-bar__track {
+    animation: ba-bar-fill 600ms var(--motion-easing-spring) 100ms both;
+  }
+
+  @keyframes ba-bar-fill {
+    from { width: 0%; }
+    to   { width: var(--ba-fill-width, 0%); }
+  }
+}
+
+/* ── Locked state ─────────────────────────────────────────────────────────── */
+
+.ba-locked {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.ba-locked__icon {
+  font-size: 1rem;
+  opacity: 0.6;
+}
+
+/* Locked → eligible transition (5th verdict resolve — JS adds class) */
+.ba-locked--fade-out {
+  animation: ba-locked-fade 300ms ease-out forwards;
+}
+
+@keyframes ba-locked-fade {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
+/* ── Stat row — selectivity + verdicts count ─────────────────────────────── */
+
+.ba-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+.ba-stats__label {
+  font-size: var(--text-2xs);
+  color: var(--text-ghost);
+  font-family: var(--font-sans);
+  display: block;
+  margin-top: 2px;
+}
+
+/* ── Selectivity emphasis — muted, not punitive (Mike §selectivityRate cosmetic) */
+
+.ba-selectivity {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* ── Accessibility ────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .ba-trophy--spring,
+  .ba-locked--fade-out {
+    animation: none;
+  }
+}

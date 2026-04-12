@@ -367,6 +367,19 @@ export function getPendingOtsSeals(limit = 20): Array<{
 }
 
 // ---------------------------------------------------------------------------
+// BA Integrity reads — selectivity rate support (2026-04-12)
+// Two simple COUNT(*) queries — zero schema changes needed.
+// ---------------------------------------------------------------------------
+
+/** Count sealed posts for a given author. Used for selectivity rate. */
+export function countSealed(authorSlug: string): number {
+  const row = db()
+    .prepare("SELECT COUNT(*) AS c FROM conviction_ledger WHERE event_type = 'seal' AND author_slug = ?")
+    .get(authorSlug) as { c: number };
+  return row.c;
+}
+
+// ---------------------------------------------------------------------------
 // Analytics events — drop-off tracking, A/B signals, onboarding telemetry
 // ---------------------------------------------------------------------------
 

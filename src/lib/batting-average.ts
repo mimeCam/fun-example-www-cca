@@ -22,6 +22,7 @@ import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 import { getDisputeState } from './verdict-dispute';
+import { getSealsByAuthor, getVerdictEventsForSlugs } from './conviction-ledger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +31,30 @@ import { getDisputeState } from './verdict-dispute';
 export type BattingAverage =
   | { status: 'cold'; total: 0 }
   | { status: 'live'; total: number; correct: number; wrong: number; pending: number; pct: number };
+
+// ── Integrity types (BA Integrity Overhaul 2026-04-12) ──────────────────────
+// Mike: "Two numbers, one truth. BA alone is half the story."
+// TrophyTier is the polymorphism anchor: component, CSS data-attr, and API
+// all branch on this one type — adding a tier = 1 threshold + 1 token + 1 rule.
+//
+// MIN_VERDICTS: the single gatekeeper. Both chip and hero defer to isBadgeEligible().
+// Don't scatter this threshold — it lives here, nowhere else.
+
+export const MIN_VERDICTS = 5; // minimum resolved verdicts before badge is shown
+
+export type TrophyTier = 'locked' | 'bronze' | 'silver' | 'gold' | 'diamond';
+
+export interface BattingAverageResult {
+  authorSlug:      string;
+  resolvedCorrect: number;
+  resolvedTotal:   number;
+  battingAverage:  number | null; // 0–1 decimal; null when not eligible
+  totalPublished:  number;        // all posts ever published by author
+  totalSealed:     number;        // posts author chose to seal
+  selectivityRate: number | null; // totalSealed / totalPublished (null if 0 posts)
+  eligible:        boolean;       // resolvedTotal >= MIN_VERDICTS
+  trophyTier:      TrophyTier;
+}
 
 /**
  * Prediction-granular accuracy — computed from PredictionStats (frontmatter-derived).
@@ -151,6 +176,65 @@ export function computePredictionBattingAverage(
   if (stats.total === 0 || stats.accuracy === null) return { status: 'cold' };
   const { total, correct, incorrect, partial, pending, overdue, accuracy } = stats;
   return { status: 'live', total, correct, incorrect, partial, pending, overdue, accuracy };
+}
+
+// ── BA Integrity — pure classifiers (no DB, no side effects) ─────────────────
+
+/** Single threshold gate. Change MIN_VERDICTS here; nowhere else. */
+export function isBadgeEligible(resolvedTotal: number): boolean {
+  return resolvedTotal >= MIN_VERDICTS;
+}
+
+/** selectivityRate: skin-in-the-game signal. Cosmetic only — never modifies BA formula. */
+export function getSelectivityRate(sealed: number, published: number): number | null {
+  if (published === 0) return null;
+  return Math.round((sealed / published) * 100) / 100;
+}
+
+/** Maps pct (0–100 int) + eligibility to the polymorphism anchor TrophyTier. */
+export function getTrophyTier(eligible: boolean, pctInt: number | null): TrophyTier {
+  if (!eligible || pctInt === null) return 'locked';
+  if (pctInt >= 85) return 'diamond';
+  if (pctInt >= 70) return 'gold';
+  if (pctInt >= 50) return 'silver';
+  return 'bronze';
+}
+
+// ── BA Integrity — builder (pure after DB calls done) ─────────────────────────
+
+function buildResult(
+  authorSlug: string, counts: Counts, totalSeals: number, totalPublished: number,
+): BattingAverageResult {
+  const resolvedTotal  = counts.correct + counts.wrong;
+  const eligible       = isBadgeEligible(resolvedTotal);
+  const pctInt         = eligible ? toPercent(counts.correct, counts.wrong, counts.evolved) : null;
+  return {
+    authorSlug, resolvedCorrect: counts.correct, resolvedTotal,
+    battingAverage:  pctInt !== null ? pctInt / 100 : null,
+    totalPublished,  totalSealed: totalSeals,
+    selectivityRate: getSelectivityRate(totalSeals, totalPublished),
+    eligible,        trophyTier: getTrophyTier(eligible, pctInt),
+  };
+}
+
+function emptyResult(authorSlug: string, totalPublished: number): BattingAverageResult {
+  return buildResult(authorSlug, { correct: 0, wrong: 0, evolved: 0, pending: 0 }, 0, totalPublished);
+}
+
+// ── BA Integrity — public API ──────────────────────────────────────────────────
+
+/**
+ * Resolve per-author batting average with full integrity data.
+ * totalPublished: caller provides content-collection count (no posts table in DB).
+ * Safe to call at SSR time — returns locked empty result on any error.
+ */
+export function getBattingAverageResult(authorSlug: string, totalPublished: number): BattingAverageResult {
+  try {
+    const seals  = getSealsByAuthor(authorSlug);
+    const events = getVerdictEventsForSlugs(seals.map(s => s.post_slug));
+    const counts = tallyVerdicts(events, seals.length);
+    return buildResult(authorSlug, counts, seals.length, totalPublished);
+  } catch { return emptyResult(authorSlug, totalPublished); }
 }
 
 /** Returns all sealed post slugs. Used by the /api/conviction-stats chain-integrity check. */

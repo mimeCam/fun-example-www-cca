@@ -1,23 +1,27 @@
 // src/pages/api/conviction-stats.ts
-// GET /api/conviction-stats — sitewide batting average OR per-slug conviction stage.
+// GET /api/conviction-stats — sitewide BA stats OR per-slug conviction stage.
 //
-// Without ?slug=: returns sitewide conviction batting average (unchanged shape).
-// With ?slug=:    returns per-slug conviction stage for TrustBadge polling.
+// Without ?slug=: returns per-author BA result with all integrity fields.
+//   Uses ?author= (default: 'host') and ?published= (total published posts count).
 //
-// Sitewide shape:
-//   { status, total, correct, wrong, pending, pct, computedAt }
+// With ?slug=: returns per-slug conviction stage for TrustBadge polling.
+//
+// Sitewide shape (updated — all new integrity fields):
+//   { battingAverage, resolvedTotal, resolvedCorrect,
+//     selectivityRate, totalPublished, totalSealed,
+//     eligible, trophyTier, computedAt }
 //
 // Per-slug shape (polled by trust-badge-ceremony.ts every 5s):
 //   { slug, conviction_stage, sealed_at, verdict }
 //
-// Credits: Mike (spec §5 — conviction-stats audit + verdict field addition),
-//          Tanya (§4.2 — TrustBadge token fix), ceremony.ts (polling contract)
+// Credits: Mike Koch (spec §BA-Integrity — 5 new API fields),
+//          Tanya (§4.4 — trophy display contract), Elon (selectivity visibility)
 
 import type { APIRoute } from 'astro';
-import { computeBattingAverage } from '../../lib/batting-average';
-import { getSealEntry }          from '../../lib/conviction-ledger';
-import { getTstForSeal }         from '../../lib/timestamp-store';
-import { getDisputeResolution }  from '../../lib/verdict-dispute';
+import { getBattingAverageResult } from '../../lib/batting-average';
+import { getSealEntry }            from '../../lib/conviction-ledger';
+import { getTstForSeal }           from '../../lib/timestamp-store';
+import { getDisputeResolution }    from '../../lib/verdict-dispute';
 
 export const prerender = false;
 
@@ -30,29 +34,30 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-function buildSitewidePayload(avg: ReturnType<typeof computeBattingAverage>): Record<string, unknown> {
-  const base = { computedAt: new Date().toISOString() };
-  if (avg.status === 'cold') return { status: 'cold', total: 0, ...base };
+function buildSitewidePayload(authorSlug: string, totalPublished: number): Record<string, unknown> {
+  const r = getBattingAverageResult(authorSlug, totalPublished);
   return {
-    status:  avg.status,
-    total:   avg.total,
-    correct: avg.correct,
-    wrong:   avg.wrong,
-    pending: avg.pending,
-    pct:     avg.pct,
-    ...base,
+    battingAverage:  r.battingAverage,    // null if not eligible
+    resolvedTotal:   r.resolvedTotal,
+    resolvedCorrect: r.resolvedCorrect,
+    selectivityRate: r.selectivityRate,   // sealed / published
+    totalPublished:  r.totalPublished,
+    totalSealed:     r.totalSealed,
+    eligible:        r.eligible,          // resolvedTotal >= MIN_VERDICTS (5)
+    trophyTier:      r.trophyTier,        // 'locked'|'bronze'|'silver'|'gold'|'diamond'
+    computedAt:      new Date().toISOString(),
   };
 }
 
 function deriveStage(
-  sealEntry: ReturnType<typeof getSealEntry>,
-  tst:       ReturnType<typeof getTstForSeal>,
+  sealEntry:  ReturnType<typeof getSealEntry>,
+  tst:        ReturnType<typeof getTstForSeal>,
   resolution: ReturnType<typeof getDisputeResolution>,
 ): ConvictionStage {
-  if (!sealEntry)   return 'unsealed';
-  if (!tst)         return 'pending';
-  if (!resolution)  return 'sealed';
-  return resolution.state;  // 'upheld' | 'overturned'
+  if (!sealEntry)  return 'unsealed';
+  if (!tst)        return 'pending';
+  if (!resolution) return 'sealed';
+  return resolution.state; // 'upheld' | 'overturned'
 }
 
 function buildSlugPayload(slug: string): Record<string, unknown> {
@@ -69,9 +74,11 @@ function buildSlugPayload(slug: string): Record<string, unknown> {
 
 export const GET: APIRoute = ({ url }) => {
   try {
-    const slug = url.searchParams.get('slug');
+    const slug      = url.searchParams.get('slug');
     if (slug) return json(buildSlugPayload(slug));
-    return json(buildSitewidePayload(computeBattingAverage()));
+    const author    = url.searchParams.get('author') ?? 'host';
+    const published = parseInt(url.searchParams.get('published') ?? '0', 10);
+    return json(buildSitewidePayload(author, published));
   } catch {
     return json({ error: 'Stats unavailable' }, 503);
   }

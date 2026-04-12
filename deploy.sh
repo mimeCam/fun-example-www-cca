@@ -4,6 +4,49 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v86 — BA Integrity Overhaul: TrophyTier + Selectivity Rate (2026-04-12)
+#   Sprint: Full batting-average integrity system. TrophyTier polymorphism anchor
+#     (locked/bronze/silver/gold/diamond) replaces binary live/cold display.
+#     selectivityRate (sealed/published) surfaces skin-in-the-game signal.
+#     isBadgeEligible() gates trophy display on MIN_VERDICTS=5 (single threshold).
+#     getBattingAverageResult() is the new public API — replaces computeBattingAverage()
+#     for all badge/hero/chip consumers. /api/conviction-stats updated to return
+#     5 new integrity fields (battingAverage, selectivityRate, totalPublished,
+#     totalSealed, trophyTier, eligible). BattingAverageHero + BattingAverageChip
+#     fully redesigned around the TrophyTier data-attribute branch point.
+#   New files:
+#     src/styles/batting-average.css — trophy-tier design tokens; TrophyTier CSS
+#       data-attribute polymorphism ([data-ba-tier]); BA fill bar + selectivity bar;
+#       ba-trophy-spring @keyframes (CSS spring linear() with ease-out fallback);
+#       .ba-trophy--spring JS-triggered tier-upgrade animation; token-only — zero
+#       hardcoded colors; prefers-reduced-motion guard.
+#   Modified files:
+#     src/lib/batting-average.ts — BattingAverageResult interface (new canonical
+#       type); MIN_VERDICTS=5 constant; TrophyTier type; isBadgeEligible(),
+#       getSelectivityRate(), getTrophyTier() pure classifiers; getBattingAverageResult()
+#       public builder (calls getSealsByAuthor + getVerdictEventsForSlugs from ledger);
+#       safe error fallback returns emptyResult() — never throws at SSR time.
+#     src/lib/conviction-ledger.ts — countSealed(authorSlug): COUNT(*) on
+#       conviction_ledger WHERE event_type='seal' AND author_slug=? (zero schema
+#       changes — reads existing rows); getSealsByAuthor + getVerdictEventsForSlugs
+#       used by getBattingAverageResult() selectivity + verdict tally.
+#     src/pages/api/conviction-stats.ts — buildSitewidePayload() now calls
+#       getBattingAverageResult(); adds ?author= + ?published= query params;
+#       new JSON shape: battingAverage, resolvedTotal, resolvedCorrect,
+#       selectivityRate, totalPublished, totalSealed, eligible, trophyTier, computedAt.
+#     src/components/BattingAverageHero.astro — trophy tier display; fill bar;
+#       selectivity rate; eligibility gate; all new fields from BattingAverageResult.
+#     src/components/BattingAverageChip.astro — TrophyTier-aware chip redesign;
+#       [data-ba-tier] branch; locked/bronze/silver/gold/diamond states.
+#     src/pages/track-record.astro — wired to new getBattingAverageResult() API.
+#     src/styles/tokens.css — 5 new --ba-tier-* tokens (locked/bronze/silver/gold/
+#       diamond); OKLCH palette aligned with conviction-gold brand anchor.
+#     AGENTS.md — BA Integrity Overhaul logged under Recent Completions.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO
+#     unchanged. In-process cron runner (v82) continues to own ongoing scheduling.
+#     deploy.sh startup sequence unchanged (steps 1–8 identical to v85).
+#
 # Architecture v85 — BattingAverageChip Feed-Level Conviction Signal (2026-04-12)
 #   Sprint: Feed-level per-author conviction signal on every DecayCard and
 #     LeaderboardCard. SSR-only, zero client hydration. Three states: cold (—,

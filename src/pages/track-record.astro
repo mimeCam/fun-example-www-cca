@@ -5,14 +5,15 @@
 // SSR only — live ledger data must not be cached at build time.
 //
 // Layout:
-//   Act I   — BattingAverageHero (anchor URL + cold trajectory wired)
+//   Act I   — BattingAverageHero (trophy tier + selectivity + cold trajectory)
 //   Strip   — AnchorStrip (between hero and ledger — Tanya §14)
 //   Acts II+III — Ledger table + sparkline (warm state)
 //   OR
 //   Trajectory  — TrajectoryBlock (cold state — Tanya §15)
 //
-// Credits: Mike (arch spec §track-record napkin plan),
-//          Tanya (UX spec §14 AnchorStrip, §15 TrajectoryBlock, page hierarchy)
+// Credits: Mike (arch spec §track-record, §BA-Integrity),
+//          Tanya (UX spec §14 AnchorStrip, §15 TrajectoryBlock, §4.4 trophy),
+//          Elon (selection-bias fix — selectivity must be visible here)
 
 export const prerender = false;
 
@@ -23,17 +24,19 @@ import AnchorStrip from '../components/AnchorStrip.astro';
 import TrajectoryBlock from '../components/TrajectoryBlock.astro';
 import TrackRecord from '../components/TrackRecord.astro';
 import { buildTrackRecord } from '../lib/track-record';
+import { getBattingAverageResult } from '../lib/batting-average';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
-const posts = await getCollection('blog');
-const data  = buildTrackRecord(posts);
+const posts         = await getCollection('blog');
+const data          = buildTrackRecord(posts);
+const baResult      = getBattingAverageResult('host', posts.length);
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
 const sealedCount   = data.entries.length;
 const resolvedCount = data.runningHistory.length;
-const isWarm        = resolvedCount > 0;  // at least one verdict resolved → show ledger
+const isWarm        = resolvedCount > 0;
 
 // ── Page meta ─────────────────────────────────────────────────────────────────
 
@@ -46,11 +49,10 @@ const pageDesc  = sealedCount > 0
 <BaseLayout title={pageTitle} description={pageDesc}>
   <main class="tr-page">
 
-    <!-- Act I — Conviction hero with dynamic anchor link + trajectory copy -->
+    <!-- Act I — Trophy hero with BA + selectivity + tier -->
     <BattingAverageHero
-      avg={data.avg}
+      result={baResult}
       anchorUrl={data.primaryAnchorUrl}
-      coldTrajectory={data.coldTrajectory}
     />
 
     <!-- Divider: hidden in cold state so hero flows into trajectory block (Tanya §15) -->
@@ -74,11 +76,9 @@ const pageDesc  = sealedCount > 0
 </BaseLayout>
 
 <style>
-  .tr-page {
-    min-height: 100vh;
-  }
+  .tr-page { min-height: 100vh; }
 
-  /* Subtle section break between hero and the ledger (warm state only) */
+  /* Subtle gold section break between hero and the ledger (warm state only) */
   .tr-acts-divider {
     max-width: 840px;
     margin: 0 auto 2.5rem;

@@ -382,7 +382,16 @@
   --atm-glow-color:    transparent;           /* risen revival bloom              */
   --atm-bloom-color:   var(--keep-accent);    /* bloom particle color per stage   */
 
-  /* ── Notarize Moment tokens (Phase 3.5 ceremony) ────────────────────────── */
+  /* ── Batting Average Trophy Tier Tokens ─────────────────────────────────── */
+  /* Single source for all trophy-tier colors — chip, hero, and API all branch  */
+  /* on TrophyTier; each tier maps to exactly one token. Zero hardcoding.        */
+  --ba-tier-locked:  oklch(60% 0.00   0deg);   /* neutral grey  — not yet earned  */
+  --ba-tier-bronze:  oklch(65% 0.10  45deg);   /* warm bronze   — skin in game    */
+  --ba-tier-silver:  oklch(75% 0.05 200deg);   /* cool silver   — proven reliable */
+  --ba-tier-gold:    var(--clr-gold-400);       /* conviction gold — brand anchor  */
+  --ba-tier-diamond: oklch(85% 0.18 260deg);   /* prestige blue-white — elite     */
+
+  /* Notarize Moment tokens (Phase 3.5 ceremony) ────────────────────────────── */
   /* Referenced exclusively by notarize-stamp.css — no other consumers.        */
   /* Palette: OKLCH amber — extends existing conviction-gold primitives.        */
   /* Credits: Mike (§NotarizeStamp §wax-bloom), Tanya (§5 Phase 3.5 spec)      */
