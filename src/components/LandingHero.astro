@@ -1,0 +1,104 @@
+---
+// src/components/LandingHero.astro
+// Living Landing Hero — visceral 5-second product demonstration.
+// A synthetic demo post breathes, decays, and revives in the first viewport.
+// No API calls. No DB. Pure decay physics + CSS custom properties.
+//
+// Props:
+//   decayProgress — SSR-computed starting factor (0–1, typically ~0.68 for demo)
+//   stage         — initial stage string, drives data-stage atmosphere + label
+//
+// Client module (landing-hero.ts) takes over after hydration:
+//   · RAF loop updates --decay-progress, --hero-pulse-period, data-stage each tick
+//   · Hold-to-keep: pointer hold 1.2s → triggerBloom → state.createdAt reset
+//   · prefers-reduced-motion: RAF skipped, static snapshot rendered from SSR value
+//
+// Credits: Mike Koch (arch §LandingHero), Tanya Donska (UX §4)
+
+import BloomParticles from './BloomParticles.astro';
+import '../styles/landing-hero.css';
+
+interface Props {
+  decayProgress: number;  // 0–1
+  stage: string;          // 'fresh' | 'fading' | 'endangered' | 'ghost' | 'fossil'
+}
+
+const { decayProgress, stage } = Astro.props;
+
+// BPM for initial SSR render — matches bpmFor() in landing-hero.ts
+function ssrBpm(f: number): number {
+  if (f >= 0.97) return 0;
+  if (f >= 0.75) return 22;
+  if (f >= 0.50) return 38;
+  if (f >= 0.25) return 55;
+  return 72;
+}
+
+const bpm         = ssrBpm(decayProgress);
+const pulsePeriod = bpm > 0 ? `${Math.round(60_000 / bpm)}ms` : '0ms';
+const decayPct    = Math.round(decayProgress * 100);
+
+// Inline critical vars for first paint — RAF will update on next tick
+const inlineVars = [
+  `--decay-progress:${decayProgress.toFixed(3)}`,
+  `--hero-pulse-period:${pulsePeriod}`,
+  `--stage-index:${['fresh','fading','endangered','ghost','fossil'].indexOf(stage)}`,
+].join(';');
+---
+
+<section
+  id="landing-hero"
+  class="landing-hero"
+  data-stage={stage}
+  data-decay-progress={decayProgress.toFixed(3)}
+  style={inlineVars}
+  aria-label={`Demo post: ${stage}, ${decayPct}% decayed`}
+>
+  <article class="hero-card" aria-hidden="true">
+
+    <!-- Header: pulse dot + stage label -->
+    <header class="hero-card-header">
+      <span class="hero-card-dot" aria-hidden="true"></span>
+      <span class="hero-card-stage-label">{stage}</span>
+    </header>
+
+    <!-- Faux title lines — motion IS the explanation (Tanya §4) -->
+    <div class="hero-card-body" aria-hidden="true">
+      <div class="hero-title-bar hero-title-bar--long"></div>
+      <div class="hero-title-bar hero-title-bar--mid"></div>
+    </div>
+
+    <!-- Decay bar: width = --decay-progress × 100% -->
+    <div class="hero-decay-track">
+      <div
+        class="hero-decay-fill"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow={decayPct}
+        aria-label="Decay level"
+      ></div>
+      <div class="hero-decay-glow" aria-hidden="true"></div>
+    </div>
+
+    <!-- Hold-to-keep: landing-hero.ts intercepts via capture listener -->
+    <div class="hero-keep-wrap">
+      <BloomParticles variant="revival" />
+      <button
+        class="hero-keep-btn"
+        data-demo-keep
+        type="button"
+        aria-label="Hold to save this post"
+      >
+        <span class="hero-keep-icon" aria-hidden="true">&#9829;</span>
+        <span class="hero-keep-label">KEEP</span>
+      </button>
+    </div>
+
+  </article>
+</section>
+
+<script>
+  import { initLandingHero } from '../lib/client/landing-hero';
+  initLandingHero();
+</script>

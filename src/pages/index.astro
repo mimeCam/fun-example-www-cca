@@ -34,6 +34,8 @@ import { buildWebSiteSchema, serializeJsonLd } from '../lib/json-ld';
 import { getStageCounts, filterByStage } from '../lib/river-data';
 import type { StageFilter } from '../lib/river-data';
 import { paginate, parsePage } from '../lib/pagination';
+import { decayFactor } from '../lib/decay-engine';
+import LandingHero from '../components/LandingHero.astro';
 import '../styles/river-filter.css';
 
 // ─── Stage param ──────────────────────────────────────────────────────────────
@@ -86,6 +88,25 @@ const STAGE_LABEL: Record<StageFilter, string> = {
   all:        'all posts',
 };
 
+// ─── Hero demo post — synthetic decay state for LandingHero (no DB) ─────────
+// maxDays=100, age=45 days → logarithmic formula yields ~0.68 (endangered).
+// Client module (landing-hero.ts) continues the decay live via RAF.
+
+const HERO_MAX_DAYS = 100;
+const HERO_AGE_DAYS = 45;
+
+function heroStageFor(f: number): string {
+  if (f < 0.25) return 'fresh';
+  if (f < 0.50) return 'fading';
+  if (f < 0.75) return 'endangered';
+  if (f < 0.97) return 'ghost';
+  return 'fossil';
+}
+
+const heroPubDate = new Date(Date.now() - HERO_AGE_DAYS * 86_400_000).toISOString();
+const heroDecay   = decayFactor(heroPubDate, HERO_MAX_DAYS);
+const heroStage   = heroStageFor(heroDecay);
+
 // ─── JSON-LD ──────────────────────────────────────────────────────────────────
 
 const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
@@ -110,7 +131,10 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
 >
   <script set:html={endangeredClientScript()} />
 
-  {/* Zone 1 — Feed IS the hero (Tanya P0: removed BattingAverageHero from home; belongs on /track-record) */}
+  {/* Zone 1 — Living Landing Hero: demo post breathes + decays in the first viewport */}
+  {/* Visitor feels posts are alive before reading a single word (Paul Kim / Tanya §4) */}
+  <LandingHero decayProgress={heroDecay} stage={heroStage} />
+
   {/* Zone 2 — Unified River Feed */}
   <main class="feed" id="bets" data-stage={currentStage}>
 

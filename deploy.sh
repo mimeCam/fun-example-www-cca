@@ -4,6 +4,34 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v101 — Living Landing Hero (2026-04-12)
+#   Sprint: Visceral product demo in the first viewport — a synthetic "endangered"
+#     post (45 days old, maxDays=100, ~68% decay) breathes, pulses, and decays live
+#     via a RAF loop so visitors feel posts are alive before reading a single word.
+#     Hold-to-keep (1.2 s pointer-hold) resets demo createdAt and triggers a bloom
+#     burst, demonstrating the revival mechanic inline. prefers-reduced-motion:
+#     RAF skipped, static SSR snapshot rendered. Pure UIX — zero infra changes.
+#   New files:
+#     src/components/LandingHero.astro — hero section; SSR-renders initial decay
+#       vars (--decay-progress, --hero-pulse-period, --stage-index) + data-stage;
+#       mounts BloomParticles; imports landing-hero.ts + landing-hero.css.
+#     src/lib/client/landing-hero.ts — RAF bridge; inlines logDecay / stageFor /
+#       bpmFor (mirrors decay-engine.ts, no server bundle); pointer-hold timer;
+#       idempotent initLandingHero() exported; prefers-reduced-motion guard.
+#     src/styles/landing-hero.css — hero layout + decay-driven CSS animations
+#       (pulse ring, progress bar, stage label transitions); zero raw hex/rgba —
+#       fully token-driven; prefers-reduced-motion cancels all motion.
+#   Modified files:
+#     src/pages/index.astro — imports decayFactor + LandingHero; computes
+#       heroDecay / heroStage SSR-side (HERO_AGE_DAYS=45, HERO_MAX_DAYS=100);
+#       <LandingHero> inserted as Zone 1 above the river feed.
+#     AGENTS.md — "Recently Shipped" section added; WIP unchanged.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v100).
+#
 # Architecture v100 — Decay Pulse Orchestrator: HeartbeatOrchestrator (2026-04-12)
 #   Sprint: Biological heartbeat waveform system wired to every decay-sensitive
 #     element (DecayClock ring + DecayBar) via passive CSS custom property
