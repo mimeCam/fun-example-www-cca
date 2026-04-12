@@ -4,6 +4,62 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v97 — Seal Ceremony Sensory Layer: Sound + Haptic (2026-04-12)
+#   Sprint: Opt-in audio + haptic feedback for the Conviction Seal Ceremony.
+#     WebAudio synthesiser (zero asset files, zero network requests) fires on
+#     every meaningful ceremony moment; Vibration API pulses match the same
+#     event taxonomy; SealSoundToggle button lets the author enable/disable
+#     sound with preference persisted to localStorage. Both layers are pure
+#     progressive enhancement — silent on desktop / iOS Safari / when
+#     prefers-reduced-motion is set. Pure UIX — zero infra changes.
+#   New files:
+#     src/lib/client/seal-sound.ts — WebAudio synthesiser; zero audio assets;
+#       all sound synthesised from oscillators + white-noise bursts; autoplay
+#       policy satisfied via initSealSound() on first pointerdown; preference
+#       stored in localStorage ('conviction-arena:seal-sound-enabled');
+#       public API: initSealSound, isSoundEnabled, setSoundEnabled,
+#       playScoreSelect(score 1-10), playSealPress, playSealLock,
+#       playNotarizeChime, playReceiptReveal, playSealError; MAX_GAIN=0.15
+#       (intentionally quiet — author opted in, not the audience).
+#     src/lib/client/seal-haptic.ts — Vibration API wrapper keyed to SealEvent;
+#       reuses haptics.ts infrastructure; PATTERNS map per event (PRESS/LOCK/
+#       NOTARIZE/RECEIPT/ERROR); prefers-reduced-motion gated; silent on
+#       desktop/iOS Safari; no-ops when pattern unregistered.
+#     src/components/SealSoundToggle.astro — toggle button; reads/persists
+#       isSoundEnabled() via seal-sound.ts; sound-off/on SVG icon swap;
+#       aria-pressed state; hides itself at phase 4 (seal complete, irrelevant);
+#       @starting-style fade-in entrance (300ms delay); fully token-driven.
+#     src/styles/seal-sound-toggle.css — token-only toggle styles (zero raw
+#       values); entry animation; focus-visible ring; hidden at data-seal-phase
+#       4/notarize via opacity+pointer-events.
+#   Modified files:
+#     src/components/ConvictionSeal.astro — imports SealSoundToggle + all
+#       seal-sound + seal-haptic functions; <SealSoundToggle> embedded inside
+#       .cs-form-header (absolutely positioned top-right); .cs-form-header gains
+#       position:relative + .cs-sound-toggle-wrap positioning wrapper;
+#       container pointerdown → initSealSound (once); onPhase wired to
+#       playSealPress/playSealLock/playReceiptReveal + matching hapticForEvent;
+#       onNotarize expanded to also call playNotarizeChime + hapticForEvent;
+#       onError also calls playSealError + hapticForEvent; score dot click calls
+#       playScoreSelect(val).
+#     src/styles/dispute.css — UIX polish: .dispute-state-badge base transition
+#       gains border-radius + box-shadow; [data-status="contested"] gets
+#       border-radius:pill + shadow-card-disputed with matching transitions
+#       (Tanya §1: shape+shadow signal "alive, under scrutiny").
+#     src/styles/tokens.css — three new token groups:
+#       --surface-glass (rgba 12,12,14/0.82 — ceremony glass surface for
+#         SealCeremony overlay + VerdictReveal; companion backdrop-filter in
+#         seal-ceremony.css);
+#       dispute semantic aliases (--dispute-open/contested/upheld/overturned
+#         pointing at existing --color-dispute-* tokens — zero new hex);
+#       sound toggle tokens (--seal-sound-toggle-color-off: var(--text-ghost),
+#         --seal-sound-toggle-color-on: var(--text-secondary)).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v96).
+#
 # Architecture v96 — Revival Ceremony: Full Phase Choreography (2026-04-12)
 #   Sprint: Full phase state machine for the KeepButton ceremony. RevivalMoment
 #     becomes the orchestrator: idle → pressing → blooming → ticking → complete

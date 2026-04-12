@@ -1,0 +1,83 @@
+/* src/styles/seal-sound-toggle.css
+ * Styles for SealSoundToggle — opt-in sound toggle inside the seal ceremony form.
+ * 100% token-sourced: zero raw values — must pass npm run lint:tokens.
+ * Import after: tokens.css, motion.css.
+ *
+ * Credits: Mike (§SealSoundToggle spec), Tanya (§toggle-placement §ghost-opacity)
+ */
+
+/* ── Base toggle button ───────────────────────────────────────────────────── */
+
+.seal-sound-toggle {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            var(--space-1);
+  padding:        var(--space-1) var(--space-2);
+  background:     transparent;
+  border:         1px solid transparent;
+  border-radius:  var(--radius-badge);
+  cursor:         pointer;
+  font-family:    var(--font-mono);
+  font-size:      var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  color:          var(--seal-sound-toggle-color-off);
+  transition:
+    color        var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard),
+    opacity      var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+/* ── Active / enabled state ──────────────────────────────────────────────── */
+
+.seal-sound-toggle[aria-pressed="true"] {
+  color:        var(--seal-sound-toggle-color-on);
+  border-color: var(--border-subtle);
+}
+
+/* ── Hover — only interactive while ceremony is not complete ─────────────── */
+
+.seal-sound-toggle:hover {
+  color: var(--text-secondary);
+}
+
+/* ── Focus ring — keyboard accessible ───────────────────────────────────── */
+
+.seal-sound-toggle:focus-visible {
+  outline:        2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Hidden when sealed (phase 4) — irrelevant once done ────────────────── */
+
+[data-seal-phase="4"] .seal-sound-toggle,
+[data-seal-phase="notarize"] .seal-sound-toggle {
+  opacity:        0;
+  pointer-events: none;
+}
+
+/* ── Entry animation — fades in after ceremony header settles ───────────── */
+/* @starting-style: fires only on first render, never on re-paint.          */
+
+@starting-style {
+  .seal-sound-toggle {
+    opacity: 0;
+  }
+}
+
+.seal-sound-toggle {
+  animation: seal-sound-toggle-enter var(--motion-duration-deliberate) var(--motion-easing-standard) 300ms both;
+}
+
+@keyframes seal-sound-toggle-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Icon inside toggle ──────────────────────────────────────────────────── */
+
+.seal-sound-toggle__icon {
+  /* Inherits color from parent — no separate token needed */
+  flex-shrink: 0;
+  width:  0.85em;
+  height: 0.85em;
+}

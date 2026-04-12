@@ -36,7 +36,9 @@
   transition:
     color            var(--motion-flow-duration) var(--motion-flow-easing),
     background       var(--motion-flow-duration) var(--motion-flow-easing),
-    border-color     var(--motion-flow-duration) var(--motion-flow-easing);
+    border-color     var(--motion-flow-duration) var(--motion-flow-easing),
+    border-radius    var(--motion-flow-duration) var(--motion-flow-easing),
+    box-shadow       var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
 .dispute-state-badge[data-status="open"] {
@@ -48,6 +50,15 @@
   color: var(--color-dispute-contested);
   background: var(--color-dispute-contested-bg);
   border-color: var(--color-dispute-contested-border);
+  /* Tanya §1: shape + shadow signal "alive, under scrutiny" — radius pill on contested */
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card-disputed);
+  transition:
+    color            var(--motion-flow-duration) var(--motion-flow-easing),
+    background       var(--motion-flow-duration) var(--motion-flow-easing),
+    border-color     var(--motion-flow-duration) var(--motion-flow-easing),
+    border-radius    var(--motion-flow-duration) var(--motion-flow-easing),
+    box-shadow       var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
 .dispute-state-badge[data-status="overturned"] {

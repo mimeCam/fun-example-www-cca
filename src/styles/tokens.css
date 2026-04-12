@@ -510,6 +510,22 @@
     0 0 40px oklch(78% 0.14 68 / 18%),
     0 8px 32px oklch(0 0 0 / 0.40);
 
+  /* ── Ceremony Glass Surface (Tanya §1 — SealCeremony overlay + VerdictReveal) ─ */
+  /* High-opacity base; companion backdrop-filter applied in seal-ceremony.css.    */
+  --surface-glass: rgba(12, 12, 14, 0.82);
+
+  /* ── Dispute Semantic Aliases (Tanya §1 — shorthand over --color-dispute-*) ── */
+  /* Zero new hex values — aliases only. Usage: dispute.css, DisputeTally.astro.  */
+  --dispute-open:       var(--color-dispute-open);
+  --dispute-contested:  var(--color-dispute-contested);
+  --dispute-upheld:     var(--color-dispute-upheld);
+  --dispute-overturned: var(--color-dispute-overturned);
+
+  /* ── Sound Toggle Tokens (SealSoundToggle.astro) ─────────────────────────── */
+  /* Isolated: only SealSoundToggle reads these. Pull from existing primitives.  */
+  --seal-sound-toggle-color-off: var(--text-ghost);
+  --seal-sound-toggle-color-on:  var(--text-secondary);
+
   /* ── Global @theme Anchors — Tailwind v4 bridge (Mike §global.css P1) ─ */
   /* These bridge tokens.css primitives into Tailwind utility generation.  */
   /* global.css @theme block references these — zero raw values there.     */

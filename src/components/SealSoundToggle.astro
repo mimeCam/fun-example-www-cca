@@ -1,0 +1,81 @@
+---
+// src/components/SealSoundToggle.astro
+// Opt-in sound toggle for the Seal Ceremony.
+// Reads and persists user preference to localStorage.
+// Phase-aware: hides itself when seal is complete.
+//
+// Usage: embed inside the cs-form-header area of ConvictionSeal.astro.
+//
+// Credits: Mike (§SealSoundToggle spec), Tanya (§placement §ghost-opacity)
+import '../styles/seal-sound-toggle.css';
+---
+
+<button
+  class="seal-sound-toggle"
+  aria-pressed="false"
+  aria-label="Toggle seal ceremony sound"
+  title="Sound"
+  type="button"
+>
+  <!-- Sound-off icon (default) -->
+  <svg
+    class="seal-sound-toggle__icon seal-sound-toggle__icon--off"
+    viewBox="0 0 16 16"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M8 2L4.5 5.5H2v5h2.5L8 14V2z"
+      stroke="currentColor" stroke-width="1.5"
+      stroke-linejoin="round" fill="none"
+    />
+    <line x1="13" y1="6" x2="10" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+    <line x1="10" y1="6" x2="13" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+  </svg>
+  <!-- Sound-on icon (shown when aria-pressed="true") -->
+  <svg
+    class="seal-sound-toggle__icon seal-sound-toggle__icon--on"
+    viewBox="0 0 16 16"
+    fill="none"
+    aria-hidden="true"
+    style="display:none"
+  >
+    <path
+      d="M8 2L4.5 5.5H2v5h2.5L8 14V2z"
+      stroke="currentColor" stroke-width="1.5"
+      stroke-linejoin="round" fill="none"
+    />
+    <path
+      d="M11 5.5c1 .8 1.5 1.8 1.5 2.5s-.5 1.7-1.5 2.5"
+      stroke="currentColor" stroke-width="1.5"
+      stroke-linecap="round" fill="none"
+    />
+  </svg>
+  <span class="seal-sound-toggle__label">Sound</span>
+</button>
+
+<script>
+  import { isSoundEnabled, setSoundEnabled } from '../lib/client/seal-sound';
+
+  function initToggle(): void {
+    const btn = document.querySelector<HTMLButtonElement>('.seal-sound-toggle');
+    if (!btn) return;
+    applyState(btn, isSoundEnabled());
+    btn.addEventListener('click', () => {
+      const next = !isSoundEnabled();
+      setSoundEnabled(next);
+      applyState(btn, next);
+    });
+  }
+
+  function applyState(btn: HTMLButtonElement, on: boolean): void {
+    btn.setAttribute('aria-pressed', String(on));
+    const iconOff = btn.querySelector<SVGElement>('.seal-sound-toggle__icon--off');
+    const iconOn  = btn.querySelector<SVGElement>('.seal-sound-toggle__icon--on');
+    if (iconOff) iconOff.style.display = on ? 'none' : '';
+    if (iconOn)  iconOn.style.display  = on ? ''     : 'none';
+  }
+
+  // Run after DOM is ready (Astro client scripts run after DOMContentLoaded).
+  initToggle();
+</script>

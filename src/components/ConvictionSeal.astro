@@ -18,6 +18,7 @@ import type { ConvictionStage } from './TrustBadge.astro';
 import TensionBadge             from './TensionBadge.astro';
 import NotarizeStamp            from './NotarizeStamp.astro';
 import SealReceipt              from './SealReceipt.astro';
+import SealSoundToggle          from './SealSoundToggle.astro';
 import ShareSealButton          from './ShareSealButton.astro';
 import { clockUrgency }         from '../lib/death-clock';
 import type { GraceState }          from '../lib/cold-start';
@@ -163,6 +164,10 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
         Once sealed, it enters the accountability loop. The community can dispute
         it within 72 hours. There is no unseal.
       </p>
+      <!-- Sound toggle: opt-in sensory layer — hides itself at phase 4 -->
+      <div class="cs-sound-toggle-wrap">
+        <SealSoundToggle />
+      </div>
     </div>
 
     <!-- Score dots: 10 discrete levels — more deliberate than a slider -->
@@ -439,7 +444,15 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     margin: 0 0 var(--space-4);
   }
 
-  .cs-form-header { margin-bottom: var(--space-6); }
+  .cs-form-header {
+    margin-bottom: var(--space-6);
+    position: relative;
+  }
+  .cs-sound-toggle-wrap {
+    position:   absolute;
+    top:        0;
+    right:      0;
+  }
 
   .cs-eyebrow {
     display: block;
@@ -608,6 +621,11 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
   import { createCeremony }         from '../lib/seal-ceremony';
   import type { SealPhase, ReceiptData } from '../lib/seal-ceremony';
   import { ceremonyStart, ceremonyAbort, ceremonyResolve, ceremonyComplete } from '../lib/ceremony-atmosphere';
+  import {
+    initSealSound, playScoreSelect, playSealPress,
+    playSealLock, playNotarizeChime, playReceiptReveal, playSealError,
+  } from '../lib/client/seal-sound';
+  import { hapticForEvent } from '../lib/client/seal-haptic';
 
   /** Map seal phase transitions to atmosphere lifecycle. */
   function handleCeremonyAtmosphere(phase: SealPhase, slug: string, active: { v: boolean }): void {
@@ -638,6 +656,10 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     // Boxed boolean — mutated by handleCeremonyAtmosphere across closures.
     const active = { v: false };
 
+    // Warm AudioContext on first user touch — satisfies browser autoplay policy.
+    // Must happen before any phase sound fires. { once: true } ensures single call.
+    container.addEventListener('pointerdown', initSealSound, { once: true });
+
     const ceremony = createCeremony(slug, {
       onPhase: (phase) => {
         container.dataset.sealPhase = String(phase);
@@ -647,14 +669,27 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
         container.style.setProperty('--seal-weight', weight);
         arc.classList.toggle('is-filling', phase === 2);
         handleCeremonyAtmosphere(phase, slug, active);
+        // Sensory layer: sound + haptic observers — never drive state, only react to it.
+        if (phase === 2)          { playSealPress();    hapticForEvent('PRESS');    }
+        else if (phase === 3)     { playSealLock();     hapticForEvent('LOCK');     }
+        else if (phase === 4)     { playReceiptReveal(); hapticForEvent('RECEIPT'); }
       },
-      onNotarize: (data) => populateNotarize(stamp, data),
+      onNotarize: (data) => {
+        populateNotarize(stamp, data);
+        playNotarizeChime();
+        hapticForEvent('NOTARIZE');
+      },
       onReceipt:  (data) => {
         populateReceipt(receipt, data, slug);
         populateShareCard(container, data);
         container.dispatchEvent(new CustomEvent('conviction:sealed', { bubbles: true, detail: { slug } }));
       },
-      onError:    (msg)  => { errorEl.textContent = msg; errorEl.style.display = 'block'; },
+      onError:    (msg)  => {
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+        playSealError();
+        hapticForEvent('ERROR');
+      },
       onAlreadySealed: () => showAlreadySealed(errorEl),
       onCancel:   () => { /* clean slate — atmosphere already restored by onPhase(0) */ },
     });
@@ -701,7 +736,10 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
 
     dotsEl.addEventListener('click', (e) => {
       const dot = (e.target as HTMLElement).closest<HTMLElement>('.seal-dot');
-      if (dot?.dataset.value) setScore(Number(dot.dataset.value));
+      if (!dot?.dataset.value) return;
+      const val = Number(dot.dataset.value) as 1|2|3|4|5|6|7|8|9|10;
+      setScore(val);
+      playScoreSelect(val);
     });
 
     const btn = container.querySelector<HTMLButtonElement>('[data-seal-btn]')!;
