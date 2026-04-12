@@ -4,6 +4,44 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v77 — AuditVerdictPanel + Audit OG Image Pipeline (2026-04-12)
+#   Sprint: Conviction audit page gains a verdict outcome panel (AuditVerdictPanel)
+#     and a dedicated OG image endpoint. Pure SSR code & UI polish — zero infra
+#     changes.
+#   New files:
+#     src/components/AuditVerdictPanel.astro — three-state verdict panel (pending /
+#       resolved-uncontested / resolved-contested); color-mix tokens only; ceremony
+#       entrance animation (avp-enter, cubic-bezier spring); DL grid for declared
+#       date, challenge share, dispute state, score contribution; responsive stacking
+#       at 480px; all tokens from global design system (--verdict-*, --gold-*, --text-*,
+#       --font-mono, --motion-ceremony-*).
+#     src/lib/verdict-display.ts — pure data-assembly layer: getVerdictDisplay(slug)
+#       composes getVerdictRecord + getDisputeState + getDisputeResolution into a
+#       display-ready VerdictDisplay model; never throws; zero new DB queries.
+#     src/lib/og/auditLayout.ts — Satori element tree for audit OG card (1200×630);
+#       single-panel evidence-exhibit design; title, score, verdict outcome, proof
+#       anchors; locked token set mirroring accountabilityLayout.ts.
+#     src/pages/api/og/audit/[slug].png.ts — GET /api/og/audit/[slug].png; renders
+#       conviction audit OG image via renderAuditImage(); prerender=false.
+#   Updated files:
+#     src/components/PostBadge.astro — size prop ('sm'|'md') added; sm: 0.62rem /
+#       0.2rem×0.6rem padding (cards, dense layouts); md: 0.72rem / 0.25rem×0.8rem
+#       (default, detail page headers); zero breaking-change (default='md').
+#     src/lib/og/renderOGImage.ts — renderAuditImage(data) exported; auditLayout
+#       import added; AuditOGData type re-exported.
+#     src/pages/api/conviction-audit.ts — buildResponse now calls getVerdictDisplay
+#       and includes verdict, verdictLabel, declaredAt, isContested, disputeState,
+#       challengeShare, scoreContrib in the JSON response (API parity with page).
+#     src/pages/audit/[slug].astro — imports AuditVerdictPanel + getVerdictDisplay;
+#       auditAtmosphere + verdictOutcomeAtm computed SSR-side; BaseLayout receives
+#       ogSlug="audit/{slug}" + atmosphere + verdictOutcome props; AuditVerdictPanel
+#       rendered after AuditReceipt; API footnote (GET /api/trust-verify/{slug})
+#       added per Tanya §11.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v76 — DecayClock Heartbeat + Atmosphere Cascade (2026-04-12)
 #   Sprint: Pure UIX polish — DecayClock stage visibility rules, three heartbeat
 #     profiles, card-scoped atmosphere, and a full color-mix() migration away from

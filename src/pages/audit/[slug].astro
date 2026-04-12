@@ -15,6 +15,8 @@ import AuditReceipt  from '../../components/AuditReceipt.astro';
 import TrustBadge    from '../../components/TrustBadge.astro';
 import ConvictionTimeline from '../../components/ConvictionTimeline.astro';
 import { assembleAuditPayload } from '../../lib/audit-verifier';
+import { getVerdictDisplay }    from '../../lib/verdict-display';
+import AuditVerdictPanel        from '../../components/AuditVerdictPanel.astro';
 import { verifyAnchor }         from '../../lib/anchor-verifier';
 import { getTstForSeal }        from '../../lib/timestamp-store';
 import { getOtsProof }          from '../../lib/conviction-ledger';
@@ -52,13 +54,31 @@ async function resolveOtsData() {
 }
 const otsData = payload.seal ? await resolveOtsData() : null;
 
+// Verdict display data — assembled from existing modules, no new DB queries.
+const verdictDisplay = getVerdictDisplay(slug);
+
+// Atmosphere: vindicated if verdict correct, wrong tint if verdict wrong.
+// Pending/unsealed pages stay fresh (default).
+const auditAtmosphere = verdictDisplay.verdict === 'still-true' ? 'risen' as const
+  : verdictDisplay.verdict === 'wrong' || verdictDisplay.verdict === 'abandoned' ? 'verdict' as const
+  : 'fresh' as const;
+const verdictOutcomeAtm = verdictDisplay.verdict === 'still-true' ? 'correct' as const
+  : verdictDisplay.verdict === 'wrong' || verdictDisplay.verdict === 'abandoned' ? 'wrong' as const
+  : undefined;
+
 const pageTitle       = `Conviction Audit — ${post.data.title}`;
 const pageDescription = payload.seal
   ? `Sealed conviction receipt for "${post.data.title}": score ${payload.seal.score}/10, locked at ${new Date(payload.seal.sealedAt).toLocaleDateString()}.`
   : `Conviction audit for "${post.data.title}" — not yet sealed.`;
 ---
 
-<BaseLayout title={pageTitle} description={pageDescription}>
+<BaseLayout
+  title={pageTitle}
+  description={pageDescription}
+  ogSlug={`audit/${slug}`}
+  atmosphere={auditAtmosphere}
+  verdictOutcome={verdictOutcomeAtm}
+>
   <main class="audit-page">
 
     <!-- Back navigation -->
@@ -89,6 +109,15 @@ const pageDescription = payload.seal
       tstData={tstData}
       otsData={otsData}
     />
+
+    <!-- Verdict outcome — completes the conviction → verdict → score chain -->
+    <AuditVerdictPanel verdictDisplay={verdictDisplay} />
+
+    <!-- API footnote — power-user disclosure per Tanya §11 -->
+    <p class="audit-api-note">
+      Verify programmatically →
+      <code class="audit-api-code">GET /api/trust-verify/{slug}</code>
+    </p>
 
     <!-- Event timeline — chronological history -->
     <ConvictionTimeline timeline={payload.timeline} slug={slug} />
@@ -179,6 +208,21 @@ const pageDescription = payload.seal
   }
 
   .audit-post-link:hover { color: rgba(255, 255, 255, 0.7); }
+
+  /* API footnote — text-2xs, muted, monospace; Tanya §11 */
+  .audit-api-note {
+    margin-top: 1.25rem;
+    font-size: 0.64rem;  /* --text-2xs */
+    color: rgba(255, 255, 255, 0.22);
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+  }
+
+  .audit-api-code {
+    font-family: var(--font-mono, monospace);
+    font-size: inherit;
+    color: rgba(255, 255, 255, 0.32);
+  }
 
   @media (max-width: 640px) {
     .audit-page { padding: 2rem 1rem 4rem; }

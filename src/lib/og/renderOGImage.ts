@@ -12,6 +12,8 @@ import { accountabilityLayout } from './accountabilityLayout';
 import type { AccountabilityOGData } from './accountabilityData';
 import { battingAverageLayout } from './battingAverageLayout';
 import type { BattingAverage } from '../batting-average';
+import { auditLayout } from './auditLayout';
+import type { AuditOGData } from './auditLayout';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -44,4 +46,9 @@ export async function renderBattingAverageImage(avg: BattingAverage, siteName: s
   return toPNG(await toSVG(battingAverageLayout(avg, siteName)));
 }
 
-export type { OGImageData };
+/** Conviction audit OG card pipeline: AuditOGData → PNG buffer. */
+export async function renderAuditImage(data: AuditOGData): Promise<Uint8Array> {
+  return toPNG(await toSVG(auditLayout(data)));
+}
+
+export type { OGImageData, AuditOGData };

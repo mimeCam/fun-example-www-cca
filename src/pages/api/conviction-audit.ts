@@ -8,6 +8,7 @@
 import type { APIRoute } from 'astro';
 import { getEntriesForSlug } from '../../lib/conviction-ledger';
 import type { LedgerEntry } from '../../lib/conviction-ledger';
+import { getVerdictDisplay } from '../../lib/verdict-display';
 
 export const prerender = false;
 
@@ -32,13 +33,23 @@ function formatEntry(e: LedgerEntry): Record<string, unknown> {
   };
 }
 
-function buildResponse(entries: LedgerEntry[]): Record<string, unknown> {
-  const seal = entries.find(e => e.event_type === 'seal');
+function buildResponse(slug: string, entries: LedgerEntry[]): Record<string, unknown> {
+  const seal    = entries.find(e => e.event_type === 'seal');
+  const verdict = getVerdictDisplay(slug);
   return {
     sealedScore: seal?.conviction_score ?? null,
-    sealedAt: seal ? new Date(seal.timestamp).toISOString() : null,
-    authorNote: seal?.author_note ?? null,
-    entries: entries.map(formatEntry),
+    sealedAt:    seal ? new Date(seal.timestamp).toISOString() : null,
+    authorNote:  seal?.author_note ?? null,
+    entries:     entries.map(formatEntry),
+    verdict: {
+      verdict:        verdict.verdict,
+      verdictLabel:   verdict.verdictLabel,
+      declaredAt:     verdict.declaredAt ? new Date(verdict.declaredAt).toISOString() : null,
+      isContested:    verdict.isContested,
+      disputeState:   verdict.disputeState,
+      challengeShare: verdict.challengeShare,
+      scoreContrib:   verdict.scoreContrib,
+    },
   };
 }
 
@@ -48,7 +59,7 @@ export const GET: APIRoute = ({ url }) => {
 
   try {
     const entries = getEntriesForSlug(slug);
-    return json(buildResponse(entries));
+    return json(buildResponse(slug, entries));
   } catch {
     return json({ error: 'Ledger unavailable' }, 503);
   }
