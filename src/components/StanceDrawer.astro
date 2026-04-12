@@ -35,6 +35,9 @@ const { slug } = Astro.props;
 
   <div class="stance-inner" role="document">
 
+    <!-- Drag handle: swipe-to-dismiss affordance — pill signals "pullable" (Mike P0-B, Tanya §5.2) -->
+    <div class="stance-handle" aria-hidden="true"></div>
+
     <!-- Progress bar: CSS-only 30s auto-dismiss timer -->
     <div class="stance-progress" aria-hidden="true">
       <div class="stance-progress-bar"></div>
@@ -182,6 +185,22 @@ const { slug } = Astro.props;
 
   @media (prefers-reduced-motion: reduce) {
     .stance-progress-bar { animation: none; width: 100%; }
+  }
+
+  /* ── Drag handle pill (Mike P0-B, Tanya §5.2) ──────────────── */
+  /* Full roundness = "handle" vocabulary in design system (Tanya §7 radius law) */
+  /* 8px top margin respects 4pt grid; no JS required */
+  .stance-handle {
+    width: 40px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.18);
+    transition: background var(--motion-duration-fast) ease;
+  }
+
+  .stance-handle:hover {
+    background: rgba(255, 255, 255, 0.28);
   }
 
   /* ── Header ─────────────────────────────────────────────────── */

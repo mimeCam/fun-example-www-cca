@@ -63,6 +63,13 @@ const pctMod = isLive
     </div>
   ) : (
     <div class="bah-score bah-score--cold">
+      <!-- Ghost ring: cold-state orbit — clock is running, earning in progress (Mike P0-A, Tanya §18) -->
+      <div class="bah-ghost-ring" aria-hidden="true">
+        <svg class="bah-ring-svg" viewBox="0 0 88 88" overflow="visible" role="presentation">
+          <circle class="bah-ring-outer" cx="44" cy="44" r="38" />
+          <circle class="bah-ring-inner" cx="44" cy="44" r="30" />
+        </svg>
+      </div>
       <span class="bah-pct bah-pct--cold" aria-label="Track record pending">—</span>
       {resolvedCount > 0 ? (
         <span class="bah-subtitle bah-subtitle--cold">
@@ -128,6 +135,9 @@ const pctMod = isLive
     gap: 0.35rem;
   }
 
+  /* Cold state: relative container so ring can center over the dash glyph */
+  .bah-score--cold { position: relative; }
+
   .bah-pct {
     display: block;
     font-size: 4.5rem;
@@ -135,6 +145,48 @@ const pctMod = isLive
     font-family: var(--font-mono);
     line-height: 1;
     letter-spacing: -0.02em;
+  }
+
+  /* ── Ghost ring — cold state orbit (Mike P0-A, Tanya §18) ── */
+  /* Hardcoded amber regardless of stage: represents the mechanism, not content age */
+  .bah-ghost-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;              /* pair with translate(-50%,-50%) in keyframe */
+    width: 5.5rem;
+    height: 5.5rem;
+    pointer-events: none;
+    /* translate must live in keyframe (not here) to avoid position jump on first frame (Mike P0-A) */
+    animation: bah-ring-spin 10s linear infinite;
+  }
+
+  .bah-ring-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible; /* prevent stroke clipping at svg boundary (Mike P0-A) */
+  }
+
+  .bah-ring-outer,
+  .bah-ring-inner {
+    fill: none;
+    stroke: var(--gold-border); /* rgba(245,166,35,0.22) — amber conviction signal */
+  }
+
+  .bah-ring-outer {
+    stroke-width: 2;
+    stroke-dasharray: 8 5;
+  }
+
+  .bah-ring-inner {
+    stroke-width: 1.5;
+    stroke-dasharray: 5 8;
+    opacity: 0.6;
+  }
+
+  /* Full translate in keyframes to avoid position jump on first iteration (Mike P0-A) */
+  @keyframes bah-ring-spin {
+    from { transform: translate(-50%, -50%) rotate(0deg);   }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
   /* Color variants — Tanya §18 + §24 amber system */
@@ -228,6 +280,7 @@ const pctMod = isLive
     .bah { padding: 4rem 1rem; gap: 1.25rem; }
     .bah-pct { font-size: 2.8rem; }
     .bah-tagline { font-size: 0.9rem; }
+    .bah-ghost-ring { width: 3.8rem; height: 3.8rem; }  /* Tanya §18: 3.8rem mobile */
     .bah-scroll-cue {
       animation: bah-bob 2s ease-in-out infinite;
     }
@@ -241,6 +294,8 @@ const pctMod = isLive
   @media (prefers-reduced-motion: reduce) {
     .bah-scroll-cue { animation: none; }
     .bah-pct--cold  { animation: none; }
+    /* Ring stays visible — paused, not hidden; clock metaphor persists (Mike P0-A) */
+    .bah-ghost-ring { animation-play-state: paused; }
   }
 
   /* Cold state: the dash breathes — not dead, waiting (Tanya §12) */

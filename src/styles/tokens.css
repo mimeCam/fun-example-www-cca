@@ -139,13 +139,14 @@
   /* ── Shadow System (age ↔ elevation; shadow is the PRIMARY age signal) ── */
 
   /* Fresh — generous warm lift; communicates alive and present */
+  /* color-mix replaces rgba(var(--mood-accent-rgb), var(--alpha)) — not legal CSS (Mike P0-C) */
   --shadow-card-fresh:
     0 var(--shadow-fresh-y) var(--shadow-fresh-spread)
-    rgba(var(--mood-accent-rgb, 212, 149, 106), var(--shadow-fresh-alpha));
+    color-mix(in oklch, var(--clr-amber-400) 22%, transparent);
 
   /* Hover — card invited upward, warmth intensifies */
   --shadow-card-hover:
-    0 12px 40px rgba(var(--mood-accent-rgb, 212, 149, 106), 0.28),
+    0 12px 40px color-mix(in oklch, var(--clr-amber-400) 28%, transparent),
     0 2px  8px  rgba(0, 0, 0, 0.4);
 
   /* Aged — faint, cold, losing color signal */

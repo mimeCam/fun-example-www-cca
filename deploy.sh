@@ -4,6 +4,37 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v75 — Ghost Ring + Handle Polish (2026-04-12)
+#   Sprint: Pure UIX polish — two P0 micro-details and one CSS correctness fix.
+#     BattingAverageHero cold-state gets a dashed ghost ring (SVG, 10s linear
+#     orbit, --gold-border amber stroke) that signals "the clock is running,
+#     earning in progress" without implying data that doesn't exist yet. Ring
+#     stays visible but paused under prefers-reduced-motion (clock metaphor
+#     persists). StanceDrawer gains a 40×4px drag handle pill (border-radius:
+#     9999px; CSS-only hover brightens from 18 % → 28 % white) — the standard
+#     "pullable" vocabulary in the design system (Tanya §5.2 radius law).
+#     tokens.css shadow system corrected: the illegal CSS pattern
+#     rgba(var(--foo), var(--alpha)) (two-argument var inside rgba) replaced
+#     by color-mix(in oklch, <color> <pct>%, transparent) — spec-compliant and
+#     now works in all Baseline 2024 engines.
+#   Updated files:
+#     src/components/BattingAverageHero.astro — .bah-ghost-ring absolutely
+#       positioned inside .bah-score--cold; two concentric SVG circles
+#       (.bah-ring-outer stroke-dasharray 8 5, .bah-ring-inner 5 8 opacity 0.6);
+#       @keyframes bah-ring-spin carries translate(-50%,-50%) on both from/to
+#       to avoid first-frame position jump; mobile: 3.8rem (Tanya §18); reduced-
+#       motion: animation-play-state paused.
+#     src/components/StanceDrawer.astro — .stance-handle div inserted above
+#       progress bar; 40×4px pill, margin 8px auto 0, rgba(255,255,255,0.18)
+#       rest → 0.28 hover, transition var(--motion-duration-fast) ease.
+#     src/styles/tokens.css — --shadow-card-fresh and --shadow-card-hover
+#       converted from rgba(var(--mood-accent-rgb), var(--alpha)) to
+#       color-mix(in oklch, var(--clr-amber-400) 22%/28%, transparent).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v74 — VerdictCeremony Entrance Choreography (2026-04-12)
 #   Sprint: Three-act staggered entrance animations for VerdictCeremony; pure
 #     CSS choreography extracted to verdict-ceremony.css. Each act has its own
