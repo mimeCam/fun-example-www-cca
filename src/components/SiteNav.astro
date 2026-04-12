@@ -182,17 +182,20 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     align-items: center;
     gap: 3px;
     padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(245, 166, 35, 0.22);
-    background: rgba(245, 166, 35, 0.08);
+    border-radius: var(--radius-full, 9999px); /* pill shape — token not pixel (Tanya §17) */
+    border: 1px solid var(--gold-border);
+    background: var(--gold-bg);
     text-decoration: none;
     cursor: pointer;
     flex-shrink: 0;
-    transition: border-color 150ms ease, box-shadow 150ms ease;
+    min-width: 56px;  /* prevents nav layout shift at 100% (Tanya §17 fix 3) */
+    transition: border-color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
+                box-shadow var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
+                min-width var(--motion-duration-base, 300ms) var(--motion-easing-standard, ease-in-out);
   }
 
   .batting-chip:hover {
-    border-color: rgba(245, 166, 35, 0.4);
+    border-color: var(--gold-border-strong);
   }
 
   .batting-pct {
@@ -207,47 +210,62 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     line-height: 1;
   }
 
-  /* Strong (≥80%): full amber + glow */
+  /* Strong (≥80%): full amber + glow — tokens replace raw rgba (Tanya §17, §19) */
   .batting-chip--strong {
-    box-shadow: 0 0 10px rgba(245, 166, 35, 0.18);
+    box-shadow: var(--shadow-chip);
   }
   .batting-chip--strong .batting-pct,
-  .batting-chip--strong .batting-check { color: #F5A623; }
+  .batting-chip--strong .batting-check { color: var(--gold); }
 
-  /* Mid (60–79%): amber at 60% opacity, no glow */
+  /* Mid (60–79%): amber at reduced opacity, no glow */
   .batting-chip--mid .batting-pct,
-  .batting-chip--mid .batting-check { color: rgba(245, 166, 35, 0.6); }
+  .batting-chip--mid .batting-check { color: var(--gold-dim); }
 
   /* Weak (<60%): muted white, no amber */
   .batting-chip--weak {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--border-medium);
+    background: var(--surface-raised);
   }
   .batting-chip--weak .batting-pct,
-  .batting-chip--weak .batting-check { color: rgba(255, 255, 255, 0.35); }
+  .batting-chip--weak .batting-check { color: var(--text-tertiary); }
 
-  /* CSS tooltip — 8px below chip, appears on hover (Tanya §2 — hover spec) */
+  /* Gold atmosphere pulse — participates in seal ceremony (Tanya §17 fix 2) */
+  [data-atmosphere="gold"] .batting-chip {
+    animation: gold-breathe 3s ease-in-out infinite;
+    border-color: var(--gold-border-strong);
+  }
+
+  /* CSS tooltip — 8px below chip, delayed to prevent hover flash (Tanya §17 fix 1) */
   .batting-tooltip {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
     white-space: nowrap;
-    font-size: 0.68rem;
+    font-size: var(--text-xs, 0.72rem);
     padding: 6px 12px;
-    border-radius: 6px;
-    background: rgba(245, 166, 35, 0.1);
-    border: 1px solid rgba(245, 166, 35, 0.18);
-    color: rgba(255, 255, 255, 0.65);
+    border-radius: var(--radius-md, 8px);
+    background: var(--gold-bg);
+    border: 1px solid var(--gold-border);
+    color: var(--text-secondary);
     pointer-events: none;
     opacity: 0;
     transform: translateY(-4px);
-    transition: opacity 150ms ease, transform 150ms ease;
+    /* delay show to prevent flash during quick navigation */
+    transition: opacity var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
+                transform var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out);
+    transition-delay: 300ms;
     z-index: 20;
   }
 
   .batting-chip:hover .batting-tooltip {
     opacity: 1;
     transform: translateY(0);
+    transition-delay: 300ms; /* delay on show only */
+  }
+
+  /* Hide tooltip instantly on mouse-leave — no delay (Tanya §17 fix 1) */
+  .batting-chip:not(:hover) .batting-tooltip {
+    transition-delay: 0ms;
   }
 
   /* Mobile: pct only, no checkmark, no tooltip (Tanya §2 — mobile) */
@@ -278,17 +296,18 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     animation: nav-breathe 3.5s ease-in-out infinite;
   }
 
-  /* Ghost chip — cold state hint (Tanya §9.1: absence → anticipation, not emptiness) */
+  /* Ghost chip — cold state: non-interactive, visually recessed (Tanya §17 fix 4) */
   .batting-chip--ghost {
-    font-size: 0.65rem;
+    font-size: var(--text-xs, 0.72rem);
     font-family: var(--font-mono);
-    color: var(--text-ghost, rgba(255,255,255,0.20));
-    border-color: var(--border-faint, rgba(255,255,255,0.06));
+    color: var(--text-ghost);
+    border-color: var(--border-faint);
     background: transparent;
     cursor: default;
     pointer-events: none;
     letter-spacing: 0.06em;
     user-select: none;
+    opacity: 0.45; /* communicates non-actionable state — not full ghost (Tanya §17) */
   }
 
   @keyframes nav-breathe {

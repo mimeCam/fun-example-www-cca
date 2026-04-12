@@ -1,0 +1,168 @@
+---
+// src/components/TrajectoryBlock.astro
+// Cold-start trajectory — shown when zero verdicts have resolved.
+// Three milestone cards: Posts Sealed · Days to First Verdict · Conviction Rate.
+//
+// Design principle: show trajectory, not emptiness. Like a seed packet showing
+// the flower it will become. (Tanya §15)
+//
+// Replaces Acts II+III (ledger + sparkline) during cold state only.
+// Fades out and yields to ledger on first resolved verdict (SSE / page reload).
+//
+// No new tokens. Zero new CSS files. Uses only existing design system tokens.
+//
+// Credits: Tanya (UX §15 — cold-start trajectory spec), Mike (arch §2 cold trajectory)
+
+import type { ColdTrajectory } from '../lib/track-record';
+
+interface Props {
+  trajectory: ColdTrajectory;
+}
+
+const { trajectory } = Astro.props;
+
+// Format the "opens" date from days remaining
+function formatOpenDate(daysToFirst: number): string {
+  const d = new Date(Date.now() + daysToFirst * 86_400_000);
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+const { sealedCount, pendingCount, daysToFirst } = trajectory;
+
+const sealedSubline = sealedCount === 0
+  ? 'write & seal your first post'
+  : `${pendingCount} post${pendingCount === 1 ? '' : 's'} awaiting verdict`;
+
+const verdictValue  = daysToFirst !== null ? `~${daysToFirst}d` : '—';
+const verdictSubline = daysToFirst !== null
+  ? `Opens ${formatOpenDate(daysToFirst)}`
+  : sealedCount > 0 ? 'Eligible now' : 'First verdict window';
+---
+
+<div class="traj" aria-label="Track record trajectory">
+  <p class="traj-intro">
+    Verdicts take time — posts must age before outcomes become clear.
+    Here's where things stand.
+  </p>
+
+  <div class="traj-cards">
+
+    <!-- Card 1: Posts Sealed -->
+    <div class="traj-card" aria-label="Posts sealed">
+      <span class="traj-label">Posts Sealed</span>
+      <span class:list={['traj-value', sealedCount === 0 && 'traj-value--empty']}>
+        {sealedCount > 0 ? sealedCount : '—'}
+      </span>
+      <span class="traj-subline">{sealedSubline}</span>
+    </div>
+
+    <!-- Card 2: Days to First Verdict -->
+    <div class="traj-card" aria-label="Days to first verdict">
+      <span class="traj-label">First Verdict</span>
+      <span class:list={['traj-value', daysToFirst === null && sealedCount === 0 && 'traj-value--empty']}>
+        {verdictValue}
+      </span>
+      <span class="traj-subline">{verdictSubline}</span>
+    </div>
+
+    <!-- Card 3: Conviction Rate (greyed ring — not yet earned) -->
+    <div class="traj-card traj-card--rate" aria-label="Conviction rate — pending">
+      <span class="traj-label">Conviction Rate</span>
+      <span class="traj-value traj-value--empty" aria-label="No data yet">—</span>
+      <span class="traj-subline">Updates with each verdict</span>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* ── Trajectory block — cold state replacement for Acts II+III ── */
+  .traj {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 var(--space-4, 1rem) var(--space-8, 2rem);
+  }
+
+  /* Quiet intro — not apologetic, just honest */
+  .traj-intro {
+    font-size: var(--text-sm, 0.82rem);
+    color: var(--text-tertiary);
+    margin: 0 0 var(--space-5, 1.25rem);
+    font-style: italic;
+    line-height: var(--leading-normal, 1.55);
+  }
+
+  /* ── Three-column card grid ── */
+  .traj-cards {
+    display: flex;
+    gap: var(--space-4, 1rem);
+  }
+
+  /* ── Individual trajectory card ── */
+  .traj-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--space-5, 1.25rem) var(--space-4, 1rem);
+    box-shadow: none; /* cold state — no elevation, no life yet (Tanya §19) */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Card label (above the value) ── */
+  .traj-label {
+    font-size: var(--text-2xs, 0.64rem);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+    font-family: var(--font-sans);
+    text-align: center;
+  }
+
+  /* ── Card value — the big number or em dash ── */
+  .traj-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-xl, 1.5rem);
+    font-weight: var(--weight-bold, 700);
+    color: var(--text-primary);
+    line-height: 1;
+    letter-spacing: var(--tracking-display, -0.03em);
+  }
+
+  /* Em dash — no data / not yet earned (Tanya §15: never show "0%") */
+  .traj-value--empty {
+    color: var(--text-disabled);
+  }
+
+  /* ── Subline — italic context beneath the value ── */
+  .traj-subline {
+    font-size: var(--text-2xs, 0.64rem);
+    color: var(--text-tertiary);
+    font-style: italic;
+    text-align: center;
+    line-height: var(--leading-snug, 1.35);
+  }
+
+  /* ── Mobile: stack vertically ── */
+  @media (max-width: 480px) {
+    .traj-cards {
+      flex-direction: column;
+    }
+
+    /* Cards 2+3 collapse to a compact row on very tight widths */
+    .traj-card--rate {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--space-3, 0.75rem);
+      padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    }
+
+    .traj-card--rate .traj-label  { text-align: left; }
+    .traj-card--rate .traj-value  { font-size: var(--text-base, 1rem); }
+    .traj-card--rate .traj-subline { text-align: left; flex: 1; }
+  }
+</style>

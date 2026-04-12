@@ -3,8 +3,8 @@
 // No new DB tables. No new dependencies. O(n) Map lookups per Mike's spec.
 // Every function ≤ 10 lines — pure computation separated from DB I/O.
 //
-// Credits: Mike (arch spec §track-record napkin plan),
-//          Tanya (UX spec — status semantics, color grammar)
+// Credits: Mike (arch spec §track-record napkin plan, §anchor-url, §cold-trajectory),
+//          Tanya (UX spec — status semantics, color grammar, §15 cold trajectory)
 
 import type { CollectionEntry } from 'astro:content';
 import { getSealEntry, getAnchorData } from './conviction-ledger';
@@ -13,6 +13,9 @@ import { computeBattingAverage } from './batting-average';
 import type { LedgerEntry } from './conviction-ledger';
 import type { VerdictRecord, VerdictOutcome } from './verdict-resolver';
 import type { BattingAverage } from './batting-average';
+
+// Days from seal timestamp until a verdict window opens (mirrors decay engine).
+const VERDICT_WINDOW_DAYS = 90;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,11 +42,20 @@ export interface RunningPoint {
   status: TrackRecordStatus;
 }
 
+/** Trajectory data shown in cold state — honest forward momentum, not emptiness. */
+export interface ColdTrajectory {
+  sealedCount:  number;  // total sealed posts
+  pendingCount: number;  // sealed but no verdict yet
+  daysToFirst:  number | null;  // null when a verdict is already past-due
+}
+
 export interface TrackRecord {
-  entries:        TrackRecordEntry[];
-  avg:            BattingAverage;
-  runningHistory: RunningPoint[];
-  firstSealDate:  number | null;  // timestamp of earliest seal — footer tamper-evidence label
+  entries:         TrackRecordEntry[];
+  avg:             BattingAverage;
+  runningHistory:  RunningPoint[];
+  firstSealDate:   number | null;    // timestamp of earliest seal
+  primaryAnchorUrl: string | null;   // first entry with an anchor URL, for hero display
+  coldTrajectory:  ColdTrajectory;   // forward trajectory shown during cold start
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +133,27 @@ function buildRunningHistory(entries: TrackRecordEntry[]): RunningPoint[] {
 }
 
 // ---------------------------------------------------------------------------
+// Cold trajectory — days until first verdict window opens
+// ---------------------------------------------------------------------------
+
+function daysToFirstVerdict(entries: TrackRecordEntry[]): number | null {
+  const pending = entries.filter(e => e.status === 'pending');
+  if (pending.length === 0) return null;
+  const oldestSeal = Math.min(...pending.map(e => e.sealedAt));
+  const eligibleAt = oldestSeal + VERDICT_WINDOW_DAYS * 86_400_000;
+  const remaining  = eligibleAt - Date.now();
+  return remaining > 0 ? Math.ceil(remaining / 86_400_000) : null;
+}
+
+function buildColdStartTrajectory(entries: TrackRecordEntry[]): ColdTrajectory {
+  return {
+    sealedCount:  entries.length,
+    pendingCount: entries.filter(e => e.status === 'pending').length,
+    daysToFirst:  daysToFirstVerdict(entries),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Public API — single entry point; safe at SSR time (try/catch wraps DB)
 // ---------------------------------------------------------------------------
 
@@ -134,6 +167,19 @@ export function buildTrackRecord(posts: CollectionEntry<'blog'>[]): TrackRecord 
     const anchors  = buildAnchorsMap(slugs);
     const entries  = buildEntries(posts, seals, verdicts, anchors);
     const avg      = computeBattingAverage();
-    return { entries, avg, runningHistory: buildRunningHistory(entries), firstSealDate: entries[0]?.sealedAt ?? null };
-  } catch { return { entries: [], avg: { status: 'cold', total: 0 }, runningHistory: [], firstSealDate: null }; }
+    return {
+      entries,
+      avg,
+      runningHistory:   buildRunningHistory(entries),
+      firstSealDate:    entries[0]?.sealedAt ?? null,
+      primaryAnchorUrl: entries.find(e => e.anchorUrl)?.anchorUrl ?? null,
+      coldTrajectory:   buildColdStartTrajectory(entries),
+    };
+  } catch {
+    return {
+      entries: [], avg: { status: 'cold', total: 0 }, runningHistory: [],
+      firstSealDate: null, primaryAnchorUrl: null,
+      coldTrajectory: { sealedCount: 0, pendingCount: 0, daysToFirst: null },
+    };
+  }
 }

@@ -48,11 +48,11 @@
   border-color: rgba(245, 166, 35, 0.40);
 }
 
-/* ── Weight meter: continuous interpolation via --seal-phase ── */
+/* ── Weight meter: interpolated via --seal-weight (set by JS, avoids calc on string phase) ── */
 
 .seal-weight-meter {
   transform-origin: bottom;
-  transform: scaleY(calc(var(--seal-phase, 0) / 4));
+  transform: scaleY(var(--seal-weight, 0));
   transition: transform var(--motion-duration-base) var(--motion-easing-spring);
   background: var(--gold);
   width: 3px;

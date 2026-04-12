@@ -4,6 +4,44 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v83 — AnchorStrip + TrajectoryBlock + Track-Record Polish (2026-04-12)
+#   Sprint: Cold-start UX gains two purpose-built components that replace empty
+#     ledger state with honest forward momentum. BattingAverageHero wired with
+#     anchorUrl and coldTrajectory props; predictions page gains cross-link to
+#     verdict wall; CSS design-system polish across seal-ceremony, notarize-stamp,
+#     and verdict stylesheets.
+#   New files:
+#     src/components/AnchorStrip.astro — conviction anchor strip between hero and
+#       ledger; three states: anchored (live Gist link + Verify button), pending
+#       (sealed posts exist but no Gist yet), cold (hidden — hero covers it); uses
+#       existing token set exclusively, no new CSS files.
+#     src/components/TrajectoryBlock.astro — cold-start trajectory: three milestone
+#       cards (Posts Sealed · Days to First Verdict · Conviction Rate); replaces
+#       Acts II+III during cold state; imports ColdTrajectory type from track-record.
+#   Modified files:
+#     src/lib/track-record.ts — adds ColdTrajectory interface + buildColdStartTrajectory();
+#       VERDICT_WINDOW_DAYS=90 constant mirrors decay engine; primaryAnchorUrl field
+#       (first entry with anchorUrl) added to TrackRecord for hero display;
+#       coldTrajectory field added; error fallback includes both new fields.
+#     src/components/BattingAverageHero.astro — new anchorUrl and coldTrajectory
+#       props; coldClockCopy() generates trajectory-aware clock copy; seal gate
+#       lowered from ≥3 → ≥1 resolved verdict (Mike §4).
+#     src/components/ConvictionSeal.astro — phase transition UIX polish.
+#     src/components/SiteNav.astro — navigation component refinements.
+#     src/lib/seal-phases.ts — phase state-machine refinements.
+#     src/pages/predictions.astro — cross-link to verdict wall (Tanya §18);
+#       .vault-desc color token aligned (rgba → var(--text-tertiary)).
+#     src/pages/track-record.astro — wires AnchorStrip + TrajectoryBlock into page;
+#       passes primaryAnchorUrl and coldTrajectory from buildTrackRecord().
+#     src/pages/verdict.astro — verdict wall UIX polish pass.
+#     src/styles/notarize-stamp.css — notarize ceremony CSS polish.
+#     src/styles/seal-ceremony.css — seal ceremony CSS polish.
+#     src/styles/verdict.css — verdict page CSS polish.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO
+#     unchanged. In-process cron runner (v82) continues to own ongoing scheduling.
+#     deploy.sh startup sequence unchanged (steps 1–8 identical to v82).
+#
 # Architecture v82 — In-Process Cron Runner + Ghost Chip UIX Polish (2026-04-12)
 #   Sprint: Automated in-process cron scheduler replaces ad-hoc manual triggers;
 #     two perpetual jobs (OTS poller every 30 min, deadline sweeper every 60 min)

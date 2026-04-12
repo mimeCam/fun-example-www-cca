@@ -86,6 +86,11 @@ function tabHref(id: VerdictFilter): string {
       <p class="verdict-hero-tagline">
         Every belief sealed on publish. Readers weigh in. Decay keeps score.
       </p>
+      <!-- Accountability arc cross-link: verdicts ← predictions (Tanya §18) -->
+      <p class="verdict-hero-crosslink">
+        Verdicts trace back to sealed predictions.
+        <a href="/predictions" class="verdict-crosslink-a">→ Browse predictions</a>
+      </p>
       {avgLive && (
         <div class="verdict-avg-chip" title={`${avgLive.correct} of ${avgLive.total} sealed bets held true`}>
           <span>{avgLive.pct}% ✓</span>

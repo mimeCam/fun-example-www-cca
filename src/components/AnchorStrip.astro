@@ -1,0 +1,198 @@
+---
+// src/components/AnchorStrip.astro
+// Conviction Anchor Strip — sits between Act I (hero) and Acts II+III (ledger).
+// Communicates external tamper-evidence status at a glance.
+//
+// Three states:
+//   anchored  — live GitHub Gist link with truncated URL + Verify button
+//   pending   — sealed posts exist but no Gist yet (GITHUB_PAT not wired or verdict pending)
+//   cold      — nothing sealed yet; strip is hidden (hero already communicates this)
+//
+// No new tokens. All styles use existing token set exclusively.
+//
+// Credits: Tanya (UX §14 — AnchorStrip spec), Mike (anchor arch §1)
+
+interface Props {
+  anchorUrl:   string | null;
+  sealedCount: number;
+}
+
+const { anchorUrl, sealedCount } = Astro.props;
+
+const isAnchored = !!anchorUrl;
+const isPending  = !isAnchored && sealedCount > 0;
+const isCold     = sealedCount === 0;
+
+// Truncate gist URL for display: show domain + short hash
+function truncateUrl(url: string, maxLen = 46): string {
+  if (url.length <= maxLen) return url;
+  return url.slice(0, maxLen - 10) + '…' + url.slice(-8);
+}
+---
+
+{!isCold && (
+  <div
+    class:list={['anchor-strip', isAnchored ? 'anchor-strip--anchored' : 'anchor-strip--pending']}
+    role="status"
+    aria-label={isAnchored ? 'Conviction anchored on GitHub' : 'Anchor pending'}
+  >
+    {isAnchored ? (
+      <>
+        <span class="as-icon" aria-hidden="true">⚓</span>
+        <span class="as-label">Anchored on GitHub</span>
+        <a
+          href={anchorUrl!}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="as-url"
+          title={anchorUrl!}
+        >
+          {truncateUrl(anchorUrl!)}
+        </a>
+        <a
+          href={anchorUrl!}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="as-verify"
+          aria-label="Verify conviction anchor on GitHub"
+        >
+          Verify →
+        </a>
+      </>
+    ) : (
+      <>
+        <span class="as-icon as-icon--pending" aria-hidden="true">◌</span>
+        <span class="as-label">Anchor pending</span>
+        <span class="as-note">
+          {sealedCount} verdict{sealedCount === 1 ? '' : 's'} sealed — awaiting resolution
+        </span>
+      </>
+    )}
+  </div>
+)}
+
+<style>
+  /* ── Anchor Strip — single horizontal band between hero and ledger (Tanya §14) ── */
+  .anchor-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4, 1rem);
+    max-width: 720px;
+    margin: 0 auto var(--space-6, 1.5rem);
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    border-radius: var(--radius-md, 8px);
+    font-size: var(--text-xs, 0.72rem);
+    font-family: var(--font-sans);
+    letter-spacing: 0.04em;
+  }
+
+  /* Anchored state: gold tint — live trust signal */
+  .anchor-strip--anchored {
+    background: var(--gold-bg);
+    border: 1px solid var(--gold-border);
+    box-shadow: var(--shadow-chip);
+    animation: as-fadein var(--motion-duration-base, 300ms) var(--motion-easing-standard, ease-in-out) both;
+  }
+
+  /* Pending state: neutral surface — honest but not celebratory */
+  .anchor-strip--pending {
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    box-shadow: none;
+  }
+
+  /* ── Icon ── */
+  .as-icon {
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+    color: var(--gold);
+  }
+
+  .as-icon--pending {
+    color: var(--text-tertiary);
+  }
+
+  /* ── Label ── */
+  .as-label {
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: var(--text-2xs, 0.64rem);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Gist URL — monospace, truncated ── */
+  .as-url {
+    color: var(--gold-dim);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs, 0.72rem);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 360px;
+    flex: 1;
+    min-width: 0;
+    transition: color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out);
+  }
+
+  .as-url:hover {
+    color: var(--gold);
+    text-decoration: underline;
+  }
+
+  /* ── Verify link — right-aligned call to action ── */
+  .as-verify {
+    color: var(--gold);
+    font-size: var(--text-xs, 0.72rem);
+    font-weight: var(--weight-semibold, 600);
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: auto;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    transition: text-decoration var(--motion-duration-fast, 150ms) ease;
+  }
+
+  .as-verify:hover { text-decoration: underline; }
+
+  /* ── Note text (pending state) ── */
+  .as-note {
+    color: var(--text-tertiary);
+    font-size: var(--text-xs, 0.72rem);
+    flex: 1;
+  }
+
+  /* ── Fade-in on mount (anchored state only — earned, not pending) ── */
+  @keyframes as-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── Mobile: two-row layout ── */
+  @media (max-width: 600px) {
+    .anchor-strip {
+      flex-wrap: wrap;
+      gap: var(--space-2, 0.5rem);
+    }
+
+    .as-url {
+      max-width: 100%;
+      order: 3;
+      flex-basis: 100%;
+    }
+
+    .as-verify {
+      margin-left: 0;
+      order: 4;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .anchor-strip--anchored { animation: none; }
+  }
+</style>

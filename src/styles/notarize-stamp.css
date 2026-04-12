@@ -1,7 +1,7 @@
 /* src/styles/notarize-stamp.css
  * Phase 3.5 notarize ceremony — wax bloom, RFC 3161 timestamp hero, hash reveal.
  * All selectors scoped to .notarize-stamp. Zero global pollution.
- * Triggered exclusively by [data-seal-phase="3.5"] on the ceremony container.
+ * Triggered exclusively by [data-seal-phase="notarize"] on the ceremony container.
  *
  * Motion budget: bloom 500ms · stamp-settle 300ms · ts-appear 400ms · hash 800ms
  * Uses existing motion tokens: --motion-duration-deliberate / base / --ease-spring.
@@ -35,12 +35,12 @@
 }
 
 /* Show at phase 3.5 — the notarize moment */
-[data-seal-phase="3.5"] .notarize-stamp {
+[data-seal-phase="notarize"] .notarize-stamp {
   display: flex;
 }
 
 /* At phase 3.5, hide the form so stamp has full focus */
-[data-seal-phase="3.5"] .seal-form {
+[data-seal-phase="notarize"] .seal-form {
   display: none;
 }
 
@@ -79,7 +79,7 @@
   transition: --ns-bloom-r var(--notarize-bloom-duration) var(--motion-easing-standard);
 }
 
-[data-seal-phase="3.5"] .ns-bloom-circle {
+[data-seal-phase="notarize"] .ns-bloom-circle {
   --ns-bloom-r: 120px;
 }
 
@@ -101,7 +101,7 @@
   opacity:     0;
 }
 
-[data-seal-phase="3.5"] .ns-seal-mark {
+[data-seal-phase="notarize"] .ns-seal-mark {
   animation: stamp-settle var(--motion-duration-base) var(--ease-spring) 80ms forwards;
 }
 
@@ -120,7 +120,7 @@
   transition-delay: 120ms;
 }
 
-[data-seal-phase="3.5"] .ns-label {
+[data-seal-phase="notarize"] .ns-label {
   opacity: 1;
 }
 
@@ -143,7 +143,7 @@
   opacity:      0;
 }
 
-[data-seal-phase="3.5"] .ns-ts {
+[data-seal-phase="notarize"] .ns-ts {
   animation: ts-appear var(--motion-duration-deliberate) var(--motion-easing-standard) 200ms forwards;
 }
 
@@ -172,7 +172,7 @@
   min-height:     1em;  /* reserves space before populated */
 }
 
-[data-seal-phase="3.5"] .ns-hash {
+[data-seal-phase="notarize"] .ns-hash {
   animation:
     ns-reveal-hash  800ms linear     350ms forwards,
     ns-hash-ink-dry   2s  ease-in-out 350ms forwards;
@@ -187,7 +187,7 @@
   .ns-ts,
   .ns-hash               { transition: opacity var(--motion-duration-fast) linear; }
   .ns-bloom-circle       { transition: none; }
-  [data-seal-phase="3.5"] .ns-seal-mark { animation: none; opacity: 1; }
-  [data-seal-phase="3.5"] .ns-ts        { animation: none; opacity: 1; }
-  [data-seal-phase="3.5"] .ns-hash      { animation: none; clip-path: none; color: var(--gold-dim); }
+  [data-seal-phase="notarize"] .ns-seal-mark { animation: none; opacity: 1; }
+  [data-seal-phase="notarize"] .ns-ts        { animation: none; opacity: 1; }
+  [data-seal-phase="notarize"] .ns-hash      { animation: none; clip-path: none; color: var(--gold-dim); }
 }

@@ -2,17 +2,17 @@
 // Pure seal-ceremony state machine — zero DOM dependencies.
 // Extracted from seal-ceremony.ts; enables isolated testing and reuse.
 //
-// DESIGN NOTE: Phase 3.5 (NOTARIZE) is an intentional float, not a bug.
-// • [data-seal-phase="3.5"] maps directly to a CSS attribute selector.
-// • Weight meter: scaleY(calc(var(--seal-phase, 0) / 4)) = 87.5% at 3.5 —
-//   "almost locked" is visually accurate: seal is real, ceremony still plays.
+// DESIGN NOTE: NOTARIZE uses a string literal ('notarize') not a float (3.5).
+// • String literal enables exhaustiveness checking in TypeScript switch blocks.
+// • [data-seal-phase="notarize"] CSS attribute selector — identical runtime behaviour.
+// • Weight meter uses --seal-weight (0.875) set at render time, not calc(--seal-phase/4).
 //
-// Credits: Mike (§Architecture, §Phase-3.5-design, §state-machine), Tanya (§5)
+// Credits: Mike (§Architecture, §Phase-notarize-fix, §state-machine), Tanya (§5)
 
-export type SealPhase = 0 | 1 | 2 | 3 | 3.5 | 4;
+export type SealPhase = 0 | 1 | 2 | 3 | 'notarize' | 4;
 
-// Named constant — avoids 3.5 literals at every call site.
-export const NOTARIZE = 3.5 as SealPhase;
+// Named constant — avoids string literals at every call site.
+export const NOTARIZE = 'notarize' as const satisfies SealPhase;
 
 export type SealEvent =
   | 'HOVER' | 'UNHOVER'
@@ -39,5 +39,6 @@ export function transition(current: SealPhase, event: SealEvent): SealPhase {
 
 /** True once POST is in flight — escape must not abort from here. */
 export function isLocked(phase: SealPhase): boolean {
-  return phase >= 3;
+  if (phase === NOTARIZE) return true;
+  return (phase as number) >= 3;
 }

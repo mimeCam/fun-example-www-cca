@@ -625,6 +625,9 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
       onPhase: (phase) => {
         container.dataset.sealPhase = String(phase);
         container.style.setProperty('--seal-phase', String(phase));
+        // --seal-weight: pre-computed float for weight meter (avoids calc on string 'notarize')
+        const weight = phase === 'notarize' ? '0.875' : String((phase as number) / 4);
+        container.style.setProperty('--seal-weight', weight);
         arc.classList.toggle('is-filling', phase === 2);
         handleCeremonyAtmosphere(phase, slug, active);
       },

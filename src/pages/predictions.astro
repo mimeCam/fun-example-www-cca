@@ -27,6 +27,11 @@ const stats       = computeStats(predictions);
         Every claim is pre-committed before the outcome is known.
         Verdicts are sealed by reality, not the author.
       </p>
+      <!-- Accountability arc cross-link: predictions → verdicts (Tanya §18) -->
+      <p class="vault-crosslink">
+        When the deadline passes, predictions become verdicts.
+        <a href="/verdict" class="vault-crosslink-a">→ View verdict wall</a>
+      </p>
     </header>
 
     <PredictionVault predictions={predictions} stats={stats} />
@@ -52,9 +57,25 @@ const stats       = computeStats(predictions);
 
   .vault-desc {
     font-size: 0.9rem;
-    color: rgba(255,255,255,0.45);
+    color: var(--text-tertiary);
     line-height: 1.6;
     margin: 0;
     max-width: 34rem;
+  }
+
+  .vault-crosslink {
+    font-size: var(--text-sm, 0.82rem);
+    color: var(--text-tertiary);
+    margin: var(--space-3, 0.75rem) 0 0;
+  }
+
+  .vault-crosslink-a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .vault-crosslink-a:hover {
+    color: var(--gold);
+    text-decoration: underline;
   }
 </style>

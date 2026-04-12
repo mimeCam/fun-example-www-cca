@@ -32,10 +32,27 @@
 
 .verdict-hero-tagline {
   font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.38);
-  margin: 0 0 1rem;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-2, 0.5rem);
   letter-spacing: 0.01em;
   max-width: 38rem;
+}
+
+/* Accountability arc cross-link — prose bridge to /predictions (Tanya §18) */
+.verdict-hero-crosslink {
+  font-size: var(--text-sm, 0.82rem);
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-4, 1rem);
+}
+
+.verdict-crosslink-a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.verdict-crosslink-a:hover {
+  color: var(--gold);
+  text-decoration: underline;
 }
 
 /* Batting average chip: inline amber pill — reuses global chip tokens */

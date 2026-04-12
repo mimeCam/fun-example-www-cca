@@ -4,19 +4,23 @@
 // Bookmark-worthy ledger page that proves the batting average is earned.
 // SSR only — live ledger data must not be cached at build time.
 //
-// Three acts:
-//   Act I — BattingAverageHero (existing component, reused as-is)
-//   Act II — Conviction ledger table (TrackRecord.astro §Act II)
-//   Act III — Running accuracy sparkline (TrackRecord.astro §Act III)
+// Layout:
+//   Act I   — BattingAverageHero (anchor URL + cold trajectory wired)
+//   Strip   — AnchorStrip (between hero and ledger — Tanya §14)
+//   Acts II+III — Ledger table + sparkline (warm state)
+//   OR
+//   Trajectory  — TrajectoryBlock (cold state — Tanya §15)
 //
 // Credits: Mike (arch spec §track-record napkin plan),
-//          Tanya (UX spec — page hierarchy, conviction gold grammar)
+//          Tanya (UX spec §14 AnchorStrip, §15 TrajectoryBlock, page hierarchy)
 
 export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BattingAverageHero from '../components/BattingAverageHero.astro';
+import AnchorStrip from '../components/AnchorStrip.astro';
+import TrajectoryBlock from '../components/TrajectoryBlock.astro';
 import TrackRecord from '../components/TrackRecord.astro';
 import { buildTrackRecord } from '../lib/track-record';
 
@@ -25,12 +29,16 @@ import { buildTrackRecord } from '../lib/track-record';
 const posts = await getCollection('blog');
 const data  = buildTrackRecord(posts);
 
+// ── State ─────────────────────────────────────────────────────────────────────
+
+const sealedCount   = data.entries.length;
+const resolvedCount = data.runningHistory.length;
+const isWarm        = resolvedCount > 0;  // at least one verdict resolved → show ledger
+
 // ── Page meta ─────────────────────────────────────────────────────────────────
 
-const sealedCount  = data.entries.length;
-const resolvedCount = data.runningHistory.length;
-const pageTitle    = 'Track Record — Every Sealed Bet, Scored';
-const pageDesc     = sealedCount > 0
+const pageTitle = 'Track Record — Every Sealed Bet, Scored';
+const pageDesc  = sealedCount > 0
   ? `${sealedCount} sealed bets · ${resolvedCount} resolved · tamper-evident on GitHub`
   : 'Public prediction ledger. Tamper-evident. Scored.';
 ---
@@ -38,14 +46,29 @@ const pageDesc     = sealedCount > 0
 <BaseLayout title={pageTitle} description={pageDesc}>
   <main class="tr-page">
 
-    <!-- Act I — Batting average hero (reused component, no changes) -->
-    <BattingAverageHero avg={data.avg} />
+    <!-- Act I — Conviction hero with dynamic anchor link + trajectory copy -->
+    <BattingAverageHero
+      avg={data.avg}
+      anchorUrl={data.primaryAnchorUrl}
+      coldTrajectory={data.coldTrajectory}
+    />
 
-    <!-- Divider between hero and ledger -->
-    <div class="tr-acts-divider" aria-hidden="true" />
+    <!-- Divider: hidden in cold state so hero flows into trajectory block (Tanya §15) -->
+    {isWarm && <div class="tr-acts-divider" aria-hidden="true" />}
 
-    <!-- Acts II + III — Ledger table and sparkline -->
-    <TrackRecord data={data} />
+    <!-- Anchor Strip — between hero and ledger (Tanya §14) -->
+    {isWarm && (
+      <AnchorStrip
+        anchorUrl={data.primaryAnchorUrl}
+        sealedCount={sealedCount}
+      />
+    )}
+
+    <!-- Warm state: Acts II + III — Ledger table and sparkline -->
+    {isWarm
+      ? <TrackRecord data={data} />
+      : <TrajectoryBlock trajectory={data.coldTrajectory} />
+    }
 
   </main>
 </BaseLayout>
@@ -55,7 +78,7 @@ const pageDesc     = sealedCount > 0
     min-height: 100vh;
   }
 
-  /* Subtle section break between hero and the ledger below */
+  /* Subtle section break between hero and the ledger (warm state only) */
   .tr-acts-divider {
     max-width: 840px;
     margin: 0 auto 2.5rem;
@@ -64,8 +87,8 @@ const pageDesc     = sealedCount > 0
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(245, 166, 35, 0.12) 30%,
-      rgba(245, 166, 35, 0.12) 70%,
+      var(--gold-bg) 30%,
+      var(--gold-bg) 70%,
       transparent
     );
   }

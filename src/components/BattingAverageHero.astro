@@ -1,26 +1,32 @@
 ---
 // src/components/BattingAverageHero.astro
 // Zone 1 conviction hero — the first thing a visitor sees.
-// Full-height above-fold section: large pct, pills, HMAC badge, share button.
+// Full-height above-fold section: large pct, pills, anchor badge, share button.
 // Zero external client JS — share button is 8 lines of inline clipboard API.
+//
+// Props:
+//   avg            — batting average from buildTrackRecord()
+//   anchorUrl      — GitHub Gist URL when GITHUB_PAT is wired; null otherwise
+//   coldTrajectory — sealed count + days to first verdict; shown in cold state
 //
 // SSE hook: data-cm-pct attribute wires into existing initLiveConviction()
 // so the hero number patches live on verdict events — zero SSE code changes.
 //
-// Cold state: em dash + "no verdicts sealed yet" + "The clock is running."
-// No error state, no spinner — the site is honest about its cold start.
-//
-// Credits: Mike (arch spec — BattingAverageHero), Tanya (UX §18 — Conviction Hero)
-//          Elon (kill item: hide % until ≥3 resolved verdicts — prevents self-grading)
+// Credits: Mike (arch spec — BattingAverageHero, anchor URL fix, cold trajectory),
+//          Tanya (UX §14 anchor strip, §15 cold-start trajectory, §18 hero spec),
+//          Elon (kill item: hide % until ≥1 resolved verdict — prevents self-grading)
 
 import type { BattingAverage } from '../lib/batting-average';
+import type { ColdTrajectory } from '../lib/track-record';
 import { getResolvedVerdictCount } from '../lib/verdict-resolver';
 
 interface Props {
-  avg: BattingAverage;
+  avg:             BattingAverage;
+  anchorUrl?:      string | null;
+  coldTrajectory?: ColdTrajectory;
 }
 
-const { avg } = Astro.props;
+const { avg, anchorUrl = null, coldTrajectory } = Astro.props;
 
 // Gate: show batting % after ≥1 resolved verdict (Mike §4 — cold-start visibility matters).
 // Lower gate from 3→1: platform has 6 posts; statistical validity revisited at 50+ posts.
@@ -32,6 +38,14 @@ const isLive = showPct;
 const pctMod = isLive
   ? avg.pct >= 80 ? 'bah--strong' : avg.pct >= 60 ? 'bah--mid' : 'bah--weak'
   : 'bah--cold';
+
+// Cold trajectory copy — meaningful forward momentum (Tanya §15)
+function coldClockCopy(t: ColdTrajectory | undefined): string {
+  if (!t || t.sealedCount === 0) return 'The clock is running.';
+  const posts = `${t.sealedCount} post${t.sealedCount === 1 ? '' : 's'} sealed`;
+  if (t.daysToFirst !== null) return `${posts} · first verdict eligible in ${t.daysToFirst} days`;
+  return `${posts} · awaiting resolution`;
+}
 ---
 
 <section class:list={['bah', pctMod]} aria-label="Conviction batting average">
@@ -53,7 +67,13 @@ const pctMod = isLive
     </div>
 
     <div class="bah-anchor">
-      Anchored on GitHub · tamper-evident
+      {anchorUrl ? (
+        <a href={anchorUrl} target="_blank" rel="noopener noreferrer" class="bah-anchor-link">
+          Anchored on GitHub · tamper-evident ↗
+        </a>
+      ) : (
+        <span>Anchored on GitHub · tamper-evident</span>
+      )}
     </div>
 
     <div class="bah-actions">
@@ -80,11 +100,7 @@ const pctMod = isLive
       )}
     </div>
 
-    <p class="bah-clock">
-      {resolvedCount > 0
-        ? `${resolvedCount} verdict${resolvedCount === 1 ? '' : 's'} sealed. Resolving…`
-        : 'The clock is running.'}
-    </p>
+    <p class="bah-clock">{coldClockCopy(coldTrajectory)}</p>
   )}
 
   <div class="bah-scroll-cue" aria-hidden="true">↓ see the bets</div>
@@ -134,7 +150,7 @@ const pctMod = isLive
   /** Phase 3: flash gold (improved) or red (worsened), then settle */
   function arrivalFlash(el: HTMLElement, improved: boolean): void {
     const flashColor = improved ? 'var(--gold)' : 'var(--clr-red-500, oklch(55% 0.22 25))';
-    el.style.transition = 'color 400ms ease';
+    el.style.transition = `color var(--motion-duration-deliberate, 500ms) var(--motion-easing-standard, ease-in-out)`;
     el.style.color = flashColor;
     setTimeout(() => { el.style.color = ''; el.style.transition = ''; }, 800);
   }
@@ -252,7 +268,7 @@ const pctMod = isLive
     font-size: 1.1rem;
     font-style: italic;
     font-weight: var(--weight-medium, 500);
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--text-secondary);
     margin: 0;
     letter-spacing: 0.01em;
   }
@@ -277,7 +293,6 @@ const pctMod = isLive
   }
 
   /* ── Ghost ring — cold state orbit (Mike P0-A, Tanya §18) ── */
-  /* Hardcoded amber regardless of stage: represents the mechanism, not content age */
   .bah-ghost-ring {
     position: absolute;
     top: 50%;
@@ -285,20 +300,20 @@ const pctMod = isLive
     width: 5.5rem;
     height: 5.5rem;
     pointer-events: none;
-    /* translate must live in keyframe (not here) to avoid position jump on first frame (Mike P0-A) */
+    /* translate must live in keyframe (not here) to avoid position jump on first frame */
     animation: bah-ring-spin 10s linear infinite;
   }
 
   .bah-ring-svg {
     width: 100%;
     height: 100%;
-    overflow: visible; /* prevent stroke clipping at svg boundary (Mike P0-A) */
+    overflow: visible;
   }
 
   .bah-ring-outer,
   .bah-ring-inner {
     fill: none;
-    stroke: var(--gold-border); /* rgba(245,166,35,0.22) — amber conviction signal */
+    stroke: var(--gold-border);
   }
 
   .bah-ring-outer {
@@ -312,7 +327,6 @@ const pctMod = isLive
     opacity: 0.6;
   }
 
-  /* Full translate in keyframes to avoid position jump on first iteration (Mike P0-A) */
   @keyframes bah-ring-spin {
     from { transform: translate(-50%, -50%) rotate(0deg);   }
     to   { transform: translate(-50%, -50%) rotate(360deg); }
@@ -326,13 +340,13 @@ const pctMod = isLive
 
   .bah-subtitle {
     font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary);
     letter-spacing: 0.02em;
   }
 
   .bah-subtitle--cold {
     font-style: italic;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-ghost);
   }
 
   /* ── Pill badges ── */
@@ -356,7 +370,7 @@ const pctMod = isLive
   .bah-pill--wrong   { background: var(--wrong-bg);    color: var(--verdict-wrong); }
   .bah-pill--pending { background: var(--pending-bg);  color: var(--text-tertiary); }
 
-  /* ── HMAC anchor badge ── */
+  /* ── Anchor badge — dynamic link when GITHUB_PAT is wired (Mike §1, Tanya §14) ── */
   .bah-anchor {
     font-size: 0.65rem;
     color: var(--text-ghost);
@@ -365,10 +379,21 @@ const pctMod = isLive
     padding-left: 0.6rem;
   }
 
-  /* ── "The clock is running." — cold state ── */
+  .bah-anchor-link {
+    color: var(--gold-dim);
+    text-decoration: none;
+    transition: color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out);
+  }
+
+  .bah-anchor-link:hover {
+    color: var(--gold);
+    text-decoration: underline;
+  }
+
+  /* ── Cold state clock copy ── */
   .bah-clock {
     font-size: 0.82rem;
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--text-tertiary);
     margin: 0;
     letter-spacing: 0.02em;
   }
@@ -386,7 +411,8 @@ const pctMod = isLive
     border-radius: var(--radius-sm);
     cursor: pointer;
     letter-spacing: 0.04em;
-    transition: color 150ms ease, border-color 150ms ease;
+    transition: color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
+                border-color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out);
   }
 
   .bah-share:hover {
@@ -397,11 +423,11 @@ const pctMod = isLive
   /* ── Scroll cue ── */
   .bah-scroll-cue {
     font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--text-ghost);
     letter-spacing: 0.06em;
     margin-top: auto;
     padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
   }
 
   /* ── Mobile ── */
@@ -409,10 +435,8 @@ const pctMod = isLive
     .bah { padding: 4rem 1rem; gap: 1.25rem; }
     .bah-pct { font-size: 2.8rem; }
     .bah-tagline { font-size: 0.9rem; }
-    .bah-ghost-ring { width: 3.8rem; height: 3.8rem; }  /* Tanya §18: 3.8rem mobile */
-    .bah-scroll-cue {
-      animation: bah-bob 2s ease-in-out infinite;
-    }
+    .bah-ghost-ring { width: 3.8rem; height: 3.8rem; }
+    .bah-scroll-cue { animation: bah-bob 2s ease-in-out infinite; }
   }
 
   @keyframes bah-bob {
@@ -423,7 +447,7 @@ const pctMod = isLive
   @media (prefers-reduced-motion: reduce) {
     .bah-scroll-cue { animation: none; }
     .bah-pct--cold  { animation: none; }
-    /* Ring stays visible — paused, not hidden; clock metaphor persists (Mike P0-A) */
+    /* Ring stays visible — paused, not hidden; clock metaphor persists */
     .bah-ghost-ring { animation-play-state: paused; }
   }
 
