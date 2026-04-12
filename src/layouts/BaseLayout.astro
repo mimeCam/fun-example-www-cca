@@ -108,7 +108,7 @@ const showOnboarding = onboardingForced || !onboardingSeen;
         pointer-events: none;
         background: radial-gradient(
           ellipse at 50% 30%,
-          rgba(var(--mood-accent-rgb, 120,120,120), 0.04) 0%,
+          var(--mood-accent-glow, rgba(120,120,120,0.04)) 0%,
           transparent 70%
         );
       }
@@ -137,7 +137,7 @@ const showOnboarding = onboardingForced || !onboardingSeen;
     {showOnboarding && <OnboardingOverlay />}
     <slot />
     <footer class="site-footer">
-      <a href="/author" class="site-footer__write">✍ write for this blog →</a>
+      <a href="/submit" class="site-footer__write">✍ write for this blog →</a>
     </footer>
     <!-- Atmosphere controller: re-applies on View Transitions, watches river filter -->
     <script>

@@ -4,13 +4,12 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine
+- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, cron scheduler + jobs
 - `src/components/` — UI layer: cards, drawers, ceremonies (ConvictionSeal, SealReceipt, NotarizeStamp), badges, filters
-- `src/pages/api/` — REST endpoints mirroring all core user actions
+- `src/pages/api/` — REST endpoints mirroring all core user actions; `cron-health` for monitoring
 - `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes · `src/styles/atmosphere.css` — stage palette
 
 ## WIP
 
-- [wip] Seal a post via `/admin` (set `ADMIN_SECRET` + `GITHUB_PAT` env vars) to activate TrustBadge + batting average loop
+- [wip] Seal a post via `/admin` (requires `ADMIN_SECRET` + `GITHUB_PAT` env vars) to activate TrustBadge + batting average loop
 - [wip] `GITHUB_PAT` (gist scope) for Conviction Anchor on `/track-record`
-- [wip] OTS observability cron + alerting

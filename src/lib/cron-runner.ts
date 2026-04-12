@@ -1,0 +1,121 @@
+// src/lib/cron-runner.ts
+// In-process cron scheduler. Boots once via astro:server:start integration hook.
+// Two jobs: OTS poller (30 min) + deadline sweeper (60 min).
+// No ICronJob interface. No abstract scheduler. Two functions. One flat array.
+//
+// Design decisions (Mike arch §1-7):
+//   - setInterval: zero deps, no sub-second precision needed
+//   - Self-HTTP: cron calls own API endpoints — auth layer exercised in prod
+//   - 5s cold-start delay: server must bind port before first HTTP self-call
+//   - `booted` flag: prevents double-registration in Astro dev hot-reload
+//   - SIGTERM handler: clears intervals, logs final state before Docker stop
+//
+// Credits: Mike (arch §cron-runner), Elon (first-principles: ignition switch only)
+
+import { recordStart, recordFinish, recordError } from './cron-store';
+import { otsPollerRun }       from './jobs/ots-poller';
+import { deadlineSweeperRun } from './jobs/deadline-sweeper';
+
+// ---------------------------------------------------------------------------
+// Types — plain objects, no class hierarchy
+// ---------------------------------------------------------------------------
+
+interface JobDef {
+  name:       string;
+  intervalMs: number;
+  run:        (baseUrl: string) => Promise<{ upgraded?: number; stillPending?: number; failed?: number; swept?: number; errors?: number; status: 'ok' | 'partial' | 'error' }>;
+}
+
+interface AddressInfo {
+  address: string;
+  port:    number;
+  family?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Module-level state — single source of truth, no class singleton
+// ---------------------------------------------------------------------------
+
+let booted  = false;
+let baseUrl = '';
+const handles: ReturnType<typeof setInterval>[] = [];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function normalizeHost(addr: AddressInfo): string {
+  const raw = addr.address;
+  if (!raw || raw === '::' || raw === '0.0.0.0') return '127.0.0.1';
+  if (raw.includes(':')) return `[${raw}]`; // IPv6
+  return raw;
+}
+
+function buildBaseUrl(addr: AddressInfo): string {
+  return `http://${normalizeHost(addr)}:${addr.port}`;
+}
+
+function logJson(event: string, data: Record<string, unknown>): void {
+  const entry = { ts: new Date().toISOString(), job: 'cron-runner', event, data };
+  process.stderr.write(JSON.stringify(entry) + '\n');
+}
+
+// ---------------------------------------------------------------------------
+// Job runner wrapper — records start/finish/error around each tick
+// ---------------------------------------------------------------------------
+
+async function runWrapped(job: JobDef): Promise<void> {
+  const runId = recordStart(job.name);
+  try {
+    const result = await job.run(baseUrl);
+    const upgraded    = result.upgraded    ?? 0;
+    const stillPending = result.stillPending ?? 0;
+    const failed      = (result.failed ?? 0) + (result.errors ?? 0);
+    recordFinish(runId, result.status, upgraded, stillPending, failed);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    recordError(runId, msg);
+    logJson('job_error', { job: job.name, error: msg });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Job registry — append a third job here if a third one ever exists
+// ---------------------------------------------------------------------------
+
+const JOBS: JobDef[] = [
+  { name: 'ots-poller',        intervalMs: 30 * 60 * 1000, run: otsPollerRun },
+  { name: 'deadline-sweeper',  intervalMs: 60 * 60 * 1000, run: deadlineSweeperRun },
+];
+
+// ---------------------------------------------------------------------------
+// Public API — two functions, zero classes
+// ---------------------------------------------------------------------------
+
+/** Boot the cron runner after the HTTP server is listening.
+ *  Idempotent: safe to call multiple times (dev hot-reload guard). */
+export async function boot(addr: AddressInfo): Promise<void> {
+  if (booted) return;
+  booted  = true;
+  baseUrl = buildBaseUrl(addr);
+  logJson('boot', { baseUrl, jobs: JOBS.map(j => ({ name: j.name, intervalMs: j.intervalMs })) });
+
+  // 5s cold-start delay: guarantee HTTP server is fully bound before first tick
+  await new Promise<void>(resolve => setTimeout(resolve, 5_000));
+
+  for (const job of JOBS) {
+    // First tick immediately after cold-start delay
+    void runWrapped(job);
+    handles.push(setInterval(() => void runWrapped(job), job.intervalMs));
+  }
+
+  process.on('SIGTERM', shutdown);
+}
+
+/** Clear all intervals and log final state. Called on SIGTERM (Docker stop). */
+export function shutdown(): void {
+  logJson('shutdown', { cleared: handles.length });
+  for (const h of handles) clearInterval(h);
+  handles.length = 0;
+  booted = false;
+}

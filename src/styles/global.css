@@ -11,6 +11,14 @@
 @import "./motion.css";
 @import "./death-clock.css";
 
+/* ── Focus ring — one token, zero per-component color values (Tanya §8.2) ──
+   All interactive elements inherit this. No per-component overrides needed.
+   --border-focus = rgba(245, 166, 35, 0.60) — conviction gold at 60% opacity. */
+*:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 /* ── Section break utilities (Tanya §P2, Mike §8) ──────────────────────── */
 /* Replaces 12+ inline border-top patterns scattered across components.     */
 /* Usage: <hr class="section-break"> or <hr class="section-rule">           */

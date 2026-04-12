@@ -28,21 +28,22 @@
     opacity: 0.35;
   }
 
-  /* Banner chrome — sticky bottom, non-modal */
+  /* Banner chrome — sticky top (below 48px nav), non-modal.
+     position:sticky + top:48px keeps the banner in scroll flow and below
+     the nav (--z-nav:10). Avoids the fixed+z-sticky:40 > z-nav:10 overlap
+     that broke the nav glass effect. (Tanya §8.1 Option B fix) */
   .death-clock-banner {
     position: sticky;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    top: 48px;
     z-index: var(--z-sticky);
-    padding: 0.65rem 1.25rem;
-    background: rgba(8, 6, 4, 0.90);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: var(--space-3, 0.65rem) var(--space-5, 1.25rem);
+    background: var(--surface-deep, rgba(8, 6, 4, 0.92));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: var(--space-4, 0.875rem);
   }
 
   .death-clock-banner--hidden {

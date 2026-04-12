@@ -74,8 +74,15 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   </div>
 
   <!-- Right cluster: batting chip + presence dot — always right-aligned -->
-  <!-- Cold state: show nothing — absence creates curiosity (Tanya P0 §11) -->
+  <!-- Cold state: ghost chip hints the mechanism exists (Tanya §9.1) -->
   <div class="nav-right">
+    {!avgLive && (
+      <span
+        class="batting-chip batting-chip--ghost"
+        aria-hidden="true"
+        title="Track record unlocks after first resolved verdict"
+      >— % ✓</span>
+    )}
     {avgLive && (
       <a href="/track-record" class:list={['batting-chip', chipClass]} aria-label={chipLabel} title="See full track record →">
         <span class="batting-pct">{avgLive.pct}%</span>
@@ -271,13 +278,16 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     animation: nav-breathe 3.5s ease-in-out infinite;
   }
 
-  /* Ghost chip — cold state hint (Tanya §17: "hints the mechanism exists") */
+  /* Ghost chip — cold state hint (Tanya §9.1: absence → anticipation, not emptiness) */
   .batting-chip--ghost {
     font-size: 0.65rem;
     font-family: var(--font-mono);
-    color: var(--text-ghost);
-    letter-spacing: 0.04em;
-    text-decoration: none;
+    color: var(--text-ghost, rgba(255,255,255,0.20));
+    border-color: var(--border-faint, rgba(255,255,255,0.06));
+    background: transparent;
+    cursor: default;
+    pointer-events: none;
+    letter-spacing: 0.06em;
     user-select: none;
   }
 

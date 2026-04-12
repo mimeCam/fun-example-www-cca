@@ -4,6 +4,43 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v82 — In-Process Cron Runner + Ghost Chip UIX Polish (2026-04-12)
+#   Sprint: Automated in-process cron scheduler replaces ad-hoc manual triggers;
+#     two perpetual jobs (OTS poller every 30 min, deadline sweeper every 60 min)
+#     self-HTTP the existing API endpoints so auth is exercised identically to ops.
+#     SiteNav ghost chip re-added with pointer-events:none (cold-state hint without
+#     interactivity — Tanya §9.1). Death-clock and global CSS polish passes.
+#   New files:
+#     src/lib/cron-runner.ts — in-process scheduler; boots via astro:server:start
+#       integration hook; `booted` flag guards Astro dev hot-reload double-boot;
+#       5s cold-start delay ensures HTTP server is fully bound before first tick;
+#       SIGTERM handler clears all setIntervals before Docker stop.
+#     src/lib/cron-store.ts — SQLite persistence for cron run history; auto-creates
+#       `cron_runs` table in revivals.db (WAL mode); recordStart / recordFinish /
+#       recordError write path; getLastRuns + getFailureStreak read path.
+#     src/lib/jobs/ots-poller.ts — 30-min OTS upgrade job; calls POST /api/ots-upgrade
+#       via self-HTTP; detects stuck seals (>4h warn, >24h alert); JSON structured log.
+#     src/lib/jobs/deadline-sweeper.ts — 60-min deadline sweep job; calls POST
+#       /api/deadline-sweep via self-HTTP; derives ok/partial/error CronStatus.
+#     src/pages/api/cron-health.ts — GET /api/cron-health (Bearer ADMIN_SECRET);
+#       returns per-job lastRun, lastStatus, failureStreak, pendingOtsCount;
+#       HTTP 500 when any job streak >= 3 (monitoring / Docker health probe ready).
+#   Modified files:
+#     astro.config.mjs — cronRunnerIntegration added; hooks astro:server:start to
+#       dynamically import and boot cron-runner.ts after HTTP server is listening
+#       (fires in both `astro dev` and standalone `node dist/server/entry.mjs`).
+#     src/components/SiteNav.astro — ghost chip re-added with pointer-events:none,
+#       cursor:default; cold-state hint approach revised to §9.1 (absence → anticipation)
+#       from §11 (pure absence); border-color and background tokens updated.
+#     src/lib/mood-simple.ts — mood derivation refinements (polish pass).
+#     src/styles/death-clock.css — heartbeat animation tuning (polish pass).
+#     src/styles/global.css — global design system additions (polish pass).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME mounts /app/data (revivals.db) — cron_runs table auto-created.
+#     DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO unchanged.
+#     Steps 6–7 (deadline-sweep + ots-upgrade curl) remain as on-deploy triggers;
+#     ongoing scheduling is now owned by the in-process cron runner.
+#
 # Architecture v81 — Seal Cancel + SealReceipt Component Extraction (2026-04-12)
 #   Sprint: Conviction seal ceremony gains a phase-3 cancel path (AbortController
 #     aborts the in-flight POST), the inline receipt is extracted to a dedicated

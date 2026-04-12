@@ -30,6 +30,9 @@ export interface CSSMoodVars {
   '--mood-shadow-rgb': string;
   '--mood-accent': string;
   '--mood-accent-rgb': string;
+  /** Composite token: rgba(r,g,b, 0.04) — use instead of rgba(var(--mood-accent-rgb), 0.04)
+   *  which silently fails in all browsers (CSS vars can't interpolate comma-separated rgb). */
+  '--mood-accent-glow': string;
 }
 
 const SIMPLE_MOODS: Record<SimpleMoodId, MoodDefinition> = {
@@ -68,13 +71,16 @@ export function simpleMoodIds(): SimpleMoodId[] {
 /** Convert a MoodDefinition to CSS custom property map. */
 export function moodToCSSVars(mood: MoodDefinition): CSSMoodVars {
   return {
-    '--mood-from':       mood.gradient_from,
-    '--mood-to':         mood.gradient_to,
-    '--mood-opacity':    String(mood.opacity),
-    '--mood-speed':      mood.animation_duration,
-    '--mood-shadow-rgb': mood.shadow_rgb,
-    '--mood-accent':     mood.accent,
-    '--mood-accent-rgb': mood.accent_rgb,
+    '--mood-from':        mood.gradient_from,
+    '--mood-to':          mood.gradient_to,
+    '--mood-opacity':     String(mood.opacity),
+    '--mood-speed':       mood.animation_duration,
+    '--mood-shadow-rgb':  mood.shadow_rgb,
+    '--mood-accent':      mood.accent,
+    '--mood-accent-rgb':  mood.accent_rgb,
+    // Pre-computed composite so consumers use var(--mood-accent-glow) directly.
+    // rgba(var(--mood-accent-rgb), 0.04) silently fails — this fixes it (Tanya §10.1).
+    '--mood-accent-glow': `rgba(${mood.accent_rgb}, 0.04)`,
   };
 }
 
@@ -112,7 +118,7 @@ export function _testMoodSimple(): void {
     const m = resolveSimpleMood(id);
     console.assert(m.label === id, `label mismatch for ${id}`);
     const vars = simpleMoodCSSVars(id);
-    console.assert(Object.keys(vars).length === 7, `${id}: expected 7 vars`);
+    console.assert(Object.keys(vars).length === 8, `${id}: expected 8 vars (incl. --mood-accent-glow)`);
     console.assert(moodDotColor(id).startsWith('#'), `${id}: dot color`);
   }
   console.assert(resolveSimpleMood('unknown').label === 'warm', 'fallback');
