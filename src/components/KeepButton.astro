@@ -149,26 +149,26 @@ const hasPact     = decayFactor !== undefined;
     border-color: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 12%, transparent);
   }
 
-  /* Critical urgency — pulsing ring */
+  /* Critical urgency — pulsing ring (uses clr-red-500 for urgency, not gold) */
   .keep-btn--critical {
-    border-color: rgba(255, 80, 40, 0.40);
+    border-color: color-mix(in oklch, var(--clr-red-500) 40%, transparent);
     animation: pulse-ring 2s ease-in-out infinite;
   }
 
   /* still-true conviction — faint gold ring */
-  .keep-btn--still-true { box-shadow: 0 0 8px rgba(200, 160, 60, 0.18); }
+  .keep-btn--still-true { box-shadow: 0 0 8px color-mix(in oklch, var(--gold) 18%, transparent); }
 
   @keyframes pulse-ring {
-    0%, 100% { box-shadow: 0 0 0 0   rgba(255, 80, 40, 0.0); }
-    50%       { box-shadow: 0 0 0 4px rgba(255, 80, 40, 0.18); }
+    0%, 100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--clr-red-500) 0%,  transparent); }
+    50%       { box-shadow: 0 0 0 4px color-mix(in oklch, var(--clr-red-500) 18%, transparent); }
   }
 
-  .keep-icon  { font-size: 0.85rem; }
+  .keep-icon  { font-size: var(--text-sm); }
 
   .keep-count {
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     opacity: 0.70;
-    transition: opacity 200ms ease;
+    transition: opacity var(--motion-flow-duration) var(--motion-flow-easing);
   }
   .keep-count--hidden { display: none; }
 
@@ -208,7 +208,7 @@ const hasPact     = decayFactor !== undefined;
   /* Gold stroke at threshold — "commitment colour" */
   .keep-btn[data-keep-state="threshold_reached"] .keep-arc-circle,
   .keep-btn[data-keep-state="submitting"]        .keep-arc-circle {
-    stroke: var(--gold, #F5A623);
+    stroke: var(--gold);
   }
 
   /* ── State: threshold_reached — brief scale overshoot ─────────── */

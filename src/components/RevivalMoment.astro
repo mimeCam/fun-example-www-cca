@@ -1,23 +1,23 @@
 ---
 // src/components/RevivalMoment.astro
-// Drop-in component for /blog/[slug] — wraps article content in the revival
-// stage and injects the interaction script.
+// Revival Moment — post detail page orchestrator.
+// Owns the phase state machine for the KeepButton ceremony.
 //
-// The decay IS the hint. The KeepButton IS the revival.
-// No tooltips. No guided tours. No explanation text.
-// A visitor sees degraded content, clicks Keep Alive, and witnesses revival.
+// Phases: idle → pressing → blooming → ticking → complete
+//         (any phase → error → idle on API failure)
 //
-// Replaces: FirstVisitHint, GuidedTouch, DiscoveryWhisper, FirstBreath
-//           (4 onboarding components → 0 needed)
+// Architecture: data-phase on wrapper drives all CSS.
+// The IIFE is the only JS; it transitions phase strings only.
+// CSS in revival-moment.css does every animation.
 //
-// Credits: Mike (architecture), Tanya (UX spec), Paul Kim (60-second test)
+// Double-tap guard: clicks no-op when data-phase !== "idle".
+// aria-busy on button during API flight for screen readers.
+// atmosphereHint → body[data-atmosphere="risen"] on safe revival.
+//
+// Credits: Mike Koch (phase machine spec) · Tanya Donska (UX spec) · 2026-04-12
 
-import {
-  revivalMomentScript,
-  stageStyleString,
-  decayTier,
-} from '../lib/revival-moment';
-import { decayFactor, revivalBonus } from '../lib/decay-engine';
+import { stageStyleString, decayTier } from '../lib/revival-moment';
+import { decayFactor } from '../lib/decay-engine';
 
 interface Props {
   slug: string;
@@ -27,38 +27,33 @@ interface Props {
 
 const { slug, pubDate, revivalCount = 0 } = Astro.props;
 
-const factor = decayFactor(
-  pubDate.toISOString(),
-  365,
-  new Date(),
-  revivalCount,
-);
-const tier = decayTier(factor);
+const factor     = decayFactor(pubDate.toISOString(), 365, new Date(), revivalCount);
+const tier       = decayTier(factor);
 const stageStyle = stageStyleString(factor);
-const script = revivalMomentScript(slug);
 ---
 
 <div
-  class="revival-stage"
+  class="revival-moment revival-stage"
   data-slug={slug}
   data-decay-tier={tier}
   data-decay-factor={factor.toFixed(2)}
+  data-phase="idle"
   style={stageStyle}
   tabindex="0"
   role="region"
   aria-label="Blog post content"
 >
-  <!-- Bloom ring: expands on revival -->
+  <!-- Bloom ring: expands during data-phase="blooming" via revival-moment.css -->
   <div class="revival-ring" aria-hidden="true"></div>
 
   <!-- Article content slot -->
   <slot />
 </div>
 
-<!-- Revival badge: "You revived this" — injected text by JS -->
+<!-- Revival badge: narrative copy injected by IIFE below -->
 <div class="revival-badge" aria-hidden="true"></div>
 
-<!-- Screen reader announcement region -->
+<!-- Screen reader announcement (aria-live polite — announces after bloom settles) -->
 <div
   class="revival-announce"
   role="status"
@@ -66,5 +61,145 @@ const script = revivalMomentScript(slug);
   aria-atomic="true"
 ></div>
 
-<!-- Revival moment interaction script -->
-<script set:html={script} />
+<!-- Phase state machine IIFE — no external deps, no framework hydration.
+     define:vars injects `slug` from Astro frontmatter at SSR time.        -->
+<script define:vars={{ slug }}>
+(function () {
+  /* ── Config ─────────────────────────────────────────────────────────── */
+  var SLUG     = slug;
+  var PRESS_MS = 120;   // Phase 1 duration (matches SNAP profile)
+  var BLOOM_MS = 580;   // Phase 2 → wait before Phase 3 starts
+  var TICK_MS  = 400;   // Phase 3 animation then settle to complete
+  var BADGE_MS = 5000;  // Badge auto-hide
+  var rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── DOM refs ───────────────────────────────────────────────────────── */
+  var wrapper = document.querySelector('.revival-moment[data-slug="' + SLUG + '"]');
+  var btn     = document.querySelector('.keep-btn[data-keep-slug="' + SLUG + '"]');
+  if (!wrapper || !btn) return;
+
+  // Mark as orchestrated — KeepButton's own wireKeepButtons() skips this btn
+  btn.dataset.orchestrated = '1';
+
+  /* ── Phase helpers ──────────────────────────────────────────────────── */
+  function phase() { return wrapper.dataset.phase || 'idle'; }
+  function setPhase(p) { wrapper.dataset.phase = p; btn.dataset.revivalPhase = p; }
+
+  /* ── Session helper ─────────────────────────────────────────────────── */
+  function sid() { try { return sessionStorage.getItem('session-token'); } catch { return null; } }
+
+  /* ── Count display ──────────────────────────────────────────────────── */
+  function getCount() {
+    var s = btn.querySelector('.keep-count');
+    return parseInt((s ? s.textContent : '').replace(/\D/g, '') || '0', 10) || 0;
+  }
+  function setCount(n) {
+    var s = btn.querySelector('.keep-count'); if (!s) return;
+    if (n > 0) { s.textContent = ' \u00b7 ' + n; s.classList.remove('keep-count--hidden'); }
+    else s.classList.add('keep-count--hidden');
+  }
+
+  /* ── Button state mutations ─────────────────────────────────────────── */
+  function markKept() {
+    btn.classList.add('kept');
+    var lbl = btn.querySelector('.keep-label'); if (lbl) lbl.textContent = 'KEPT';
+    var ico = btn.querySelector('.keep-icon');  if (ico) ico.textContent = '\u2713';
+  }
+  function rollback(pc) {
+    btn.classList.remove('kept');
+    var lbl = btn.querySelector('.keep-label'); if (lbl) lbl.textContent = 'KEEP';
+    var ico = btn.querySelector('.keep-icon');  if (ico) ico.textContent = '\u2665';
+    setCount(pc);
+    setPhase('idle');
+    btn.removeAttribute('aria-busy');
+  }
+
+  /* ── Counter tick spring (Phase 3) ─────────────────────────────────── */
+  function tickCounter(n) {
+    var el = document.querySelector('[data-revival-count-display]'); if (!el) return;
+    el.dataset.ticking = '';
+    el.textContent = String(n);
+    el.addEventListener('animationend', function () { delete el.dataset.ticking; }, { once: true });
+  }
+
+  /* ── Screen reader announcement ─────────────────────────────────────── */
+  function announce(n) {
+    var el = document.querySelector('.revival-announce');
+    if (el) el.textContent = 'Post kept alive. ' + n + ' people keeping this alive.';
+  }
+
+  /* ── Witness badge ──────────────────────────────────────────────────── */
+  function showBadge(d) {
+    var b = document.querySelector('.revival-badge'); if (!b) return;
+    var pct = d.decayPct || 0, mc = d.monthlyCount || d.count || 1;
+    var lead = pct > 60 ? 'You rescued this \u2014 ' + pct + '% decayed' : 'You kept this alive';
+    b.textContent = lead + ' \u00b7 ' + mc + ' reader' + (mc !== 1 ? 's' : '') + ' this month';
+    b.dataset.visible = '';
+    setTimeout(function () { delete b.dataset.visible; }, BADGE_MS);
+  }
+
+  /* ── API call ───────────────────────────────────────────────────────── */
+  function submit() {
+    var h = { 'Content-Type': 'application/json' };
+    var s = sid(); if (s) h['x-session-id'] = s;
+    return fetch('/api/revive', {
+      method: 'POST', keepalive: true, headers: h, body: JSON.stringify({ slug: SLUG }),
+    }).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); });
+  }
+
+  /* ── Phase 3: success path ──────────────────────────────────────────── */
+  function onSuccess(d, pc) {
+    if (!d.ok) { rollback(pc); return; }
+    setPhase('ticking');
+    tickCounter(d.count);
+    announce(d.count);
+    showBadge(d);
+    if (d.atmosphereHint) document.body.dataset.atmosphere = d.atmosphereHint;
+    document.dispatchEvent(new CustomEvent('revival:confirmed', { detail: d }));
+    setTimeout(function () { setPhase('complete'); markKept(); btn.removeAttribute('aria-busy'); }, TICK_MS);
+  }
+
+  /* ── Error path: shake + rollback ──────────────────────────────────── */
+  function onError(pc) {
+    setPhase('error');
+    setTimeout(function () { rollback(pc); }, 300);
+  }
+
+  /* ── Phase 2: bloom + submit ────────────────────────────────────────── */
+  function startBloom(pc) {
+    setPhase('blooming');
+    submit()
+      .then(function (d) { setTimeout(function () { onSuccess(d, pc); }, BLOOM_MS); })
+      .catch(function ()  { setTimeout(function () { onError(pc);     }, 300);      });
+  }
+
+  /* ── Phase 1: press depress, then enter bloom ──────────────────────── */
+  function runPhases() {
+    var pc = getCount();
+    setPhase('pressing');
+    setCount(pc + 1);  // optimistic count update
+    btn.setAttribute('aria-busy', 'true');
+    if (rm) { submit().then(function (d) { onSuccess(d, pc); }).catch(function () { onError(pc); }); return; }
+    setTimeout(function () { startBloom(pc); }, PRESS_MS);
+  }
+
+  /* ── Click handler (double-tap guard via phase check) ───────────────── */
+  btn.addEventListener('click', function () { if (phase() !== 'idle') return; runPhases(); });
+
+  /* ── SSE: sympathetic bloom when another reader revives this post ───── */
+  function onSSERevival(e) {
+    try {
+      var d = JSON.parse(e.data); if (d.slug !== SLUG) return;
+      wrapper.dataset.sympathetic = '';
+      setTimeout(function () { delete wrapper.dataset.sympathetic; }, 1200);
+    } catch (_) {}
+  }
+  function initSSE() {
+    if (typeof EventSource === 'undefined') return;
+    try { var es = new EventSource('/api/heartbeat'); window.__rmES = es; es.addEventListener('revival', onSSERevival); }
+    catch (_) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initSSE);
+  else initSSE();
+})();
+</script>

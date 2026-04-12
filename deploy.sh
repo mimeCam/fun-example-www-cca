@@ -4,6 +4,56 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v96 — Revival Ceremony: Full Phase Choreography (2026-04-12)
+#   Sprint: Full phase state machine for the KeepButton ceremony. RevivalMoment
+#     becomes the orchestrator: idle → pressing → blooming → ticking → complete
+#     (any → error → idle on failure). The IIFE in RevivalMoment.astro owns all
+#     phase transitions; CSS in revival-moment.css drives every animation off
+#     data-phase. Double-tap guard (clicks no-op outside idle), aria-busy on
+#     button during API flight, atmosphereHint → body[data-atmosphere="risen"]
+#     on safe revival. BloomParticles gains 14 polar particles (up from 6) with
+#     --angle CSS var and spring easing. RevivalCounter migrated to --font-mono
+#     + full token compliance + data-ticking hook. KeepButton raw color literals
+#     replaced with tokens. Pure UIX — zero infra changes.
+#   New files:
+#     (none)
+#   Modified files:
+#     src/pages/api/revive.ts — added nowSafe (bool: was endangered, now isn't)
+#       + atmosphereHint ('risen' | null) to JSON response; decayBeforeRevival
+#       computed via count-1 for cross-zone detection; backward-compatible.
+#     src/styles/revival-moment.css — full rewrite: data-phase state machine CSS
+#       (idle/pressing/blooming/ticking/complete/error), spring keyframes, token-
+#       compliant; sympathetic bloom for SSE cross-reader revival; reduced-motion
+#       guard; zero hardcoded hex/rgba.
+#     src/components/RevivalMoment.astro — IIFE phase machine replaces old
+#       revivalMomentScript() import; data-phase="idle" on wrapper; orchestrated
+#       flag gates KeepButton's own wireKeepButtons(); tickCounter() adds
+#       data-ticking on [data-revival-count-display]; witness badge copy adapts
+#       to decayPct urgency; atmosphereHint sets body[data-atmosphere]; SSE
+#       sympathetic bloom on revival event.
+#     src/components/BloomParticles.astro — 14 polar particles (up from 6),
+#       --angle CSS custom property per particle for spread animation, spring
+#       easing on particle trajectories; zero DOM access at module scope.
+#     src/components/RevivalCounter.astro — font-family: var(--font-mono) for
+#       numeric gravitas; all raw literals → token references (--text-sm/xl/xs,
+#       --weight-bold/normal, --space-1/2/4, --tracking-tight/wide, --text-
+#       secondary/disabled, color-mix(var(--mood-accent))); data-ticking attr
+#       integration with revival-moment.css spring tick animation.
+#     src/components/KeepButton.astro — raw rgba/hex literals replaced with
+#       tokens: border-color on critical → color-mix(var(--clr-red-500)…);
+#       still-true box-shadow → color-mix(var(--gold)…); pulse-ring keyframes
+#       → color-mix; font-size literals → var(--text-sm/xs); transition literals
+#       → var(--motion-flow-*); gold stroke fallback removed (token always defined).
+#     src/styles/keep-button.css — 5 token violations fixed: rgba(255,80,40)
+#       → color-mix(var(--clr-red-500)…), rgba(200,160,60) → color-mix(var(--gold)…),
+#       0.85rem → var(--text-sm), 0.72rem → var(--text-xs), transition literals
+#       → var(--motion-flow-*).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v95).
+#
 # Architecture v95 — BattingAverageChip Count-Up Ceremony + Post Author Context (2026-04-12)
 #   Sprint: UIX polish — BattingAverageChip gains a full client ceremony layer
 #     (count-up entrance, tier-crossing flash, live SSE binding) and moves from

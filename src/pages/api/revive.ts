@@ -93,8 +93,13 @@ export const POST: APIRoute = async ({ request }) => {
   stampDailyCounts(fp, ip);
 
   // Recalculate decay with new count so client can decide dismiss vs update
-  const decayAfterRevival = decayFactorWithCount(pubDateISO, count);
+  const decayAfterRevival  = decayFactorWithCount(pubDateISO, count);
+  const decayBeforeRevival = decayFactorWithCount(pubDateISO, count - 1);
   const decayPct = Math.round(decayAfterRevival * 100);
+
+  // nowSafe: revival crossed post out of the danger zone (was endangered, now isn't)
+  const nowSafe: boolean = isEndangered(decayBeforeRevival) && !isEndangered(decayAfterRevival);
+  const atmosphereHint: 'risen' | null = nowSafe ? 'risen' : null;
   const monthlyCount = getMonthlyRevivalCount(slug);
 
   const constellation = await getConstellation(slug);
@@ -119,14 +124,16 @@ export const POST: APIRoute = async ({ request }) => {
   return jsonOk({
     ok: true,
     count,
-    revivalCount:        count,       // alias — orchestrator reads this
-    battingAverageDelta: 0,           // placeholder; verdicts drive batting avg, not revivals
-    relatedSlugs,                     // slugs for cascade bloom in cascade-bloom.ts
+    revivalCount:        count,        // alias — orchestrator reads this
+    battingAverageDelta: 0,            // placeholder; verdicts drive batting avg, not revivals
+    relatedSlugs,                      // slugs for cascade bloom in cascade-bloom.ts
     decayAfterRevival,
     decayPct,
     monthlyCount,
     survivorRank:        survivorRank(slug, count), // percentile vs all posts
     resonance:           resonance ?? [],
+    nowSafe,                           // true → revival crossed post out of danger zone
+    atmosphereHint,                    // 'risen' | null — client sets body[data-atmosphere]
   });
 };
 

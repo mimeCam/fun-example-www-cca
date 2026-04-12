@@ -32,8 +32,8 @@
 .keep-btn {
   --color-keep-cool: oklch(0.65 0.10 220);  /* cool blue — resting */
   --color-keep-hot:  oklch(0.78 0.22 55);   /* warm gold — commitment */
-  --keep-arc-dim:    rgba(245, 166, 35, 0.45);
-  --keep-arc-hot:    var(--gold, #F5A623);
+  --keep-arc-dim:    color-mix(in oklch, var(--clr-gold-400) 45%, transparent);
+  --keep-arc-hot:    var(--gold);
 }
 
 /* ── Temperature-driven color (oklch avoids yellow mudpatch) ── */
@@ -107,7 +107,7 @@
   opacity: 0.55;
   cursor: default;
   pointer-events: none;
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: color-mix(in oklch, oklch(100% 0 0) 8%, transparent);
   transition: opacity var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
@@ -127,9 +127,23 @@
 /* ── Critical urgency ring (gold pulse, per Tanya §4.3) ── */
 
 .keep-btn--critical[data-keep-state="idle"] {
-  border-color: rgba(245, 166, 35, 0.40);
-  box-shadow:   0 0 12px rgba(245, 166, 35, 0.20);
+  border-color: color-mix(in oklch, var(--clr-gold-400) 40%, transparent);
+  box-shadow:   0 0 12px color-mix(in oklch, var(--clr-gold-400) 20%, transparent);
   animation: pulse-warm 2s ease-in-out infinite;
+}
+
+/* ── Revival phase: physical depress (Phase 1) ───────────────────────────
+ * Set by RevivalMoment.astro IIFE via data-revival-phase="pressing".
+ * Mirrors the revival-moment.css rule with specificity for this element. */
+.keep-btn[data-revival-phase="pressing"] {
+  cursor: grabbing;
+}
+
+/* ── Revival phase: aria-busy visual hint during API flight ─────────────
+ * data-revival-phase="blooming" | "ticking" = API in flight.
+ * Subtle opacity reduction signals pending state without blocking the bloom. */
+.keep-btn[aria-busy="true"] {
+  pointer-events: none;
 }
 
 /* ── Cursor intent (Mike §2: cursor:grab invites holding) ── */

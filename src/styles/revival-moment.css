@@ -1,23 +1,142 @@
 /* src/styles/revival-moment.css
- * Revival Moment CSS — bloom choreography for the post detail page.
- * Drives the 5-phase resuscitation sequence when a revival is confirmed.
+ * Revival Moment — three-phase choreography for the KeepButton press.
  *
- * Bloom sequence (driven by RevivalMoment.astro on revival:confirmed):
- *   1. Scale spring    — card breathes in (600ms)
- *   2. Radial glow     — oklch warm bloom from card center (1200ms)
- *   3. Counter tick    — revival count springs up (600ms, from revival-counter.ts)
- *   4. aria-live       — screen reader announcement (instant)
- *   5. Badge settle    — "Kept alive" slides up, auto-fades (5s)
+ * Phase 1 PRESS DEPRESS  (0–120ms)   — button scale + shadow collapse
+ * Phase 2 BLOOM          (120–700ms) — article glow ring expands outward
+ * Phase 3 COUNTER TICK   (600–900ms) — counter springs up with overshoot
  *
- * Color: oklch(0.9 0.25 85) — warm amber in perceptual space.
- *        Shifts through warm spectrum naturally; hsl would go muddy. (Mike §5)
- * Spring: CSS linear() from --motion-spring-easing (motion.css Baseline 2024).
+ * State machine: data-phase on .revival-moment; data-revival-phase on .keep-btn.
+ * CSS does all animation. IIFE in RevivalMoment.astro transitions phase strings only.
  *
- * Architecture: Mike Koch · UX: Tanya Donska · 2026-04-11
+ * Token compliance: oklch() only — no raw hex, rgba, hsl, or bare rem on font-size.
+ *
+ * Architecture: Michael Koch (phase machine spec) · UX: Tanya Donska · 2026-04-12
  */
 
-/* ── Scale spring on post card ── */
+/* ═══════════════════════════════════════════════════════════════════
+ * PHASE 1 — PRESS DEPRESS
+ * Button compresses: shadow E2→E1, scale 1→0.94 over SNAP profile.
+ * CSS transition (not animation) — follows the user's finger pressure.
+ * ═══════════════════════════════════════════════════════════════════ */
 
+[data-revival-phase="pressing"] {
+  transform:  scale(0.94) !important;
+  box-shadow: var(--shadow-e1) !important;
+  transition:
+    transform   var(--motion-snap-duration) var(--motion-snap-easing),
+    box-shadow  var(--motion-snap-duration) var(--motion-snap-easing) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * PHASE 2 — BLOOM
+ * Article wrapper radiates warmth. Ring expands from button origin.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes revival-bloom {
+  0%   { box-shadow: 0 0  0px  0px oklch(0.70 0.20 85 / 0.00); }
+  20%  { box-shadow: 0 0 24px  8px oklch(0.90 0.25 85 / 0.35); }
+  55%  { box-shadow: 0 0 48px 20px oklch(0.90 0.25 85 / 0.50); }
+  100% { box-shadow: 0 0  0px  0px oklch(0.70 0.20 85 / 0.00); }
+}
+
+.revival-moment[data-phase="blooming"],
+.revival-moment[data-phase="ticking"] {
+  animation: revival-bloom var(--duration-bloom)
+             var(--motion-drift-easing) forwards;
+}
+
+/* Bloom ring (inside .revival-moment wrapper) */
+@keyframes revival-ring-expand {
+  0%   { opacity: 0.80; transform: scale(0.20); }
+  55%  { opacity: 0.40; transform: scale(1.10); }
+  100% { opacity: 0;    transform: scale(1.80); }
+}
+
+.revival-moment[data-phase="blooming"] .revival-ring,
+.revival-moment[data-phase="ticking"]  .revival-ring {
+  animation: revival-ring-expand var(--motion-spring-duration)
+             var(--motion-spring-easing) forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * PHASE 3 — COUNTER TICK
+ * Number springs up ~18% overshoot, settles in --duration-normal.
+ * Color flashes --clr-amber-400 for 200ms then returns to base.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes revival-count-tick {
+  0%   { transform: translateY(0)    scale(1.00); }
+  25%  { transform: translateY(-5px) scale(1.18); }
+  60%  { transform: translateY(1px)  scale(0.97); }
+  85%  { transform: translateY(-1px) scale(1.02); }
+  100% { transform: translateY(0)    scale(1.00); }
+}
+
+@keyframes revival-count-flash {
+  0%   { color: color-mix(in oklch, var(--mood-accent) 85%, transparent); }
+  25%  { color: var(--clr-amber-400); }
+  100% { color: color-mix(in oklch, var(--mood-accent) 85%, transparent); }
+}
+
+.revival-count-number[data-ticking] {
+  display: inline-block;
+  animation:
+    revival-count-tick  var(--duration-normal)     var(--motion-spring-easing) forwards,
+    revival-count-flash var(--motion-flow-duration) var(--motion-flow-easing)  forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * FAILURE SHAKE
+ * Horizontal shake on button when API fails. 150ms SNAP profile.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes revival-shake {
+  0%, 100% { transform: translateX(0);   }
+  20%       { transform: translateX(-3px); }
+  40%       { transform: translateX(3px);  }
+  60%       { transform: translateX(-2px); }
+  80%       { transform: translateX(2px);  }
+}
+
+[data-revival-phase="error"] {
+  animation: revival-shake var(--motion-snap-duration) var(--motion-snap-easing) forwards !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * REVIVAL BADGE  — "You revived this" slides up from below
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes badge-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
+}
+
+.revival-badge[data-visible] {
+  animation: badge-slide-up var(--motion-flow-duration)
+             var(--motion-flow-easing) forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * SYMPATHETIC ECHO — adjacent cards echo a revival from another reader
+ * ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes sympathetic-echo {
+  0%   { box-shadow: 0 0 0 0   oklch(0.70 0.18 85 / 0.00); }
+  30%  { box-shadow: 0 0 0 6px oklch(0.80 0.20 85 / 0.12); }
+  100% { box-shadow: 0 0 0 14px oklch(0.70 0.18 85 / 0.00); }
+}
+
+/* data-sympathetic toggled by RevivalMoment IIFE on SSE revival event */
+.revival-moment[data-sympathetic] {
+  animation: sympathetic-echo var(--duration-bloom) ease-out forwards;
+}
+
+/* Legacy: revival-stage targets for heartbeat SSE bloom (revival-engine.ts) */
+.revival-stage[data-sympathetic] {
+  animation: sympathetic-echo var(--duration-bloom) ease-out forwards;
+}
+
+/* Scale spring — article breathes on full revival (kept for SSE path) */
 @keyframes revival-scale-spring {
   0%   { transform: scale(1);     }
   25%  { transform: scale(1.003); }
@@ -26,80 +145,33 @@
   100% { transform: scale(1);     }
 }
 
-/* data-reviving is set by RevivalMoment.astro trigger() */
 .revival-stage[data-reviving] {
-  animation: revival-scale-spring var(--motion-spring-duration, 800ms)
-             var(--motion-spring-easing, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+  animation: revival-scale-spring var(--motion-spring-duration)
+             var(--motion-spring-easing) forwards;
 }
 
-/* Progressive enhancement: true spring timing when supported */
-@supports (animation-timing-function: linear(0, 1)) {
-  .revival-stage[data-reviving] {
-    animation-timing-function: var(--motion-spring-easing);
-  }
-}
-
-/* ── Radial glow bloom — oklch warm amber ── */
-
-@keyframes revival-bloom {
-  0%   { box-shadow: 0 0  0px  0px oklch(0.7 0.20 85 / 0.00); }
-  20%  { box-shadow: 0 0 24px  8px oklch(0.9 0.25 85 / 0.35); }
-  55%  { box-shadow: 0 0 48px 20px oklch(0.9 0.25 85 / 0.50); }
-  100% { box-shadow: 0 0  0px  0px oklch(0.7 0.20 85 / 0.00); }
-}
-
-.revival-stage[data-reviving] .revival-ring {
-  animation: revival-bloom var(--duration-bloom, 1200ms)
-             var(--motion-drift-easing, cubic-bezier(0.4, 0, 1, 1)) forwards;
-}
-
-/* ── Revival counter tick spring ── */
-
-@keyframes revival-count-tick {
-  0%   { transform: translateY(0)    scale(1);    }
-  25%  { transform: translateY(-5px) scale(1.18); }
-  60%  { transform: translateY(1px)  scale(0.97); }
-  85%  { transform: translateY(-1px) scale(1.02); }
-  100% { transform: translateY(0)    scale(1);    }
-}
-
-.revival-counter[data-ticking] {
-  display: inline-block;
-  animation: revival-count-tick var(--motion-ceremony-duration, 600ms)
-             var(--motion-spring-easing, cubic-bezier(0.34,1.56,0.64,1)) forwards;
-}
-
-/* ── Revival badge: "Kept alive ✦" slides up ── */
-
-@keyframes badge-slide-up {
-  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-.revival-badge[data-visible] {
-  animation: badge-slide-up var(--motion-flow-duration, 200ms)
-             var(--motion-flow-easing, cubic-bezier(0.4, 0, 0.2, 1)) forwards;
-}
-
-/* ── Sympathetic bloom — adjacent cards echo the revival ── */
-
-@keyframes sympathetic-echo {
-  0%   { box-shadow: 0 0 0 0   oklch(0.7 0.18 85 / 0.00); }
-  30%  { box-shadow: 0 0 0 6px oklch(0.8 0.20 85 / 0.12); }
-  100% { box-shadow: 0 0 0 var(--sympathetic-ring-spread, 14px) oklch(0.7 0.18 85 / 0.00); }
-}
-
-.revival-stage[data-sympathetic] {
-  animation: sympathetic-echo var(--sympathetic-duration, 1000ms) ease-out forwards;
-}
-
-/* ── Reduced motion: all durations → 0ms (motion.css handles the vars) ── */
-/* The revival badge is the sole feedback in reduced-motion mode.          */
+/* ═══════════════════════════════════════════════════════════════════
+ * REDUCED MOTION — all animations collapse to instant state changes.
+ * The revival badge remains the sole non-animated feedback signal.
+ * ═══════════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
-  .revival-stage[data-reviving]              { animation: none; }
-  .revival-stage[data-reviving] .revival-ring { animation: none; display: none; }
-  .revival-counter[data-ticking]             { animation: none; }
-  .revival-badge[data-visible]               { animation: none; opacity: 1; transform: translateX(-50%) translateY(0); }
-  .revival-stage[data-sympathetic]           { animation: none; }
+  .revival-moment[data-phase],
+  .revival-moment[data-phase] .revival-ring { animation: none; }
+
+  [data-revival-phase],
+  [data-revival-phase="pressing"],
+  [data-revival-phase="error"]              { animation: none !important; }
+
+  .revival-count-number[data-ticking]       { animation: none; }
+
+  .revival-badge[data-visible] {
+    animation: none;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .revival-stage[data-reviving],
+  .revival-stage[data-sympathetic],
+  .revival-moment[data-sympathetic]         { animation: none; }
 }

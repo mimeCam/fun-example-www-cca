@@ -1,57 +1,45 @@
 ---
 // src/components/BloomParticles.astro
-// CSS-only particle burst for Revival Bloom.
-// 6 spans with unique angle/distance via CSS custom properties.
-// Hidden by default; animated when parent .decay-card gets .blooming class.
-// No JS. No canvas. Pure CSS transforms.
+// CSS-only particle burst for Revival Bloom — radial polar spawn.
+//
+// 14 spans at evenly-distributed angles. Each span has:
+//   --angle  per-particle rotation (0–360°, equal steps)
+//   --delay  stagger offset (0–78ms, 6ms per particle)
+//
+// Geometry: rotate(--angle) translateY(-48px) — pure polar coordinates.
+// No canvas. No JS. No x/y pre-computation.
+//
+// Triggered by .decay-card.blooming class (added by wireKeepButtons in KeepButton.astro).
+// Easing: --motion-spring-easing (CSS linear() from motion.css — Baseline 2024).
+//
+// Architecture: Mike Koch (polar spawn spec) · UX: Tanya §3 (bloom ceremony)
 
-const PARTICLE_COUNT = 6;
-const BASE_DISTANCE = 48;
-const DISTANCE_VARIANCE = 24;
+const PARTICLE_COUNT = 14;
+const STAGGER_MS     = 6;   // delay per particle (total spread = 14 × 6 = 84ms)
 
-interface ParticleData {
-  angle: number;
-  distance: number;
-  delay: number;
-}
-
-function buildParticles(count: number): ParticleData[] {
-  const step = 360 / count;
+function buildParticles(count: number) {
   return Array.from({ length: count }, (_, i) => ({
-    angle: step * i + (i % 2 === 0 ? 10 : -10),
-    distance: BASE_DISTANCE + (i % 3) * DISTANCE_VARIANCE / 2,
-    delay: i * 35,
+    angle: (i / count) * 360,
+    delay: i * STAGGER_MS,
   }));
-}
-
-function toXY(angle: number, dist: number) {
-  const rad = (angle * Math.PI) / 180;
-  const x = Math.round(Math.cos(rad) * dist);
-  const y = Math.round(Math.sin(rad) * dist);
-  return { x, y };
 }
 
 const particles = buildParticles(PARTICLE_COUNT);
 ---
 
 <div class="bloom-particles" aria-hidden="true">
-  {particles.map((p) => {
-    const { x, y } = toXY(p.angle, p.distance);
-    return (
-      <span
-        class="bloom-particle"
-        style={`--particle-x:${x}px;--particle-y:${y}px;--particle-delay:${p.delay}ms`}
-      />
-    );
-  })}
+  {particles.map((p) => (
+    <span
+      class="bloom-particle"
+      style={`--angle:${p.angle}deg;--delay:${p.delay}ms`}
+    />
+  ))}
 </div>
-<span class="bloom-ring" aria-hidden="true" />
+<span class="bloom-ring"  aria-hidden="true" />
 <span class="bloom-flash" aria-hidden="true" />
 
 <style>
-  /* ── Bloom origin — anchored near KeepButton in the card footer ── */
-  /* All bloom elements are absolute children of .decay-card          */
-  /* (position: relative; overflow: hidden ensures containment)       */
+  /* ── Origin: anchored to the KeepButton corner of .decay-card ───────── */
   .bloom-particles {
     position: absolute;
     bottom: 24px;
@@ -62,7 +50,9 @@ const particles = buildParticles(PARTICLE_COUNT);
     z-index: var(--z-shimmer, 2);
   }
 
-  /* ── Particles — invisible at rest ────────────────────────────── */
+  /* ── Particles — invisible at rest ──────────────────────────────────── */
+  /* transform-origin: 0 0 rotates around the bloom-particles origin.      */
+  /* rotate(--angle) translateY(-48px) is polar → Cartesian via CSS.       */
   .bloom-particle {
     position: absolute;
     top: 0;
@@ -72,10 +62,11 @@ const particles = buildParticles(PARTICLE_COUNT);
     border-radius: 50%;
     background: var(--atm-bloom-color, var(--keep-accent, oklch(80% 0.22 80)));
     opacity: 0;
-    transform: translate(0, 0) scale(0);
+    transform: rotate(var(--angle, 0deg)) translateY(0) scale(0);
+    transform-origin: 0 0;
   }
 
-  /* ── Bloom ring — centered on the particle origin ──────────────── */
+  /* ── Bloom ring — centered on the particle origin ───────────────────── */
   .bloom-ring {
     position: absolute;
     bottom: 16px;
@@ -87,12 +78,10 @@ const particles = buildParticles(PARTICLE_COUNT);
     opacity: 0;
     pointer-events: none;
     z-index: var(--z-shimmer, 2);
-    /* Center the ring on the button: translate 50% both axes */
     transform: translate(50%, 50%) scale(0.2);
   }
 
-  /* ── Bloom flash — warm breath over the whole card ─────────────── */
-  /* Not a sharp flash — a slow warm exhale (Tanya §3 Phase 3)       */
+  /* ── Bloom flash — warm exhale over the whole card ──────────────────── */
   .bloom-flash {
     position: absolute;
     inset: 0;
@@ -103,22 +92,19 @@ const particles = buildParticles(PARTICLE_COUNT);
     z-index: var(--z-shimmer, 2);
   }
 
-  /* ══════════════════════════════════════════════════════════════
-   * BLOOMING STATE — fires when .decay-card gets .blooming class
-   * JS adds the class; motion.css zeros durations for reduced-motion
-   * ══════════════════════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════════════════════════════
+   * BLOOMING STATE — fires when .decay-card receives .blooming class.
+   * Added by wireKeepButtons() in KeepButton.astro for feed-card buttons.
+   * ══════════════════════════════════════════════════════════════════════ */
 
-  /* Particles burst outward, scale 0→1→0, staggered */
   .decay-card.blooming .bloom-particle {
     animation:
-      bloom-burst
+      bloom-fly
       var(--motion-ceremony-duration, 600ms)
-      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1))
-      forwards;
-    animation-delay: var(--particle-delay, 0ms);
+      var(--motion-spring-easing, cubic-bezier(0.34, 1.56, 0.64, 1))
+      var(--delay, 0ms) forwards;
   }
 
-  /* Ring expands with spring overshoot, then fades */
   .decay-card.blooming .bloom-ring {
     animation:
       bloom-ring-expand
@@ -127,7 +113,6 @@ const particles = buildParticles(PARTICLE_COUNT);
       forwards;
   }
 
-  /* Warm breath fades over 600ms — not a flash, a glow */
   .decay-card.blooming .bloom-flash {
     animation:
       bloom-warm-breath
@@ -136,40 +121,30 @@ const particles = buildParticles(PARTICLE_COUNT);
       forwards;
   }
 
-  /* ── Keyframes ──────────────────────────────────────────────── */
+  /* ── Keyframes ──────────────────────────────────────────────────────── */
 
-  @keyframes bloom-burst {
-    0%   { opacity: 0.9; transform: translate(0, 0) scale(1); }
-    60%  {
-      opacity: 0.6;
-      transform:
-        translate(
-          calc(var(--particle-x) * 0.8),
-          calc(var(--particle-y) * 0.8)
-        ) scale(0.7);
-    }
-    100% {
-      opacity: 0;
-      transform:
-        translate(var(--particle-x), var(--particle-y)) scale(0);
-    }
+  /* Polar flight: rotate sets direction; translateY sets distance.
+     transform-origin: 0 0 keeps the rotation center at the bloom origin. */
+  @keyframes bloom-fly {
+    0%   { opacity: 0.9; transform: rotate(var(--angle, 0deg)) translateY(0)     scale(1.0); }
+    60%  { opacity: 0.6; transform: rotate(var(--angle, 0deg)) translateY(-32px) scale(0.6); }
+    100% { opacity: 0;   transform: rotate(var(--angle, 0deg)) translateY(-48px) scale(0);   }
   }
 
   @keyframes bloom-ring-expand {
-    0%   { opacity: 0.75; transform: translate(50%, 50%) scale(0.2); }
-    55%  { opacity: 0.40; transform: translate(50%, 50%) scale(1.1); }
-    100% { opacity: 0;    transform: translate(50%, 50%) scale(1.8); }
+    0%   { opacity: 0.75; transform: translate(50%, 50%) scale(0.20); }
+    55%  { opacity: 0.40; transform: translate(50%, 50%) scale(1.10); }
+    100% { opacity: 0;    transform: translate(50%, 50%) scale(1.80); }
   }
 
-  /* Warm amber card glow — 0.15 opacity peak, then fade (Tanya §3) */
+  /* Warm amber card glow — 0.15 opacity peak, slow fade (Tanya §3 Phase 2) */
   @keyframes bloom-warm-breath {
     0%   { opacity: 0.15; }
-    100% { opacity: 0; }
+    100% { opacity: 0;    }
   }
 
-  /* Reduced-motion: hide all bloom elements entirely (Mike §6, Tanya §8).
-     motion.css zeroes --motion-* durations to 0ms, but particles that
-     rely on JS-added .blooming class are hidden here for safety.         */
+  /* Reduced-motion: hide all bloom elements entirely.
+     No flashes, no particles, no rings — counter tick is the only feedback. */
   @media (prefers-reduced-motion: reduce) {
     .bloom-particles,
     .bloom-ring,

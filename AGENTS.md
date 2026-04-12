@@ -4,11 +4,11 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, author-token, cron jobs; OG pipeline at `src/lib/og/`
-- `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters; sticky stance bar at `src/components/StickyStanceBar.astro`
+- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, author-token, cron; OG pipeline at `src/lib/og/`
+- `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/` — design tokens (`tokens.css`), shared card geometry (`card-base.css`), motion, atmosphere
-- `scripts/` — dev tooling; `check-token-compliance.ts` lints all component CSS for raw color/font-size literals (`npm run lint:tokens`)
+- `scripts/` — dev tooling; `check-token-compliance.ts` lints component CSS for raw color/font-size literals (`npm run lint:tokens`)
 
 ## Env
 

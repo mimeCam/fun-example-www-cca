@@ -5,6 +5,9 @@
 // SSR: reads initial count and injects it as data attr (no flicker, no "0" flash).
 // Client: revival-counter.ts subscribes to /api/heartbeat and animates via odometer.
 //
+// Spring tick: data-ticking attr on .revival-count-number triggers
+// revival-count-tick keyframe in revival-moment.css — set by RevivalMoment IIFE.
+//
 // Usage: place in blog/[slug].astro revival footer, pass slug + initialCount.
 // Credits: Mike (architecture), Tanya (UX spec §4.1), Paul Kim (revival loop mandate)
 
@@ -54,49 +57,57 @@ const showCount = initialCount > 0;
 <style>
   .revival-counter-root {
     text-align: center;
-    margin: 0.5rem 0 1rem;
+    margin: var(--space-2) 0 var(--space-4);
   }
 
+  /* Secondary label copy — steps back to let the number breathe */
   .revival-collective {
     margin: 0;
-    font-size: 0.82rem;
-    color: rgba(255, 255, 255, 0.45);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
     letter-spacing: 0.01em;
     min-height: 1.4em;
-    transition: color 400ms ease;
+    transition: color var(--motion-flow-duration) var(--motion-flow-easing);
   }
 
+  /* IBM Plex Mono for the count — numeric gravitas (Tanya §1, Mike token spec) */
   .revival-count-number {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: rgba(var(--mood-accent-rgb, 120,120,120), 0.85);
-    letter-spacing: -0.01em;
+    font-family: var(--font-mono);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    color: color-mix(in oklch, var(--mood-accent) 85%, transparent);
+    letter-spacing: var(--tracking-tight);
     display: inline-block;
     min-width: 1.5ch;
-    transition: color 300ms ease;
+    /* Transition: color during data-ticking flash is handled by revival-moment.css */
+    transition: color var(--motion-flow-duration) var(--motion-flow-easing);
   }
 
+  /* Zero state — ghost, not disabled */
   .revival-count-number--zero {
-    font-size: 0.82rem;
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.20);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-normal);
+    color: var(--text-disabled);
   }
 
   .revival-count-label {
-    font-size: 0.82rem;
-    color: rgba(255, 255, 255, 0.45);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
   }
 
-  /* Days banner — hidden by default, revealed by JS */
+  /* Days banner — hidden by default, revealed by revival-counter.ts */
   .days-banner {
-    font-size: 0.78rem;
-    color: rgba(var(--mood-accent-rgb, 140, 120, 80), 0.75);
-    letter-spacing: 0.02em;
+    font-size: var(--text-xs);
+    color: color-mix(in oklch, var(--mood-accent) 75%, transparent);
+    letter-spacing: var(--tracking-wide);
     min-height: 1.2em;
-    margin-top: 0.25rem;
+    margin-top: var(--space-1);
     opacity: 0;
     transform: translateY(4px);
-    transition: opacity 300ms ease, transform 300ms ease;
+    transition:
+      opacity   var(--motion-flow-duration) var(--motion-flow-easing),
+      transform var(--motion-flow-duration) var(--motion-flow-easing);
   }
 
   .days-banner--visible {
@@ -111,10 +122,10 @@ const showCount = initialCount > 0;
   const root = document.querySelector<HTMLElement>('.revival-counter-root');
   if (root) {
     initRevivalCounter({
-      slug: root.dataset.slug ?? '',
+      slug:         root.dataset.slug ?? '',
       initialCount: parseInt(root.dataset.initialCount ?? '0', 10),
-      decayFactor: parseFloat(root.dataset.decayFactor ?? '0'),
-      lifespan: parseInt(root.dataset.lifespan ?? '365', 10),
+      decayFactor:  parseFloat(root.dataset.decayFactor ?? '0'),
+      lifespan:     parseInt(root.dataset.lifespan ?? '365', 10),
     });
   }
 </script>
