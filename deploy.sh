@@ -4,6 +4,39 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v79 — Audit Download API + AuditReceipt DER Hex + Chain Integrity (2026-04-12)
+#   Sprint: Conviction audit page gains cryptographic proof download endpoints and
+#     two new inline verification surfaces — raw DER hex dump and real-time chain
+#     integrity check. Pure SSR/API polish sprint — zero infrastructure changes.
+#   New files:
+#     src/pages/api/audit-download/[slug].ts — NEW: serve proof files for download;
+#       GET /api/audit-download/{slug}?type=tsr → DER bytes (application/timestamp-reply,
+#       Content-Disposition attachment conviction-{slug}.tsr, immutable Cache-Control);
+#       GET /api/audit-download/{slug}?type=ots → OTS blob (application/octet-stream,
+#       stale-while-revalidate); reads from existing getTstForSeal + getOtsProof;
+#       no new DB tables, no new volumes, no new npm packages.
+#   Modified files:
+#     src/lib/audit-verifier.ts — derHexLines(base64Token): formats RFC 3161 DER
+#       token as hex lines (16 bytes/row), returns [] on decode failure (graceful);
+#       checkChainIntegrity(entry): recomputes SHA-256 chain hash from stored fields
+#       using Node built-in crypto — returns bool (true = intact); onboarding_dismiss
+#       event type added to EVENT_LABEL map.
+#     src/components/AuditReceipt.astro — two new props: derHexLines (string[]|null)
+#       and chainIntegrityOk (boolean|null); chain integrity indicator banner (●/✗,
+#       green/red styling); download button row (↓ .tsr / ↓ .ots links with download
+#       attr); DER hex dump <details> block with byte-count header; openssl verify
+#       command now wrapped in verify-cmd-wrapper with copy-to-clipboard button
+#       (navigator.clipboard, data-copied toggle, 1500ms reset); all new selectors
+#       fully token-driven (zero hardcoded hex/rgb).
+#     src/pages/audit/[slug].astro — imports derHexLines + checkChainIntegrity from
+#       audit-verifier; getSealEntry import consolidated (no duplicate import);
+#       tstDerHexLines and chainOk computed SSR-side; both passed as props to
+#       AuditReceipt; zero new DB queries (free-rides existing getSealEntry call).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v78 — Phase 3.5 Notarize Moment (2026-04-12)
 #   Sprint: Cinematic seal ceremony gains a Phase 3.5 (NOTARIZE) interstitial
 #     between lock (POST resolves) and receipt (phase 4). Pure UIX/animation

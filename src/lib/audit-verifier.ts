@@ -6,6 +6,7 @@
 //
 // Credits: Mike (architecture spec — Conviction Audit Trail napkin plan)
 
+import { createHash } from 'crypto';
 import { getEntriesForSlug, getSealEntry, getAnchorData } from './conviction-ledger';
 import type { LedgerEntry, LedgerEventType } from './conviction-ledger';
 
@@ -44,11 +45,12 @@ export interface AuditPayload {
 // ---------------------------------------------------------------------------
 
 const EVENT_LABEL: Record<LedgerEventType, string> = {
-  seal:          '🔒 Sealed',
-  revival:       '💚 Revival',
-  death:         '💀 Death',
-  resurrection:  '🌱 Resurrection',
-  verdict:       '⚖️ Verdict',
+  seal:               '🔒 Sealed',
+  revival:            '💚 Revival',
+  death:              '💀 Death',
+  resurrection:       '🌱 Resurrection',
+  verdict:            '⚖️ Verdict',
+  onboarding_dismiss: '· Onboarding dismissed',
 };
 
 /** Build the openssl verify command shown to power users. */
@@ -102,4 +104,38 @@ export function assembleAuditPayload(slug: string, postTitle: string): AuditPayl
 /** Wrap a DB read that may fail during build (DB not yet seeded). */
 function safeRead<T>(fn: () => T, fallback: T): T {
   try { return fn(); } catch { return fallback; }
+}
+
+// ---------------------------------------------------------------------------
+// DER hex display — raw token bytes formatted for human verification
+// ---------------------------------------------------------------------------
+
+/**
+ * Format a base64-encoded DER token as hex lines, 16 bytes per line.
+ * Returns an empty array on decode failure (graceful — never throws).
+ */
+export function derHexLines(base64Token: string): string[] {
+  try {
+    const buf = Buffer.from(base64Token, 'base64');
+    const lines: string[] = [];
+    for (let i = 0; i < buf.length; i += 16) {
+      const chunk = buf.slice(i, i + 16);
+      lines.push([...chunk].map(b => b.toString(16).padStart(2, '0')).join(' '));
+    }
+    return lines;
+  } catch { return []; }
+}
+
+// ---------------------------------------------------------------------------
+// Chain integrity — tamper check at render time
+// ---------------------------------------------------------------------------
+
+/**
+ * Recompute the chain hash from stored fields and compare to the stored hash.
+ * True = chain is intact. False = fields were tampered post-insert.
+ * Uses the same formula as conviction-ledger.ts computeHash().
+ */
+export function checkChainIntegrity(entry: LedgerEntry): boolean {
+  const raw = `${entry.post_slug}:${entry.event_type}:${entry.conviction_score ?? ''}:${entry.timestamp}:${entry.prev_hash}`;
+  return createHash('sha256').update(raw).digest('hex') === entry.hash;
 }

@@ -20,9 +20,19 @@ interface Props {
   anchorVerification?: AnchorVerification | null;
   tstData?:           TstData | null;
   otsData?: { status: string; blockHeight?: number; blockTime?: number; calendarUrl?: string } | null;
+  derHexLines?:       string[] | null;
+  chainIntegrityOk?:  boolean | null;
 }
 
-const { seal, postTitle, anchorVerification = null, tstData = null, otsData = null } = Astro.props;
+const {
+  seal,
+  postTitle,
+  anchorVerification  = null,
+  tstData             = null,
+  otsData             = null,
+  derHexLines         = null,
+  chainIntegrityOk    = null,
+} = Astro.props;
 const tstVerification = tstData ? await verifyToken(tstData.tst_token) : null;
 
 const ANCHOR_BADGE: Record<string, { label: string; cls: string }> = {
@@ -131,6 +141,49 @@ function fmtDate(ts: number): string {
         </div>
       )}
 
+      <!-- Chain integrity indicator — real-time tamper check -->
+      {chainIntegrityOk !== null && (
+        <div class:list={['receipt-chain-status', chainIntegrityOk ? 'receipt-chain-status--ok' : 'receipt-chain-status--broken']}>
+          <span class="chain-dot" aria-hidden="true">{chainIntegrityOk ? '●' : '✗'}</span>
+          {chainIntegrityOk
+            ? 'Chain hash verified — record intact'
+            : 'Chain hash mismatch — this record may have been tampered with'}
+        </div>
+      )}
+
+      <!-- Download buttons — .tsr and .ots file downloads -->
+      <div class="receipt-downloads">
+        {tstData && (
+          <a
+            href={`/api/audit-download/${seal.slug}?type=tsr`}
+            class="receipt-dl-btn"
+            download={`conviction-${seal.slug}.tsr`}
+          >↓ conviction-{seal.slug}.tsr</a>
+        )}
+        {otsData && otsData.status !== 'none' && (
+          <a
+            href={`/api/audit-download/${seal.slug}?type=ots`}
+            class="receipt-dl-btn"
+            download={`conviction-${seal.slug}.ots`}
+          >↓ conviction-{seal.slug}.ots</a>
+        )}
+      </div>
+
+      <!-- DER hex dump — raw RFC 3161 token bytes for offline verification -->
+      {derHexLines && derHexLines.length > 0 && (
+        <details class="receipt-verify">
+          <summary class="receipt-verify-toggle">
+            Raw DER bytes ({derHexLines.length * 16 - (16 - derHexLines[derHexLines.length - 1].split(' ').length)} bytes total)
+          </summary>
+          <div class="receipt-verify-body">
+            <p class="verify-explain">
+              RFC 3161 TimeStampToken — raw DER, 16 bytes per row. Save as <code>.tsr</code> for offline verification.
+            </p>
+            <pre class="verify-cmd verify-cmd--hex"><code>{derHexLines.join('\n')}</code></pre>
+          </div>
+        </details>
+      )}
+
       <!-- Verify command — native <details>, zero JS -->
       <details class="receipt-verify">
         <summary class="receipt-verify-toggle">
@@ -146,7 +199,18 @@ function fmtDate(ts: number): string {
               <p class="verify-explain" style="margin-top:0.65rem">
                 RFC 3161 verification (public — no secret needed):
               </p>
-              <pre class="verify-cmd"><code>{"echo '" + tstData.tst_token + "' \\\n  | base64 -d > token.tsr\nopenssl ts -verify -in token.tsr \\\n  -data <(echo -n \"" + seal.slug + ":" + seal.score + ":" + seal.sealedAt + "\") \\\n  -CAfile freetsa-ca.pem"}</code></pre>
+              <div class="verify-cmd-wrapper">
+                <pre class="verify-cmd verify-cmd--copyable" id="openssl-cmd"><code>{`echo '${tstData.tst_token}' \\\n  | base64 -d > conviction-${seal.slug}.tsr\nopenssl ts -verify \\\n  -in conviction-${seal.slug}.tsr \\\n  -data <(echo -n "${seal.slug}:${seal.score}:${seal.sealedAt}") \\\n  -CAfile freetsa.crt`}</code></pre>
+                <button
+                  class="verify-copy-btn"
+                  data-copied="false"
+                  onclick={`(function(b){navigator.clipboard.writeText(document.getElementById('openssl-cmd').textContent||'').then(()=>{b.dataset.copied='true';setTimeout(()=>{b.dataset.copied='false'},1500)}).catch(()=>{});})(this)`}
+                  aria-label="Copy openssl command to clipboard"
+                >
+                  <span class="copy-label-default">Copy command</span>
+                  <span class="copy-label-done">Copied ✓</span>
+                </button>
+              </div>
               <p class="verify-explain verify-explain--note">
                 Anyone can run this without any private key. The TSA cert is at
                 <a href="https://freetsa.org/files/cacert.pem" target="_blank" rel="noopener" class="verify-link">freetsa.org/files/cacert.pem</a>.
@@ -430,6 +494,103 @@ function fmtDate(ts: number): string {
     border: 1px dashed rgba(245, 166, 35, 0.25);
     color: rgba(245, 166, 35, 0.55);
   }
+
+  /* ── Chain integrity indicator ── */
+  .receipt-chain-status {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .receipt-chain-status--ok {
+    background: rgba(34, 197, 94, 0.07);
+    border: 1px solid rgba(34, 197, 94, 0.20);
+    color: #52C878;
+  }
+
+  .receipt-chain-status--broken {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.30);
+    color: #ef4444;
+  }
+
+  .chain-dot { font-size: 0.55rem; line-height: 1; }
+
+  /* ── Download buttons ── */
+  .receipt-downloads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .receipt-dl-btn {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.38);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 4px;
+    padding: 0.3rem 0.65rem;
+    text-decoration: none;
+    transition: color 120ms ease, border-color 120ms ease;
+    white-space: nowrap;
+  }
+
+  .receipt-dl-btn:hover {
+    color: rgba(245, 166, 35, 0.80);
+    border-color: rgba(245, 166, 35, 0.25);
+  }
+
+  /* ── DER hex dump ── */
+  .verify-cmd--hex code {
+    font-size: 0.62rem;
+    line-height: 1.8;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  /* ── Copy button for openssl command ── */
+  .verify-cmd-wrapper {
+    position: relative;
+  }
+
+  .verify-copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.62rem;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
+    line-height: 1;
+  }
+
+  .verify-copy-btn:hover {
+    color: rgba(255, 255, 255, 0.55);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  /* Snap transition per motion.css SNAP profile (120ms) */
+  .copy-label-default,
+  .copy-label-done { transition: opacity 120ms ease; }
+
+  .verify-copy-btn[data-copied="false"] .copy-label-default { opacity: 1; }
+  .verify-copy-btn[data-copied="false"] .copy-label-done    { opacity: 0; position: absolute; }
+  .verify-copy-btn[data-copied="true"]  .copy-label-default { opacity: 0; position: absolute; }
+  .verify-copy-btn[data-copied="true"]  .copy-label-done    { opacity: 1; color: #52C878; }
 
   /* ── Mobile ── */
   @media (max-width: 640px) {

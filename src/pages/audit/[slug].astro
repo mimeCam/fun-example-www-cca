@@ -14,15 +14,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import AuditReceipt  from '../../components/AuditReceipt.astro';
 import TrustBadge    from '../../components/TrustBadge.astro';
 import ConvictionTimeline from '../../components/ConvictionTimeline.astro';
-import { assembleAuditPayload } from '../../lib/audit-verifier';
+import { assembleAuditPayload, derHexLines, checkChainIntegrity } from '../../lib/audit-verifier';
 import { getVerdictDisplay }    from '../../lib/verdict-display';
 import AuditVerdictPanel        from '../../components/AuditVerdictPanel.astro';
 import { verifyAnchor }         from '../../lib/anchor-verifier';
 import { getTstForSeal }        from '../../lib/timestamp-store';
-import { getOtsProof }          from '../../lib/conviction-ledger';
+import { getOtsProof, getSealEntry } from '../../lib/conviction-ledger';
 import { verify as otsVerify }  from '../../lib/ots-verifier';
 import { hashContent }          from '../../lib/rfc3161-client';
-import { getSealEntry }         from '../../lib/conviction-ledger';
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect('/404');
@@ -53,6 +52,13 @@ async function resolveOtsData() {
   return otsVerify(otsProof.proof, original).catch(() => ({ status: 'unverifiable' as const }));
 }
 const otsData = payload.seal ? await resolveOtsData() : null;
+
+// DER hex lines for offline verification display (null if no TST available).
+const tstDerHexLines = tstData ? derHexLines(tstData.tst_token) : null;
+
+// Chain integrity — recompute hash from stored fields; advisory warning on mismatch.
+const sealEntry      = payload.seal ? getSealEntry(slug) : null;
+const chainOk        = sealEntry ? checkChainIntegrity(sealEntry) : null;
 
 // Verdict display data — assembled from existing modules, no new DB queries.
 const verdictDisplay = getVerdictDisplay(slug);
@@ -108,6 +114,8 @@ const pageDescription = payload.seal
       anchorVerification={anchorVerification}
       tstData={tstData}
       otsData={otsData}
+      derHexLines={tstDerHexLines}
+      chainIntegrityOk={chainOk}
     />
 
     <!-- Verdict outcome — completes the conviction → verdict → score chain -->

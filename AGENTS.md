@@ -13,5 +13,4 @@
 
 - [wip] Seal posts via `/admin` to activate TrustBadge + batting average
 - [wip] Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
-- [wip] Offline-verifiable `/audit/[slug]` page with raw DER bytes + openssl commands
 - [wip] OTS observability cron + alerting
