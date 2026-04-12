@@ -4,6 +4,60 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v106 — Author Profile Page + ConvictionStrip (2026-04-12)
+#   Sprint: Author profile page fully overhauled around the batting-average
+#     killer feature; ConvictionStrip Zone 1.5 surfaces site-wide track record
+#     to first-time visitors. CSS `rgba(var())` anti-patterns eliminated across
+#     PostBadge, RevivalBadge, and BaseLayout (P0 token compliance fixes).
+#     Nav rationalized to 3 primary links (posts · verdict · leaderboard);
+#     community + now demoted to overflow pill + footer. Pure UIX — zero infra
+#     changes.
+#   New files:
+#     src/components/AuthorProfileHero.astro — animated SVG batting-average
+#       gauge (0 → pct% RAF arc, frame-scheduler IMMEDIATE bucket); tier badge
+#       (bronze/silver/gold/diamond); win/loss/pending tally chips; locked state
+#       (< MIN_VERDICTS) with motivational copy; fully token-driven.
+#     src/components/AuthorConvictionTimeline.astro — chronological sealed-
+#       conviction log with verdict outcome icons, score, dates; E2 hover lift;
+#       pagination (page/totalPages props); empty state copy; Intl.DateTimeFormat
+#       formatting; no DB access (receives slice from page orchestrator).
+#     src/components/ConvictionStrip.astro — Zone 1.5 compact strip between
+#       LandingHero and river feed; cold state (< MIN_VERDICTS) with locked-icon
+#       explanation; live state with fill bar + percentage + tally + link to full
+#       author record; --shadow-conviction-strip elevation; static bar width via
+#       inline CSS custom property (no RAF — gauge animation lives in Hero).
+#     src/styles/author-profile.css — single-source-of-truth stylesheet for
+#       /author/[slug] layout: hero section, gauge SVG, tier badge, tally chips,
+#       timeline table, pagination controls; zero raw hex/rgba — fully token-driven;
+#       prefers-reduced-motion guard cancels gauge animation.
+#   Modified files:
+#     src/pages/author/[slug].astro — full rewrite as AuthorProfileHero +
+#       AuthorConvictionTimeline orchestrator; getBattingAverageResult() replaces
+#       getAuthorStats(); newest-first pagination (PAGE_SIZE=20, ?p=N); 404
+#       redirect for unknown slugs; SSR required (prerender=false).
+#     src/components/PostBadge.astro — rgba(var(--mood-accent-rgb)) pattern
+#       eliminated; background/border/box-shadow all migrated to
+#       color-mix(in oklch, var(--mood-accent) N%, transparent).
+#     src/components/RevivalBadge.astro — rgba(var(--mood-accent-rgb)) →
+#       color-mix(in oklch, var(--mood-accent) 40%, transparent).
+#     src/layouts/BaseLayout.astro — body::before gradient migrated from
+#       var(--mood-accent-glow, rgba()) to color-mix(in oklch, var(--mood-accent)
+#       4%, transparent); footer expanded from single "write" link to five-link
+#       <nav> (write · now · community · RSS · API); .site-footer__write →
+#       .site-footer__links + .site-footer__link.
+#     src/components/SiteNav.astro — nav primary links rationalized to posts ·
+#       verdict · leaderboard (3 max per Tanya §9.1); community + now demoted to
+#       overflow pill dropdown + footer; isOverflowActive updated.
+#     src/styles/tokens.css — --shadow-conviction-strip: 0 1px 0 var(--gold-border)
+#       + 0 8px 24px oklch(0.78 0.15 85 / 0.06) (E1-class, conviction-tinted,
+#       Tanya §8 gold hairline communicates earned status).
+#     AGENTS.md — Author Profile + ConvictionStrip logged under Completed.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v105).
+#
 # Architecture v105 — Seal Ceremony Component Consolidation Phase 1 (2026-04-12)
 #   Sprint: Phase unification refactor — seal state machine migrated from mixed
 #     numeric/string union (0|1|2|3|'notarize'|4) to clean string union
