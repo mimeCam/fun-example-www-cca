@@ -116,9 +116,9 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     height: 48px;
     padding: 0 1.5rem;
     gap: 1.25rem;
-    background: rgba(12, 12, 14, 0.75);
+    background: var(--surface-overlay);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   /* Site name / logo */
@@ -126,7 +126,7 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     font-size: 0.82rem;
     font-weight: 600;
     letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--text-primary);
     text-decoration: none;
     transition: opacity 120ms ease;
     flex-shrink: 0;
@@ -143,14 +143,14 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   .nav-link {
     font-size: 0.72rem;
     letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.38);
+    color: var(--text-tertiary);
     text-decoration: none;
     transition: color 150ms ease;
     padding-bottom: 2px;
     border-bottom: 2px solid transparent;
   }
 
-  .nav-link:hover { color: rgba(255, 255, 255, 0.7); }
+  .nav-link:hover { color: var(--text-secondary); }
 
   /* Active page: amber underline — conviction gold is the active signal */
   .nav-link--active,

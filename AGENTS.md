@@ -19,5 +19,4 @@
 
 ## WIP
 
-- **Nav surgery** — `SiteNav.astro` has raw `rgba()` values; replace with token aliases for nav backdrop, site-name, link text; implement 3-link + overflow pill.
-- **Conviction ceremony polish** — audit 5 ceremony phases against spec (grain accumulation, heartbeat BPM clock, bloom particles, verdict courtroom drama).
+- **Nav overflow pill** (P2) — collapse Community + overflows to `···` pill at 768 px — stub exists, not started.

@@ -25,10 +25,12 @@
   --clr-amber-500:   oklch(74%  0.170  58);   /* stance torn  — #f59e0b equiv  */
 
   /* ── Page Surface ──────────────────────────────────────────────────── */
-  --surface-base:    #0c0c0e;
-  --surface-raised:  rgba(255, 255, 255, 0.04);
-  --surface-hover:   rgba(255, 255, 255, 0.06);
-  --surface-overlay: rgba(12, 12, 14, 0.75);
+  --surface-base:       #0c0c0e;
+  --surface-inset:      rgba(0, 0, 0, 0.15);    /* recessed content well — textarea, confirm block */
+  --surface-inset-deep: rgba(0, 0, 0, 0.22);    /* deeply recessed — code blocks, hash display      */
+  --surface-raised:     rgba(255, 255, 255, 0.04);
+  --surface-hover:      rgba(255, 255, 255, 0.06);
+  --surface-overlay:    rgba(12, 12, 14, 0.75);
 
   /* ── Text Alpha Ramp (white-on-dark) ───────────────────────────────── */
   --text-primary:   rgba(255, 255, 255, 0.88);

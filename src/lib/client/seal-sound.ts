@@ -13,8 +13,8 @@ let ctx: AudioContext | null = null;
 // ── Preference ────────────────────────────────────────────────────────────────
 
 export function isSoundEnabled(): boolean {
-  try { return localStorage.getItem(STORAGE_KEY) === 'true'; }
-  catch { return false; }
+  try { return localStorage.getItem(STORAGE_KEY) !== 'false'; }
+  catch { return true; }  // default ON — author opted in by clicking Seal
 }
 
 export function setSoundEnabled(on: boolean): void {

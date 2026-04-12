@@ -13,7 +13,9 @@
 //
 // Credits: Mike (4-phase spec, capability token), Tanya (ceremony UX, motion contract)
 
-import SealReceipt from './SealReceipt.astro';
+import SealReceipt      from './SealReceipt.astro';
+import NotarizeStamp   from './NotarizeStamp.astro';
+import BloomParticles  from './BloomParticles.astro';
 
 interface Props {
   slug:        string;
@@ -135,44 +137,55 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
     <p class="sc-anchor-sub">Generating cryptographic proof. This may take a moment.</p>
   </div>
 
+  <!-- ── PHASE: NOTARIZE (3.5) ────────────────────────────────── -->
+  <!-- NotarizeStamp CSS fires on [data-seal-phase="notarize"] ancestor. -->
+  <!-- JS sets data-seal-phase="notarize" on the ceremony root.          -->
+  <div class="sc-phase sc-phase--notarize" aria-hidden="true" aria-live="polite">
+    <NotarizeStamp />
+  </div>
+
   <!-- ── PHASE: RECEIPT ─────────────────────────────────────────── -->
   <div class="sc-phase sc-phase--receipt" aria-hidden="true" data-receipt-phase>
     <!-- SealReceipt expects [data-seal-phase="4"] on an ancestor. -->
     <!-- JS sets data-seal-phase="4" on this wrapper when receipt begins. -->
     <SealReceipt />
+    <!-- Gold bloom burst fires when .seal-ceremony gains .blooming-receipt -->
+    <BloomParticles variant="receipt" />
   </div>
 
 </div>
 
 <script>
+  import {
+    initSealSound, playSealLock, playNotarizeChime, playReceiptReveal, playSealError,
+  } from '../lib/client/seal-sound';
+  import { hapticForEvent } from '../lib/client/seal-haptic';
+
   document.querySelectorAll<HTMLElement>('.seal-ceremony').forEach(initCeremony);
 
   function initCeremony(el: HTMLElement): void {
-    const slug       = el.dataset.slug!;
+    const slug = el.dataset.slug!;
     const authorSlug = el.dataset.author!;
-    let   score      = 5;
-    let   token      = '';
-
-    setupDots(el, (v) => { score = v; });
-
+    let score = 5;
+    let token = '';
+    // Initialise AudioContext on first gesture — satisfies autoplay policy
+    el.addEventListener('pointerdown', () => initSealSound(), { once: true });
+    setupDots(el, v => { score = v; });
     const noteEl = el.querySelector<HTMLTextAreaElement>('[data-note]')!;
     noteEl.addEventListener('input', () => toggleComposeCta(el, noteEl.value.trim()));
-
     el.querySelector('[data-compose-cta]')!.addEventListener('click', () =>
       onCompose(el, slug, authorSlug, score, noteEl.value.trim())
         .then(t => { token = t; })
-        .catch(err => showError(el, err.message))
+        .catch(err => showError(el, err.message)),
     );
-
     el.querySelector<HTMLInputElement>('[data-confirm-check]')!
-      .addEventListener('change', (e) => {
+      .addEventListener('change', e => {
         const btn = el.querySelector<HTMLButtonElement>('[data-confirm-cta]')!;
         btn.disabled = !(e.target as HTMLInputElement).checked;
       });
-
     el.querySelector('[data-confirm-cta]')!.addEventListener('click', () =>
       onConfirm(el, slug, authorSlug, score, noteEl.value.trim(), token)
-        .catch(err => showError(el, err.message))
+        .catch(err => showError(el, err.message)),
     );
   }
 
@@ -191,35 +204,46 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
 
   function syncDots(dots: NodeListOf<HTMLElement>, val: number): void {
     dots.forEach((d, i) => {
-      const active = i < val;
-      d.classList.toggle('is-filled', active);
-      d.setAttribute('aria-pressed', String(active));
+      d.classList.toggle('is-filled', i < val);
+      d.setAttribute('aria-pressed', String(i < val));
     });
   }
 
-  // ── CTA enable/disable ───────────────────────────────────────────
+  // ── CTA enable/disable ─────────────────────────────────────────
 
   function toggleComposeCta(el: HTMLElement, note: string): void {
     const btn = el.querySelector<HTMLButtonElement>('[data-compose-cta]')!;
     btn.disabled = note.length < 10;
   }
 
-  // ── Phase transitions ────────────────────────────────────────────
+  // ── Phase transitions ──────────────────────────────────────────
+  // SEAL_PHASE_MAP: data-seal-phase mirrors for notarize-stamp.css + SealReceipt.css
+
+  const SEAL_PHASE_MAP: Record<string, string> = { anchor: '3', notarize: 'notarize' };
 
   function setPhase(el: HTMLElement, phase: string): void {
     el.dataset.phase = phase;
+    const sp = SEAL_PHASE_MAP[phase];
+    if (sp) el.dataset.sealPhase = sp; else delete el.dataset.sealPhase;
     el.querySelectorAll<HTMLElement>('.sc-phase').forEach(p => {
-      p.setAttribute('aria-hidden', p.classList.contains(`sc-phase--${phase}`) ? 'false' : 'true');
+      p.setAttribute('aria-hidden', String(!p.classList.contains(`sc-phase--${phase}`)));
     });
   }
 
-  // ── Network calls ─────────────────────────────────────────────────
+  // ── Sound + haptic per phase ───────────────────────────────────
+
+  function playForPhase(phase: string): void {
+    if (phase === 'anchor')   { playSealLock();      hapticForEvent('LOCK');     }
+    if (phase === 'notarize') { playNotarizeChime(); hapticForEvent('NOTARIZE'); }
+    if (phase === 'receipt')  { playReceiptReveal(); hapticForEvent('RECEIPT');  }
+  }
+
+  // ── Network calls ──────────────────────────────────────────────
 
   async function fetchToken(postSlug: string, authorSlug: string): Promise<string> {
     const r = await fetch('/api/author-token', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ postSlug, authorSlug }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postSlug, authorSlug }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error ?? 'Token request failed');
@@ -227,20 +251,18 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
   }
 
   async function submitSeal(
-    slug: string, authorSlug: string,
-    score: number, note: string, token: string,
+    slug: string, authorSlug: string, score: number, note: string, token: string,
   ): Promise<Record<string, unknown>> {
     const r = await fetch('/api/seal-self', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ slug, authorSlug, score, authorNote: note, token }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, authorSlug, score, authorNote: note, token }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error ?? 'Seal failed');
     return data as Record<string, unknown>;
   }
 
-  // ── Phase handlers ─────────────────────────────────────────────────
+  // ── Phase handlers ─────────────────────────────────────────────
 
   async function onCompose(
     el: HTMLElement, slug: string, authorSlug: string, score: number, note: string,
@@ -250,15 +272,12 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
     const btn = el.querySelector<HTMLButtonElement>('[data-compose-cta]')!;
     btn.disabled = true;
     btn.classList.add('sc-cta--loading');
-
     const t = await fetchToken(slug, authorSlug).finally(() => {
       btn.disabled = false;
       btn.classList.remove('sc-cta--loading');
     });
-
-    // Populate confirm phase preview
     el.querySelector('[data-confirm-quote]')!.textContent = `"${note}"`;
-    el.querySelector('[data-confirm-score]')!.textContent  = String(score);
+    el.querySelector('[data-confirm-score]')!.textContent = String(score);
     setPhase(el, 'confirm');
     return t;
   }
@@ -269,41 +288,70 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
   ): Promise<void> {
     clearError(el);
     setPhase(el, 'anchor');
-
-    // Enforce 1800ms minimum — the weight of this action deserves ceremony time
+    playForPhase('anchor');
+    // 1800ms minimum — the weight of this action deserves ceremony time
     const [data] = await Promise.all([
       submitSeal(slug, authorSlug, score, note, token),
-      new Promise(r => setTimeout(r, 1800)),
+      new Promise<void>(r => setTimeout(r, 1800)),
     ]);
-
-    populateReceipt(el, data as Record<string, unknown>, slug);
-    const receiptPhase = el.querySelector<HTMLElement>('[data-receipt-phase]')!;
-    receiptPhase.dataset.sealPhase = '4'; // triggers SealReceipt.astro CSS
-    setPhase(el, 'receipt');
+    await runNotarize(el, data as Record<string, unknown>);
+    runReceipt(el, data as Record<string, unknown>, slug);
   }
 
-  // ── Receipt population ─────────────────────────────────────────────
+  // ── Phase 3.5: notarize ceremony ──────────────────────────────
+
+  async function runNotarize(el: HTMLElement, data: Record<string, unknown>): Promise<void> {
+    populateStamp(el, data);
+    setPhase(el, 'notarize');
+    playForPhase('notarize');
+    await new Promise<void>(r => setTimeout(r, 800));  // --notarize-pause-duration
+  }
+
+  function populateStamp(el: HTMLElement, data: Record<string, unknown>): void {
+    const d  = new Date(data.sealedAt as number);
+    const ts = d.toLocaleString('en-US',
+      { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    setText(el, '[data-ns-label]', data.tst_token ? 'NOTARIZED' : 'Anchoring locally…');
+    setText(el, '[data-ns-ts]', ts);
+    setText(el, '[data-ns-hash]', `${String(data.hash ?? '').slice(0, 32)}…`);
+    const timeEl = el.querySelector<HTMLTimeElement>('[data-ns-ts]');
+    if (timeEl) timeEl.dateTime = d.toISOString();
+  }
+
+  // ── Phase 4: receipt ───────────────────────────────────────────
+
+  function runReceipt(el: HTMLElement, data: Record<string, unknown>, slug: string): void {
+    populateReceipt(el, data, slug);
+    el.querySelector<HTMLElement>('[data-receipt-phase]')!.dataset.sealPhase = '4';
+    setPhase(el, 'receipt');
+    playForPhase('receipt');
+    triggerReceiptBloom(el);
+  }
+
+  function triggerReceiptBloom(el: HTMLElement): void {
+    el.classList.add('blooming-receipt');
+    setTimeout(() => el.classList.remove('blooming-receipt'), 800);
+  }
+
+  // ── Receipt population ─────────────────────────────────────────
 
   function populateReceipt(el: HTMLElement, data: Record<string, unknown>, slug: string): void {
-    const sealedAt = new Date((data.sealedAt as number)).toLocaleDateString(
+    const sealedAt = new Date(data.sealedAt as number).toLocaleDateString(
       'en-US', { month: 'short', day: 'numeric', year: 'numeric' },
     );
     setText(el, '[data-receipt-date]',  sealedAt);
     setText(el, '[data-receipt-score]', String(data.score ?? ''));
     setText(el, '[data-receipt-hash]',  String(data.hash ?? ''));
-
     const tstNote = data.tst_token
       ? `Anchored — token present (${String(data.tst_token).slice(0, 8)}…)`
       : 'Anchoring locally — OTS proof pending';
     setText(el, '[data-receipt-tst-note]', tstNote);
-
     if (data.anchorUrl) {
       const anchor = el.querySelector<HTMLAnchorElement>('[data-receipt-anchor]');
       const row    = el.querySelector<HTMLElement>('[data-receipt-anchor-row]');
       if (anchor) anchor.href = data.anchorUrl as string;
       if (row)    row.style.display = '';
     }
-
     wireDownload(el, data, slug);
     const auditEl = el.querySelector<HTMLAnchorElement>('[data-receipt-audit]');
     if (auditEl) auditEl.href = `/audit/${slug}`;
@@ -320,20 +368,20 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
     btn.addEventListener('click', () => {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url  = URL.createObjectURL(blob);
-      Object.assign(document.createElement('a'), {
-        href: url, download: `seal-receipt-${slug}.json`,
-      }).click();
+      Object.assign(document.createElement('a'), { href: url, download: `seal-receipt-${slug}.json` }).click();
       URL.revokeObjectURL(url);
     }, { once: true });
   }
 
-  // ── Error display ──────────────────────────────────────────────────
+  // ── Error recovery ─────────────────────────────────────────────
 
   function showError(el: HTMLElement, msg: string): void {
+    setPhase(el, 'compose');  // reset — lets user retry from compose
     const errEl = el.querySelector<HTMLElement>('[data-error]');
     if (errEl) errEl.textContent = msg;
     const btn = el.querySelector<HTMLButtonElement>('[data-compose-cta]');
     if (btn) { btn.disabled = false; btn.classList.remove('sc-cta--loading'); }
+    playSealError();
   }
 
   function clearError(el: HTMLElement): void {
@@ -360,15 +408,17 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
 
   .sc-phase { display: none; }
 
-  .seal-ceremony[data-phase="compose"]  .sc-phase--compose  { display: block; }
-  .seal-ceremony[data-phase="confirm"]  .sc-phase--confirm  { display: block; }
-  .seal-ceremony[data-phase="anchor"]   .sc-phase--anchor   { display: flex; flex-direction: column; align-items: center; }
-  .seal-ceremony[data-phase="receipt"]  .sc-phase--receipt  { display: block; }
+  .seal-ceremony[data-phase="compose"]   .sc-phase--compose   { display: block; }
+  .seal-ceremony[data-phase="confirm"]   .sc-phase--confirm   { display: block; }
+  .seal-ceremony[data-phase="anchor"]    .sc-phase--anchor    { display: flex; flex-direction: column; align-items: center; }
+  .seal-ceremony[data-phase="notarize"]  .sc-phase--notarize  { display: flex; flex-direction: column; align-items: center; }
+  .seal-ceremony[data-phase="receipt"]   .sc-phase--receipt   { display: block; }
 
   /* Phase entry animations (FLOW → CONFIRM, SNAP → ANCHOR, CEREMONY → RECEIPT) */
 
   .sc-phase--confirm,
   .sc-phase--anchor,
+  .sc-phase--notarize,
   .sc-phase--receipt {
     animation: sc-phase-in var(--motion-flow-duration) var(--motion-flow-easing) both;
   }
@@ -653,6 +703,7 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
   @media (prefers-reduced-motion: reduce) {
     .sc-phase--confirm,
     .sc-phase--anchor,
+    .sc-phase--notarize,
     .sc-phase--receipt { animation: none; }
     .sc-arc-fill,
     .sc-cta            { transition: none; }

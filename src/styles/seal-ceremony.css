@@ -124,6 +124,40 @@
 
 [data-seal-phase="4"] .seal-form { display: none; }
 
+/* ── Notarize phase visibility (SealCeremony.astro) ─────────────────── */
+/* data-phase="notarize" is set on .seal-ceremony during phase 3.5.     */
+/* Also sets data-seal-phase="notarize" so notarize-stamp.css triggers.  */
+
+.seal-ceremony[data-phase="notarize"] .sc-phase--notarize {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+}
+
+/* ── Heartbeat pulse: anchor + notarize phases ────────────────────── */
+/* Wires --motion-heartbeat-fresh-* tokens from tokens.css.            */
+/* Ceremony border glows in rhythm — communicates "in flight".         */
+
+@keyframes ceremony-heartbeat {
+  0%, 100% { box-shadow: var(--shadow-e3), 0 0 12px color-mix(in oklch, var(--gold) 4%, transparent); }
+  50%       { box-shadow: var(--shadow-e3), 0 0 28px color-mix(in oklch, var(--gold) 14%, transparent); }
+}
+
+.seal-ceremony[data-phase="anchor"],
+.seal-ceremony[data-phase="notarize"] {
+  animation: ceremony-heartbeat
+    var(--motion-heartbeat-fresh-duration, 833ms)
+    var(--motion-heartbeat-fresh-easing, ease-in-out)
+    infinite;
+}
+
+/* ── Receipt phase: grain accumulation ───────────────────────────── */
+/* Sealed conviction accrues grain — it is now historical record.    */
+
+.seal-ceremony[data-phase="receipt"] {
+  --decay-grain: var(--decay-grain-aged, 0.09);
+}
+
 /* ── Hash typewriter: clip-path ink-dry reveal ───────────────── */
 /* 800ms linear for 64-char hash = 12.5ms per character.         */
 /* ghost → conviction-gold: hash is being *etched*, not printed. */
@@ -272,9 +306,11 @@
   .seal-arc,
   .seal-receipt,
   .seal-receipt > *,
-  .seal-cancel-btn                 { transition: none; }
-  [data-seal-phase="2"] .seal-btn  { animation: none; }
-  .seal-receipt-hash               { animation: none; clip-path: none; color: var(--gold-dim); }
-  .seal-spinner                    { animation: seal-spin 1200ms linear infinite; }
-  .seal-irrev-notice               { animation: none; }
+  .seal-cancel-btn                        { transition: none; }
+  [data-seal-phase="2"] .seal-btn         { animation: none; }
+  .seal-receipt-hash                      { animation: none; clip-path: none; color: var(--gold-dim); }
+  .seal-spinner                           { animation: seal-spin 1200ms linear infinite; }
+  .seal-irrev-notice                      { animation: none; }
+  .seal-ceremony[data-phase="anchor"],
+  .seal-ceremony[data-phase="notarize"]   { animation: none; }
 }

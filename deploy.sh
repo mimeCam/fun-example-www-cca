@@ -4,6 +4,41 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v99 — Conviction Ceremony 5.5 Phases + SiteNav Token P0 Fix (2026-04-12)
+#   Sprint: SealCeremony wired end-to-end with NotarizeStamp (phase 3.5), gold
+#     BloomParticles burst on receipt, sound/haptic at every phase transition,
+#     error recovery resets to compose phase. SiteNav raw rgba() violations
+#     replaced with design tokens. seal-sound.ts default flipped to ON.
+#   Modified files:
+#     src/components/SealCeremony.astro — NotarizeStamp mounted at phase 3.5
+#       (data-seal-phase="notarize"); runNotarize() async step added between anchor
+#       and receipt; playForPhase() dispatches sound+haptic per phase (LOCK →
+#       NOTARIZE → RECEIPT); triggerReceiptBloom() adds/removes .blooming-receipt
+#       on .seal-ceremony for gold particle burst; showError() resets to compose
+#       phase so user can retry; populateStamp() fills [data-ns-*] els; IIFE
+#       imports initSealSound / playSealLock / playNotarizeChime / playReceiptReveal
+#       / playSealError; BloomParticles variant="receipt" inside .sc-phase--receipt;
+#       .sc-phase--notarize display rule + sc-phase-in animation added.
+#     src/components/BloomParticles.astro — variant prop ('revival' | 'receipt',
+#       default 'revival'); .bloom-particles--receipt bottom/right 50% anchors
+#       ceremony center; receipt CSS block fires when .seal-ceremony.blooming-receipt
+#       is set (bloom-fly + bloom-ring-expand + bloom-warm-breath); zero infra change.
+#     src/components/SiteNav.astro — 5 raw rgba() violations replaced with token
+#       refs (--surface-overlay, --border-subtle, --text-primary, --text-tertiary,
+#       --text-secondary); nav-accent gradient/shadow updated (color-mix pattern).
+#     src/lib/client/seal-sound.ts — sound enabled by default (was opt-in);
+#       localStorage key still respected for user override.
+#     src/styles/seal-ceremony.css — heartbeat @keyframes (sc-heartbeat) added for
+#       anchor + notarize phase pulse; grain ramp on notarize panel.
+#     src/styles/tokens.css — --surface-inset + --surface-inset-deep added; any
+#       additional token additions for ceremony glass surface or nav backdrop.
+#     AGENTS.md — WIP updated; recently-completed section added.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v98).
+#
 # Architecture v98 — ConvictionSeal Component Split + CSS Token Compliance (2026-04-12)
 #   Sprint: ConvictionSeal.astro (844 LOC) decomposed into three single-responsibility
 #     components; 47 CSS token violations eliminated across 10 style files; 5 missing

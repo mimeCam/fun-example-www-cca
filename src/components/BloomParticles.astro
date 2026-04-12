@@ -9,10 +9,16 @@
 // Geometry: rotate(--angle) translateY(-48px) — pure polar coordinates.
 // No canvas. No JS. No x/y pre-computation.
 //
-// Triggered by .decay-card.blooming class (added by wireKeepButtons in KeepButton.astro).
+// variant="revival"  → triggered by .decay-card.blooming (KeepButton.astro)
+// variant="receipt"  → triggered by .seal-ceremony.blooming-receipt (SealCeremony.astro)
+//                      center-anchored, gold particles, single 500ms burst.
+//
 // Easing: --motion-spring-easing (CSS linear() from motion.css — Baseline 2024).
 //
 // Architecture: Mike Koch (polar spawn spec) · UX: Tanya §3 (bloom ceremony)
+
+interface Props { variant?: 'revival' | 'receipt' }
+const { variant = 'revival' } = Astro.props;
 
 const PARTICLE_COUNT = 14;
 const STAGGER_MS     = 6;   // delay per particle (total spread = 14 × 6 = 84ms)
@@ -27,7 +33,7 @@ function buildParticles(count: number) {
 const particles = buildParticles(PARTICLE_COUNT);
 ---
 
-<div class="bloom-particles" aria-hidden="true">
+<div class:list={['bloom-particles', variant === 'receipt' && 'bloom-particles--receipt']} aria-hidden="true">
   {particles.map((p) => (
     <span
       class="bloom-particle"
@@ -48,6 +54,12 @@ const particles = buildParticles(PARTICLE_COUNT);
     height: 0;
     pointer-events: none;
     z-index: var(--z-shimmer, 2);
+  }
+
+  /* ── Receipt variant: centered in the ceremony panel ──────────────────── */
+  .bloom-particles--receipt {
+    bottom: 50%;
+    right: 50%;
   }
 
   /* ── Particles — invisible at rest ──────────────────────────────────── */
@@ -117,6 +129,36 @@ const particles = buildParticles(PARTICLE_COUNT);
     animation:
       bloom-warm-breath
       var(--motion-ceremony-duration, 600ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1))
+      forwards;
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════
+   * RECEIPT VARIANT — fires when .seal-ceremony receives .blooming-receipt.
+   * Single 500ms burst (--motion-duration-deliberate) from ceremony center.
+   * Gold particles via --atm-bloom-color (set gold by data-atmosphere="gold").
+   * ══════════════════════════════════════════════════════════════════════ */
+
+  .seal-ceremony.blooming-receipt .bloom-particles--receipt .bloom-particle {
+    animation:
+      bloom-fly
+      var(--motion-duration-deliberate, 500ms)
+      var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+      var(--delay, 0ms) forwards;
+  }
+
+  .seal-ceremony.blooming-receipt .bloom-particles--receipt ~ .bloom-ring {
+    animation:
+      bloom-ring-expand
+      700ms
+      var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+      forwards;
+  }
+
+  .seal-ceremony.blooming-receipt .bloom-particles--receipt ~ .bloom-flash {
+    animation:
+      bloom-warm-breath
+      var(--motion-duration-deliberate, 500ms)
       var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1))
       forwards;
   }
