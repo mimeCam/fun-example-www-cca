@@ -4,6 +4,41 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v80 — Seal Ceremony Completion Lifecycle + 409 Graceful Handling (2026-04-12)
+#   Sprint: Seal ceremony gains a post-receipt completion beat, 409 (already-sealed)
+#     is treated as good news not an error, SiteNav cold state simplified to pure
+#     absence, BattingAverageHero removed from homepage, and admin UI border-radius
+#     aligned to design system. Pure UIX/client polish — zero infrastructure changes.
+#   Modified files:
+#     src/lib/ceremony-atmosphere.ts — ceremonyComplete(slug): third lifecycle hook;
+#       calls applyAtmosphere('fresh') + dispatches 'ceremony:complete' custom event;
+#       fires 3.3s after phase 4 receipt settles (quiet restoration to neutral page).
+#     src/lib/seal-ceremony.ts — AlreadySealedError class added (name='AlreadySealedError');
+#       fetchSeal() throws AlreadySealedError on HTTP 409; CeremonyCallbacks gains
+#       optional onAlreadySealed?: () => void; handleError() dispatcher: routes
+#       AlreadySealedError to onAlreadySealed?.() instead of generic onError (phase
+#       resets to 0 in both paths); submit() delegates to handleError() on catch.
+#     src/components/ConvictionSeal.astro — imports ceremonyComplete from
+#       ceremony-atmosphere; handleCeremonyAtmosphere phase=4 branch gains second
+#       setTimeout(ceremonyComplete, 3300) to restore neutral after receipt; onReceipt
+#       now also dispatches 'conviction:sealed' CustomEvent (bubbles: true, detail:
+#       {slug}) for loose pub/sub consumers; onAlreadySealed callback wired to new
+#       showAlreadySealed(errorEl) helper (gold-dim text "✓ Already sealed —
+#       conviction is locked." — celebratory, not alarming).
+#     src/components/SiteNav.astro — cold-state ghost link removed entirely; absence
+#       creates curiosity (Tanya P0 §11); ternary → simple && conditional guard.
+#     src/pages/index.astro — BattingAverageHero import and computeBattingAverage
+#       call removed; avg variable dropped; hero component no longer rendered on
+#       homepage (simplification pass — removes clutter above the river).
+#     src/pages/admin.astro — .login-input + .login-btn border-radius: 8px → 10px
+#       (design system alignment: --radius-input token target).
+#     src/styles/seal-ceremony.css — additional CSS refinements to seal receipt
+#       entrance and ceremony token usage (polish pass, no structural changes).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v79 — Audit Download API + AuditReceipt DER Hex + Chain Integrity (2026-04-12)
 #   Sprint: Conviction audit page gains cryptographic proof download endpoints and
 #     two new inline verification surfaces — raw DER hex dump and real-time chain

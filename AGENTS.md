@@ -11,6 +11,6 @@
 
 ## WIP
 
-- [wip] Seal posts via `/admin` to activate TrustBadge + batting average
-- [wip] Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
+- [wip] Seal a post via `/admin` (set `ADMIN_SECRET` + `GITHUB_PAT` env vars) to activate TrustBadge + batting average loop
+- [wip] `GITHUB_PAT` (gist scope) for Conviction Anchor on `/track-record`
 - [wip] OTS observability cron + alerting

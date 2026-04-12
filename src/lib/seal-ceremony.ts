@@ -8,6 +8,11 @@ export type { SealPhase } from './seal-phases';
 import { NOTARIZE }        from './seal-phases';
 import type { SealPhase }  from './seal-phases';
 
+/** Thrown when the server returns 409 — post already sealed (good news, not an error). */
+export class AlreadySealedError extends Error {
+  constructor() { super('Already sealed'); this.name = 'AlreadySealedError'; }
+}
+
 export interface ReceiptData {
   hash:           string;
   sealedAt:       string;
@@ -19,10 +24,11 @@ export interface ReceiptData {
 }
 
 export interface CeremonyCallbacks {
-  onPhase:    (phase: SealPhase)  => void;
-  onNotarize: (data: ReceiptData) => void; // fires at 3.5 — populate stamp before pause
-  onReceipt:  (data: ReceiptData) => void; // fires at 4 — after ceremonial pause
-  onError:    (msg: string)       => void;
+  onPhase:        (phase: SealPhase)  => void;
+  onNotarize:     (data: ReceiptData) => void; // fires at 3.5 — populate stamp before pause
+  onReceipt:      (data: ReceiptData) => void; // fires at 4 — after ceremonial pause
+  onError:        (msg: string)       => void;
+  onAlreadySealed?: ()               => void; // fires on 409 — good news, not an error
 }
 
 const delay = (ms: number): Promise<void> => new Promise(r => setTimeout(r, ms));
@@ -34,6 +40,7 @@ async function fetchSeal(slug: string, score: number, note: string): Promise<Rec
     body:    JSON.stringify({ slug, score, authorNote: note }),
   });
   const data = await res.json() as ReceiptData & { error?: string };
+  if (res.status === 409) throw new AlreadySealedError();
   if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`);
   return data;
 }
@@ -58,15 +65,18 @@ export function createCeremony(slug: string, cb: CeremonyCallbacks) {
     cb.onReceipt(data);
   }
 
+  function handleError(e: unknown): void {
+    setPhase(0);
+    if (e instanceof AlreadySealedError) cb.onAlreadySealed?.();
+    else cb.onError(e instanceof Error ? e.message : 'Seal failed');
+  }
+
   async function submit(score: number, authorNote: string): Promise<void> {
     setPhase(3);
     try {
       const data = await fetchSeal(slug, score, authorNote);
       await notarize(data);
-    } catch (e) {
-      setPhase(0);
-      cb.onError(e instanceof Error ? e.message : 'Seal failed');
-    }
+    } catch (e) { handleError(e); }
   }
 
   return {

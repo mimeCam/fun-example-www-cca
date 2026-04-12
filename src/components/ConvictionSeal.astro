@@ -640,12 +640,16 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
 <script>
   import { createCeremony }         from '../lib/seal-ceremony';
   import type { SealPhase, ReceiptData } from '../lib/seal-ceremony';
-  import { ceremonyStart, ceremonyAbort, ceremonyResolve } from '../lib/ceremony-atmosphere';
+  import { ceremonyStart, ceremonyAbort, ceremonyResolve, ceremonyComplete } from '../lib/ceremony-atmosphere';
 
   /** Map seal phase transitions to atmosphere lifecycle. */
   function handleCeremonyAtmosphere(phase: SealPhase, slug: string, active: { v: boolean }): void {
-    if (phase === 2) { active.v = true;  ceremonyStart(slug); }
-    else if (phase === 4) { active.v = false; setTimeout(() => ceremonyResolve(slug), 300); }
+    if (phase === 2) { active.v = true; ceremonyStart(slug); }
+    else if (phase === 4) {
+      active.v = false;
+      setTimeout(() => ceremonyResolve(slug), 300);
+      setTimeout(() => ceremonyComplete(slug), 3300); // restore neutral after receipt settles
+    }
     else if (phase === 0 && active.v) { active.v = false; ceremonyAbort(slug); }
   }
 
@@ -674,8 +678,12 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
         handleCeremonyAtmosphere(phase, slug, active);
       },
       onNotarize: (data) => populateNotarize(stamp, data),
-      onReceipt:  (data) => populateReceipt(receipt, data),
+      onReceipt:  (data) => {
+        populateReceipt(receipt, data);
+        container.dispatchEvent(new CustomEvent('conviction:sealed', { bubbles: true, detail: { slug } }));
+      },
       onError:    (msg)  => { errorEl.textContent = msg; errorEl.style.display = 'block'; },
+      onAlreadySealed: () => showAlreadySealed(errorEl),
     });
 
     // Escape key: abort only when not locked (phase < 3 = POST not yet in flight).
@@ -749,6 +757,12 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     hashEl.textContent  = data.hash.slice(0, 32) + '…';
     // Null tst_token path: ceremony still plays, label explains state — no JS error.
     labelEl.textContent = data.tst_token ? 'NOTARIZED' : 'Anchoring locally…';
+  }
+
+  /** 409 response — sealed already is good news, not an error. Show gold informative text. */
+  function showAlreadySealed(el: HTMLElement): void {
+    el.textContent = '✓ Already sealed — conviction is locked.';
+    el.style.cssText = 'display:block; color: var(--gold-dim, rgba(245,166,35,0.65));';
   }
 
   function populateReceipt(el: HTMLElement, data: { hash: string; sealedAt: string; score: number; anchorUrl: string | null }): void {

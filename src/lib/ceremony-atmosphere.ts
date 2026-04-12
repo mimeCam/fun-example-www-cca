@@ -30,3 +30,9 @@ export function ceremonyAbort(slug: string): void {
   applyAtmosphere('fresh');
   dispatch('ceremony:aborted', slug);
 }
+
+/** Receipt settled for 3s — quietly restore page to neutral. */
+export function ceremonyComplete(slug: string): void {
+  applyAtmosphere('fresh');
+  dispatch('ceremony:complete', slug);
+}

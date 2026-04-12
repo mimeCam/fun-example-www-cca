@@ -26,12 +26,10 @@ import DecayCard              from '../components/DecayCard.astro';
 import EndangeredCard         from '../components/EndangeredCard.astro';
 import TombstoneCard          from '../components/TombstoneCard.astro';
 import EndangeredBand         from '../components/EndangeredBand.astro';
-import BattingAverageHero     from '../components/BattingAverageHero.astro';
 import RiverFilter            from '../components/RiverFilter.astro';
 import Pagination             from '../components/Pagination.astro';
 import { allPostDisplayData } from '../lib/postMeta';
 import { endangeredClientScript } from '../lib/endangered';
-import { computeBattingAverage }  from '../lib/batting-average';
 import { buildWebSiteSchema, serializeJsonLd } from '../lib/json-ld';
 import { getStageCounts, filterByStage } from '../lib/river-data';
 import type { StageFilter } from '../lib/river-data';
@@ -54,7 +52,6 @@ const GRAVEYARD_PAGE_SIZE = 20;
 
 const posts        = await getCollection('blog');
 const displayPosts = allPostDisplayData(posts);
-const avg          = computeBattingAverage();
 const stageCounts  = getStageCounts(displayPosts);
 
 // Pre-partition for 'all' stage rendering — template stays declarative
@@ -113,9 +110,7 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
 >
   <script set:html={endangeredClientScript()} />
 
-  {/* Zone 1 — Conviction Hero (above the fold) */}
-  <BattingAverageHero avg={avg} />
-
+  {/* Zone 1 — Feed IS the hero (Tanya P0: removed BattingAverageHero from home; belongs on /track-record) */}
   {/* Zone 2 — Unified River Feed */}
   <main class="feed" id="bets" data-stage={currentStage}>
 
