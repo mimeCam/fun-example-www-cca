@@ -311,6 +311,11 @@
     0 0 0 1px var(--gold-border),
     0 8px 32px rgba(245, 166, 35, 0.12),
     0 2px 8px rgba(0, 0, 0, 0.4);
+  /* Verdict ceremony: deep ambient shadow — spotlight descending on podium.
+     Applied to Act II outcome badge on entrance; settles to standard.   */
+  --shadow-ceremony:
+    0 32px 80px oklch(0% 0 0 / 0.45),
+    0  8px 20px oklch(0% 0 0 / 0.20);
   /* Disputed: a card under scrutiny has a subtle red cast                */
   --shadow-card-disputed:
     0 4px 16px color-mix(in oklch, var(--clr-red-500) 10%, transparent),

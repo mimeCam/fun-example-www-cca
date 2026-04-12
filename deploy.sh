@@ -4,6 +4,47 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v74 — VerdictCeremony Entrance Choreography (2026-04-12)
+#   Sprint: Three-act staggered entrance animations for VerdictCeremony; pure
+#     CSS choreography extracted to verdict-ceremony.css. Each act has its own
+#     kinetic signature: Act I slides in from left (conviction arrives),
+#     Act II drops with a scale-spring (the gavel lands), Act III rises from
+#     below (the reckoning settles). Child elements stagger at --child-index ×
+#     80 ms (same engine as seal-ceremony.css receipt rows). IntersectionObserver
+#     fallback in verdict-reveal.ts handles older browsers lacking @starting-style
+#     CSS support — data-act-entered attribute triggers equivalent transitions.
+#     Act III cold/muted state now uses filter-only (not opacity) so animation-
+#     fill-mode: forwards in verdict-ceremony.css owns opacity without conflict.
+#     Act II receives data-verdict attribute for outcome-tinted entrance hue.
+#     --shadow-ceremony token added: deep ambient shadow for Act II badge drop.
+#   New files:
+#     src/styles/verdict-ceremony.css — three-act entrance choreography; pure
+#       CSS @starting-style + animation-fill-mode: both (Baseline 2024); Act I
+#       @keyframes vc-act-slide, Act II vc-act-drop, Act III vc-act-rise;
+#       vc-child-enter stagger (--child-index custom property); @supports fallback
+#       block for browsers without :has() hides [data-act] until JS sets
+#       data-act-entered; prefers-reduced-motion guard collapses all to instant
+#       opacity cross-fade; all timing from motion.css tokens.
+#   Updated files:
+#     src/components/VerdictCeremony.astro — imports verdict-ceremony.css;
+#       data-act="1|2|3" on all three .vc-act divs; data-verdict={verdictOutcome}
+#       on Act II; data-act-state="entered|pending" on Act III; .vc-act3 CSS
+#       revised to filter-only (saturate+brightness muted, filter: none revealed);
+#       @starting-style block for .vc-act3--revealed removed (verdict-ceremony.css
+#       owns entrance via [data-act="3"] selector instead).
+#     src/lib/client/verdict-reveal.ts — initActFallback() added: detects CSS
+#       @starting-style / :has() support via CSS.supports(); if absent builds an
+#       IntersectionObserver (threshold 0.1) that sets data-act-entered on each
+#       [data-act] element when scrolled into view; always called before SSE init.
+#       revealActThree() also sets act3.dataset.actState='entered' to re-trigger
+#       vc-act-rise entrance animation on live SSE verdict resolution.
+#     src/styles/tokens.css — --shadow-ceremony added: deep ambient two-layer
+#       box-shadow (oklch 45% + 20% opacity) for Act II verdict badge drop.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v73 — KEEP-WEIGHT Bloom (2026-04-12)
 #   Sprint: KeepButton bloom ceremony — hold-to-keep now fires a 3-phase micro-
 #     animation on the DecayCard: particle burst (12 orbs, staggered 0–80 ms),

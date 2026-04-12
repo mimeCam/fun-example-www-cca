@@ -1,0 +1,220 @@
+/* src/styles/verdict-ceremony.css
+ * VerdictCeremony — three-act staggered entrance choreography.
+ *
+ * Pure CSS: @starting-style + animation-fill-mode: both (Baseline 2024).
+ * Zero JS for entrance sequencing. SSE live-path handled by verdict-reveal.ts.
+ * All timing references motion.css tokens — no magic numbers.
+ *
+ * Act I  (0ms)    — conviction slides in from left        [--duration-slow 500ms spring]
+ * Act II (600ms)  — verdict drops with scale spring       [--motion-ceremony-duration 600ms]
+ * Act III(1200ms) — reckoning rises from below            [--duration-normal 300ms flow]
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-12
+ */
+
+/* ── Act entrance keyframes ──────────────────────────────────────────────── */
+/* Three distinct movements. Different entries = different keyframes (not      */
+/* polymorphism — genuinely different motions serve each act's emotional role).*/
+
+/* Act I: conviction arrives — slides in from the left */
+@keyframes vc-act-slide {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Act II: verdict drops — scale spring from above. The gavel lands. */
+@keyframes vc-act-drop {
+  from { opacity: 0; transform: scale(0.85) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* Act III: reckoning rises — settles up from below */
+@keyframes vc-act-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Child element entrance ──────────────────────────────────────────────── */
+/* Staggered reveal within each act: --child-index × --duration-instant (80ms) */
+/* Same stagger engine as seal-ceremony.css receipt rows.                      */
+
+@keyframes vc-child-enter {
+  from { opacity: 0; translate: 0 4px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+
+/* ── Act entrance — staggered delays ────────────────────────────────────── */
+/* animation-fill-mode: both = backwards (from-state holds during delay) +    */
+/* forwards (to-state holds after end). Acts are invisible until their cue.   */
+
+/* Act base delays — inherited by children via --act-delay custom property */
+[data-act="1"] { --act-delay: 0ms; }
+[data-act="2"] { --act-delay: var(--motion-ceremony-duration); }   /* 600ms */
+[data-act="3"] { --act-delay: var(--duration-bloom); }             /* 1200ms */
+
+@supports (animation-timeline: scroll()) or (selector(:has(*))) {
+  /* Modern browser path: @starting-style-capable. animation handles entrance. */
+  [data-act="1"] {
+    animation:
+      vc-act-slide
+      var(--duration-slow)
+      var(--ease-spring)
+      var(--act-delay)
+      both;
+  }
+
+  [data-act="2"] {
+    animation:
+      vc-act-drop
+      var(--motion-ceremony-duration)
+      var(--ease-spring)
+      var(--act-delay)
+      both;
+  }
+
+  [data-act="3"] {
+    animation:
+      vc-act-rise
+      var(--duration-normal)
+      var(--motion-flow-easing)
+      var(--act-delay)
+      both;
+  }
+}
+
+/* ── Child stagger within each act ──────────────────────────────────────── */
+/* nth-child indices — shared across all acts (same 0/1/2 pattern per act).  */
+
+[data-act] > *:nth-child(1) { --child-index: 0; }
+[data-act] > *:nth-child(2) { --child-index: 1; }
+[data-act] > *:nth-child(3) { --child-index: 2; }
+
+@supports (animation-timeline: scroll()) or (selector(:has(*))) {
+  [data-act] > * {
+    animation: vc-child-enter var(--motion-flow-duration) var(--motion-flow-easing) both;
+    animation-delay: calc(
+      var(--act-delay, 0ms) + var(--child-index, 0) * var(--duration-instant)
+    );
+  }
+}
+
+/* ── Act II: verdict color flood ─────────────────────────────────────────── */
+/* Background tint bleeds in from neutral to verdict outcome color.           */
+/* Driven by data-verdict on the act container — no new tokens, no hardcoding.*/
+
+[data-act="2"] {
+  background-color: transparent;
+  transition:
+    background-color var(--motion-ceremony-duration) var(--motion-flow-easing)
+    var(--act-delay);
+}
+
+[data-act="2"][data-verdict="still-true"] { background-color: var(--verdict-true-bg); }
+[data-act="2"][data-verdict="evolved"]    { background-color: var(--verdict-evolved-bg); }
+[data-act="2"][data-verdict="wrong"]      { background-color: var(--verdict-wrong-bg); }
+[data-act="2"][data-verdict="abandoned"]  { background-color: var(--verdict-pending-bg); }
+
+/* ── Act II: verdict badge shadow surge ─────────────────────────────────── */
+/* --shadow-ceremony applied to badge during entrance, settles to standard.  */
+
+@keyframes vc-badge-surge {
+  0%   { box-shadow: none; }
+  35%  { box-shadow: var(--shadow-ceremony); }
+  100% { box-shadow: var(--shadow-card-standard); }
+}
+
+@supports (animation-timeline: scroll()) or (selector(:has(*))) {
+  .vc-outcome-badge {
+    animation:
+      vc-badge-surge
+      var(--motion-ceremony-duration)
+      var(--ease-out)
+      var(--motion-ceremony-duration)   /* delay = Act II cue */
+      both;
+  }
+}
+
+/* ── HMAC fingerprint typewriter (Act I) ─────────────────────────────────── */
+/* Port of seal-ceremony.css reveal-hash / hash-ink-dry pattern.             */
+/* 800ms linear clip-path wipe + color bleed from ghost → gold-dim.          */
+
+@supports (animation-timeline: scroll()) or (selector(:has(*))) {
+  .vc-fingerprint {
+    clip-path: inset(0 0% 0 0);
+    animation:
+      reveal-hash  800ms linear     calc(var(--motion-ceremony-duration) * 0.5) forwards,
+      hash-ink-dry   2s  ease-in-out calc(var(--motion-ceremony-duration) * 0.5) forwards;
+    color: var(--text-ghost);
+  }
+}
+
+/* reveal-hash / hash-ink-dry keyframes defined in seal-ceremony.css.        */
+/* Shared — no duplication. If seal-ceremony.css not loaded, fingerprint      */
+/* falls back to static --gold-dim color (harmless, graceful).                */
+
+/* ── Act III: SSE live-resolve entrance refresh ──────────────────────────── */
+/* When verdict-reveal.ts sets data-act-state="entered", re-trigger entrance. */
+/* Uses a class-toggle mechanism compatible with existing vc-act3--revealed.  */
+
+[data-act="3"][data-act-state="entered"] {
+  animation:
+    vc-act-rise
+    var(--duration-normal)
+    var(--motion-flow-easing)
+    0ms         /* no delay on live reveal — it already waited via SSE */
+    both;
+}
+
+/* ── IntersectionObserver fallback (no @starting-style support) ─────────── */
+/* For browsers without CSS @starting-style, verdict-reveal.ts adds          */
+/* data-act-entered attribute when element scrolls into view.                */
+/* Initial state: hide via opacity (no layout shift).                        */
+
+@supports not (selector(:has(*))) {
+  [data-act] {
+    opacity: 0;
+  }
+
+  [data-act="1"] { transform: translateX(-16px); }
+  [data-act="2"] { transform: scale(0.85) translateY(-8px); }
+  [data-act="3"] { transform: translateY(12px); }
+
+  [data-act][data-act-entered] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity   var(--duration-slow) var(--ease-spring) 0ms,
+      transform var(--duration-slow) var(--ease-spring) 0ms;
+  }
+
+  /* Staggered delays for fallback via custom property on each act */
+  [data-act="2"][data-act-entered] {
+    transition-delay: var(--motion-ceremony-duration);
+  }
+
+  [data-act="3"][data-act-entered] {
+    transition-delay: var(--duration-bloom);
+  }
+}
+
+/* ── Reduced motion — all acts instant, delays preserved (stagger still reads) */
+/* Tanya §10: stagger tells the story even without motion.                     */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-act="1"],
+  [data-act="2"],
+  [data-act="3"] {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+
+  [data-act] > * {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+
+  .vc-outcome-badge { animation: none; }
+  .vc-fingerprint   { animation: none; clip-path: none; color: var(--gold-dim); }
+
+  [data-act="2"] { transition-duration: 1ms; transition-delay: 0ms; }
+}

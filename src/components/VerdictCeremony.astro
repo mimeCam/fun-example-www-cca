@@ -13,6 +13,7 @@
 // Credits: Mike (arch §verdict-ceremony three-act spec — no polymorphism),
 //          Tanya (UX §3 color semantics, @starting-style reveal, cold-start-honest)
 
+import '../styles/verdict-ceremony.css';
 import type { LedgerEntry } from '../lib/conviction-ledger';
 import type { VerdictRecord } from '../lib/verdict-resolver';
 import type { BattingAverage } from '../lib/batting-average';
@@ -79,7 +80,7 @@ function fmtTs(ts: number): string {
   <!-- ══════════════════════════════════════════════════════════════════════
        Act I — The Original Conviction
        ══════════════════════════════════════════════════════════════════════ -->
-  <div class="vc-act vc-act1">
+  <div class="vc-act vc-act1" data-act="1">
     <p class="vc-act-eyebrow" aria-hidden="true">Act I — The Original Conviction</p>
 
     {seal ? (
@@ -134,7 +135,7 @@ function fmtTs(ts: number): string {
   <!-- ══════════════════════════════════════════════════════════════════════
        Act II — The Verdict
        ══════════════════════════════════════════════════════════════════════ -->
-  <div class="vc-act vc-act2">
+  <div class="vc-act vc-act2" data-act="2" data-verdict={verdictOutcome ?? undefined}>
     <p class="vc-act-eyebrow" aria-hidden="true">Act II — The Verdict</p>
 
     {verdict ? (
@@ -193,6 +194,8 @@ function fmtTs(ts: number): string {
        ══════════════════════════════════════════════════════════════════════ -->
   <div
     class:list={['vc-act', 'vc-act3', isResolved && 'vc-act3--revealed']}
+    data-act="3"
+    data-act-state={isResolved ? 'entered' : 'pending'}
     aria-label="Sitewide batting average reckoning"
   >
     <p class="vc-act-eyebrow" aria-hidden="true">Act III — The Reckoning</p>
@@ -423,27 +426,17 @@ function fmtTs(ts: number): string {
 
   /* ── Act III: batting average — cold → live ──────────────────────── */
   /*
-     Cold (default): visually muted, honest about empty state.
-     Revealed (resolved): full opacity, full saturation.
-     @starting-style: provides the enter animation when already resolved on load.
-     Tanya §cold-start-honest: show —% not 0%.
+     Cold (default): visually muted via filter (not opacity — animation owns
+     opacity via [data-act="3"] in verdict-ceremony.css). Filter-only avoids
+     animation-fill-mode: forwards conflict. Tanya §cold-start-honest: —% not 0%.
   */
   .vc-act3 {
-    opacity: 0.5;
-    filter: saturate(0.3);
-    transition: opacity 800ms ease, filter 800ms ease;
+    filter: saturate(0.3) brightness(0.65);
+    transition: filter var(--motion-spring-duration) var(--ease-in-out);
   }
 
   .vc-act3--revealed {
-    opacity: 1;
-    filter: saturate(1);
-  }
-
-  @starting-style {
-    .vc-act3--revealed {
-      opacity: 0;
-      filter: saturate(0);
-    }
+    filter: none;
   }
 
   .vc-avg-headline {
@@ -529,7 +522,7 @@ function fmtTs(ts: number): string {
 
   /* ── Reduced motion ───────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .vc-act3, .vc-act3--revealed { transition: none; }
+    .vc-act3 { transition: none; }
   }
 </style>
 

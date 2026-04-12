@@ -15,6 +15,5 @@
 
 - Seal posts via `/admin` to activate TrustBadge + batting average
 - Set `GITHUB_PAT` in `.env` (gist scope) for Conviction Anchor on `/track-record`
-- P2: BattingAverageHero cold-state ghost progress indicator (dashed rotating SVG ring)
-- P2: VerdictCeremony staggered act entrances (`@starting-style` + `animation-delay`)
-- P2: StanceDrawer drag handle affordance (40px × 4px pill at top center)
+- P0: BattingAverageHero cold-state ghost progress indicator (dashed rotating SVG ring) — next sprint
+- P0: StanceDrawer drag handle affordance (40px × 4px pill at top center) — next sprint

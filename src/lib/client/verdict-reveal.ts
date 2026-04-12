@@ -42,7 +42,9 @@ function isAlreadyResolved(root: HTMLElement): boolean {
 function revealActThree(root: HTMLElement): void {
   root.dataset.verdictState = 'resolved';
   const act3 = root.querySelector<HTMLElement>('.vc-act3');
-  if (act3) act3.classList.add('vc-act3--revealed');
+  if (!act3) return;
+  act3.classList.add('vc-act3--revealed');
+  act3.dataset.actState = 'entered';  // CSS hook: re-triggers vc-act-rise entrance
 }
 
 function patchPct(avg: number): void {
@@ -104,11 +106,48 @@ function attachListener(es: EventSource): void {
 }
 
 // ---------------------------------------------------------------------------
+// IntersectionObserver fallback — browsers without @starting-style / :has()
+// CSS verdict-ceremony.css: @supports not (selector(:has(*))) block hides
+// [data-act] elements. Observer sets data-act-entered to trigger transitions.
+// ---------------------------------------------------------------------------
+
+function supportsModernCSS(): boolean {
+  try { return CSS.supports('selector(:has(*))'); }
+  catch { return false; }
+}
+
+function onActVisible(
+  entries: IntersectionObserverEntry[],
+  obs: IntersectionObserver,
+): void {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    (entry.target as HTMLElement).dataset.actEntered = 'true';
+    obs.unobserve(entry.target);
+  }
+}
+
+function buildActObserver(): IntersectionObserver {
+  return new IntersectionObserver(onActVisible, { threshold: 0.1 });
+}
+
+function observeActElements(obs: IntersectionObserver): void {
+  document.querySelectorAll<HTMLElement>('[data-act]').forEach(el => obs.observe(el));
+}
+
+/** Fallback for browsers without CSS @starting-style support. No-op on modern. */
+function initActFallback(): void {
+  if (supportsModernCSS()) return;
+  observeActElements(buildActObserver());
+}
+
+// ---------------------------------------------------------------------------
 // Boot — entry point, called once after DOM ready
 // ---------------------------------------------------------------------------
 
 /** Initialise SSE listener for the verdict ceremony page. No-op on other pages. */
 export function initVerdictReveal(): void {
+  initActFallback();               // always: CSS entrance fallback for older browsers
   const root = ceremonyRoot();
   if (!root) return;               // not on a ceremony page — bail early
   if (isAlreadyResolved(root)) return; // SSR already served full resolved state
