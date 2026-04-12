@@ -4,20 +4,14 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute, conviction ledger, OTS/RFC 3161, seal-phases, batting average, author-token, cron
-- `src/lib/client/frame-scheduler.ts` — master RAF singleton (priority buckets + FPS watchdog + Battery saver)
-- `src/lib/client/` — heartbeat orchestrator, revival orchestrator, decay color lerp, sensory (audio/haptic)
-- `src/components/FrameSchedulerProvider.astro` — bootstraps master RAF in `<head>`; must precede all animation islands
+- `src/lib/` — decay engine, verdict/dispute, conviction ledger, OTS/RFC 3161, seal-phases, batting average, author-token, cron; `client/` holds animation orchestrators + sensory
+- `src/lib/client/frame-scheduler.ts` — master RAF singleton; all animations route through this (priority buckets + FPS watchdog + battery saver)
+- `src/components/FrameSchedulerProvider.astro` — bootstraps RAF in `<head>`; must precede all animation islands
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
-- `src/styles/tokens.css` — master design token registry (single source of truth)
-- `src/styles/` — heartbeat consumers, card geometry, motion, atmosphere
+- `src/styles/tokens.css` — master design token registry (single source of truth); `nav.css` owns all nav styles
 - `scripts/check-token-compliance.ts` — CSS raw-value linter (`npm run lint:tokens`)
 
 ## Env
 
 `ADMIN_SECRET` (req) · `HMAC_SECRET` (req) · `GITHUB_PAT` (opt) · `RFC3161_URL` (opt)
-
-## WIP
-
-- **Nav overflow pill** (P2) — collapse Community + overflows to `···` pill at 768 px — stub exists, not started.

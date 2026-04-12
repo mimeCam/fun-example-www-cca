@@ -1,0 +1,364 @@
+/* src/styles/nav.css
+ * Navigation — single source of truth for all nav styles.
+ * Migrated from SiteNav.astro inline <style> block (was a design-system violation).
+ * Overflow pill added: community · leaderboard · now collapse at ≤ 768 px.
+ *
+ * Token compliance: zero raw values — all colours, spacing, radius, motion
+ * reference tokens.css + motion.css. Run `npm run lint:tokens` before ship.
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-12
+ */
+
+/* ── Nav container ─────────────────────────────────────────────────────── */
+
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 var(--space-6);
+  gap: var(--space-5);
+  background: var(--surface-overlay);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ── Logo / site name ──────────────────────────────────────────────────── */
+
+.site-name {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: opacity var(--motion-snap-duration) var(--motion-snap-easing);
+  flex-shrink: 0;
+}
+.site-name:hover { opacity: 0.7; }
+
+/* ── Primary nav links strip ───────────────────────────────────────────── */
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.nav-link {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-tertiary);
+  text-decoration: none;
+  transition: color var(--motion-snap-duration) var(--motion-snap-easing);
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+.nav-link:hover { color: var(--text-secondary); }
+
+/* Active page: amber underline — conviction gold is the active signal */
+.nav-link--active,
+.site-name.nav-link--active {
+  color: var(--text-secondary);
+  border-bottom-color: var(--gold);
+}
+
+/* Contested signal: 4 px amber underline on verdict link (Tanya §2) */
+.nav-link--contested {
+  border-bottom: 4px solid var(--gold-dim);
+  padding-bottom: 0;
+}
+
+/* ── Right cluster: batting chip + presence ───────────────────────────── */
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── Batting average chip ──────────────────────────────────────────────── */
+
+.batting-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gold-border);
+  background: var(--gold-bg);
+  text-decoration: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-width: 56px;
+  transition:
+    border-color var(--motion-snap-duration) var(--motion-snap-easing),
+    box-shadow   var(--motion-snap-duration) var(--motion-snap-easing),
+    min-width    var(--motion-flow-duration) var(--motion-flow-easing);
+}
+.batting-chip:hover { border-color: var(--gold-border-strong); }
+
+.batting-pct {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+.batting-check {
+  font-size: var(--text-2xs);
+  line-height: 1;
+}
+
+/* Strong (≥80 %): full amber + glow */
+.batting-chip--strong                              { box-shadow: var(--shadow-chip); }
+.batting-chip--strong .batting-pct,
+.batting-chip--strong .batting-check              { color: var(--gold); }
+
+/* Mid (60–79 %): amber dim, no glow */
+.batting-chip--mid .batting-pct,
+.batting-chip--mid .batting-check                 { color: var(--gold-dim); }
+
+/* Weak (< 60 %): muted, no amber */
+.batting-chip--weak {
+  border-color: var(--border-medium);
+  background: var(--surface-raised);
+}
+.batting-chip--weak .batting-pct,
+.batting-chip--weak .batting-check                { color: var(--text-tertiary); }
+
+/* Gold atmosphere pulse — seal ceremony (Tanya §17) */
+[data-atmosphere="gold"] .batting-chip {
+  animation: gold-breathe 3s ease-in-out infinite;
+  border-color: var(--gold-border-strong);
+}
+
+/* ── Batting chip tooltip ──────────────────────────────────────────────── */
+
+.batting-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
+  color: var(--text-secondary);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity   var(--motion-snap-duration) var(--motion-snap-easing),
+    transform var(--motion-snap-duration) var(--motion-snap-easing);
+  transition-delay: 300ms;
+  z-index: var(--z-tooltip);
+}
+.batting-chip:hover .batting-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 300ms;
+}
+/* Hide instantly on mouse-leave — no delay (Tanya §17 fix 1) */
+.batting-chip:not(:hover) .batting-tooltip { transition-delay: 0ms; }
+
+/* ── Presence indicator ────────────────────────────────────────────────── */
+
+.presence-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--motion-flow-duration) var(--motion-flow-easing);
+}
+.presence-indicator.presence-active { opacity: 1; }
+
+.presence-dot {
+  width: var(--presence-dot-size);
+  height: var(--presence-dot-size);
+  border-radius: 50%;
+  background: var(--mood-accent);
+  /* Keyframe lives in motion.css — nav-breathe */
+  animation: nav-breathe var(--presence-pulse-dur) ease-in-out infinite;
+}
+
+/* Ghost chip — cold state (Tanya §17 fix 4) */
+.batting-chip--ghost {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--text-ghost);
+  border-color: var(--border-faint);
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
+  letter-spacing: 0.06em;
+  user-select: none;
+  opacity: 0.45;
+}
+
+/* ── Overflow pill trigger ─────────────────────────────────────────────── */
+/* Hidden above 768 px — visible only when overflow links are folded.      */
+/* Shape mirrors batting chip: same radius, same padding, same border.     */
+
+.nav-overflow-trigger {
+  display: none;    /* shown via media query below */
+  align-items: center;
+  justify-content: center;
+  padding: 4px var(--space-3);
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gold-border);
+  background: var(--gold-bg);
+  color: var(--text-tertiary);
+  font-size: var(--text-base);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background  var(--motion-snap-duration) var(--motion-snap-easing),
+    border-color var(--motion-snap-duration) var(--motion-snap-easing),
+    color        var(--motion-snap-duration) var(--motion-snap-easing);
+}
+.nav-overflow-trigger:hover {
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+}
+
+/* Active: current page lives in overflow set — gold underline on pill */
+.nav-overflow-trigger--active {
+  border-bottom: 2px solid var(--gold);
+  color: var(--text-secondary);
+}
+
+/* Open state: warm surface signals "open menu" */
+.nav-overflow-trigger[aria-expanded="true"] {
+  background: var(--surface-hover);
+  border-color: var(--gold-border-strong);
+  color: var(--text-secondary);
+}
+
+/* ── Overflow dropdown panel ───────────────────────────────────────────── */
+/* [hidden] = SSR default / JS-closed state. JS removes attribute to open. */
+/* Animation targets :not([hidden]) — triggers immediately after display.  */
+
+.nav-overflow-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: var(--space-6);
+  min-width: 160px;
+  background: var(--surface-overlay);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-e3);
+  z-index: var(--z-tooltip);
+  overflow: hidden;
+}
+.nav-overflow-dropdown[hidden] { display: none; }
+.nav-overflow-dropdown:not([hidden]) {
+  animation: dropdown-enter var(--motion-flow-duration) var(--motion-flow-easing) forwards;
+}
+
+/* Dropdown nav links — block layout, full width */
+.nav-overflow-dropdown .nav-link {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: none;
+  border-radius: 0;
+  color: var(--text-secondary);
+  box-sizing: border-box;
+}
+.nav-overflow-dropdown .nav-link:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.nav-overflow-dropdown .nav-link--active {
+  color: var(--gold);
+  background: var(--gold-bg);
+  border-bottom: none;
+  border-left: 2px solid var(--gold);
+}
+
+/* ── Erosion bar (blog post pages only) ───────────────────────────────── */
+
+.site-nav.has-erosion {
+  border-bottom: none;
+  position: relative;
+}
+.erosion-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: color-mix(in oklch, var(--mood-accent) 18%, transparent);
+  box-shadow: 0 1px 6px color-mix(in oklch, var(--mood-accent) 10%, transparent);
+  transform-origin: left;
+  transform: scaleX(var(--erosion-progress, 1));
+  opacity: calc(
+    (0.3 + 0.7 * var(--erosion-progress, 1)) *
+    clamp(0, var(--erosion-progress, 1) / 0.05, 1)
+  );
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  transition:
+    transform var(--motion-snap-duration) var(--motion-snap-easing),
+    opacity   var(--motion-snap-duration) var(--motion-snap-easing);
+  pointer-events: none;
+}
+
+/* ── Keyframes (nav-scoped — not shared, live here not motion.css) ─────── */
+
+/* Gold atmosphere breathing — batting chip during seal ceremony */
+@keyframes gold-breathe {
+  0%, 100% { box-shadow: var(--shadow-chip); }
+  50%       { box-shadow: var(--shadow-chip), 0 0 16px var(--gold-glow); }
+}
+
+/* Dropdown slide-in — FLOW profile (200 ms) */
+@keyframes dropdown-enter {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+/* Collapse overflow links into pill at 768 px (was 640 — P0 fix, Mike §4) */
+@media (max-width: 768px) {
+  .nav-link--community,
+  .nav-link--overflow { display: none; }
+
+  .nav-overflow-trigger { display: flex; }
+
+  /* Site nav needs relative positioning for dropdown absolute offset */
+  .site-nav { position: sticky; }
+}
+
+/* Compact padding at 640 px — pill remains visible, no items hidden here */
+@media (max-width: 640px) {
+  .site-nav { padding: 0 var(--space-4); gap: var(--space-3); }
+  .nav-link { font-size: var(--text-2xs); }
+  .batting-check   { display: none; }
+  .batting-tooltip { display: none; }
+  .batting-chip    { padding: 4px var(--space-2); }
+
+  /* Dropdown aligns to right edge with tighter gutter */
+  .nav-overflow-dropdown { right: var(--space-4); }
+}
+
+/* Accessibility: honour reduce-motion by killing all animations */
+@media (prefers-reduced-motion: reduce) {
+  .presence-dot            { animation: none; opacity: 0.6; }
+  .presence-indicator      { transition: none; }
+  .erosion-bar             { transition: none; }
+  .nav-overflow-trigger    { transition: none; }
+  .nav-overflow-dropdown:not([hidden]) { animation: none; opacity: 1; }
+}

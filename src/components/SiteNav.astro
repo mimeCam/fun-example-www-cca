@@ -1,23 +1,26 @@
 ---
 // src/components/SiteNav.astro
-// Minimal sticky nav — logo · posts · verdict · now (3 links, Tanya §17).
-// Batting chip right-aligned; ghost text "0 bets sealed" when cold (Tanya §17).
-// Presence dot only — text/count removed (Tanya §23: dot alone is the signal).
+// Sticky nav — logo · posts · verdict (always) + overflow pill at ≤768 px.
+// Overflow pill collapses: community · leaderboard · now into ··· button.
+// Batting chip right-aligned; ghost text "0 bets sealed" when cold.
+// Presence dot only — text/count removed (dot alone is the signal).
 // Erosion bar retained on blog post detail pages only.
 //
-// Presence elements use the same IDs as the old PresenceBand so
-// presence-unified.ts hydrates them automatically.
+// Overflow pill (P0 fix): nav.css + nav-overflow.ts — Mike §P0, Tanya §2.
+// Presence elements use same IDs as old PresenceBand — presence-unified.ts
+// hydrates them automatically.
 //
-// Credits: Tanya (UX spec §17 — Navigation surgery), Elon (strip nav links)
+// Credits: Tanya (UX spec §17, §2), Michael Koch (architect), Elon (P0 nav fix)
 
-import { getActivePage } from '../lib/nav';
+import '../styles/nav.css';
+import { getActivePage, type PageId } from '../lib/nav';
 import { computeBattingAverage } from '../lib/batting-average';
 import { getAllStanceDistributions } from '../lib/stance-ledger';
 import { computeTension } from '../lib/tension-score';
 
-const path          = Astro.url.pathname;
-const pageId        = getActivePage(path);
-const isBlogPost    = pageId === 'blog';
+const path       = Astro.url.pathname;
+const pageId     = getActivePage(path);
+const isBlogPost = pageId === 'blog';
 
 // Verdict link gets amber underline when any living post is contested (Tanya §2).
 let hasContested = false;
@@ -29,9 +32,13 @@ try {
 } catch { /* DB not seeded — skip signal */ }
 const presenceScope = isBlogPost ? 'slug' : 'global';
 
-// Narrow to live variant — hide chip entirely when cold (Tanya §2)
+// Batting chip — hide entirely when cold (no resolved verdicts yet).
 const avgRaw  = computeBattingAverage();
 const avgLive = avgRaw.status === 'live' && avgRaw.total > 0 ? avgRaw : null;
+
+// Overflow pill — active when current page is one of the collapsed links.
+const OVERFLOW_PAGES: PageId[] = ['community', 'leaderboard', 'now'];
+const isOverflowActive = OVERFLOW_PAGES.includes(pageId);
 
 function chipMod(pct: number): string {
   if (pct >= 80) return 'batting-chip--strong';
@@ -73,6 +80,46 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     </a>
   </div>
 
+  <!-- Overflow pill — left of right cluster, right of primary links.     -->
+  <!-- Visible only at ≤768 px via CSS. Double-presence pattern:          -->
+  <!-- community/leaderboard/now live in both the primary strip (CSS-     -->
+  <!-- hidden) AND here (JS-controlled). SSR renders both; CSS + JS       -->
+  <!-- decide visibility. Active state computed server-side. (Mike §2)    -->
+  <button
+    class:list={[
+      'nav-overflow-trigger',
+      isOverflowActive && 'nav-overflow-trigger--active',
+    ]}
+    aria-expanded="false"
+    aria-haspopup="menu"
+    aria-label="More pages"
+    data-nav-overflow-trigger
+  >···</button>
+
+  <div
+    class="nav-overflow-dropdown"
+    role="menu"
+    aria-label="More pages"
+    hidden
+    data-nav-overflow-dropdown
+  >
+    <a
+      href="/community"
+      role="menuitem"
+      class:list={['nav-link', pageId === 'community' && 'nav-link--active']}
+    >community</a>
+    <a
+      href="/leaderboard"
+      role="menuitem"
+      class:list={['nav-link', pageId === 'leaderboard' && 'nav-link--active']}
+    >leaderboard</a>
+    <a
+      href="/now"
+      role="menuitem"
+      class:list={['nav-link', pageId === 'now' && 'nav-link--active']}
+    >now</a>
+  </div>
+
   <!-- Right cluster: batting chip + presence dot — always right-aligned -->
   <!-- Cold state: ghost chip hints the mechanism exists (Tanya §9.1) -->
   <div class="nav-right">
@@ -106,256 +153,10 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
   {isBlogPost && <div class="erosion-bar" aria-hidden="true" />}
 </nav>
 
-<style>
-  .site-nav {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    height: 48px;
-    padding: 0 1.5rem;
-    gap: 1.25rem;
-    background: var(--surface-overlay);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  /* Site name / logo */
-  .site-name {
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: opacity 120ms ease;
-    flex-shrink: 0;
-  }
-  .site-name:hover { opacity: 0.7; }
-
-  /* Secondary nav links */
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .nav-link {
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
-    color: var(--text-tertiary);
-    text-decoration: none;
-    transition: color 150ms ease;
-    padding-bottom: 2px;
-    border-bottom: 2px solid transparent;
-  }
-
-  .nav-link:hover { color: var(--text-secondary); }
-
-  /* Active page: amber underline — conviction gold is the active signal */
-  .nav-link--active,
-  .site-name.nav-link--active {
-    color: var(--text-secondary);
-    border-bottom-color: var(--gold);
-  }
-
-  /* Contested signal: 4px amber underline on verdict link (Tanya §2) */
-  .nav-link--contested {
-    border-bottom: 4px solid var(--gold-dim);
-    padding-bottom: 0;
-  }
-
-  /* ── Batting average chip (Tanya §2 — right-aligned, left of presence) ── */
-
-  /* Right cluster: chip + presence always flush-right */
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-left: auto;
-    flex-shrink: 0;
-  }
-
-  .batting-chip {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    padding: 4px 10px;
-    border-radius: var(--radius-full, 9999px); /* pill shape — token not pixel (Tanya §17) */
-    border: 1px solid var(--gold-border);
-    background: var(--gold-bg);
-    text-decoration: none;
-    cursor: pointer;
-    flex-shrink: 0;
-    min-width: 56px;  /* prevents nav layout shift at 100% (Tanya §17 fix 3) */
-    transition: border-color var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
-                box-shadow var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
-                min-width var(--motion-duration-base, 300ms) var(--motion-easing-standard, ease-in-out);
-  }
-
-  .batting-chip:hover {
-    border-color: var(--gold-border-strong);
-  }
-
-  .batting-pct {
-    font-size: 0.72rem;
-    font-weight: 600;
-    font-family: var(--font-mono);
-    line-height: 1;
-  }
-
-  .batting-check {
-    font-size: 0.6rem;
-    line-height: 1;
-  }
-
-  /* Strong (≥80%): full amber + glow — tokens replace raw rgba (Tanya §17, §19) */
-  .batting-chip--strong {
-    box-shadow: var(--shadow-chip);
-  }
-  .batting-chip--strong .batting-pct,
-  .batting-chip--strong .batting-check { color: var(--gold); }
-
-  /* Mid (60–79%): amber at reduced opacity, no glow */
-  .batting-chip--mid .batting-pct,
-  .batting-chip--mid .batting-check { color: var(--gold-dim); }
-
-  /* Weak (<60%): muted white, no amber */
-  .batting-chip--weak {
-    border-color: var(--border-medium);
-    background: var(--surface-raised);
-  }
-  .batting-chip--weak .batting-pct,
-  .batting-chip--weak .batting-check { color: var(--text-tertiary); }
-
-  /* Gold atmosphere pulse — participates in seal ceremony (Tanya §17 fix 2) */
-  [data-atmosphere="gold"] .batting-chip {
-    animation: gold-breathe 3s ease-in-out infinite;
-    border-color: var(--gold-border-strong);
-  }
-
-  /* CSS tooltip — 8px below chip, delayed to prevent hover flash (Tanya §17 fix 1) */
-  .batting-tooltip {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    white-space: nowrap;
-    font-size: var(--text-xs, 0.72rem);
-    padding: 6px 12px;
-    border-radius: var(--radius-md, 8px);
-    background: var(--gold-bg);
-    border: 1px solid var(--gold-border);
-    color: var(--text-secondary);
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(-4px);
-    /* delay show to prevent flash during quick navigation */
-    transition: opacity var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out),
-                transform var(--motion-duration-fast, 150ms) var(--motion-easing-standard, ease-in-out);
-    transition-delay: 300ms;
-    z-index: 20;
-  }
-
-  .batting-chip:hover .batting-tooltip {
-    opacity: 1;
-    transform: translateY(0);
-    transition-delay: 300ms; /* delay on show only */
-  }
-
-  /* Hide tooltip instantly on mouse-leave — no delay (Tanya §17 fix 1) */
-  .batting-chip:not(:hover) .batting-tooltip {
-    transition-delay: 0ms;
-  }
-
-  /* Mobile: pct only, no checkmark, no tooltip (Tanya §2 — mobile) */
-  @media (max-width: 640px) {
-    .batting-check    { display: none; }
-    .batting-tooltip  { display: none; }
-    .batting-chip     { padding: 4px 8px; }
-  }
-
-  /* ── Presence indicator (right side) ── */
-
-  .presence-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    /* margin-left: auto moved to batting-chip; presence sits right of chip */
-  }
-
-  .presence-indicator.presence-active { opacity: 1; }
-
-  .presence-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--mood-accent);
-    animation: nav-breathe 3.5s ease-in-out infinite;
-  }
-
-  /* Ghost chip — cold state: non-interactive, visually recessed (Tanya §17 fix 4) */
-  .batting-chip--ghost {
-    font-size: var(--text-xs, 0.72rem);
-    font-family: var(--font-mono);
-    color: var(--text-ghost);
-    border-color: var(--border-faint);
-    background: transparent;
-    cursor: default;
-    pointer-events: none;
-    letter-spacing: 0.06em;
-    user-select: none;
-    opacity: 0.45; /* communicates non-actionable state — not full ghost (Tanya §17) */
-  }
-
-  @keyframes nav-breathe {
-    0%, 100% { opacity: 0.4; transform: scale(0.6); }
-    50% { opacity: 0.8; transform: scale(1.0); }
-  }
-
-  /* ── Erosion bar (blog posts only) ── */
-
-  .site-nav.has-erosion {
-    border-bottom: none;
-    position: relative;
-  }
-
-  .erosion-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    border-radius: 0 0 2px 2px;
-    background: color-mix(in oklch, var(--mood-accent) 18%, transparent);
-    box-shadow: 0 1px 6px color-mix(in oklch, var(--mood-accent) 10%, transparent);
-    transform-origin: left;
-    transform: scaleX(var(--erosion-progress, 1));
-    opacity: calc(
-      (0.3 + 0.7 * var(--erosion-progress, 1)) *
-      clamp(0, var(--erosion-progress, 1) / 0.05, 1)
-    );
-    mask-image: linear-gradient(to right, black 85%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-    transition: transform 120ms ease-out, opacity 120ms ease-out;
-    pointer-events: none;
-  }
-
-  /* ── Responsive ── */
-
-  @media (max-width: 640px) {
-    .site-nav { padding: 0 1rem; gap: 0.75rem; }
-    .nav-link { font-size: 0.68rem; }
-    /* Collapse community + now on mobile — posts + verdict are the core loop */
-    .nav-link--community,
-    .nav-link--overflow { display: none; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .presence-dot { animation: none; opacity: 0.6; }
-    .presence-indicator { transition: none; }
-    .erosion-bar { transition: none; }
-  }
-</style>
+<script>
+  // Initialise overflow pill controller + re-init after Astro view transitions.
+  // Controller lives in nav-overflow.ts — thin orchestration only here.
+  import { initNavOverflow } from '../lib/client/nav-overflow';
+  initNavOverflow();
+  document.addEventListener('astro:after-swap', initNavOverflow);
+</script>

@@ -4,6 +4,38 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v103 — Nav Overflow Pill & CSS Extraction (2026-04-12)
+#   Sprint: Responsive nav overflow pill collapses community · leaderboard · now
+#     into a ··· button at ≤768 px. All SiteNav inline styles migrated to a
+#     standalone nav.css (single source of truth, design-system compliant).
+#     NavOverflowController manages open/close state, ARIA, keyboard navigation
+#     (Escape / ArrowDown / ArrowUp), and outside-click dismissal. Active state
+#     for the pill computed SSR-side (isOverflowActive). astro:before-swap
+#     destroys the controller to prevent listener accumulation across page
+#     transitions. Pure UIX — zero infra changes.
+#   New files:
+#     src/lib/client/nav-overflow.ts — NavOverflowController class; manages
+#       open/close toggle, ARIA aria-expanded updates, keyboard navigation
+#       (Escape→close, ArrowDown/Up→focus next/prev link), outside-click via
+#       capture-phase listener; destroy() removes all listeners (called on
+#       astro:before-swap); initNavOverflow() idempotent public entry point.
+#     src/styles/nav.css — single source of truth for all nav styles; migrated
+#       from SiteNav.astro inline <style> block; overflow pill trigger +
+#       dropdown panel styles; 768 px / 640 px responsive breakpoints; zero raw
+#       hex/rgba — fully token-driven; prefers-reduced-motion guard.
+#   Modified files:
+#     src/components/SiteNav.astro — imports nav.css + type PageId from nav lib;
+#       overflow pill <button data-nav-overflow-trigger> + <div data-nav-overflow-
+#       dropdown> rendered SSR; isOverflowActive computed server-side from
+#       OVERFLOW_PAGES constant; inline <style> block replaced by nav.css import;
+#       <script> calls initNavOverflow() on DOMContentLoaded (Astro deduplicates).
+#     AGENTS.md — Nav overflow pill logged under Recently Completed.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v102).
+#
 # Architecture v102 — RAF Master Frame Scheduler (2026-04-12)
 #   Sprint: Consolidates competing animation loops into a single shared RAF via a
 #     priority-bucketed master scheduler singleton. HeartbeatOrchestrator migrated
