@@ -15,13 +15,18 @@ import KeepButton from './KeepButton.astro';
 import BloomParticles from './BloomParticles.astro';
 import DecayClock from './DecayClock.astro';
 import TensionBadge from './TensionBadge.astro';
+import BattingAverageChip from './BattingAverageChip.astro';
 import { formatPubDate } from '../lib/dates';
 import type { PostDisplayData } from '../lib/postMeta';
 import { clockUrgency } from '../lib/death-clock';
 
-interface Props { post: PostDisplayData; }
+interface Props {
+  post: PostDisplayData;
+  /** Author slug for batting average chip. Defaults to 'host' (single-author blog). */
+  authorSlug?: string;
+}
 
-const { post } = Astro.props;
+const { post, authorSlug = 'host' } = Astro.props;
 const href = `/blog/${post.slug}`;
 const formattedDate = formatPubDate(post.pubDate);
 // endangeredDaysLeft covers all posts (0 = entombed, >0 = days remaining)
@@ -70,6 +75,9 @@ const atmosphere = cardAtmosphere(post.decay);
   </a>
   <PostBadge readingTime={post.readingTime} badge={post.badge} />
   {post.description && <p class="post-excerpt">{post.description}</p>}
+  <div class="card-author-row">
+    <BattingAverageChip authorSlug={authorSlug} size="sm" />
+  </div>
   <div class="card-footer">
     <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} decayFactor={post.decay} />
     {/* Single badge slot — priority: risen > tension > revival > empty.
@@ -182,6 +190,14 @@ const atmosphere = cardAtmosphere(post.decay);
     font-size: 0.88rem;
     line-height: 1.55;
     opacity: 0.7;
+  }
+
+  /* Author conviction row — right-aligned chip between body and footer */
+  .card-author-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.5rem 1.75rem 0.25rem;
   }
 
   /* Footer: exactly 3 slots — clock · badge · keep (Tanya §2, Mike §arch) */

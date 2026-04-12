@@ -1,14 +1,13 @@
 **Stack:** Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
-**Core feature:** Posts decay on a clock; readers revive them. Author seals conviction (HMAC + RFC 3161 + OTS); community disputes within 72 h → upheld/overturned; batting average unlocks at ≥1 resolved verdict.
+**Core feature:** Posts decay on a clock; readers revive them. Author seals conviction (HMAC + RFC 3161 + OTS); community disputes within 72 h → upheld/overturned; batting average unlocks at ≥5 resolved verdicts.
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, cron scheduler + jobs
-- `src/lib/client/` — client-side ceremony scripts (trust-badge polling + flip)
-- `src/components/` — UI layer: cards, drawers, ceremonies, badges, filters
+- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, cron scheduler + jobs
+- `src/components/` — UI layer: cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
-- `src/styles/tokens.css` · `src/styles/motion.css` · `src/styles/atmosphere.css` · `src/styles/trust-badge.css` — design system
+- `src/styles/` — design system tokens, motion, atmosphere, trust-badge, batting-average-chip
 
 ## Env Vars
 

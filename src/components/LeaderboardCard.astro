@@ -5,6 +5,7 @@
 // Credits: Tanya (UX §10 — no gamification), Mike (arch spec §LeaderboardCard)
 
 import type { AuthorStats } from '../lib/leaderboard';
+import BattingAverageChip from './BattingAverageChip.astro';
 
 interface Props {
   author: AuthorStats;
@@ -49,13 +50,9 @@ function recordLabel(a: typeof avg): string {
     <span class="lb-meta">On record since {fmtDate(firstSeal)}</span>
   </div>
 
-  <!-- Stats: pct + record -->
+  <!-- Stats: chip + record — chip enforces color-mod thresholds (strong/mid/weak) -->
   <div class="lb-stats">
-    {avg.status === 'live' ? (
-      <span class="lb-pct">{avg.pct}%</span>
-    ) : (
-      <span class="lb-pct lb-pct--cold">—</span>
-    )}
+    <BattingAverageChip authorSlug={slug} size="md" />
     <span class="lb-record">{recordLabel(avg)}</span>
   </div>
 

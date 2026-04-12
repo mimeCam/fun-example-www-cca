@@ -1,0 +1,123 @@
+/* src/styles/batting-average-chip.css
+ * Feed-level conviction chip — 3-state visual signal: cold | provisional | live.
+ * Token-only: zero hardcoded colors, zero hardcoded sizes.
+ * Gold (--clr-gold-400) appears ONLY at bac--live + bac--strong intersection.
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · Elon (n≥5 confidence rule)
+ */
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+
+.bac {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-faint);
+  background: var(--surface-raised);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  /* Mount animation — badge-enter from motion.css: slides up from 4px below */
+  animation: badge-enter var(--motion-flow-duration, 200ms) var(--motion-flow-easing, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+.bac__pct {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Label hidden on mobile — pct alone carries the signal */
+.bac__label {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  opacity: 0.7;
+  line-height: 1;
+}
+
+/* Count annotation "(n/N)" — provisional only */
+.bac__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  opacity: 0.6;
+  line-height: 1;
+}
+
+/* ── Size Variants ─────────────────────────────────────────────────────── */
+
+.bac--sm {
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+}
+
+.bac--md {
+  font-size: var(--text-sm);
+  padding: 4px 10px;
+}
+
+/* ── State: cold — no verdicts yet; 45% opacity is intentional dimming ── */
+/* Not hidden (visibility: hidden), not zero — it tells a story: clock running */
+
+.bac--cold {
+  opacity: 0.45;
+  color: var(--text-ghost);
+  border-color: var(--border-faint);
+  background: transparent;
+}
+
+/* ── State: provisional — 1–4 verdicts; slate color; no gold ─────────── */
+/* Honest signal about thin sample size (Elon's n-mandate) */
+
+.bac--provisional {
+  color: var(--clr-slate-400);
+  border-color: color-mix(in oklch, var(--clr-slate-400) 18%, transparent);
+  background: color-mix(in oklch, var(--clr-slate-400) 6%, transparent);
+}
+
+/* ── State: live — ≥5 resolved verdicts; color determined by colorMod ── */
+
+.bac--live {
+  border-color: var(--gold-border);
+  background: var(--gold-bg);
+}
+
+/* Hover shimmer on live only — gold border intensifies */
+.bac--live:hover {
+  border-color: var(--gold-border-strong);
+  transition: border-color var(--motion-snap-duration, 120ms) var(--motion-snap-easing, cubic-bezier(0.25, 0, 0, 1));
+}
+
+/* ── Color Modifiers — live only; BEM chain enforces gold discipline ──── */
+/* Gold is sacred: --clr-gold-400 appears ONLY here, ONLY when earned.    */
+
+.bac--strong {
+  color: var(--clr-gold-400);
+  box-shadow: var(--shadow-chip);
+}
+
+.bac--mid {
+  color: var(--verdict-true);
+  border-color: var(--verdict-true-border);
+  background: var(--verdict-true-bg);
+}
+
+.bac--weak {
+  color: var(--verdict-wrong);
+  border-color: var(--verdict-wrong-border);
+  background: var(--verdict-wrong-bg);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .bac__label { display: none; }
+  .bac__count { display: none; }
+}
+
+/* ── Accessibility ─────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .bac { animation: none; }
+}

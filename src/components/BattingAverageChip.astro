@@ -1,0 +1,45 @@
+---
+// src/components/BattingAverageChip.astro
+// Feed-level conviction signal — SSR only, zero client hydration.
+// 3 states: cold (—, dimmed) | provisional (pct+count, slate) | live (pct, gold-tier).
+// data-bac-slug hooks future SSE verdict:declared live-patch (trust-badge-ceremony pattern).
+// Gold (--clr-gold-400) emitted ONLY at live+strong; BEM modifiers enforce the rule.
+//
+// Credits: Mike Koch (arch spec §BattingAverageChip), Tanya (gold-is-sacred rule),
+//          Elon (n≥5 confidence mandate — provisional state carries thin-sample honesty)
+
+import '../styles/batting-average-chip.css';
+import { getBattingAverageChipData } from '../lib/batting-average-chip';
+
+interface Props {
+  authorSlug: string;
+  size?: 'sm' | 'md';
+}
+
+const { authorSlug, size = 'sm' } = Astro.props;
+const chip = getBattingAverageChipData(authorSlug);
+
+function buildTooltip(state: typeof chip.state, count: number): string {
+  if (state === 'cold') return 'No verdicts yet';
+  return `Based on ${count} verdict${count !== 1 ? 's' : ''}`;
+}
+
+const tooltip  = buildTooltip(chip.state, chip.count);
+const ariaLabel = chip.state === 'cold' ? 'No verdicts resolved yet' : `${chip.pct} batting average`;
+---
+
+<span
+  class:list={['bac', `bac--${chip.state}`, `bac--${chip.colorMod}`, `bac--${size}`]}
+  data-bac-slug={authorSlug}
+  title={tooltip}
+  aria-label={ariaLabel}
+  role="status"
+>
+  <span class="bac__pct">{chip.pct}</span>
+  {chip.state !== 'cold' && chip.label && (
+    <span class="bac__label">{chip.label}</span>
+  )}
+  {chip.countStr && (
+    <span class="bac__count">{chip.countStr}</span>
+  )}
+</span>

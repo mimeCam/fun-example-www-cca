@@ -4,6 +4,39 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v85 — BattingAverageChip Feed-Level Conviction Signal (2026-04-12)
+#   Sprint: Feed-level per-author conviction signal on every DecayCard and
+#     LeaderboardCard. SSR-only, zero client hydration. Three states: cold (—,
+#     dimmed, no verdicts), provisional (1–4 verdicts, slate, thin-sample honest),
+#     live (≥5 verdicts, gold-tier at strong ≥80%). Gold appears ONLY at
+#     live+strong intersection (Tanya's gold-is-sacred rule). data-bac-slug hooks
+#     future SSE verdict:declared live-patch.
+#   New files:
+#     src/lib/batting-average-chip.ts — per-author 3-state display adapter;
+#       resolves DB batting average into ChipState (cold/provisional/live) and
+#       ChipColorMod (cold/provisional/strong/mid/weak); LIVE_THRESHOLD=5 (Elon
+#       n≥5 confidence mandate); DB-safe: returns coldChip() on any error.
+#     src/components/BattingAverageChip.astro — SSR chip; imports
+#       getBattingAverageChipData(); size prop ('sm'|'md'); BEM class:list builds
+#       bac--{state}+bac--{colorMod}+bac--{size} for CSS tree-shaking;
+#       data-bac-slug on root for future SSE patch point; aria-label + role=status.
+#     src/styles/batting-average-chip.css — token-only styles; zero hardcoded
+#       colors; badge-enter mount animation from motion.css; .bac--strong → gold
+#       ONLY via bac--live intersection guard; responsive: label+count hidden
+#       at ≤480px; prefers-reduced-motion: animation none.
+#   Modified files:
+#     src/components/DecayCard.astro — BattingAverageChip imported; authorSlug
+#       prop added (default 'host' for single-author deploy); .card-author-row
+#       flex container (justify: flex-end) injected between body and footer;
+#       chip rendered at size="sm".
+#     src/components/LeaderboardCard.astro — BattingAverageChip replaces inline
+#       lb-pct span (live ? pct% : —); chip at size="md"; lb-stats comment updated.
+#     AGENTS.md — BattingAverageChip logged under Recently Shipped.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO
+#     unchanged. In-process cron runner (v82) continues to own ongoing scheduling.
+#     deploy.sh startup sequence unchanged (steps 1–8 identical to v84).
+#
 # Architecture v84 — TrustBadge 5-State Conviction Lifecycle + 3D Flip Ceremony (2026-04-12)
 #   Sprint: TrustBadge gains a full 5-state conviction lifecycle display
 #     (unsealed → pending → sealed → upheld/overturned) with client-side polling
