@@ -4,6 +4,45 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v105 — Seal Ceremony Component Consolidation Phase 1 (2026-04-12)
+#   Sprint: Phase unification refactor — seal state machine migrated from mixed
+#     numeric/string union (0|1|2|3|'notarize'|4) to clean string union
+#     ('compose'|'confirm'|'anchor'|'receipt'). CSS selectors now target
+#     [data-phase="string"] directly — zero lookup table needed. Compose-layer
+#     micro-events (hover/press/release) demoted to dedicated callbacks that
+#     fire without changing SealPhase, driving arc animation and haptics only.
+#   Modified files:
+#     src/lib/seal-phases.ts — SealPhase type → string union
+#       ('compose'|'confirm'|'anchor'|'receipt'); SealEvent streamlined to
+#       CONFIRM / SIGN / RECEIPT / BACK / ERROR; transition() logic simplified;
+#       NOTARIZE constant and numeric cases removed; phase-map comment added.
+#     src/lib/seal-ceremony.ts — NOTARIZE import removed; CeremonyCallbacks
+#       gains onHover/onUnhover/onPress/onRelease for compose-layer micro-events;
+#       conviction variant phase flow documented (compose → anchor → receipt);
+#       notarize as sub-state of anchor clarified in header.
+#     src/styles/seal-ceremony.css — all numeric [data-seal-phase="N"] selectors
+#       replaced with string [data-phase="phase-name"]; four missing @keyframes
+#       added (seal-lock-snap, seal-receipt-bloom, seal-gold-arc,
+#       seal-hesitation-pulse); reduced-motion guard tightened to
+#       animation-duration: 0.01ms !important on all ceremony children.
+#     src/components/ConvictionSealCeremony.astro — adapted to new string phase
+#       API; initial attribute changed from data-seal-phase="0" to
+#       data-phase="compose"; notarize sub-state bridged via data-seal-phase.
+#     src/components/SealCeremony.astro — variant="self"|"conviction" prop
+#       added; aria-live="polite" on ceremony root for screen reader support.
+#     src/components/DecayCard.astro — .cover-wrap radius fixed (20px →
+#       var(--radius-card)); sepia filter added to decay chain; post-excerpt
+#       font-size tokenized (0.88rem → var(--text-sm)).
+#     src/styles/nav.css — nav shadow added (1px border-bottom + drop shadow).
+#     AGENTS.md — Phase 2 goals documented (ConvictionSealCeremony /
+#       ConvictionSeal / ConvictionSealDisplay / SealReceipt → unified
+#       SealCeremony; nav rationalization to 3 links max).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v104).
+#
 # Architecture v104 — Seal Phase Orchestrator: Score Tier System (2026-04-12)
 #   Sprint: Conviction Seal Ceremony gains a full score-tier sensory layer —
 #     coordinated sound/haptic/label/animation pipeline wired to every dot

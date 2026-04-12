@@ -28,8 +28,8 @@ const { slug, title, context = 'post' } = Astro.props;
 <div
   class={`conviction-seal conviction-seal--ceremony ${context === 'admin' ? 'conviction-seal--admin' : ''}`}
   data-slug={slug}
-  data-seal-phase="0"
-  style="--seal-phase:0"
+  data-phase="compose"
+  aria-live="polite"
 >
   <!-- Author-gated notice: visible to non-authors on post page -->
   {context === 'post' && (
@@ -349,7 +349,7 @@ const { slug, title, context = 'post' } = Astro.props;
 </style>
 
 <script>
-  import { createCeremony }         from '../lib/seal-ceremony';
+  import { createCeremony }              from '../lib/seal-ceremony';
   import type { SealPhase, ReceiptData } from '../lib/seal-ceremony';
   import { ceremonyStart, ceremonyAbort, ceremonyResolve, ceremonyComplete } from '../lib/ceremony-atmosphere';
   import {
@@ -358,16 +358,11 @@ const { slug, title, context = 'post' } = Astro.props;
   } from '../lib/client/seal-sound';
   import { hapticForEvent } from '../lib/client/seal-haptic';
 
-  /** Map seal phase transitions to atmosphere lifecycle. */
-  function handleCeremonyAtmosphere(phase: SealPhase, slug: string, active: { v: boolean }): void {
-    if (phase === 2) { active.v = true; ceremonyStart(slug); }
-    else if (phase === 4) {
-      active.v = false;
-      setTimeout(() => ceremonyResolve(slug), 300);
-      setTimeout(() => ceremonyComplete(slug), 3300); // restore neutral after receipt settles
-    }
-    else if (phase === 0 && active.v) { active.v = false; ceremonyAbort(slug); }
-  }
+  // Phase → --seal-weight map for the weight meter (score-strength visual).
+  // anchor is mid-flight (0.875); receipt is done (1.0); compose = score/10.
+  const PHASE_WEIGHT: Record<SealPhase, string> = {
+    compose: '0.5', confirm: '0.5', anchor: '0.875', receipt: '1',
+  };
 
   function initSealForm(container: HTMLElement): void {
     const form       = container.querySelector<HTMLFormElement>('[data-seal-form]')!;
@@ -384,63 +379,92 @@ const { slug, title, context = 'post' } = Astro.props;
     let score    = 5;
     let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Boxed boolean — mutated by handleCeremonyAtmosphere across closures.
+    // Tracks whether the ceremony gold atmosphere is active.
     const active = { v: false };
 
     // Warm AudioContext on first user touch — satisfies browser autoplay policy.
-    // Must happen before any phase sound fires. { once: true } ensures single call.
     container.addEventListener('pointerdown', initSealSound, { once: true });
 
     const ceremony = createCeremony(slug, {
       onPhase: (phase) => {
-        container.dataset.sealPhase = String(phase);
-        container.style.setProperty('--seal-phase', String(phase));
-        // --seal-weight: pre-computed float for weight meter (avoids calc on string 'notarize')
-        const weight = phase === 'notarize' ? '0.875' : String((phase as number) / 4);
-        container.style.setProperty('--seal-weight', weight);
-        arc.classList.toggle('is-filling', phase === 2);
-        handleCeremonyAtmosphere(phase, slug, active);
-        // Sensory layer: sound + haptic observers — never drive state, only react to it.
-        if (phase === 2)          { playSealPress();    hapticForEvent('PRESS');    }
-        else if (phase === 3)     { playSealLock();     hapticForEvent('LOCK');     }
-        else if (phase === 4)     { playReceiptReveal(); hapticForEvent('RECEIPT'); }
+        // data-phase drives all CSS transitions (string selectors — no lookup).
+        container.dataset.phase = phase;
+        container.style.setProperty('--seal-weight', PHASE_WEIGHT[phase]);
+
+        if (phase === 'anchor') {
+          active.v = true;
+          ceremonyStart(slug);
+          playSealLock();
+          hapticForEvent('LOCK');
+        } else if (phase === 'receipt') {
+          active.v = false;
+          setTimeout(() => ceremonyResolve(slug),  300);
+          setTimeout(() => ceremonyComplete(slug), 3300);
+          playReceiptReveal();
+          hapticForEvent('RECEIPT');
+        } else if (phase === 'compose' && active.v) {
+          active.v = false;
+          ceremonyAbort(slug);
+        }
+
+        // Navigation: cleanup if user leaves mid-ceremony.
+        const onNav = (): void => { if (active.v) { active.v = false; ceremonyAbort(slug); } };
+        document.addEventListener('astro:before-preparation', onNav, { once: true });
       },
+
+      // Compose-layer micro-events — do not change data-phase.
+      onPress:   () => {
+        container.classList.add('is-pressing');
+        arc.classList.add('is-filling');
+        playSealPress();
+        hapticForEvent('PRESS');
+      },
+      onRelease: () => {
+        container.classList.remove('is-pressing');
+        arc.classList.remove('is-filling');
+      },
+      onHover:   () => { /* ceremony.hover() called on mouseenter — no visual needed */ },
+      onUnhover: () => { /* ceremony.unhover() — no visual needed */ },
+
       onNotarize: (data) => {
+        // Sub-state of anchor: set data-seal-phase="notarize" to trigger notarize-stamp.css.
+        container.dataset.sealPhase = 'notarize';
         populateNotarize(stamp, data);
         playNotarizeChime();
         hapticForEvent('NOTARIZE');
       },
-      onReceipt:  (data) => {
+      onReceipt: (data) => {
+        // Notarize sub-state ends — clear data-seal-phase so stamp fades.
+        delete container.dataset.sealPhase;
         populateReceipt(receipt, data, slug);
         populateShareCard(container, data);
         container.dispatchEvent(new CustomEvent('conviction:sealed', { bubbles: true, detail: { slug } }));
       },
-      onError:    (msg)  => {
+      onError: (msg) => {
         errorEl.textContent = msg;
         errorEl.style.display = 'block';
         playSealError();
         hapticForEvent('ERROR');
       },
       onAlreadySealed: () => showAlreadySealed(errorEl),
-      onCancel:   () => { /* clean slate — atmosphere already restored by onPhase(0) */ },
+      onCancel: () => { /* phase resets to compose via onPhase — atmosphere handled there */ },
     });
 
     cancelBtn.addEventListener('click', () => ceremony.cancel());
 
-    // Escape key: abort only when not locked (phase < 3 = POST not yet in flight).
-    const onEscape = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && ceremony.phase() < 3 && active.v) ceremonyAbort(slug);
-    };
-    // Navigation: unconditional cleanup — prevents gold atmosphere leaking across pages.
-    const onNavigation = (): void => { if (active.v) { active.v = false; ceremonyAbort(slug); } };
-
-    document.addEventListener('keydown', onEscape);
-    document.addEventListener('astro:before-preparation', onNavigation);
+    // Escape key: abort only when compose phase (not locked in anchor).
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && ceremony.phase() === 'compose' && active.v) {
+        ceremonyAbort(slug);
+      }
+    });
 
     function setScore(n: number): void {
       score = n;
       scoreInput.value = String(n);
       scoreDisp.textContent = String(n);
+      // Update weight meter to reflect conviction strength (score/10).
+      container.style.setProperty('--seal-weight', String(n / 10));
       dotsEl.querySelectorAll<HTMLElement>('.seal-dot').forEach((dot, i) => {
         dot.classList.toggle('is-filled', i < n);
         dot.setAttribute('aria-pressed', String(i < n));
@@ -448,13 +472,13 @@ const { slug, title, context = 'post' } = Astro.props;
     }
 
     function startHold(): void {
-      ceremony.press();
+      ceremony.press();  // fires onPress → arc fill + stamp-down
       holdTimer = setTimeout(() => submitForm(), 600);
     }
 
     function cancelHold(): void {
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-      ceremony.release();
+      ceremony.release();  // fires onRelease → arc unfill
     }
 
     async function submitForm(): Promise<void> {
@@ -565,10 +589,10 @@ const { slug, title, context = 'post' } = Astro.props;
     return document.cookie.includes('admin_token=');
   }
 
-  document.querySelectorAll<HTMLElement>('[data-slug][data-seal-phase]').forEach(el => {
-    // Reveal form for admins on post pages
-    if (el.classList.contains('conviction-seal--ceremony') && !el.classList.contains('conviction-seal--admin')) {
-      if (isAdminCookiePresent()) revealForAdmin(el);
+  // Target only conviction ceremony containers (not SealCeremony.astro which uses .seal-ceremony).
+  document.querySelectorAll<HTMLElement>('.conviction-seal--ceremony[data-slug]').forEach(el => {
+    if (!el.classList.contains('conviction-seal--admin') && isAdminCookiePresent()) {
+      revealForAdmin(el);
     }
     initSealForm(el);
   });

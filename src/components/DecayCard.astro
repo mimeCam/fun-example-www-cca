@@ -114,8 +114,9 @@ const atmosphere = cardAtmosphere(post.decay);
     width: 100%;
     aspect-ratio: 16 / 7;
     overflow: hidden;
-    /* Matches card top corners — concentric with card border-radius */
-    border-radius: var(--card-computed-radius, 20px) var(--card-computed-radius, 20px) 0 0;
+    /* Concentric with card top corners — must match --radius-card exactly.
+       Tanya §1 §13: "A 20px cover inside a 12px card creates a visible gap." */
+    border-radius: var(--radius-card, 12px) var(--radius-card, 12px) 0 0;
   }
 
   .cover-img {
@@ -123,9 +124,12 @@ const atmosphere = cardAtmosphere(post.decay);
     height: 100%;
     object-fit: cover;
     display: block;
-    /* Decay filter cascade: saturation collapses, opacity fades, blur ghosts */
+    /* Decay filter cascade: saturation collapses, sepia accumulates, opacity fades, blur ghosts.
+       Tanya §5: sepia sits between saturation and opacity (correct position).
+       At fossil stage --decay-sepia reaches 0.15 — subtle, not aggressive. */
     filter:
       saturate(calc(1 - var(--decay-factor, 0) * 0.8))
+      sepia(calc(var(--decay-factor, 0) * var(--decay-sepia, 0)))
       opacity(calc(1 - var(--decay-factor, 0) * 0.55))
       blur(calc(var(--decay-factor, 0) * 2px));
     transition: filter 600ms ease;
@@ -141,7 +145,8 @@ const atmosphere = cardAtmosphere(post.decay);
       color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) calc((0.12 - var(--decay-factor, 0) * 0.08) * 100%), transparent),
       rgba(0, 0, 0, 0.15)
     );
-    border-radius: var(--card-computed-radius, var(--radius, 20px)) var(--card-computed-radius, var(--radius, 20px)) 0 0;
+    /* Concentric with card top corners — same token as .cover-wrap */
+    border-radius: var(--radius-card, 12px) var(--radius-card, 12px) 0 0;
   }
 
   /* Body: inner padding lives here now (removed from .post-card) */
@@ -184,10 +189,10 @@ const atmosphere = cardAtmosphere(post.decay);
   }
 
   .post-excerpt {
-    margin: 0.4rem 0 0;
-    font-size: 0.88rem;
+    margin:      0.4rem 0 0;
+    font-size:   var(--text-sm);   /* was 0.88rem — all values via token system (Tanya §11) */
     line-height: 1.55;
-    opacity: 0.7;
+    opacity:     0.7;
   }
 
   /* Footer: exactly 3 slots — clock · badge · keep (Tanya §2, Mike §arch) */

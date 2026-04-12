@@ -22,10 +22,17 @@ import BloomParticles  from './BloomParticles.astro';
 interface Props {
   slug:        string;
   title:       string;
-  authorSlug?: string; // default 'host' for single-author platforms
+  authorSlug?: string;                    // default 'host' for single-author platforms
+  variant?:    'self' | 'conviction';     // 'self' = seal own post; 'conviction' = conviction seal
 }
 
-const { slug, title, authorSlug = 'host' } = Astro.props;
+const { slug, title, authorSlug = 'host', variant = 'self' } = Astro.props;
+
+// Variant-specific copy — heading and risk text differ; phases are identical.
+const eyebrow = variant === 'conviction' ? 'SEAL YOUR CONVICTION' : 'SEAL YOUR CONVICTION';
+const riskText = variant === 'conviction'
+  ? 'Stake your reputation on this. The community can dispute within 72 hours. There is no unseal.'
+  : 'Once sealed, this enters the accountability loop. The community can dispute within 72 hours. There is no unseal.';
 ---
 
 <div
@@ -33,21 +40,21 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
   data-phase="compose"
   data-slug={slug}
   data-author={authorSlug}
+  data-variant={variant}
   data-score="5"
   data-seal-score-tier="mid"
   aria-label="Seal your conviction"
+  aria-live="polite"
   data-atmosphere="gold"
 >
 
   <!-- ── PHASE: COMPOSE ─────────────────────────────────────────── -->
   <div class="sc-phase sc-phase--compose">
     <header class="sc-header">
-      <span class="sc-eyebrow">SEAL YOUR CONVICTION</span>
+      <span class="sc-eyebrow">{eyebrow}</span>
       <h2 class="sc-title">{title}</h2>
       <p class="sc-risk">
-        Once sealed, this enters the accountability loop.
-        The community can dispute within 72 hours.
-        <strong>There is no unseal.</strong>
+        {riskText} <strong>There is no unseal.</strong>
       </p>
     </header>
 

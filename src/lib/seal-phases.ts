@@ -1,44 +1,51 @@
 // src/lib/seal-phases.ts
-// Pure seal-ceremony state machine — zero DOM dependencies.
-// Extracted from seal-ceremony.ts; enables isolated testing and reuse.
+// Canonical phase type for the seal ceremony state machine.
+// String phases double as CSS [data-phase] attribute selector values — zero lookup.
 //
-// DESIGN NOTE: NOTARIZE uses a string literal ('notarize') not a float (3.5).
-// • String literal enables exhaustiveness checking in TypeScript switch blocks.
-// • [data-seal-phase="notarize"] CSS attribute selector — identical runtime behaviour.
-// • Weight meter uses --seal-weight (0.875) set at render time, not calc(--seal-phase/4).
+// Phase map:
+//   compose  → score entry + conviction note
+//   confirm  → read-only preview + oath checkbox (hesitation beat lives here)
+//   anchor   → POST in flight, gold arc (1800ms minimum — do not shorten)
+//   receipt  → sealed document, share/download
 //
-// Credits: Mike (§Architecture, §Phase-notarize-fix, §state-machine), Tanya (§5)
+// The notarize moment is a SUB-STATE of anchor, not a top-level phase.
+// CSS: [data-seal-phase="notarize"] fires via data-seal-phase set by the caller.
+// JS:  onNotarize callback fires; caller sets data-seal-phase="notarize" briefly.
+//
+// Migration note: replaces the numeric union (0|1|2|3|'notarize'|4) that mixed
+// number and string types and required a lookup table for CSS selectors.
+// TypeScript exhaustiveness checking works identically on string unions.
+//
+// Credits: Mike (§Phase-unification §CSS-state-machine), Tanya (§4 ceremony spec)
 
-export type SealPhase = 0 | 1 | 2 | 3 | 'notarize' | 4;
-
-// Named constant — avoids string literals at every call site.
-export const NOTARIZE = 'notarize' as const satisfies SealPhase;
+export type SealPhase = 'compose' | 'confirm' | 'anchor' | 'receipt';
 
 export type SealEvent =
-  | 'HOVER' | 'UNHOVER'
-  | 'PRESS' | 'RELEASE'
-  | 'LOCK'
-  | 'NOTARIZE'  // POST resolved — notarize ceremony before receipt
-  | 'RECEIPT'   // Ceremonial pause elapsed — receipt expands
-  | 'ERROR';    // Any failure — back to idle
+  | 'CONFIRM'  // compose → confirm  (score + note filled, user clicks Seal)
+  | 'SIGN'     // confirm → anchor   (oath checked, user clicks Sign & Anchor)
+  | 'RECEIPT'  // anchor  → receipt  (notarize pause elapsed)
+  | 'BACK'     // confirm → compose  (user goes back)
+  | 'ERROR';   // any     → compose  (any failure — let user retry)
 
-/** Pure phase transition. No side effects. Safe to call in tests. */
+/** Pure phase transition — no DOM side effects. Safe to call in tests. */
 export function transition(current: SealPhase, event: SealEvent): SealPhase {
   switch (event) {
-    case 'HOVER':    return current === 0        ? 1        : current;
-    case 'UNHOVER':  return current === 1        ? 0        : current;
-    case 'PRESS':    return current <= 1         ? 2        : current;
-    case 'RELEASE':  return current === 2        ? 0        : current;
-    case 'LOCK':     return current === 2        ? 3        : current;
-    case 'NOTARIZE': return current === 3        ? NOTARIZE : current;
-    case 'RECEIPT':  return current === NOTARIZE ? 4        : current;
-    case 'ERROR':    return 0;
-    default:         return current;
+    case 'CONFIRM': return current === 'compose' ? 'confirm' : current;
+    case 'SIGN':    return current === 'confirm' ? 'anchor'  : current;
+    case 'RECEIPT': return current === 'anchor'  ? 'receipt' : current;
+    case 'BACK':    return current === 'confirm' ? 'compose' : current;
+    case 'ERROR':   return 'compose';
+    default:        return current;
   }
 }
 
-/** True once POST is in flight — escape must not abort from here. */
+/** True once POST is in flight — abort not available from this phase onwards. */
 export function isLocked(phase: SealPhase): boolean {
-  if (phase === NOTARIZE) return true;
-  return (phase as number) >= 3;
+  return phase === 'anchor' || phase === 'receipt';
+}
+
+/** Forward-only guard: prevents impossible skips (compose → anchor is invalid). */
+export function canAdvance(from: SealPhase, to: SealPhase): boolean {
+  const order: SealPhase[] = ['compose', 'confirm', 'anchor', 'receipt'];
+  return order.indexOf(to) === order.indexOf(from) + 1;
 }

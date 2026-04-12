@@ -1,8 +1,11 @@
 /* src/styles/seal-ceremony.css
  * Seal ceremony animations — CSS drives all visual phase transitions.
- * The TS state machine writes [data-seal-phase] + data-seal-score-tier.
+ * The TS state machine writes [data-phase] + data-seal-score-tier.
+ * Phase attribute values are strings matching SealPhase: compose|anchor|receipt
+ * (SealCeremony.astro also uses confirm|notarize as visible phases.)
  * Zero runtime JS for visuals. Spring curves, @starting-style, clip-path.
- * Credits: Mike (§CSS-state-machine, §spring-curve, §HesitationBeat),
+ *
+ * Credits: Mike (§CSS-state-machine §Phase-unification §HesitationBeat),
  *          Tanya (§ScoreDots §score-tier-labels §ShadowDepthHierarchy),
  *          DevBrain (@starting-style)
  */
@@ -17,18 +20,18 @@
   background: transparent;
   cursor: pointer;
   transition:
-    background var(--motion-duration-fast) var(--motion-easing-standard),
-    border-color var(--motion-duration-fast) var(--motion-easing-standard),
-    transform var(--motion-duration-base) var(--motion-easing-spring);
+    background    var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color  var(--motion-duration-fast) var(--motion-easing-standard),
+    transform     var(--motion-duration-base) var(--motion-easing-spring);
 }
 
 .seal-dot.is-filled {
-  background: var(--gold);
+  background:   var(--gold);
   border-color: var(--gold);
 }
 
 .seal-dot:hover {
-  transform: scale(1.25);
+  transform:    scale(1.25);
   border-color: var(--gold);
 }
 
@@ -50,18 +53,19 @@
   border-color: color-mix(in oklch, var(--gold) 40%, transparent);
 }
 
-/* ── Weight meter: interpolated via --seal-weight (set by JS, avoids calc on string phase) ── */
+/* ── Weight meter: interpolated via --seal-weight (set by JS) ────────────── */
 
 .seal-weight-meter {
   transform-origin: bottom;
-  transform: scaleY(var(--seal-weight, 0));
+  transform:  scaleY(var(--seal-weight, 0));
   transition: transform var(--motion-duration-base) var(--motion-easing-spring);
   background: var(--gold);
-  width: 3px;
+  width:        3px;
   border-radius: 2px;
 }
 
-/* ── Press animation: stamp-down on phase 2 ──────────────── */
+/* ── Press animation: stamp-down on hold gesture ──────────────────────────── */
+/* Triggered by .is-pressing class (JS: onPress callback) not phase change.  */
 
 @keyframes stamp-down {
   0%   { transform: scale(1)    translateY(0);    }
@@ -70,28 +74,50 @@
   100% { transform: scale(1)    translateY(0);    }
 }
 
-[data-seal-phase="2"] .seal-btn {
+.is-pressing .seal-btn {
   animation: stamp-down var(--motion-duration-base) var(--motion-easing-standard) forwards;
+}
+
+/* ── Lock snap — confirm → anchor transition (Tanya §10 / Mike §4 keyframes) ── */
+/* Applied on .seal-ceremony when entering anchor to signal commitment weight.   */
+
+@keyframes seal-lock-snap {
+  0%   { transform: scale(1);    }
+  40%  { transform: scale(0.97); }
+  70%  { transform: scale(1.02); }
+  100% { transform: scale(1);    }
+}
+
+[data-phase="anchor"] .seal-btn,
+[data-phase="anchor"] .cs-seal-btn {
+  animation: seal-lock-snap var(--motion-duration-base) var(--motion-easing-spring) forwards;
 }
 
 /* ── Arc fill: SVG progress ring for hold-to-seal ────────── */
 
 .seal-arc {
-  stroke: var(--gold);
-  stroke-dasharray: 113;
+  stroke:            var(--gold);
+  stroke-dasharray:  113;
   stroke-dashoffset: 113;
   transition: stroke-dashoffset var(--motion-duration-deliberate) linear;
-  fill: none;
-  stroke-linecap: round;
+  fill:            none;
+  stroke-linecap:  round;
   transform-origin: center;
-  transform: rotate(-90deg);
+  transform:       rotate(-90deg);
 }
 
-.seal-arc.is-filling {
-  stroke-dashoffset: 0;
+.seal-arc.is-filling { stroke-dashoffset: 0; }
+
+/* ── Gold arc — anchor phase progress ring (Mike §4 keyframes) ──────────── */
+/* The .sc-arc-fill in SealCeremony.astro uses inline transition instead.    */
+/* This keyframe is for the conviction ceremony ring variant.                 */
+
+@keyframes seal-gold-arc {
+  from { stroke-dashoffset: var(--arc-circumference, 113); }
+  to   { stroke-dashoffset: 0; }
 }
 
-/* ── Lock spinner: phase 3 (POST in progress) ────────────── */
+/* ── Lock spinner: anchor phase (POST in progress) ───────────────────────── */
 
 @keyframes seal-spin {
   to { transform: rotate(360deg); }
@@ -99,7 +125,7 @@
 
 .seal-spinner {
   display: none;
-  width: 14px;
+  width:  14px;
   height: 14px;
   border: 2px solid var(--gold-border);
   border-top-color: var(--gold);
@@ -107,28 +133,27 @@
   animation: seal-spin 600ms linear infinite;
 }
 
-[data-seal-phase="3"] .seal-spinner   { display: block; }
-[data-seal-phase="3"] .seal-btn-label { opacity: 0.4; }
-[data-seal-phase="3"] .seal-btn       { pointer-events: none; }
+[data-phase="anchor"] .seal-spinner   { display: block; }
+[data-phase="anchor"] .seal-btn-label { opacity: 0.4; }
+[data-phase="anchor"] .seal-btn       { pointer-events: none; }
+[data-phase="anchor"] .cs-seal-btn    { pointer-events: none; }
 
 /* ── Error state ─────────────────────────────────────────── */
 
 .seal-error:not(:empty) {
-  display: block;
-  color: var(--verdict-wrong);
-  font-size: var(--text-xs);
+  display:    block;
+  color:      var(--verdict-wrong);
+  font-size:  var(--text-xs);
   margin-top: var(--space-2);
 }
 
-/* ── Phase 4: hide form; SealReceipt.astro controls its own display ─── */
-/* SealReceipt.astro owns its entry animation and display:block rule.    */
-/* Cross-component Astro scoping prevents targeting it from here.        */
+/* ── Phase receipt: hide form; receipt controls its own display ────────── */
 
-[data-seal-phase="4"] .seal-form { display: none; }
+[data-phase="receipt"] .seal-form { display: none; }
 
-/* ── Notarize phase visibility (SealCeremony.astro) ─────────────────── */
-/* data-phase="notarize" is set on .seal-ceremony during phase 3.5.     */
-/* Also sets data-seal-phase="notarize" so notarize-stamp.css triggers.  */
+/* ── Notarize phase visibility (SealCeremony.astro) ────────────────────── */
+/* data-phase="notarize" is set on .seal-ceremony during the notarize beat. */
+/* Also sets data-seal-phase="notarize" so notarize-stamp.css triggers.     */
 
 .seal-ceremony[data-phase="notarize"] .sc-phase--notarize {
   display:        flex;
@@ -136,12 +161,11 @@
   align-items:    center;
 }
 
-/* ── Heartbeat pulse: anchor + notarize phases ────────────────────── */
-/* Wires --motion-heartbeat-fresh-* tokens from tokens.css.            */
-/* Ceremony border glows in rhythm — communicates "in flight".         */
+/* ── Heartbeat pulse: anchor + notarize phases ──────────────────────────── */
+/* Ceremony border glows in rhythm — communicates "in flight".               */
 
 @keyframes ceremony-heartbeat {
-  0%, 100% { box-shadow: var(--shadow-e3), 0 0 12px color-mix(in oklch, var(--gold) 4%, transparent); }
+  0%, 100% { box-shadow: var(--shadow-e3), 0 0 12px color-mix(in oklch, var(--gold) 4%,  transparent); }
   50%       { box-shadow: var(--shadow-e3), 0 0 28px color-mix(in oklch, var(--gold) 14%, transparent); }
 }
 
@@ -153,16 +177,37 @@
     infinite;
 }
 
-/* ── Receipt phase: grain accumulation ───────────────────────────── */
-/* Sealed conviction accrues grain — it is now historical record.    */
+/* ── Hesitation pulse — compose phase CTA after score change (Mike §4 / Tanya §3) ── */
+/* Fires once on data-hesitating attribute; not a loop.                               */
+
+@keyframes seal-hesitation-pulse {
+  0%, 100% { box-shadow: var(--shadow-e2); }
+  50%       { box-shadow: var(--shadow-ceremony, 0 0 0 3px color-mix(in oklch, var(--gold) 20%, transparent)); }
+}
+
+.seal-ceremony[data-hesitating] [data-compose-cta] {
+  animation: hesitation-pulse
+    var(--seal-hesitation-duration, 400ms)
+    ease-in-out
+    1;
+}
+
+/* ── Receipt bloom — anchor → receipt entrance (Mike §4 keyframes) ─────── */
+
+@keyframes seal-receipt-bloom {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Receipt phase: grain accumulation ─────────────────────────────────── */
+/* Sealed conviction accrues grain — it is now historical record.           */
 
 .seal-ceremony[data-phase="receipt"] {
   --decay-grain: var(--decay-grain-aged, 0.09);
 }
 
-/* ── Hash typewriter: clip-path ink-dry reveal ───────────────── */
-/* 800ms linear for 64-char hash = 12.5ms per character.         */
-/* ghost → conviction-gold: hash is being *etched*, not printed. */
+/* ── Hash typewriter: clip-path ink-dry reveal ───────────────────────── */
+/* 800ms linear for 64-char hash = 12.5ms per character.                 */
 
 @keyframes reveal-hash {
   from { clip-path: inset(0 100% 0 0); }
@@ -171,7 +216,7 @@
 
 @keyframes hash-ink-dry {
   from { color: var(--text-ghost); }
-  to   { color: var(--gold-dim); }
+  to   { color: var(--gold-dim);   }
 }
 
 .seal-receipt-hash {
@@ -185,8 +230,7 @@
   color:          var(--text-ghost);
 }
 
-/* ── Weight meter: gold color sync in gold atmosphere ─────────── */
-/* Inherit the ceremony's emotional color without JS.              */
+/* ── Weight meter: gold color sync in gold atmosphere ─────────────────── */
 
 [data-atmosphere="gold"] .seal-weight-meter {
   background: var(--gold);
@@ -194,9 +238,8 @@
   transition: box-shadow var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
-/* ── Phase 3: lock overlay — irreversibility notice + cancel CTA ────── */
-/* Visible only at phase 3 (POST in flight). Cancel is "designing for    */
-/* liberation" — an obvious exit improves trust, not abandonment rate.   */
+/* ── Phase anchor: lock overlay — irreversibility notice + cancel CTA ─── */
+/* An obvious exit improves trust, not abandonment rate.                   */
 
 .seal-lock-overlay {
   display:        none;
@@ -211,7 +254,7 @@
   margin-top:     var(--space-4);
 }
 
-[data-seal-phase="3"] .seal-lock-overlay { display: flex; }
+[data-phase="anchor"] .seal-lock-overlay { display: flex; }
 
 .seal-irrev-notice {
   font-size:      var(--text-xs);
@@ -219,21 +262,21 @@
   letter-spacing: 0;
   line-height:    var(--leading-normal);
   margin:         0;
-  animation:      pulse-warm 3s ease-in-out 1;  /* pulses once, then settles */
+  animation:      pulse-warm 3s ease-in-out 1;
 }
 
 /* Cancel: ghost style — present but not pressuring */
 .seal-cancel-btn {
-  background:     transparent;
-  border:         1px solid var(--border-medium);
-  border-radius:  var(--radius-md);
-  color:          var(--text-tertiary);
-  cursor:         pointer;
-  font-size:      var(--text-xs);
-  padding:        var(--space-2) var(--space-5);
+  background:    transparent;
+  border:        1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color:         var(--text-tertiary);
+  cursor:        pointer;
+  font-size:     var(--text-xs);
+  padding:       var(--space-2) var(--space-5);
   transition:
-    color         var(--motion-snap-duration) var(--motion-snap-easing),
-    border-color  var(--motion-snap-duration) var(--motion-snap-easing);
+    color        var(--motion-snap-duration) var(--motion-snap-easing),
+    border-color var(--motion-snap-duration) var(--motion-snap-easing);
 }
 
 .seal-cancel-btn:hover {
@@ -246,39 +289,35 @@
   outline-offset: 2px;
 }
 
-/* ── Mobile phase 3 full-screen takeover — Tanya §2 P0 ────── */
-/* On narrow viewports the lock overlay becomes a fixed modal.  */
-/* Nothing competes for attention during the irreversible act.  */
+/* ── Mobile anchor: full-screen takeover — Tanya §2 P0 ─────────────── */
+/* On narrow viewports the lock overlay becomes a fixed modal.           */
 
 @media (max-width: 768px) {
-  [data-seal-phase="3"] .seal-lock-overlay {
-    position:       fixed;
-    inset:          0;
-    z-index:        var(--z-modal);
-    border-radius:  0;
-    border:         none;
-    background:     oklch(9% 0.01 50 / 0.97);
+  [data-phase="anchor"] .seal-lock-overlay {
+    position:        fixed;
+    inset:           0;
+    z-index:         var(--z-modal);
+    border-radius:   0;
+    border:          none;
+    background:      oklch(9% 0.01 50 / 0.97);
     backdrop-filter: blur(8px);
-    margin:         0;
-    padding:        var(--space-10) var(--space-6);
+    margin:          0;
+    padding:         var(--space-10) var(--space-6);
     justify-content: center;
   }
 
-  /* Lock icon: enlarged for full-screen ceremony */
-  [data-seal-phase="3"] .seal-lock-overlay .seal-irrev-notice {
+  [data-phase="anchor"] .seal-lock-overlay .seal-irrev-notice {
     font-size: var(--text-sm);
     max-width:  32ch;
   }
 
-  [data-seal-phase="3"] .seal-lock-overlay .seal-cancel-btn {
+  [data-phase="anchor"] .seal-lock-overlay .seal-cancel-btn {
     font-size: var(--text-sm);
-    padding: var(--space-3) var(--space-8);
+    padding:   var(--space-3) var(--space-8);
   }
 }
 
-/* ── SealCeremony.astro: RECEIPT bloom-in keyframe ───────────────── */
-/* Mirrors NotarizeStamp wax-bloom — the receipt surfaces like a stamped document. */
-/* Used by .sc-phase--receipt via animation: sc-receipt-bloom.                     */
+/* ── SealCeremony.astro: RECEIPT bloom-in keyframe ─────────────────────── */
 
 @keyframes sc-receipt-bloom {
   0%   { opacity: 0; transform: scale(0.97) translateY(8px); filter: blur(2px); }
@@ -291,25 +330,21 @@
   animation: sc-receipt-bloom var(--motion-ceremony-duration) var(--motion-ceremony-easing) both;
 }
 
-/* ── SealCeremony.astro: Gold atmosphere on ceremony ──────────────── */
-/* When [data-atmosphere="gold"] is active (set on .seal-ceremony),   */
-/* the border glows with a soft conviction-gold halo.                 */
+/* ── SealCeremony.astro: Gold atmosphere on ceremony ───────────────────── */
 
 [data-atmosphere="gold"].seal-ceremony {
   border-color: var(--gold-border-strong);
   box-shadow:   var(--shadow-e3), 0 0 24px color-mix(in oklch, var(--gold) 6%, transparent);
 }
 
-/* ── Score tier: CSS variable bridge from [data-seal-score-tier] ─────────── */
-/* JS orchestrator (seal-phase-orchestrator.ts) writes the attribute.          */
-/* CSS reads --score-tier-color; zero extra JS for all visual tier states.     */
+/* ── Score tier: CSS variable bridge from [data-seal-score-tier] ──────── */
 
 [data-seal-score-tier="low"]  { --score-tier-color: var(--seal-score-tier-low);  }
 [data-seal-score-tier="mid"]  { --score-tier-color: var(--seal-score-tier-mid);  }
 [data-seal-score-tier="high"] { --score-tier-color: var(--seal-score-tier-high); }
 [data-seal-score-tier="max"]  { --score-tier-color: var(--seal-score-tier-max);  }
 
-/* ── Score tier semantic label — lives below the dot row ─────────────────── */
+/* ── Score tier semantic label ──────────────────────────────────────────── */
 
 .sc-score-tier-label {
   display:        block;
@@ -320,18 +355,16 @@
   color:          var(--score-tier-color, var(--text-ghost));
   margin-top:     var(--space-1);
   transition:     color var(--motion-flow-duration) var(--motion-flow-easing);
-  min-height:     1.2em;  /* prevents layout shift as text appears */
+  min-height:     1.2em;
 }
 
-/* ── Score dot spring click-fill (Tanya §10.1 — 200ms spring) ─────────────── */
-/* Hover fill stays at 120ms standard (existing .seal-dot transition).          */
-/* Click fill uses spring overshoot — author feels the weight of the selection. */
+/* ── Score dot spring click-fill (Tanya §10.1 — 200ms spring) ─────────── */
 
 @keyframes dot-spring-fill {
   0%   { transform: scale(1);    }
   40%  { transform: scale(1.45); border-color: var(--gold); background: var(--gold); }
   72%  { transform: scale(0.90); }
-  100% { transform: scale(1);    background:   var(--gold); border-color: var(--gold); }
+  100% { transform: scale(1);    background: var(--gold); border-color: var(--gold); }
 }
 
 .seal-dot.is-spring-filling {
@@ -341,15 +374,11 @@
     forwards;
 }
 
-/* ── Gap separator after position 5 (Tanya §10.1 — 6px tier visual break) ─── */
-/* The 10 dots read as [1–5] | [6–10] — a pause between low-mid and high-max. */
+/* ── Gap separator after position 5 (Tanya §10.1 — 6px tier visual break) ── */
 
 .cs-dots .seal-dot:nth-child(6) { margin-left: 6px; }
 
-/* ── Hesitation beat: 400ms CTA lock after score change ────────────────────── */
-/* data-hesitating is set by seal-phase-orchestrator during HESITATION_MS.      */
-/* The disabled state is real — JS sets btn.disabled = true for 400ms.          */
-/* This animation communicates the wait, not just hides the button.             */
+/* ── Hesitation beat: 400ms CTA lock after score change ─────────────────── */
 
 @keyframes hesitation-pulse {
   0%,  100% { opacity: 0.45; }
@@ -360,12 +389,10 @@
   animation: hesitation-pulse
     var(--seal-hesitation-duration, 400ms)
     ease-in-out
-    1;  /* fires once — not a loop */
+    1;
 }
 
-/* ── Score tier border glow: ceremony panel responds to conviction weight ───── */
-/* Subtle border escalation signals that a higher stake choice has been made.    */
-/* Applied on .seal-ceremony — works alongside [data-atmosphere="gold"].         */
+/* ── Score tier border glow ─────────────────────────────────────────────── */
 
 .seal-ceremony[data-seal-score-tier="high"] {
   border-color: color-mix(in oklch, var(--seal-score-tier-high) 30%, transparent);
@@ -375,23 +402,31 @@
   border-color: color-mix(in oklch, var(--seal-score-tier-max) 40%, transparent);
 }
 
-/* ── Reduced motion: collapse to instant transitions ─────── */
+/* ── Reduced motion: collapse all animations to instant transitions ──────── */
+/* Motion communicates weight — in reduced-motion, color and copy carry it. */
 
 @media (prefers-reduced-motion: reduce) {
-  .seal-dot,
-  .seal-weight-meter,
-  .seal-arc,
-  .seal-receipt,
-  .seal-receipt > *,
-  .seal-cancel-btn                        { transition: none; }
-  [data-seal-phase="2"] .seal-btn         { animation: none; }
-  .seal-receipt-hash                      { animation: none; clip-path: none; color: var(--gold-dim); }
-  .seal-spinner                           { animation: seal-spin 1200ms linear infinite; }
-  .seal-irrev-notice                      { animation: none; }
-  .seal-ceremony[data-phase="anchor"],
-  .seal-ceremony[data-phase="notarize"]   { animation: none; }
-  /* New animations: instant state, no motion */
-  .seal-dot.is-spring-filling             { animation: none; background: var(--gold); border-color: var(--gold); }
-  .seal-ceremony[data-hesitating] [data-compose-cta] { animation: none; }
-  .sc-score-tier-label                    { transition: none; }
+  .seal-ceremony * {
+    animation-duration:  0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Override: spinner must stay visible (functional, not decorative) */
+  .seal-spinner {
+    animation: seal-spin 1200ms linear infinite !important;
+  }
+
+  /* Override: hash must be readable immediately */
+  .seal-receipt-hash {
+    animation:  none !important;
+    clip-path:  none;
+    color:      var(--gold-dim);
+  }
+
+  /* Override: dot fill must snap to gold immediately */
+  .seal-dot.is-spring-filling {
+    animation:    none !important;
+    background:   var(--gold);
+    border-color: var(--gold);
+  }
 }

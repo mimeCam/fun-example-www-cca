@@ -1,14 +1,24 @@
 // src/lib/seal-ceremony.ts
-// Seal ceremony orchestrator — state machine + fetch + phase 3.5 notarize moment.
-// Phase 0: idle | 1: hover | 2: press | 3: lock (fetching) | 3.5: notarize | 4: receipt
+// Seal ceremony orchestrator — state machine + fetch + notarize moment.
 //
-// Credits: Mike (§Architecture §CSS-state-machine §Phase-3.5-design), Tanya (§Moment-1)
+// Phases (conviction variant — no confirm step, compose → anchor directly):
+//   compose  → score entry + note (user is filling in the form)
+//   anchor   → POST in flight, gold arc (1800ms minimum)
+//   receipt  → sealed document displayed
+//
+// The notarize moment is a sub-state of anchor. onNotarize fires between
+// the fetch resolving and the receipt becoming visible. The caller is
+// responsible for setting data-seal-phase="notarize" to trigger CSS animations.
+//
+// Compose-layer micro-events (hover/press/release) fire dedicated callbacks
+// without changing the top-level SealPhase — they drive arc fill and haptics.
+//
+// Credits: Mike (§Architecture §Phase-unification), Tanya (§Moment-1)
 
 export type { SealPhase } from './seal-phases';
-import { NOTARIZE }        from './seal-phases';
-import type { SealPhase }  from './seal-phases';
+import type { SealPhase } from './seal-phases';
 
-/** Thrown when the server returns 409 — post already sealed (good news, not an error). */
+/** Thrown when the server returns 409 — already sealed is good news, not an error. */
 export class AlreadySealedError extends Error {
   constructor() { super('Already sealed'); this.name = 'AlreadySealedError'; }
 }
@@ -25,12 +35,17 @@ export interface ReceiptData {
 }
 
 export interface CeremonyCallbacks {
-  onPhase:         (phase: SealPhase)  => void;
-  onNotarize:      (data: ReceiptData) => void; // fires at 3.5 — populate stamp before pause
-  onReceipt:       (data: ReceiptData) => void; // fires at 4 — after ceremonial pause
-  onError:         (msg: string)       => void;
-  onAlreadySealed?: ()                => void; // fires on 409 — good news, not an error
-  onCancel?:        ()                => void; // fires when user cancels at phase 3
+  onPhase:          (phase: SealPhase)  => void;
+  onNotarize:       (data: ReceiptData) => void; // fires mid-anchor — populate stamp before pause
+  onReceipt:        (data: ReceiptData) => void; // fires at receipt — after ceremonial pause
+  onError:          (msg: string)       => void;
+  onAlreadySealed?: ()                  => void; // 409 — graceful degradation, not an error
+  onCancel?:        ()                  => void; // AbortError — user cancelled at anchor
+  // Compose-layer micro-events — drive arc animation / haptics without phase change
+  onHover?:         () => void;
+  onUnhover?:       () => void;
+  onPress?:         () => void;
+  onRelease?:       () => void;
 }
 
 const delay = (ms: number): Promise<void> => new Promise(r => setTimeout(r, ms));
@@ -51,47 +66,48 @@ async function fetchSeal(
 }
 
 export function createCeremony(slug: string, cb: CeremonyCallbacks) {
-  let current:   SealPhase        = 0;
+  let current:   SealPhase             = 'compose';
   let abortCtrl: AbortController | null = null;
 
-  const setPhase = (n: SealPhase): void => { current = n; cb.onPhase(n); };
+  const setPhase = (p: SealPhase): void => { current = p; cb.onPhase(p); };
 
-  const hover   = (): void => { if (current === 0) setPhase(1); };
-  const unhover = (): void => { if (current === 1) setPhase(0); };
-  const press   = (): void => { if (current <= 1)  setPhase(2); };
-  const release = (): void => { if (current === 2) setPhase(0); };
+  // Compose-layer micro-events — do not change top-level phase.
+  // Guards ensure they only fire when the ceremony is in compose.
+  const hover   = (): void => { if (current === 'compose') cb.onHover?.();   };
+  const unhover = (): void => { if (current === 'compose') cb.onUnhover?.(); };
+  const press   = (): void => { if (current === 'compose') cb.onPress?.();   };
+  const release = (): void => { if (current === 'compose') cb.onRelease?.(); };
 
-  /** Cancel the in-flight POST at phase 3. Safe if fetch already resolved. */
+  /** Cancel the in-flight POST at anchor phase. Safe if fetch already resolved. */
   function cancel(): void {
-    if (current !== 3 || !abortCtrl) return;
+    if (current !== 'anchor' || !abortCtrl) return;
     abortCtrl.abort();
   }
 
   async function notarize(data: ReceiptData): Promise<void> {
-    setPhase(NOTARIZE);
     cb.onNotarize(data);
-    // Ceremonial pause: do not remove, do not shorten. This is the product.
-    // The 800 ms is the psychological weight of the moment before receipt expansion.
+    // Ceremonial pause — do not remove, do not shorten.
+    // 800ms is the psychological weight of irreversibility sinking in.
     await delay(800);
-    setPhase(4);
+    setPhase('receipt');
     cb.onReceipt(data);
   }
 
   function handleError(e: unknown): void {
     abortCtrl = null;
     if (e instanceof DOMException && e.name === 'AbortError') {
-      setPhase(0);
+      setPhase('compose');
       cb.onCancel?.();
       return;
     }
-    setPhase(0);
+    setPhase('compose');
     if (e instanceof AlreadySealedError) cb.onAlreadySealed?.();
     else cb.onError(e instanceof Error ? e.message : 'Seal failed');
   }
 
   async function submit(score: number, authorNote: string): Promise<void> {
     abortCtrl = new AbortController();
-    setPhase(3);
+    setPhase('anchor');
     try {
       const data = await fetchSeal(slug, score, authorNote, abortCtrl.signal);
       abortCtrl = null;
@@ -100,7 +116,7 @@ export function createCeremony(slug: string, cb: CeremonyCallbacks) {
   }
 
   return {
-    start:   (): void      => setPhase(0),
+    start:   (): void      => setPhase('compose'),
     hover,
     unhover,
     press,
