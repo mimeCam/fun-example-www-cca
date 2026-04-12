@@ -1,0 +1,102 @@
+/* src/styles/card-base.css
+ * Shared card geometry — the single source of truth for all card shells.
+ * Components compose by class="card-base <modifier>" and add a scoped
+ * <style> only for component-specific rules.
+ *
+ * Hierarchy:
+ *   tokens.css (primitives) → card-base.css (geometry) → component <style> (overrides)
+ *
+ * Rule: geometry only — radius, border, background, shadow, transitions.
+ * Rule: no typography, no component-specific color overrides.
+ * Rule: every value must reference a token — zero hardcoded hex/px/rgba.
+ *
+ * Architecture: Mike Koch · UX: Tanya Donska · 2026-04-12
+ */
+
+/* ── Base shell ──────────────────────────────────────────────────────────── */
+.card-base {
+  position: relative;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card-rest);
+  display: flex;
+  flex-direction: column;
+  transition:
+    box-shadow var(--transition-hover),
+    transform  var(--transition-hover);
+}
+
+/* Standard hover lift — SNAP profile (Tanya §12 micro-interaction catalogue) */
+.card-base:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ── Age variants ─────────────────────────────────────────────────────────── */
+/* These classes are set server-side or by decay-engine.ts at render time.    */
+
+.card-fresh {
+  box-shadow: var(--shadow-card-fresh);
+}
+
+.card-aged {
+  box-shadow: var(--shadow-card-aged);
+}
+
+/* Fossil cards neither lift nor glow — dead weight is the message (Tanya §4) */
+.card-fossil {
+  box-shadow: var(--shadow-card-fossil);
+  opacity: 0.7;
+  filter: saturate(0.5);
+}
+
+.card-fossil:hover {
+  transform: none;
+  box-shadow: var(--shadow-card-fossil);
+  opacity: 0.9;
+  filter: saturate(0.7);
+}
+
+/* ── Verdict card variant ─────────────────────────────────────────────────── */
+/* Deep surface + left accent stripe; hover shadow is neutral (no amber tint)  */
+/* because verdicts signal clarity, not life/warmth.                           */
+.card-verdict {
+  background: var(--surface-deep);
+  border-color: var(--border-medium);
+  border-left-width: 3px;
+  /* border-left-color driven by --state-color inline var in VerdictCard */
+}
+
+.card-verdict:hover {
+  box-shadow: var(--shadow-verdict-hover);
+}
+
+/* ── Disputed card variant ────────────────────────────────────────────────── */
+/* Red-cast shadow — the card is under scrutiny (Tanya §6 Dispute Banner)     */
+.card-disputed {
+  box-shadow: var(--shadow-card-disputed);
+}
+
+/* ── Tomb card variant ────────────────────────────────────────────────────── */
+/* Graveyard aesthetic: tombstone radius, inset burial shadow, no hover lift.  */
+/* "The dead cast no shadow" — tombstones do not rise on hover. — Tanya §6    */
+.card-tomb {
+  background: transparent;          /* --tomb-age drives background inline     */
+  border-color: var(--color-grave-border);
+  border-radius: var(--radius-tombstone);
+  box-shadow: var(--shadow-grave-card);
+  padding: 0;                       /* cover image bleeds edge-to-edge         */
+}
+
+.card-tomb:hover {
+  transform: none;
+  box-shadow: var(--shadow-grave-card);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .card-base {
+    transition: none;
+  }
+}

@@ -57,7 +57,7 @@ function calcSurvivalDays(p: PostDisplayData): number {
 ---
 
 <article
-  class="tombstone tombstone-card"
+  class="card-base card-tomb tombstone tombstone-card"
   data-slug={post.slug}
   data-survival-days={survDays}
   style={`--tomb-age:${tombAge}`}
@@ -129,14 +129,12 @@ function calcSurvivalDays(p: PostDisplayData): number {
 </article>
 
 <style>
-  /* Card shell: stone-like — angular top radius (sits in ground — Tanya §6) */
-  /* --tomb-age: 0.0 (new) → 1.0 (ancient) — drives stone surface darkness */
+  /* Card shell — geometry from .card-base + .card-tomb (card-base.css).     */
+  /* --tomb-age: 0.0 (new) → 1.0 (ancient) — drives stone surface darkness. */
   .tombstone {
+    /* Dynamic background: oklch lightness shifts with tomb age.
+       .card-tomb sets background: transparent — this overrides it.          */
     background: oklch(calc(12% + var(--tomb-age, 0.5) * 6%) 0.01 50 / 0.95);
-    border: 1px solid var(--color-grave-border);
-    border-radius: var(--radius-tombstone);  /* Tanya §5: crown-rounded, flat base */
-    box-shadow: none;              /* Tanya: the dead cast no shadow */
-    padding: 0;
     overflow: hidden;
   }
 
@@ -162,8 +160,8 @@ function calcSurvivalDays(p: PostDisplayData): number {
   .tombstone-inner {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 20px 24px;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-6);
   }
 
   /* Row: "here lies" left, tier badge right */
@@ -255,8 +253,8 @@ function calcSurvivalDays(p: PostDisplayData): number {
   .tomb-dates {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
-    margin: 0.35rem 0 0;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
     padding: 0;
   }
 
@@ -291,7 +289,7 @@ function calcSurvivalDays(p: PostDisplayData): number {
   .tomb-footer {
     display: flex;
     justify-content: flex-end;
-    margin-top: 0.85rem;
+    margin-top: var(--space-4);
   }
 
   /* Text-only resurrect: no border, no background, no hover box — Tanya §3.3 */

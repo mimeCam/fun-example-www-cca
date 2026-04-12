@@ -4,6 +4,40 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v89 — Card Base Design System Unification (2026-04-12)
+#   Sprint: Shared card geometry extracted into a single-source-of-truth
+#     src/styles/card-base.css stylesheet. All card shells now compose via
+#     class="card-base <modifier>" and scope only component-specific overrides
+#     in their own <style> blocks. Hardcoded hex/px/rgba values replaced with
+#     design tokens across VerdictCard and TombstoneCard. Three new shadow tokens
+#     and --space-7 added to the token system. Pure UIX — zero infra changes.
+#   New files:
+#     src/styles/card-base.css — card shell geometry system; .card-base (base),
+#       .card-fresh/.card-aged/.card-fossil (age variants), .card-verdict (deep
+#       surface + left accent stripe + neutral hover shadow), .card-disputed
+#       (red-cast shadow), .card-tomb (tombstone radius + no hover lift);
+#       every value references a token — zero hardcoded hex/px/rgba; imported
+#       by global.css after tokens.css and motion.css.
+#   Modified files:
+#     src/components/EndangeredCard.astro — adds card-base class to article.
+#     src/components/TombstoneCard.astro — adds card-base + card-tomb classes;
+#       migrates gap/padding/margin to --space-* tokens; removes duplicated
+#       border/border-radius/box-shadow/padding rules now owned by card-base.css.
+#     src/components/VerdictCard.astro — adds card-base + card-verdict classes;
+#       removes duplicated shell CSS (position, background, border, border-radius,
+#       padding, display, gap, hover transform/shadow); migrates all remaining
+#       hardcoded values to tokens (--text-*, --weight-*, --leading-*, --tracking-*,
+#       --space-*, --transition-*, --border-*, --surface-*); conviction color
+#       fallback uses var(--text-tertiary) instead of raw rgba.
+#     src/styles/global.css — @import "./card-base.css" added after motion.css.
+#     src/styles/tokens.css — --space-7: 1.75rem added; three new shadow tokens:
+#       --shadow-card-rest (neutral at-rest), --shadow-elevated (modal/breakout),
+#       --shadow-verdict-hover (neutral deep + gold ring — no amber tint).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO
+#     unchanged. In-process cron runner (v82) continues to own ongoing scheduling.
+#     deploy.sh startup sequence unchanged (steps 1–8 identical to v88).
+#
 # Architecture v88 — Decay Engine Sepia/Grain/Factor + Design Token Gap-Fill (2026-04-12)
 #   Sprint: Visual polish pass — decay system gains three new CSS vars (sepia,
 #     grain, factor) wired consistently across SSR and client paths; design token
