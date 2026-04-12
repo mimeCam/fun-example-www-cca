@@ -4,11 +4,14 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, author-token, cron; OG pipeline at `src/lib/og/`; sensory clients at `src/lib/client/`
+- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, author-token, cron
+- `src/lib/og/` — OG image pipeline
+- `src/lib/client/` — sensory (audio/haptic) clients
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
-- `src/styles/` — design tokens (`tokens.css`), shared card geometry (`card-base.css`), motion, atmosphere
-- `scripts/` — `check-token-compliance.ts` lints CSS for raw values (`npm run lint:tokens`)
+- `src/styles/tokens.css` — master design token registry (single source of truth)
+- `src/styles/` — card geometry (`card-base.css`), motion, atmosphere
+- `scripts/check-token-compliance.ts` — CSS raw-value linter (`npm run lint:tokens`)
 
 ## Env
 
@@ -16,6 +19,5 @@
 
 ## WIP
 
-- `seal-ceremony.css` + `motion.css` have pre-existing raw `rgba()` failing `lint:tokens` — not our debt.
-- `ConvictionSeal.astro` ~800 LOC — split into per-phase files next sprint (Elon §refactor).
-- Nav surgery: 3 primary links + overflow pill — Tanya §2 — next session.
+- **Nav surgery** — `SiteNav.astro` has raw `rgba()` values; replace with token aliases for nav backdrop, site-name, link text; implement 3-link + overflow pill.
+- **Conviction ceremony polish** — audit 5 ceremony phases against spec (grain accumulation, heartbeat BPM clock, bloom particles, verdict courtroom drama).

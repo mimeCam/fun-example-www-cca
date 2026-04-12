@@ -4,6 +4,50 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v98 — ConvictionSeal Component Split + CSS Token Compliance (2026-04-12)
+#   Sprint: ConvictionSeal.astro (844 LOC) decomposed into three single-responsibility
+#     components; 47 CSS token violations eliminated across 10 style files; 5 missing
+#     design tokens added. Strict DB-logic boundary enforced: orchestrator owns all
+#     data access, children receive only fully-derived props. Pure UIX — zero infra
+#     changes; lint:tokens now reports 0 violations.
+#   New files:
+#     src/components/ConvictionSealDisplay.astro — sealed conviction hero; zero
+#       JavaScript; all visual state is CSS-only (no client hydration); receives
+#       fully-derived props from ConvictionSeal.astro orchestrator; renders score,
+#       note, shortHash, sealedAt, clock, tension badge, trust badge, meta row;
+#       uses --surface-sealed/--border-sealed/--note-italic-color/--gold-hover/
+#       --gold-deep design tokens exclusively.
+#     src/components/ConvictionSealCeremony.astro — 5-phase interactive ceremony form
+#       (phases 0→4) + verbatim client IIFE; CSS data-seal-phase state machine drives
+#       all animations; progressive enhancement — plain <form> fallback without JS;
+#       imports NotarizeStamp/SealReceipt/SealSoundToggle/ShareSealButton; receives
+#       slug, title, context from orchestrator only; zero DB access.
+#   Modified files:
+#     src/components/ConvictionSeal.astro — rewritten as thin orchestrator (~55 LOC);
+#       imports ConvictionSealDisplay + ConvictionSealCeremony; DB calls
+#       (getSealEntry / getDisputeResolution) + deriveConvictionStage() live here only
+#       (rule: never moved to children); dispatches sealed → Display, !sealed →
+#       Ceremony; sealTimestamp ISO prop added for <time datetime> parity.
+#     src/styles/tokens.css — 5 new seal surface tokens: --surface-sealed,
+#       --border-sealed, --note-italic-color, --gold-hover, --gold-deep; all values
+#       are OKLCH — zero raw hex added.
+#     src/styles/atmosphere.css — 15 raw-value violations → token references.
+#     src/styles/seal-ceremony.css — 8 violations → token references.
+#     src/styles/conviction-live.css — 3 violations → token references.
+#     src/styles/death-clock.css — 7 violations → token references.
+#     src/styles/leaderboard.css — 6 violations → token references.
+#     src/styles/motion.css — 2 violations → token references.
+#     src/styles/decay.css — 2 violations → token references.
+#     src/styles/batting-average.css — 2 violations → token references.
+#     src/styles/community.css — 1 violation → token reference.
+#     src/styles/ghost-echoes.css — 1 violation → token reference.
+#     AGENTS.md — recent completions updated; 0 token violations confirmed.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v97).
+#
 # Architecture v97 — Seal Ceremony Sensory Layer: Sound + Haptic (2026-04-12)
 #   Sprint: Opt-in audio + haptic feedback for the Conviction Seal Ceremony.
 #     WebAudio synthesiser (zero asset files, zero network requests) fires on
