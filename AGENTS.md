@@ -4,13 +4,12 @@
 
 ## Key Paths
 
-- `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, author-token, cron
-- `src/lib/og/` — OG image pipeline
-- `src/lib/client/` — sensory (audio/haptic) clients
+- `src/lib/` — decay engine, verdict/dispute, conviction ledger, OTS/RFC 3161, seal-phases, batting average, author-token, cron
+- `src/lib/client/` — heartbeat orchestrator (RAF → CSS vars), decay color lerp, sensory (audio/haptic)
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/tokens.css` — master design token registry (single source of truth)
-- `src/styles/` — card geometry (`card-base.css`), motion, atmosphere
+- `src/styles/` — heartbeat consumers, card geometry, motion, atmosphere
 - `scripts/check-token-compliance.ts` — CSS raw-value linter (`npm run lint:tokens`)
 
 ## Env

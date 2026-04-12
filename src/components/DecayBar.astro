@@ -17,6 +17,17 @@ import { erosionBarPct, erosionHue } from '../lib/endangered';
 
 type DecayMode = 'bar' | 'glyph' | 'nav';
 
+// Stage classification for tremor overlay (ghost/endangered shake; others still).
+type BarStage = 'fresh' | 'fading' | 'endangered' | 'ghost' | 'fossil';
+
+function barStageFor(f: number): BarStage {
+  if (f < 0.25) return 'fresh';
+  if (f < 0.50) return 'fading';
+  if (f < 0.75) return 'endangered';
+  if (f < 0.95) return 'ghost';
+  return 'fossil';
+}
+
 interface Props {
   mode?:        DecayMode;
   decayFactor:  number;
@@ -37,8 +48,9 @@ const {
 } = Astro.props;
 
 // ── bar helpers (reuse existing lib) ──────────────────────────────────────────
-const pct = erosionBarPct(decayFactor);
-const hue = erosionHue(urgency);
+const pct      = erosionBarPct(decayFactor);
+const hue      = erosionHue(urgency);
+const barStage = barStageFor(decayFactor);
 
 // ── glyph helpers ─────────────────────────────────────────────────────────────
 type GlyphStage = 'fresh' | 'aging' | 'stale';
@@ -65,8 +77,18 @@ const glyph  = GLYPH[stage];
     aria-valuemin={0}
     aria-valuemax={100}
     style={`--db-pct:${pct}%;--db-hue:${hue}deg`}
+    data-decay-stage={barStage}
   >
-    <div class="decay-bar__fill"></div>
+    {/* Layer 1: fill — OKLCH color from HB lerp + brightness thump pulse */}
+    <div class="decay-bar__fill hb-bar-fill"></div>
+    {/* Layer 2: glow — ambient shadow bloom at beat peak */}
+    <div class="decay-bar__glow hb-bar-glow" aria-hidden="true"></div>
+    {/* Layer 3: tremor — horizontal shake on ghost/endangered only */}
+    <div
+      class="decay-bar__tremor hb-bar-tremor"
+      data-decay-stage={barStage}
+      aria-hidden="true"
+    ></div>
   </div>
 )}
 
@@ -90,20 +112,22 @@ const glyph  = GLYPH[stage];
 
 <style>
   /* ── mode="bar" ─────────────────────────────────────────────────────── */
+  /* position:relative needed for absolute glow/tremor layers.           */
+  /* overflow:hidden clips tremor shake to bar bounds (intentional).     */
   .decay-bar {
+    position: relative;
     height: 3px;
     background: var(--border-subtle);
     border-radius: var(--radius-full);
     overflow: hidden;
   }
 
+  /* Layer 1 — fill: OKLCH color supplied by .hb-bar-fill (heartbeat.css). */
+  /* Fallback color uses hue token for pre-JS frames.                     */
   .decay-bar__fill {
     height: 100%;
     width: var(--db-pct, 100%);
-    background: oklch(
-      from hsl(var(--db-hue, 120deg) 60% 50%)
-      l c h
-    );
+    background: oklch(64% 0.190 var(--db-hue, 145deg));
     border-radius: var(--radius-full);
     transition: width 400ms ease;
   }

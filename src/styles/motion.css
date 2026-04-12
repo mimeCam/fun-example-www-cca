@@ -52,6 +52,11 @@
   --motion-drift-duration: 500ms;
   --motion-drift-easing:   cubic-bezier(0.4, 0, 1, 1);
 
+  /* DECAY-THUMP — biological heartbeat brightness pulse on bar fill.     */
+  /* Duration is overridden per-element by --hb-bar-duration (orchestrator). */
+  /* Easing matches the spring thump shape: fast peak, slow release.      */
+  --motion-decay-thump-easing: ease-in-out;
+
   /* ── Convenience Composites ─────────────────────────────────────────── */
   --transition-hover:   var(--motion-snap-duration) var(--motion-snap-easing);
   --transition-flow:    var(--motion-flow-duration)  var(--motion-flow-easing);

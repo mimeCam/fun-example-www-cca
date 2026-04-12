@@ -66,9 +66,13 @@
   --river-meta-color:    var(--text-tertiary);
 
   /* ── Semantic Decay Colors ──────────────────────────────────────────── */
-  --color-decay-fresh:  var(--clr-green-400);
-  --color-decay-fossil: var(--clr-red-500);
-  --color-revival:      var(--clr-amber-400);
+  --color-decay-fresh:      var(--clr-green-400);   /* oklch(64% 0.190 145) */
+  --color-decay-fading:     oklch(62% 0.155  95);   /* Tanya §2.1 — warm, still here */
+  --color-decay-endangered: oklch(58% 0.195  35);   /* Tanya §2.1 — urgent amber-red */
+  --color-decay-ghost:      oklch(52% 0.110  20);   /* Tanya §2.1 — muted red, fading */
+  --color-decay-fossil:     var(--clr-red-500);     /* oklch(55% 0.220  25) */
+  --color-decay-revival:    oklch(72% 0.160  70);   /* one-shot bloom only — Tanya §2.1 */
+  --color-revival:          var(--clr-amber-400);
 
   /* ── Verdict Semantic Colors ─────────────────────────────────────────── */
   --verdict-true:    var(--clr-green-400);    /* oklch(64% 0.190 145) — perceptually uniform green */
@@ -549,4 +553,43 @@
   --muted-foreground:  var(--text-secondary);
   --border:            var(--border-subtle);
   --ring:              var(--border-focus);
+
+  /* ── HeartbeatOrchestrator defaults (--hb-*) ────────────────────────── */
+  /* Safe zero values; JS overwrites these every RAF frame once started.   */
+  /* @property registrations below enable CSS transitions on numeric vars. */
+  --hb-intensity:    0;
+  --hb-scale:        1;
+  --hb-opacity:      0.45;
+  --hb-shadow-alpha: 0;
+  --hb-bpm:          72;
+  --hb-bar-duration: 833ms;
+  /* Color channel defaults match --clr-green-400 (fresh stage). */
+  --hb-color-l: 64%;
+  --hb-color-c: 0.190;
+  --hb-color-h: 145;
+}
+
+/* ── @property typed registrations for --hb-* ───────────────────────────── */
+/* Typed registration enables CSS transition: --hb-scale 120ms snap.        */
+/* Must live at top level (not inside :root) — they are at-rules, not decls. */
+/* Mike §5 Typed Custom Properties spec.                                     */
+@property --hb-intensity {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --hb-scale {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+@property --hb-opacity {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.45;
+}
+@property --hb-shadow-alpha {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
 }

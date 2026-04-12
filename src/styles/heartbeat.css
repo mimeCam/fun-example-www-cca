@@ -1,0 +1,117 @@
+/* src/styles/heartbeat.css
+ * HeartbeatOrchestrator CSS contracts — keyframes + passive consumers.
+ * The orchestrator writes --hb-* vars to :root at 60fps.
+ * Every element here listens passively — zero JS coupling between components.
+ *
+ * Keyframes:
+ *   decay-thump  — bar fill brightness pulse (maps to beat peak)
+ *   bar-tremor   — ghost/critical horizontal shake (38bpm interval)
+ *
+ * Helper classes applied via component markup:
+ *   .hb-ring-wrap   — SVG wrapper: scale compress on thump (biological systole)
+ *   .hb-ring-stroke — SVG circle: OKLCH color from lerp channels
+ *   .hb-clock-glow  — Clock container: glow bloom at thump peak
+ *   .hb-bar-fill    — Bar fill layer: OKLCH color + thump brightness pulse
+ *   .hb-bar-glow    — Bar glow layer: ambient shadow at --hb-shadow-alpha
+ *   .hb-bar-tremor  — Bar tremor layer: shake only on ghost/endangered stage
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-12
+ */
+
+/* ── @keyframes ──────────────────────────────────────────────────────────── */
+
+/* Brightness pulse on bar fill — peak at 62% matches spring thump phase. */
+/* Frequency is controlled by --hb-bar-duration (set by orchestrator).    */
+@keyframes decay-thump {
+  0%, 100% { filter: brightness(1.0); }
+  62%       { filter: brightness(1.4); }
+}
+
+/* Horizontal tremor — only visible on ghost/endangered stage.             */
+/* 38bpm interval (1578ms) feels irregular without arrhythmia tokens.     */
+/* overflow: hidden on .decay-bar clips the shake to the bar boundary.    */
+@keyframes bar-tremor {
+  0%, 100% { transform: translateX(0);   }
+  20%       { transform: translateX(-3px); }
+  40%       { transform: translateX( 3px); }
+  60%       { transform: translateX(-2px); }
+  80%       { transform: translateX( 2px); }
+}
+
+/* ── DecayClock ring consumers ───────────────────────────────────────────── */
+
+/* Scale compress: ring-wrap shrinks to 0.97 at thump peak (systole feel). */
+/* SNAP timing: transition completes in 120ms — weight, not lag.           */
+.hb-ring-wrap {
+  transform: scale(var(--hb-scale, 1));
+  transform-origin: center;
+  transition: transform var(--motion-snap-duration, 120ms) var(--motion-snap-easing);
+}
+
+/* Stroke color: OKLCH channels from orchestrator lerp.                    */
+/* Default values match --clr-green-400 (fresh stage).                    */
+.hb-ring-stroke {
+  stroke: oklch(var(--hb-color-l, 64%) var(--hb-color-c, 0.190) var(--hb-color-h, 145));
+}
+
+/* Glow bloom: box-shadow expands at thump peak, fades at rest.           */
+/* Bloom radius = shadow-alpha × 80px → 0px at rest, 14.4px at full beat. */
+.hb-clock-glow {
+  box-shadow:
+    0 0
+    calc(var(--hb-shadow-alpha, 0) * 80px)
+    oklch(var(--hb-color-l, 64%) var(--hb-color-c, 0.190) var(--hb-color-h, 145) / var(--hb-shadow-alpha, 0));
+}
+
+/* Ring opacity: dims at rest (0.45), brightens on thump (1.0).           */
+/* Replaces the old flat --clock-ring-opacity with the HB-driven value.   */
+.hb-ring-opacity {
+  opacity: var(--hb-opacity, 0.45);
+}
+
+/* ── DecayBar consumers ──────────────────────────────────────────────────── */
+
+/* Fill layer: OKLCH color + periodic brightness pulse.                    */
+/* Duration synced to beat period via --hb-bar-duration (orchestrator).   */
+.hb-bar-fill {
+  background: oklch(var(--hb-color-l, 64%) var(--hb-color-c, 0.190) var(--hb-color-h, 145));
+  animation: decay-thump var(--hb-bar-duration, 833ms) ease-in-out infinite;
+}
+
+/* Glow layer: absolute overlay, shadow blooms with beat amplitude.       */
+/* Shadow alpha × 3 keeps glow proportional: 0.18 max → 0.54 opacity.    */
+.hb-bar-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  box-shadow:
+    0 0
+    calc(var(--hb-shadow-alpha, 0) * 24px)
+    oklch(var(--hb-color-l, 64%) var(--hb-color-c, 0.190) var(--hb-color-h, 145) / calc(var(--hb-shadow-alpha, 0) * 3));
+}
+
+/* Tremor layer: only shakes for ghost and endangered stages.              */
+/* The bar's overflow:hidden clips the 3px shake — edge flicker = dread.  */
+.hb-bar-tremor {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+}
+
+.hb-bar-tremor[data-decay-stage="ghost"],
+.hb-bar-tremor[data-decay-stage="endangered"] {
+  animation: bar-tremor var(--motion-heartbeat-critical-duration, 1578ms) linear infinite;
+}
+
+/* ── Accessibility override ──────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-ring-wrap  { transition: none; transform: scale(1); }
+  .hb-clock-glow { box-shadow: none; }
+  .hb-ring-opacity { opacity: 1; }
+  .hb-bar-fill   { animation: none; filter: none; }
+  .hb-bar-glow   { box-shadow: none; }
+  .hb-bar-tremor { animation: none; }
+}

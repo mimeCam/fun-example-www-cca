@@ -103,6 +103,10 @@ const heartbeatStyle = [
 ].join(';');
 const inlineStyle = baseStyle ? `${baseStyle};${heartbeatStyle}` : heartbeatStyle;
 
+// Expose decayFactor as a data attribute so HeartbeatOrchestrator can:
+// 1. Read it on init, 2. Re-read after live-decay minute-tick updates.
+const dataDecayFactor = decayFactor !== undefined ? decayFactor.toFixed(4) : undefined;
+
 // Urgency tier mapping (ring CSS data-attribute drives pulse token)
 function urgencyTier(u: ClockUrgency): 'warning' | 'critical' | 'final' {
   if (u === 'dying')     return 'final';
@@ -138,20 +142,21 @@ const deadlineFmt = deadline
 
 {variant === 'ring' && !hiddenByStage && (
   <div
-    class:list={['decay-clock', compact && 'decay-clock--compact']}
+    class:list={['decay-clock', 'hb-clock-glow', compact && 'decay-clock--compact']}
     data-urgency={urgency}
     data-tier={tier}
     data-decay-stage={decayStage ?? undefined}
     data-days-remaining={daysRemaining}
     data-conviction={conviction ?? undefined}
+    data-decay-factor={dataDecayFactor}
     style={inlineStyle}
     aria-label={a11yLabel}
     title={a11yLabel}
     role="img"
   >
-    <svg class="decay-clock__ring-wrap" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <svg class="decay-clock__ring-wrap hb-ring-wrap" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
       <circle class="decay-clock__track" cx="32" cy="32" r="28" />
-      <circle class="decay-clock__ring"  cx="32" cy="32" r="28" />
+      <circle class="decay-clock__ring hb-ring-stroke hb-ring-opacity" cx="32" cy="32" r="28" />
     </svg>
     <div class="decay-clock__label" aria-hidden="true">
       <span class="decay-clock__days">{dayDisplay}</span>
@@ -262,12 +267,14 @@ const deadlineFmt = deadline
     transition: stroke-dashoffset 600ms ease, stroke 300ms ease;
     filter: drop-shadow(0 0 4px var(--clock-conviction-tint, transparent));
   }
-  /* Ring opacity: fading stage = 30% ambient (Tanya §4.3) */
-  .decay-clock { opacity: var(--clock-ring-opacity, 1); }
+  /* Ring opacity: driven by --hb-opacity from HeartbeatOrchestrator (0.45→1.0).
+     Falls back to --clock-ring-opacity for pre-JS frames (FOUC guard).
+     Note: hb-ring-opacity class on the circle applies the CSS var.           */
 
-  /* Heartbeat: stage-driven via CSS vars (Mike §3, Tanya §4.3).
+  /* Heartbeat: stage-driven keyframe for pre-orchestrator first frame.
+     Once JS fires, the orchestrator drives opacity/scale/color via CSS vars.
      ghost/endangered = erratic slow; fading = hesitant; urgency tiers = fast. */
-  .decay-clock[data-decay-stage] .decay-clock__ring {
+  .decay-clock[data-decay-stage] .decay-clock__ring:not(.hb-ring-opacity) {
     animation: dc-ring-pulse
       var(--heartbeat-duration, var(--motion-heartbeat-fresh-duration))
       var(--heartbeat-easing,   var(--motion-heartbeat-fresh-easing))
@@ -275,12 +282,14 @@ const deadlineFmt = deadline
   }
 
   /* Urgency-tier overrides: final/critical pulse faster than heartbeat rhythm */
-  .decay-clock[data-tier="final"] .decay-clock__ring {
+  .decay-clock[data-tier="final"] .decay-clock__ring:not(.hb-ring-opacity) {
     animation: dc-ring-pulse var(--urgency-pulse-speed-final, 0.4s) ease-in-out infinite;
   }
-  .decay-clock[data-tier="critical"] .decay-clock__ring {
+  .decay-clock[data-tier="critical"] .decay-clock__ring:not(.hb-ring-opacity) {
     animation: dc-ring-pulse var(--urgency-pulse-speed-critical, 1s) ease-in-out infinite;
   }
+
+  /* Fallback keyframe still used before JS fires — plain opacity fade. */
   @keyframes dc-ring-pulse {
     0%, 100% { opacity: 1;    }
     50%       { opacity: 0.45; }
@@ -435,3 +444,13 @@ const deadlineFmt = deadline
     .dc-banner { animation: none; }
   }
 </style>
+
+{/* Init HeartbeatOrchestrator when the ring variant is present and has decay data. */}
+{variant === 'ring' && !hiddenByStage && decayFactor !== undefined && (
+  <script>
+    import { initHeartbeatOrchestrator } from '../lib/client/heartbeat-orchestrator';
+    document.addEventListener('DOMContentLoaded', () => {
+      initHeartbeatOrchestrator();
+    }, { once: true });
+  </script>
+)}

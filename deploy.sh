@@ -4,6 +4,68 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v100 — Decay Pulse Orchestrator: HeartbeatOrchestrator (2026-04-12)
+#   Sprint: Biological heartbeat waveform system wired to every decay-sensitive
+#     element (DecayClock ring + DecayBar) via passive CSS custom property
+#     consumption. RAF loop on :root writes --hb-* vars at 60fps; components
+#     listen without any direct JS coupling. Three-phase cardiac waveform:
+#     Pressure (slow quadratic squeeze) → Thump (spring-shaped peak, 0.45
+#     overshoot) → Release (critically-damped exponential). BPM model:
+#     72 (fresh) → 55 (fading) → 38 (critical) → 22 (ghost + jitter) → 0
+#     (fossil ≥ 0.97, static state written once). OKLCH two-segment lerp:
+#     green (fresh) → warm-amber (revival midpoint) → fossil-red, preventing
+#     perceptually-grey midpoints. Circuit breaker: RAF suspends on tab-hidden,
+#     resumes phase-correct. prefers-reduced-motion: static color, no RAF.
+#     Ghost-stage arrhythmic jitter (every 8th beat ±JITTER_BOUND phase nudge).
+#     Pure UIX — zero infra changes.
+#   New files:
+#     src/lib/client/decay-color-lerp.ts — OKLCH two-segment lerp utility;
+#       decayFactor 0→1 maps green(145°)→amber(70°)→red(25°); three design-
+#       token anchors (FRESH/REVIVAL/FOSSIL) match tokens.css primitives exactly;
+#       prevents perceptually-grey midpoint from straight green→red hue travel.
+#     src/lib/client/heartbeat-orchestrator.ts — RAF-based CSS var writer;
+#       HeartbeatOrchestrator class; writes --hb-intensity/scale/opacity/
+#       shadow-alpha/bpm/bar-duration + --hb-color-l/c/h per frame; imports
+#       springFrame (existing spring-easing.ts) + decayColorLerp; circuit
+#       breaker on visibilitychange; fossil threshold halts RAF; ghost-stage
+#       arrhythmic jitter; initHeartbeatOrchestrator() idempotent public API
+#       (guards via window.__hbOrchestrator singleton).
+#     src/styles/heartbeat.css — keyframes (decay-thump brightness pulse,
+#       bar-tremor horizontal shake) + passive consumer classes: .hb-ring-wrap
+#       (scale compress on thump), .hb-ring-stroke (OKLCH lerp color),
+#       .hb-clock-glow (box-shadow bloom), .hb-ring-opacity (opacity dim/bright),
+#       .hb-bar-fill (OKLCH color + thump animation), .hb-bar-glow (ambient
+#       shadow), .hb-bar-tremor (ghost/endangered shake); prefers-reduced-motion
+#       guard cancels all motion.
+#   Modified files:
+#     src/components/DecayBar.astro — barStageFor() maps decayFactor to 5-stage
+#       enum; data-decay-stage on .decay-bar; 3-layer DOM: fill (.hb-bar-fill),
+#       glow (.hb-bar-glow aria-hidden), tremor (.hb-bar-tremor data-decay-stage);
+#       .decay-bar gains position:relative + overflow:hidden for layer containment;
+#       fill background migrated from legacy oklch(from hsl...) to flat OKLCH
+#       literal (FOUC pre-JS fallback matching fresh stage).
+#     src/components/DecayClock.astro — data-decay-factor={decayFactor.toFixed(4)}
+#       on ring wrapper (enables live sync 1×/min via SSE); .hb-clock-glow on
+#       container; .hb-ring-wrap on SVG; .hb-ring-stroke + .hb-ring-opacity on
+#       circle; CSS fallback animation selectors scoped to :not(.hb-ring-opacity)
+#       (FOUC guard — CSS fires until JS takes over); DOMContentLoaded script
+#       imports + calls initHeartbeatOrchestrator() once per page.
+#     src/layouts/BaseLayout.astro — heartbeat.css imported as global stylesheet
+#       (alongside motion.css, revival-moment.css etc.); Astro deduplicates.
+#     src/styles/motion.css — --motion-decay-thump-easing: ease-in-out added
+#       (fast peak, slow release — spring-thump shape token for consumers).
+#     src/styles/tokens.css — 4 new decay stage semantic tokens: --color-decay-
+#       fading (oklch 62% 0.155 95°), --color-decay-endangered (58% 0.195 35°),
+#       --color-decay-ghost (52% 0.110 20°), --color-decay-revival (72% 0.160
+#       70°); --hb-* default vars (safe zero values, overwritten each RAF);
+#       @property typed registrations for --hb-intensity/scale/opacity/shadow-alpha
+#       (enable CSS transitions on numeric custom props — Mike §5 spec).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v99).
+#
 # Architecture v99 — Conviction Ceremony 5.5 Phases + SiteNav Token P0 Fix (2026-04-12)
 #   Sprint: SealCeremony wired end-to-end with NotarizeStamp (phase 3.5), gold
 #     BloomParticles burst on receipt, sound/haptic at every phase transition,
