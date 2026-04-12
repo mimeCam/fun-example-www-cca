@@ -121,7 +121,7 @@ const { slug, verdictSealed, disputeState } = Astro.props;
   const feedback = document.getElementById('dispute-feedback') as HTMLElement | null;
   if (!btn || !fill || !label || !feedback) return;
 
-  const HOLD_MS = 800;
+  const HOLD_MS = 2000;
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
   function startHold(): void {

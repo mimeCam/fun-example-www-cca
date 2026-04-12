@@ -72,7 +72,8 @@ export const POST: APIRoute = async ({ request }) => {
   } catch { /* best-effort */ }
 
   // Broadcast tension update to all SSE clients watching this post.
-  broadcastNamed('tension:updated', { slug, ...tensionScore });
+  // dist is included so StickyStanceBar can update bar segment widths live.
+  broadcastNamed('tension:updated', { slug, ...tensionScore, dist });
 
   return jsonOk({ ok: recorded, tensionScore });
 };

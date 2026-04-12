@@ -1,0 +1,599 @@
+---
+// src/components/StickyStanceBar.astro
+// Sticky stance bar — position:fixed bottom overlay.
+// Surfaces at 50% article read depth via a single IntersectionObserver on a sentinel.
+// Shows live agree/torn/disagree distribution; lets readers vote inline (desktop)
+// or via StanceDrawer dispatch (mobile ≤639px).
+// Observer fires exactly once — no battery drain, no repeated triggers.
+// Reuses window.__heartbeatES SSE connection (same pattern as TensionBadge).
+//
+// Credits: Mike (napkin plan §StickyStanceBar), Tanya (UX spec §StickyStanceBar)
+
+import type { StanceDistribution } from '../lib/stance-ledger';
+
+interface Props {
+  slug: string;
+  dist: StanceDistribution;
+}
+
+const { slug, dist } = Astro.props;
+
+function pct(n: number, total: number): number {
+  return total > 0 ? Math.round((n / total) * 100) : 0;
+}
+
+const agreePct    = pct(dist.agree,    dist.total);
+const tornPct     = pct(dist.torn,     dist.total);
+const disagreePct = pct(dist.disagree, dist.total);
+const hasVotes    = dist.total > 0;
+---
+
+<!-- Sentinel: JS moves this to the article midpoint after render. -->
+<div id="ssb-sentinel" aria-hidden="true" style="height:0;overflow:hidden;pointer-events:none"></div>
+
+<!--
+  Bar is always in the DOM — CSS keeps it off-screen (translateY(100%)).
+  aria-hidden="true" until JS shows it; pointer-events:none until visible.
+  role="complementary" + label satisfies a11y requirement (Tanya §a11y, height ≤64px).
+-->
+<aside
+  id="sticky-stance-bar"
+  class="ssb"
+  role="complementary"
+  aria-label="Reader stance distribution"
+  aria-hidden="true"
+  data-slug={slug}
+  data-agree={dist.agree}
+  data-torn={dist.torn}
+  data-disagree={dist.disagree}
+  data-total={dist.total}
+>
+  <!-- LIVE indicator: 6×6px dot + label (Tanya §LIVE-indicator) -->
+  <div class="ssb-live" aria-hidden="true">
+    <span class="ssb-dot"></span>
+    <span class="ssb-live-label">LIVE</span>
+  </div>
+
+  <!-- Referendum bar: segmented agree / torn / disagree proportions -->
+  <div
+    class="ssb-bar-group"
+    role="img"
+    aria-label={`${dist.agree} agree · ${dist.torn} torn · ${dist.disagree} disagree`}
+  >
+    <div class="ssb-bar">
+      <div class="ssb-seg ssb-seg--agree"    data-seg="agree"    style={`width:${agreePct}%`}></div>
+      <div class="ssb-seg ssb-seg--torn"     data-seg="torn"     style={`width:${tornPct}%`}></div>
+      <div class="ssb-seg ssb-seg--disagree" data-seg="disagree" style={`width:${disagreePct}%`}></div>
+    </div>
+    {hasVotes ? (
+      <p class="ssb-counts" aria-hidden="true">
+        <span class="ssb-count ssb-count--agree"    data-count="agree">{dist.agree}</span>
+        <span class="ssb-sep">·</span>
+        <span class="ssb-count ssb-count--torn"     data-count="torn">{dist.torn}</span>
+        <span class="ssb-sep">·</span>
+        <span class="ssb-count ssb-count--disagree" data-count="disagree">{dist.disagree}</span>
+      </p>
+    ) : (
+      <p class="ssb-counts ssb-counts--empty" aria-hidden="true">Be first to weigh in</p>
+    )}
+  </div>
+
+  <!-- Actions: desktop inline buttons / mobile single CTA / voted chip -->
+  <div class="ssb-actions" id="ssb-actions">
+
+    <!-- Desktop: three inline stance buttons (hidden on mobile via CSS) -->
+    <div class="ssb-vote-group" id="ssb-vote-group">
+      <button class="ssb-vote-btn ssb-vote-btn--agree"    data-vote="agree"    type="button" aria-label="Agree with this post"><span class="ssb-glyph" aria-hidden="true">◉</span><span>Agree</span></button>
+      <button class="ssb-vote-btn ssb-vote-btn--torn"     data-vote="torn"     type="button" aria-label="Torn about this post"><span class="ssb-glyph" aria-hidden="true">◈</span><span>Torn</span></button>
+      <button class="ssb-vote-btn ssb-vote-btn--disagree" data-vote="disagree" type="button" aria-label="Disagree with this post"><span class="ssb-glyph" aria-hidden="true">◇</span><span>Dis</span></button>
+    </div>
+
+    <!-- Mobile: single CTA dispatches stance:prompt to open StanceDrawer -->
+    <button class="ssb-weigh-in" id="ssb-weigh-in" type="button">Weigh in →</button>
+
+    <!-- Voted chip: replaces vote group after cast; hidden until vote recorded -->
+    <div class="ssb-voted-chip" id="ssb-voted-chip" hidden aria-live="polite"></div>
+
+  </div>
+
+  <!-- Dismiss -->
+  <button class="ssb-dismiss" id="ssb-dismiss" type="button" aria-label="Dismiss stance bar">
+    <span aria-hidden="true">✕</span>
+  </button>
+</aside>
+
+<script>
+// StickyStanceBar — client orchestration.
+// IntersectionObserver fires once at sentinel crossing, shows bar.
+// SSE reuses window.__heartbeatES (same as TensionBadge — no second connection).
+// Vote POSTs to /api/stance; writes localStorage + sessionStorage on success.
+// Dismiss stores a sessionStorage flag — bar stays gone for the rest of the visit.
+
+(function mountStickyStanceBar() {
+  const bar = document.getElementById('sticky-stance-bar');
+  if (!bar) return;
+
+  const slug        = bar.dataset.slug ?? '';
+  const SESS_KEY    = `stance:${slug}`;       // shared with StanceDrawer guard
+  const LOC_KEY     = `stance-${slug}`;       // shared with DisputeChallenge guard
+  const DISMISS_KEY = `ssb-dismissed:${slug}`;
+
+  // ── Storage helpers ──────────────────────────────────────────────────────
+
+  function getLocal(key: string): string | null {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+
+  function getSession(key: string): string | null {
+    try { return sessionStorage.getItem(key); } catch { return null; }
+  }
+
+  function setSession(key: string, val: string): void {
+    try { sessionStorage.setItem(key, val); } catch { /* quota */ }
+  }
+
+  function setLocal(key: string, val: string): void {
+    try { localStorage.setItem(key, val); } catch { /* quota */ }
+  }
+
+  function getSessionId(): string | null {
+    return getSession('session-token');
+  }
+
+  // ── Guards ────────────────────────────────────────────────────────────────
+
+  function isDismissed(): boolean { return getSession(DISMISS_KEY) === '1'; }
+  function savedStance(): string | null { return getLocal(LOC_KEY); }
+
+  // ── Show / Hide ───────────────────────────────────────────────────────────
+
+  function showBar(): void {
+    if (isDismissed()) return;
+    bar.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => bar.classList.add('ssb--visible'));
+    const prior = savedStance();
+    if (prior) lockToVotedState(prior);
+  }
+
+  function hideBar(): void {
+    bar.classList.remove('ssb--visible');
+    bar.addEventListener('transitionend', onHidden, { once: true });
+  }
+
+  function onHidden(): void {
+    bar.setAttribute('aria-hidden', 'true');
+  }
+
+  function dismiss(): void {
+    setSession(DISMISS_KEY, '1');
+    hideBar();
+  }
+
+  // ── Sentinel — placed at article midpoint by JS ──────────────────────────
+
+  function placeSentinel(): void {
+    const article  = document.querySelector('.post-body');
+    const sentinel = document.getElementById('ssb-sentinel');
+    if (!article || !sentinel) return;
+    const mid = article.children[Math.floor(article.children.length / 2)];
+    if (mid) mid.after(sentinel);
+  }
+
+  function watchSentinel(): void {
+    const sentinel = document.getElementById('ssb-sentinel');
+    if (!sentinel) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting) return;
+      obs.disconnect(); // fire exactly once — no battery drain
+      showBar();
+    }, { threshold: 0 });
+    obs.observe(sentinel);
+  }
+
+  // ── SSE: reuse heartbeat stream for live tension:updated ─────────────────
+
+  type HeartbeatWin = Window & {
+    __heartbeatES?: EventSource;
+    __presenceES?: EventSource;
+  };
+
+  function resolveStream(): EventSource {
+    const win = window as unknown as HeartbeatWin;
+    if (win.__heartbeatES) return win.__heartbeatES;
+    const es = new EventSource('/api/heartbeat');
+    win.__heartbeatES = es;
+    return es;
+  }
+
+  function subscribeSSE(): void {
+    const es = resolveStream();
+    es.addEventListener('tension:updated', onTensionUpdate as EventListener);
+  }
+
+  function onTensionUpdate(e: MessageEvent): void {
+    try {
+      const d = JSON.parse(e.data) as { slug?: string; dist?: Record<string, number> };
+      if (d.slug !== slug || !d.dist) return;
+      updateBar(d.dist);
+    } catch { /* malformed — ignore */ }
+  }
+
+  // ── Bar segment + count update ────────────────────────────────────────────
+
+  function updateBar(dist: Record<string, number>): void {
+    const total = (dist.agree ?? 0) + (dist.torn ?? 0) + (dist.disagree ?? 0);
+    if (total === 0) return;
+    (['agree', 'torn', 'disagree'] as const).forEach(s => updateSegment(s, dist[s] ?? 0, total));
+    bar.dataset.total = String(total);
+    bar.querySelector<HTMLElement>('.ssb-counts--empty')?.remove();
+  }
+
+  function updateSegment(stance: string, n: number, total: number): void {
+    const pct = Math.round((n / total) * 100);
+    const seg  = bar.querySelector<HTMLElement>(`[data-seg="${stance}"]`);
+    const cnt  = bar.querySelector<HTMLElement>(`[data-count="${stance}"]`);
+    if (seg) seg.style.width = `${pct}%`;
+    if (cnt) cnt.textContent = String(n);
+  }
+
+  // ── Vote submission ───────────────────────────────────────────────────────
+
+  async function postStance(sessionId: string, stance: string): Promise<boolean> {
+    try {
+      const res = await fetch('/api/stance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
+        body: JSON.stringify({ slug, stance, score: 3 }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function submitVote(stance: string): Promise<void> {
+    const sessionId = getSessionId();
+    if (!sessionId) return;
+    setVoteGroupDisabled(true);
+    const ok = await postStance(sessionId, stance);
+    if (ok) { persistVote(stance); lockToVotedState(stance); }
+    else setVoteGroupDisabled(false);
+  }
+
+  function persistVote(stance: string): void {
+    setSession(SESS_KEY, '1');  // tells StanceDrawer: already voted this session
+    setLocal(LOC_KEY, stance);  // tells DisputeChallenge: stance is recorded
+  }
+
+  function setVoteGroupDisabled(disabled: boolean): void {
+    bar.querySelectorAll<HTMLButtonElement>('[data-vote]')
+      .forEach(b => { b.disabled = disabled; });
+  }
+
+  // ── Voted state ───────────────────────────────────────────────────────────
+
+  const GLYPHS: Record<string, string> = { agree: '◉', torn: '◈', disagree: '◇' };
+  const LABELS: Record<string, string> = { agree: 'Agreed', torn: 'Torn', disagree: 'Disagreed' };
+
+  function lockToVotedState(stance: string): void {
+    const group   = document.getElementById('ssb-vote-group');
+    const weighIn = document.getElementById('ssb-weigh-in');
+    const chip    = document.getElementById('ssb-voted-chip');
+    if (group)   group.hidden = true;
+    if (weighIn) weighIn.hidden = true;
+    if (!chip) return;
+    chip.hidden    = false;
+    chip.className = `ssb-voted-chip ssb-voted-chip--${stance}`;
+    chip.innerHTML = `<span aria-hidden="true">${GLYPHS[stance] ?? ''}</span> ${LABELS[stance] ?? stance}`;
+  }
+
+  // ── Event wiring ──────────────────────────────────────────────────────────
+
+  bar.querySelectorAll<HTMLButtonElement>('[data-vote]').forEach(btn =>
+    btn.addEventListener('click', () => submitVote(btn.dataset.vote ?? ''))
+  );
+
+  document.getElementById('ssb-dismiss')?.addEventListener('click', dismiss);
+
+  document.getElementById('ssb-weigh-in')?.addEventListener('click', () =>
+    document.dispatchEvent(new CustomEvent('stance:prompt', { detail: { slug } }))
+  );
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  placeSentinel();
+  watchSentinel();
+  subscribeSSE();
+})();
+</script>
+
+<style>
+  /* ── Shell: position:fixed bottom overlay ─────────────────────────────── */
+  /* z-sticky (40) keeps it below StanceDrawer (z-drawer: 50) and nav (z-nav: 10) */
+  .ssb {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-sticky);
+    height: 52px;  /* Tanya §SSB — desktop */
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 0 var(--gutter);
+    background: var(--surface-modal);
+    border-top: 1px solid var(--border-light);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-drawer);
+
+    /* Off-screen until JS adds .ssb--visible */
+    transform: translateY(calc(100% + 1px));   /* +1px hides border-top seam */
+    transition: transform var(--motion-ceremony-duration) var(--motion-ceremony-easing);
+    pointer-events: none;
+  }
+
+  .ssb--visible {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* ── LIVE indicator ────────────────────────────────────────────────────── */
+  .ssb-live {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+  }
+
+  /* 6×6px presence dot — nav-breathe reused from motion.css (Tanya §LIVE) */
+  .ssb-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--clr-emerald-500);
+    flex-shrink: 0;
+    animation: nav-breathe 3s ease-in-out infinite;
+  }
+
+  .ssb-live-label {
+    font-size: var(--text-3xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  /* ── Referendum bar group ──────────────────────────────────────────────── */
+  .ssb-bar-group {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .ssb-bar {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--border-subtle);
+    overflow: hidden;
+    display: flex;
+    gap: 1px;  /* hairline gap between segments — readable without labels */
+  }
+
+  .ssb-seg {
+    height: 100%;
+    min-width: 0;
+    transition: width var(--motion-flow-duration) var(--motion-flow-easing);
+  }
+
+  /* Minimum visible width for non-zero segments */
+  .ssb-seg:not([style*="width:0"]) { min-width: 3px; }
+
+  .ssb-seg--agree    { background: var(--stance-agree);    border-radius: var(--radius-full) 0 0 var(--radius-full); }
+  .ssb-seg--torn     { background: var(--stance-torn); }
+  .ssb-seg--disagree { background: var(--stance-disagree); border-radius: 0 var(--radius-full) var(--radius-full) 0; }
+
+  /* Counts row below the bar */
+  .ssb-counts {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+    font-size: var(--text-3xs);
+    line-height: 1;
+  }
+
+  .ssb-count--agree    { color: var(--stance-agree-color); }
+  .ssb-count--torn     { color: var(--stance-torn-color); }
+  .ssb-count--disagree { color: var(--stance-disagree-color); }
+
+  .ssb-sep { color: var(--text-ghost); }
+
+  .ssb-counts--empty {
+    margin: 0;
+    font-size: var(--text-3xs);
+    color: var(--text-ghost);
+    font-style: italic;
+  }
+
+  /* ── Vote group — three inline stance buttons (desktop) ───────────────── */
+  .ssb-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+  }
+
+  .ssb-vote-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .ssb-vote-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0.2rem 0.45rem;
+    font-size: var(--text-2xs);
+    font-family: inherit;
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.01em;
+    color: var(--text-secondary);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background    var(--motion-snap-duration) var(--motion-snap-easing),
+      border-color  var(--motion-snap-duration) var(--motion-snap-easing),
+      color         var(--motion-snap-duration) var(--motion-snap-easing),
+      transform     var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .ssb-vote-btn:hover:not(:disabled) {
+    background: var(--surface-hover);
+    border-color: var(--border-interactive-hover);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+  }
+
+  .ssb-vote-btn:active:not(:disabled) { transform: scale(0.97); }
+  .ssb-vote-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Stance-specific hover tints */
+  .ssb-vote-btn--agree:hover:not(:disabled) {
+    background: var(--stance-agree-bg);
+    border-color: var(--stance-agree-border);
+    color: var(--stance-agree-color);
+  }
+
+  .ssb-vote-btn--torn:hover:not(:disabled) {
+    background: var(--stance-torn-bg);
+    border-color: var(--stance-torn-border);
+    color: var(--stance-torn-color);
+  }
+
+  .ssb-vote-btn--disagree:hover:not(:disabled) {
+    background: var(--stance-disagree-bg);
+    border-color: var(--stance-disagree-border);
+    color: var(--stance-disagree-color);
+  }
+
+  .ssb-glyph {
+    font-size: 0.85em;
+    transition: transform var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .ssb-vote-btn:hover .ssb-glyph { transform: scale(1.12); }
+
+  /* ── Mobile CTA — hidden on desktop ────────────────────────────────────── */
+  .ssb-weigh-in {
+    display: none;   /* shown via @media below */
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0.3rem 0.75rem;
+    font-size: var(--text-xs);
+    font-family: inherit;
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    background: var(--gold-bg);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background   var(--motion-snap-duration) var(--motion-snap-easing),
+      border-color var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .ssb-weigh-in:hover {
+    background: var(--gold-bg-strong);
+    border-color: var(--gold-border-strong);
+  }
+
+  /* ── Voted chip — replaces vote group after cast ─────────────────────── */
+  .ssb-voted-chip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0.2rem 0.6rem;
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    animation: badge-enter var(--motion-flow-duration) var(--motion-flow-easing) both;
+    white-space: nowrap;
+  }
+
+  /* Stance-coloured chip variants */
+  .ssb-voted-chip--agree {
+    background: var(--stance-agree-bg);
+    border-color: var(--stance-agree-border);
+    color: var(--stance-agree-color);
+  }
+
+  .ssb-voted-chip--torn {
+    background: var(--stance-torn-bg);
+    border-color: var(--stance-torn-border);
+    color: var(--stance-torn-color);
+  }
+
+  .ssb-voted-chip--disagree {
+    background: var(--stance-disagree-bg);
+    border-color: var(--stance-disagree-border);
+    color: var(--stance-disagree-color);
+  }
+
+  /* ── Dismiss button ─────────────────────────────────────────────────────── */
+  .ssb-dismiss {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    font-family: inherit;
+    color: var(--text-ghost);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    transition: color var(--motion-snap-duration) var(--motion-snap-easing),
+                background var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .ssb-dismiss:hover {
+    color: var(--text-secondary);
+    background: var(--surface-hover);
+  }
+
+  /* ── Mobile (≤639px): 44px height, hide desktop buttons ──────────────── */
+  @media (max-width: 639px) {
+    .ssb {
+      height: 44px;
+      gap: var(--space-2);
+      padding: 0 var(--space-4);
+    }
+
+    .ssb-vote-group  { display: none; }
+    .ssb-weigh-in    { display: flex; }
+    .ssb-live-label  { display: none; } /* keep dot, drop "LIVE" label */
+    .ssb-counts      { display: none; } /* bar is the data; counts crowd mobile */
+  }
+
+  /* ── Accessibility override ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .ssb         { transition: none; }
+    .ssb-dot     { animation: none; opacity: 0.85; }
+    .ssb-seg     { transition: none; }
+    .ssb-voted-chip { animation: none; }
+  }
+</style>

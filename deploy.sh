@@ -4,6 +4,42 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v92 — StickyStanceBar + Stance Design Token Polish (2026-04-12)
+#   Sprint: Sticky stance bar ships end-to-end; stance timer tokenised; dispute
+#     hold time raised for accidental-tap prevention; SSE tension:updated event
+#     extended with dist payload for live bar updates. Pure UIX — zero infra changes.
+#   New files:
+#     src/components/StickyStanceBar.astro — position:fixed bottom overlay;
+#       surfaces once at 50% read depth via IntersectionObserver sentinel;
+#       live agree/torn/disagree fill bar via SSE tension:updated + dist payload;
+#       inline vote buttons on desktop (≥640 px), stance:prompt CustomEvent
+#       dispatch on mobile (≤639 px, opens StanceDrawer); voted chip hides buttons
+#       after submission; session-dismiss guard (sessionStorage key per slug);
+#       fully token-driven; prefers-reduced-motion guard; aria-live="polite"
+#       on bar labels.
+#   Modified files:
+#     src/pages/blog/[slug].astro — imports StickyStanceBar; renders
+#       <StickyStanceBar slug dist /> between StanceDrawer and erosion-bar script;
+#       stanceDist ?? zero-dist fallback passed as initial prop.
+#     src/pages/api/stance.ts — broadcastNamed('tension:updated', ...) now
+#       includes dist (agree/torn/disagree counts) alongside existing tensionScore
+#       fields; StickyStanceBar client script uses dist to update bar widths live
+#       without a separate fetch; backward-compatible (adds fields, changes none).
+#     src/components/StanceDrawer.astro — stance progress bar background migrated
+#       from hardcoded oklch literal to var(--stance-timer-color) design token;
+#       zero visual change — purely source-of-truth consolidation.
+#     src/components/DisputeChallenge.astro — HOLD_MS raised 800→2000 ms;
+#       prevents accidental dispute triggers on tap-heavy mobile devices
+#       (Tanya §7 anti-fat-finger mandate).
+#     src/styles/tokens.css — --stance-timer-color: oklch(62% 0.14 185 / 0.4)
+#       added (teal; patience belongs to the reader — Tanya §3).
+#     AGENTS.md — Sticky stance bar logged under Recently Shipped; WIP cleared.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v91).
+#
 # Architecture v91 — Shadow Elevation System + Cold-Start Ghost Timeline (2026-04-12)
 #   Sprint: Pure UIX polish — spatial depth system (E1–E4 shadows) wired end-to-end;
 #     TrajectoryBlock.astro cold-state fully redesigned around anticipation + clarity.

@@ -5,7 +5,7 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, batting average adapter, author-token, cron jobs; OG pipeline at `src/lib/og/`
-- `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
+- `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters; sticky stance bar at `src/components/StickyStanceBar.astro`
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/` — design tokens (`tokens.css`), shared card geometry (`card-base.css`), motion, atmosphere
 
@@ -15,4 +15,4 @@
 
 ## WIP
 
-- [wip] Sticky stance bar on blog posts: extract stance buttons from `DisputeChallenge.astro` into a `position:fixed` wrapper; scroll-trigger via IntersectionObserver at 50% article depth; SSE stance count; static fallback below article remains.
+_Nothing in flight._

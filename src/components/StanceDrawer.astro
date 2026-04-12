@@ -166,7 +166,7 @@ const { slug } = Astro.props;
   .stance-progress-bar {
     height: 100%;
     /* teal — the timer is the reader's patience, not the author's claim (Tanya §3) */
-    background: oklch(62% 0.14 185 / 0.4);
+    background: var(--stance-timer-color);
     width: 100%;
     transform-origin: left center;
     animation: progressShrink 30s linear forwards;

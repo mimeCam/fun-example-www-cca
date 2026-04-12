@@ -388,6 +388,9 @@
   --gold-border-strong: rgba(245, 166, 35, 0.40); /* heavier than gold-border(0.22) */
   --gold-bg-strong:     rgba(245, 166, 35, 0.12); /* heavier than gold-bg(0.08)     */
 
+  /* ── Stance drawer timer track — teal; patience belongs to the reader (Tanya §3) ── */
+  --stance-timer-color: oklch(62% 0.14 185 / 0.4);
+
   /* ── Stance disagree semantic aliases (via verdict-wrong primitive) ───── */
   --stance-disagree-bg:     color-mix(in oklch, var(--clr-red-500) 10%, transparent);
   --stance-disagree-border: color-mix(in oklch, var(--clr-red-500) 35%, transparent);
