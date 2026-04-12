@@ -5,7 +5,7 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine
-- `src/components/` — UI layer: cards, drawers, ceremonies (ConvictionSeal, NotarizeStamp), badges, filters
+- `src/components/` — UI layer: cards, drawers, ceremonies (ConvictionSeal, SealReceipt, NotarizeStamp), badges, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes · `src/styles/atmosphere.css` — stage palette
 

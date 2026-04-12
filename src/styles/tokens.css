@@ -133,7 +133,7 @@
   --radius-lg:        16px;     /* modal sheets, drawer overlays */
   --radius-xl:        24px;     /* hero panels, wide feature blocks */
   --radius-full:      9999px;   /* presence dot, loaders */
-  --radius-tombstone: 8px 8px 0 0;  /* crown-rounded, flat base — sits in ground (Tanya §5) */
+  --radius-tombstone: 48% 48% 4px 4px;  /* arched top, flat bottom corners — graveyard aesthetic (Tanya §4) */
   /* Alias for backward-compat (existing code uses --radius) */
   --radius: var(--radius-md);
 
@@ -263,6 +263,11 @@
   --border-interactive:       rgba(255, 255, 255, 0.12);
   --border-interactive-hover: rgba(255, 255, 255, 0.22);
   --border-active: rgba(245, 166, 35, 0.35);  /* pressed — between hover and focus */
+
+  /* ── Interactive Color — single source for links, icon buttons ──────── */
+  /* Tanya §6.5: one token = zero drift across prose links + expandables   */
+  --color-interactive:       oklch(65% 0.12 250);   /* slate-violet — neutral, trustworthy */
+  --color-interactive-hover: oklch(72% 0.14 250);
 
   /* ── Layout Container Tokens (Tanya §8 — Addition 2) ───────────────── */
   /* Single source of truth for column widths — never hardcode these.    */

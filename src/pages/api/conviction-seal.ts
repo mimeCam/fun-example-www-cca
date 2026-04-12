@@ -135,6 +135,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Broadcast conviction:sealed so live-conviction-hero.ts can update open tabs.
     broadcastNamed('conviction:sealed', { slug, score: entry.conviction_score });
     return json({
+      postSlug:        slug,               // receipt download + audit link
       hash:            entry.hash,
       sealedAt:        entry.timestamp,
       score:           entry.conviction_score,

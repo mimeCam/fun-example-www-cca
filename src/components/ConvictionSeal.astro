@@ -15,6 +15,7 @@ import DecayClock         from './DecayClock.astro';
 import TrustBadge         from './TrustBadge.astro';
 import TensionBadge       from './TensionBadge.astro';
 import NotarizeStamp      from './NotarizeStamp.astro';
+import SealReceipt        from './SealReceipt.astro';
 import { clockUrgency }   from '../lib/death-clock';
 import type { GraceState }          from '../lib/cold-start';
 import type { ConvictionVerdict }   from '../lib/decay-engine';
@@ -201,21 +202,21 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
       <p class="seal-error cs-error" data-error aria-live="polite"></p>
     </div>
 
-    <!-- Receipt: appears after successful seal (phase 4) -->
-    <div class="seal-receipt cs-receipt" data-receipt aria-live="polite">
-      <div class="cs-receipt-header">
-        <span class="cs-receipt-eyebrow">✓ SEALED</span>
-        <time class="cs-receipt-date" data-receipt-date></time>
-      </div>
-      <p class="cs-receipt-score">
-        Score: <span data-receipt-score class="cs-receipt-score-val"></span>/10
+    <!-- Phase 3 lock overlay: irreversibility notice + cancel CTA -->
+    <!-- Visibility driven by [data-seal-phase="3"] in seal-ceremony.css -->
+    <div class="seal-lock-overlay" aria-live="polite">
+      <p class="seal-irrev-notice">
+        Sealing your conviction. This cannot be undone — your credibility is on record.
       </p>
-      <p class="seal-receipt-hash cs-receipt-hash" data-receipt-hash></p>
-      <a class="cs-receipt-link" data-receipt-anchor href="#" style="display:none">
-        View anchor ↗
-      </a>
+      <button type="button" class="seal-cancel-btn" data-cancel-btn>
+        Cancel
+      </button>
     </div>
   </form>
+
+  <!-- Phase 4 receipt: SealReceipt notary document — outside form, shown at phase 4 -->
+  <!-- Visibility driven by [data-seal-phase="4"] in seal-ceremony.css              -->
+  <SealReceipt />
 
   <!-- Phase 3.5 notarize ceremony — outside form so form display:none doesn't hide it -->
   <!-- Shown by [data-seal-phase="3.5"] selector; hidden at all other phases            -->
@@ -572,59 +573,8 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     text-align: center;
   }
 
-  /* Receipt */
-  .cs-receipt {
-    background:    var(--surface-raised);
-    border:        1px solid var(--gold-border);
-    border-radius: var(--radius-md);
-    padding:       var(--space-5);
-    margin-top:    var(--space-4);
-  }
-
-  .cs-receipt-header {
-    display:        flex;
-    align-items:    center;
-    justify-content: space-between;
-    margin-bottom:  var(--space-3);
-  }
-
-  .cs-receipt-eyebrow {
-    font-size:      var(--text-xs);
-    font-weight:    var(--weight-bold);
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
-    color:          var(--verdict-true);
-  }
-
-  .cs-receipt-date {
-    font-size:   var(--text-xs);
-    font-family: var(--font-mono);
-    color:       var(--text-ghost);
-  }
-
-  .cs-receipt-score {
-    font-size:   var(--text-sm);
-    color:       var(--text-secondary);
-    margin:      0 0 var(--space-2);
-  }
-
-  .cs-receipt-score-val {
-    font-family: var(--font-mono);
-    font-weight: var(--weight-bold);
-    color:       var(--gold);
-  }
-
-  .cs-receipt-hash { margin: 0 0 var(--space-3); }
-
-  .cs-receipt-link {
-    font-size:   var(--text-xs);
-    font-family: var(--font-mono);
-    color:       var(--text-ghost);
-    text-decoration: none;
-    transition:  color var(--motion-duration-fast) var(--motion-easing-standard);
-  }
-
-  .cs-receipt-link:hover { color: var(--text-secondary); }
+  /* Receipt: SealReceipt.astro owns its own styles.
+   * Only display control lives here via seal-ceremony.css selectors. */
 
   /* Mobile adjustments */
   @media (max-width: 640px) {
@@ -662,6 +612,7 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     const errorEl    = container.querySelector<HTMLElement>('[data-error]')!;
     const receipt    = container.querySelector<HTMLElement>('[data-receipt]')!;
     const stamp      = container.querySelector<HTMLElement>('[data-notarize-stamp]')!;
+    const cancelBtn  = container.querySelector<HTMLButtonElement>('[data-cancel-btn]')!;
     const slug       = container.dataset.slug!;
 
     let score    = 5;
@@ -679,12 +630,15 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
       },
       onNotarize: (data) => populateNotarize(stamp, data),
       onReceipt:  (data) => {
-        populateReceipt(receipt, data);
+        populateReceipt(receipt, data, slug);
         container.dispatchEvent(new CustomEvent('conviction:sealed', { bubbles: true, detail: { slug } }));
       },
       onError:    (msg)  => { errorEl.textContent = msg; errorEl.style.display = 'block'; },
       onAlreadySealed: () => showAlreadySealed(errorEl),
+      onCancel:   () => { /* clean slate — atmosphere already restored by onPhase(0) */ },
     });
+
+    cancelBtn.addEventListener('click', () => ceremony.cancel());
 
     // Escape key: abort only when not locked (phase < 3 = POST not yet in flight).
     const onEscape = (e: KeyboardEvent): void => {
@@ -765,16 +719,42 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     el.style.cssText = 'display:block; color: var(--gold-dim, rgba(245,166,35,0.65));';
   }
 
-  function populateReceipt(el: HTMLElement, data: { hash: string; sealedAt: string; score: number; anchorUrl: string | null }): void {
-    const dateEl   = el.querySelector<HTMLElement>('[data-receipt-date]')!;
-    const scoreEl  = el.querySelector<HTMLElement>('[data-receipt-score]')!;
-    const hashEl   = el.querySelector<HTMLElement>('[data-receipt-hash]')!;
-    const anchorEl = el.querySelector<HTMLAnchorElement>('[data-receipt-anchor]')!;
+  function populateReceipt(el: HTMLElement, data: ReceiptData, slug: string): void {
+    const dateEl      = el.querySelector<HTMLElement>('[data-receipt-date]')!;
+    const scoreEl     = el.querySelector<HTMLElement>('[data-receipt-score]')!;
+    const hashEl      = el.querySelector<HTMLElement>('[data-receipt-hash]')!;
+    const anchorRow   = el.querySelector<HTMLElement>('[data-receipt-anchor-row]')!;
+    const anchorEl    = el.querySelector<HTMLAnchorElement>('[data-receipt-anchor]')!;
+    const tstNoteEl   = el.querySelector<HTMLElement>('[data-receipt-tst-note]')!;
+    const downloadBtn = el.querySelector<HTMLButtonElement>('[data-receipt-download]')!;
+    const auditLink   = el.querySelector<HTMLAnchorElement>('[data-receipt-audit]')!;
 
-    dateEl.textContent    = new Date(data.sealedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    scoreEl.textContent   = String(data.score);
-    hashEl.textContent    = data.hash;
-    if (data.anchorUrl) { anchorEl.href = data.anchorUrl; anchorEl.style.display = 'inline'; }
+    dateEl.textContent  = new Date(data.sealedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    (dateEl as HTMLTimeElement).dateTime = new Date(data.sealedAt).toISOString();
+    scoreEl.textContent = String(data.score);
+    hashEl.textContent  = data.hash;
+    tstNoteEl.textContent = data.tst_token ? 'Notarized via RFC 3161' : 'Local anchor (TSA unavailable)';
+    auditLink.href      = `/audit/${slug}`;
+
+    if (data.anchorUrl) {
+      anchorEl.href = data.anchorUrl;
+      anchorRow.style.display = '';
+    }
+
+    wireDownload(downloadBtn, data);
+  }
+
+  /** Create a Blob URL download from the full receipt payload. */
+  function wireDownload(btn: HTMLButtonElement, data: ReceiptData): void {
+    const json  = JSON.stringify(data, null, 2);
+    const blob  = new Blob([json], { type: 'application/json' });
+    const url   = URL.createObjectURL(blob);
+    const fname = `conviction-receipt-${data.postSlug ?? 'seal'}.json`;
+
+    btn.addEventListener('click', () => {
+      const a = Object.assign(document.createElement('a'), { href: url, download: fname });
+      a.click();
+    }, { once: false });
   }
 
   function revealForAdmin(container: HTMLElement): void {

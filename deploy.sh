@@ -4,6 +4,40 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v81 — Seal Cancel + SealReceipt Component Extraction (2026-04-12)
+#   Sprint: Conviction seal ceremony gains a phase-3 cancel path (AbortController
+#     aborts the in-flight POST), the inline receipt is extracted to a dedicated
+#     SealReceipt.astro notary-document component, and the design system gains two
+#     interactive color tokens. Pure UIX/client polish — zero infrastructure changes.
+#   Modified files:
+#     src/lib/seal-ceremony.ts — AbortController added to createCeremony; cancel()
+#       aborts in-flight POST at phase 3 (no-op if already resolved); fetchSeal
+#       accepts AbortSignal param; handleError routes DOMException AbortError to
+#       setPhase(0) + cb.onCancel?.() (separate path from generic error); postSlug
+#       added to ReceiptData interface; onCancel?: () => void added to
+#       CeremonyCallbacks; cancel() exposed on the returned ceremony handle.
+#     src/pages/api/conviction-seal.ts — postSlug: slug added to the JSON response
+#       body (receipt download + audit link construction in client).
+#     src/components/ConvictionSeal.astro — imports SealReceipt; phase-3 lock overlay
+#       added (irreversibility notice + Cancel CTA [data-cancel-btn]); old inline
+#       receipt markup removed; <SealReceipt /> rendered outside form so form
+#       display:none at phase 3 doesn't hide receipt at phase 4; old cs-receipt-*
+#       CSS block removed (now lives in SealReceipt.astro / seal-ceremony.css).
+#     src/components/SealReceipt.astro — NEW: static notary-document receipt shell;
+#       data slots: [data-receipt-date], [data-receipt-score], [data-receipt-hash],
+#       [data-receipt-anchor], [data-receipt-download], [data-receipt-audit];
+#       @starting-style slide-up entrance (CSS-native); download wired by JS Blob URL.
+#     src/styles/seal-ceremony.css — phase-3 lock overlay + cancel button styles;
+#       receipt entrance / layout tokens migrated to SealReceipt component scope.
+#     src/styles/tokens.css — --radius-tombstone: 48% 48% 4px 4px (arched top,
+#       flat bottom — graveyard aesthetic upgrade from flat 8px 8px 0 0);
+#       --color-interactive: oklch(65% 0.12 250) + --color-interactive-hover:
+#       oklch(72% 0.14 250) (slate-violet link/icon-button single source of truth).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v80 — Seal Ceremony Completion Lifecycle + 409 Graceful Handling (2026-04-12)
 #   Sprint: Seal ceremony gains a post-receipt completion beat, 409 (already-sealed)
 #     is treated as good news not an error, SiteNav cold state simplified to pure
