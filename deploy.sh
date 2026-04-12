@@ -4,6 +4,49 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v84 — TrustBadge 5-State Conviction Lifecycle + 3D Flip Ceremony (2026-04-12)
+#   Sprint: TrustBadge gains a full 5-state conviction lifecycle display
+#     (unsealed → pending → sealed → upheld/overturned) with client-side polling
+#     and a 3D flip ceremony on state transition. Pure UIX/client polish sprint —
+#     zero infrastructure changes.
+#   New files:
+#     src/lib/client/trust-badge-ceremony.ts — client-side TrustBadge flip
+#       ceremony; mounts on all [data-badge-slug] elements; polls
+#       GET /api/conviction-stats?slug= every 5s; one-way state transition guard
+#       (STAGE_ORDER: unsealed→pending→sealed→upheld/overturned); pre-populates
+#       back face then adds .is-flipping + listens for animationend; clearInterval
+#       on astro:before-preparation for View Transition cleanup; lock flag blocks
+#       concurrent flips.
+#     src/styles/trust-badge.css — TrustBadge ceremony CSS; per-state token
+#       assignment ([data-badge-state] → --badge-bg/border/color from design
+#       system); @keyframes badge-flip-out (front exits), badge-flip-in (back
+#       enters), badge-settle (spring bounce), badge-upheld-glow (post-flip glow);
+#       90° hold frame is the gavel moment; prefers-reduced-motion collapses to
+#       opacity-only; zero hardcoded hex/rgba.
+#   Modified files:
+#     src/components/TrustBadge.astro — complete rewrite; 5-state display replaces
+#       2-state (verified/pending); flip structure: front (SSR) + back (JS-populated)
+#       for CSS 3D perspective flip; new convictionStage prop (ConvictionStage type
+#       exported); badgeLabels/badgeIcons maps for all 5 states; isLinked computed
+#       (sealed+verified, upheld, or overturned link to /audit); zero client JS of
+#       its own (trust-badge-ceremony.ts drives client lifecycle).
+#     src/components/ConvictionSeal.astro — imports getDisputeResolution;
+#       deriveConvictionStage() helper added (unsealed/pending/sealed/upheld/
+#       overturned); convictionStage passed to TrustBadge component.
+#     src/pages/api/conviction-stats.ts — extended with optional ?slug= param for
+#       per-slug conviction stage (polled by trust-badge-ceremony.ts every 5s);
+#       sitewide shape unchanged; per-slug shape: { slug, conviction_stage,
+#       sealed_at, verdict }; deriveStage() + buildSlugPayload() helpers added;
+#       buildPayload() renamed buildSitewidePayload() (no breaking change).
+#     src/pages/audit/[slug].astro — imports ConvictionStage type + getDisputeResolution;
+#       deriveAuditStage() helper added; auditConvictionStage passed as prop to
+#       TrustBadge; TrustBadge now shows conviction stage on audit page.
+#     src/styles/global.css — @import "./trust-badge.css" added.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO
+#     unchanged. In-process cron runner (v82) continues to own ongoing scheduling.
+#     deploy.sh startup sequence unchanged (steps 1–7 identical to v83).
+#
 # Architecture v83 — AnchorStrip + TrajectoryBlock + Track-Record Polish (2026-04-12)
 #   Sprint: Cold-start UX gains two purpose-built components that replace empty
 #     ledger state with honest forward momentum. BattingAverageHero wired with

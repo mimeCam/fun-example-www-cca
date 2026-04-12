@@ -20,8 +20,10 @@ import AuditVerdictPanel        from '../../components/AuditVerdictPanel.astro';
 import { verifyAnchor }         from '../../lib/anchor-verifier';
 import { getTstForSeal }        from '../../lib/timestamp-store';
 import { getOtsProof, getSealEntry } from '../../lib/conviction-ledger';
+import { getDisputeResolution } from '../../lib/verdict-dispute';
 import { verify as otsVerify }  from '../../lib/ots-verifier';
 import { hashContent }          from '../../lib/rfc3161-client';
+import type { ConvictionStage } from '../../components/TrustBadge.astro';
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect('/404');
@@ -62,6 +64,16 @@ const chainOk        = sealEntry ? checkChainIntegrity(sealEntry) : null;
 
 // Verdict display data — assembled from existing modules, no new DB queries.
 const verdictDisplay = getVerdictDisplay(slug);
+
+// Conviction stage for TrustBadge — derives public trust state from ledger data.
+const auditResolution = sealEntry ? getDisputeResolution(slug) : null;
+function deriveAuditStage(): ConvictionStage {
+  if (!sealEntry)      return 'unsealed';
+  if (!tstData)        return 'pending';
+  if (!auditResolution) return 'sealed';
+  return auditResolution.state as ConvictionStage;
+}
+const auditConvictionStage = deriveAuditStage();
 
 // Atmosphere: vindicated if verdict correct, wrong tint if verdict wrong.
 // Pending/unsealed pages stay fresh (default).
@@ -104,8 +116,8 @@ const pageDescription = payload.seal
       </p>
     </header>
 
-    <!-- RFC 3161 trust badge — shown when TST is available -->
-    {tstData && <div class="audit-trust-row"><TrustBadge tst={tstData} slug={slug} /></div>}
+    <!-- RFC 3161 trust badge — shows conviction stage (pending → sealed → upheld/overturned) -->
+    {tstData && <div class="audit-trust-row"><TrustBadge tst={tstData} slug={slug} convictionStage={auditConvictionStage} /></div>}
 
     <!-- The receipt — visual proof block -->
     <AuditReceipt

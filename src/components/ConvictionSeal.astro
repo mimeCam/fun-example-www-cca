@@ -10,13 +10,15 @@
 // Credits: Mike (§Architecture, §CSS-state-machine), Tanya (§Moment-1 ceremony spec),
 //          DevBrain (@starting-style, spring-curve timing)
 
-import { getSealEntry }   from '../lib/conviction-ledger';
-import DecayClock         from './DecayClock.astro';
-import TrustBadge         from './TrustBadge.astro';
-import TensionBadge       from './TensionBadge.astro';
-import NotarizeStamp      from './NotarizeStamp.astro';
-import SealReceipt        from './SealReceipt.astro';
-import { clockUrgency }   from '../lib/death-clock';
+import { getSealEntry }        from '../lib/conviction-ledger';
+import { getDisputeResolution } from '../lib/verdict-dispute';
+import DecayClock               from './DecayClock.astro';
+import TrustBadge               from './TrustBadge.astro';
+import type { ConvictionStage } from './TrustBadge.astro';
+import TensionBadge             from './TensionBadge.astro';
+import NotarizeStamp            from './NotarizeStamp.astro';
+import SealReceipt              from './SealReceipt.astro';
+import { clockUrgency }         from '../lib/death-clock';
 import type { GraceState }          from '../lib/cold-start';
 import type { ConvictionVerdict }   from '../lib/decay-engine';
 import type { TensionResult }       from '../lib/tension-score';
@@ -40,9 +42,19 @@ const {
   conviction = null, tensionResult = null, tst = null,
 } = Astro.props;
 
-let sealEntry = null;
-try { sealEntry = getSealEntry(slug); } catch { /* DB not ready at build time */ }
+let sealEntry   = null;
+let resolution  = null;
+try { sealEntry  = getSealEntry(slug);        } catch { /* DB not ready at build time */ }
+try { resolution = getDisputeResolution(slug); } catch { /* DB not ready at build time */ }
 
+function deriveConvictionStage(): ConvictionStage {
+  if (!sealEntry) return 'unsealed';
+  if (!tst)       return 'pending';
+  if (!resolution) return 'sealed';
+  return resolution.state as ConvictionStage;
+}
+
+const convictionStage = deriveConvictionStage();
 const sealed     = !!sealEntry;
 const score      = sealEntry?.conviction_score ?? null;
 const note       = sealEntry?.author_note      ?? null;
@@ -70,7 +82,7 @@ const deadlineISO     = (graceState && !graceState.warming && clockDays > 0)
     <span class="cs-label-text">CONVICTION</span>
     <span class="cs-label-sep">·</span>
     <span class="cs-label-sub">SEALED BEFORE FIRST READ</span>
-    <span class="cs-label-trust"><TrustBadge tst={tst} slug={slug} /></span>
+    <span class="cs-label-trust"><TrustBadge tst={tst} slug={slug} convictionStage={convictionStage} /></span>
   </div>
 
   <!-- Score row -->

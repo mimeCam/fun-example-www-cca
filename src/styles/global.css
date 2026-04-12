@@ -10,6 +10,7 @@
 @import "./tokens.css";
 @import "./motion.css";
 @import "./death-clock.css";
+@import "./trust-badge.css";
 
 /* ── Focus ring — one token, zero per-component color values (Tanya §8.2) ──
    All interactive elements inherit this. No per-component overrides needed.

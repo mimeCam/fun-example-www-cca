@@ -1,0 +1,146 @@
+/* src/styles/trust-badge.css
+ * TrustBadge ceremony — all 5 conviction states + 3D flip keyframes.
+ * Token-only: zero hardcoded hex/rgba. Every color is a design token.
+ *
+ * States: unsealed · pending · sealed · upheld · overturned
+ * Keyframes: badge-flip-out (front exits), badge-flip-in (back enters),
+ *            badge-settle (spring bounce), badge-upheld-glow (post-flip glow).
+ *
+ * The hold frame at 90° is the gavel moment. Do not remove it to "make it snappier."
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska
+ * Ceremony spec: Elon — "ease-spring + CEREMONY (600ms), hold before resolving"
+ */
+
+/* ── Per-state token assignment ───────────────────────────────────────── */
+/* Tokens cascade into .badge-inner via var(--badge-*) references.         */
+
+[data-badge-state="unsealed"] {
+  --badge-bg:     var(--surface-raised);
+  --badge-border: var(--border-medium);
+  --badge-color:  var(--text-tertiary);
+}
+
+[data-badge-state="pending"] {
+  --badge-bg:     var(--verdict-pending-bg);
+  --badge-border: var(--verdict-pending-border);
+  --badge-color:  var(--verdict-pending);
+}
+
+[data-badge-state="sealed"] {
+  --badge-bg:     var(--gold-bg);
+  --badge-border: var(--gold-border);
+  --badge-color:  var(--gold-dim);
+}
+
+[data-badge-state="upheld"] {
+  --badge-bg:     var(--verdict-true-bg);
+  --badge-border: var(--verdict-true-border);
+  --badge-color:  var(--verdict-true);
+}
+
+[data-badge-state="overturned"] {
+  --badge-bg:     var(--verdict-wrong-bg);
+  --badge-border: var(--verdict-wrong-border);
+  --badge-color:  var(--verdict-wrong);
+}
+
+/* ── Dashed borders for pre-confirmation states ───────────────────────── */
+
+[data-badge-state="unsealed"] .badge-inner,
+[data-badge-state="pending"]  .badge-inner {
+  border-style: dashed;
+}
+
+/* ── Hover state — link badges only ──────────────────────────────────── */
+
+[data-badge-state="sealed"]     a.badge-inner:hover,
+[data-badge-state="upheld"]     a.badge-inner:hover,
+[data-badge-state="overturned"] a.badge-inner:hover {
+  background:   var(--badge-bg-hover,     var(--surface-hover));
+  border-color: var(--badge-border-hover, var(--border-interactive-hover));
+}
+
+[data-badge-state="upheld"] a.badge-inner:hover {
+  --badge-bg-hover:     color-mix(in oklch, var(--clr-green-400) 14%, transparent);
+  --badge-border-hover: color-mix(in oklch, var(--clr-green-400) 35%, transparent);
+}
+
+[data-badge-state="overturned"] a.badge-inner:hover {
+  --badge-bg-hover:     color-mix(in oklch, var(--clr-red-500)   14%, transparent);
+  --badge-border-hover: color-mix(in oklch, var(--clr-red-500)   35%, transparent);
+}
+
+/* ── Flip ceremony keyframes ──────────────────────────────────────────── */
+
+/* Front face exits: rotate to 90°, hold (the gavel moment), then stays at 90° */
+@keyframes badge-flip-out {
+  0%   { transform: perspective(400px) rotateY(0deg); }
+  45%  { transform: perspective(400px) rotateY(90deg); }
+  55%  { transform: perspective(400px) rotateY(90deg); }  /* hold — do not remove */
+  100% { transform: perspective(400px) rotateY(90deg); }
+}
+
+/* Back face enters: rotates from -90° to 0° with spring ease */
+@keyframes badge-flip-in {
+  0%   { transform: perspective(400px) rotateY(-90deg); opacity: 1; }
+  100% { transform: perspective(400px) rotateY(0deg);   opacity: 1; }
+}
+
+/* Post-flip settle: spring bounce signals permanence */
+@keyframes badge-settle {
+  0%   { transform: scale(1.04); }
+  60%  { transform: scale(0.98); }
+  100% { transform: scale(1.00); }
+}
+
+/* Upheld glow: single pulse after the ✓ badge lands — then stillness */
+@keyframes badge-upheld-glow {
+  0%   { box-shadow: 0 0 0 3px var(--verdict-true-border), 0 4px 16px var(--verdict-true-bg); }
+  100% { box-shadow: none; }
+}
+
+/* ── Active flip class bindings ───────────────────────────────────────── */
+/* Applied programmatically by trust-badge-ceremony.ts                     */
+
+.badge-card.is-flipping .badge-face--front {
+  animation: badge-flip-out var(--motion-ceremony-duration) var(--ease-in-out) forwards;
+}
+
+/* Back enters after front reaches 90° — delay is 45% of ceremony duration */
+.badge-card.is-flipping .badge-face--back {
+  opacity: 1;
+  animation: badge-flip-in var(--motion-ceremony-duration) var(--ease-spring) forwards;
+  animation-delay: calc(var(--motion-ceremony-duration) * 0.45);
+}
+
+.badge-card.is-settling {
+  animation: badge-settle 300ms var(--ease-spring) forwards;
+}
+
+/* Upheld glow: fires when .is-settled lands on upheld state */
+.badge-card.is-settled[data-next-state="upheld"] .badge-inner {
+  animation: badge-upheld-glow 600ms var(--ease-out) forwards;
+}
+
+/* ── Accessibility: prefers-reduced-motion ────────────────────────────── */
+/* Skip rotation — cross-fade only. Ceremony still "happens", just quieter. */
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-card.is-flipping .badge-face--front {
+    animation: none;
+    opacity: 0;
+    transition: opacity var(--motion-flow-duration) var(--motion-flow-easing);
+  }
+
+  .badge-card.is-flipping .badge-face--back {
+    animation: none;
+    opacity: 1;
+    transform: perspective(400px) rotateY(0deg);
+    transition: opacity var(--motion-flow-duration) var(--motion-flow-easing);
+  }
+
+  .badge-card.is-settling {
+    animation: none;
+  }
+}

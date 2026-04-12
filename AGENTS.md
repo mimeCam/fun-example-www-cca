@@ -5,9 +5,10 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute logic, conviction ledger, OTS/RFC 3161 clients, seal-phases state machine, cron scheduler + jobs
-- `src/components/` — UI layer: cards, drawers, ceremonies (ConvictionSeal, SealReceipt, NotarizeStamp, AnchorStrip, TrajectoryBlock), badges, filters
-- `src/pages/api/` — REST endpoints mirroring all core user actions; `cron-health` for monitoring
-- `src/styles/tokens.css` — design tokens · `src/styles/motion.css` — keyframes · `src/styles/atmosphere.css` — stage palette
+- `src/lib/client/` — client-side ceremony scripts (trust-badge polling + flip)
+- `src/components/` — UI layer: cards, drawers, ceremonies, badges, filters
+- `src/pages/api/` — REST endpoints mirroring all core user actions
+- `src/styles/tokens.css` · `src/styles/motion.css` · `src/styles/atmosphere.css` · `src/styles/trust-badge.css` — design system
 
 ## Env Vars
 
@@ -15,7 +16,7 @@
 |-----|----------|---------|
 | `ADMIN_SECRET` | Yes | Gates `/admin` seal form + conviction-seal API |
 | `HMAC_SECRET` | Yes | Signs conviction ledger entries and verdict records |
-| `GITHUB_PAT` | Optional | `gist` scope — anchors each seal to a GitHub Gist; enables live anchor link on `/track-record` |
+| `GITHUB_PAT` | Optional | `gist` scope — anchors each seal to a GitHub Gist |
 | `RFC3161_URL` | Optional | RFC 3161 timestamp authority; defaults to Freetsa |
 
 ## WIP
