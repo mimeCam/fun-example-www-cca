@@ -47,3 +47,123 @@ const particles = buildParticles(PARTICLE_COUNT);
 </div>
 <span class="bloom-ring" aria-hidden="true" />
 <span class="bloom-flash" aria-hidden="true" />
+
+<style>
+  /* ── Bloom origin — anchored near KeepButton in the card footer ── */
+  /* All bloom elements are absolute children of .decay-card          */
+  /* (position: relative; overflow: hidden ensures containment)       */
+  .bloom-particles {
+    position: absolute;
+    bottom: 24px;
+    right: 28px;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: var(--z-shimmer, 2);
+  }
+
+  /* ── Particles — invisible at rest ────────────────────────────── */
+  .bloom-particle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--atm-bloom-color, var(--keep-accent, oklch(80% 0.22 80)));
+    opacity: 0;
+    transform: translate(0, 0) scale(0);
+  }
+
+  /* ── Bloom ring — centered on the particle origin ──────────────── */
+  .bloom-ring {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1.5px solid var(--atm-bloom-color, var(--keep-accent, oklch(80% 0.22 80)));
+    opacity: 0;
+    pointer-events: none;
+    z-index: var(--z-shimmer, 2);
+    /* Center the ring on the button: translate 50% both axes */
+    transform: translate(50%, 50%) scale(0.2);
+  }
+
+  /* ── Bloom flash — warm breath over the whole card ─────────────── */
+  /* Not a sharp flash — a slow warm exhale (Tanya §3 Phase 3)       */
+  .bloom-flash {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--keep-warm, oklch(85% 0.15 80));
+    opacity: 0;
+    pointer-events: none;
+    z-index: var(--z-shimmer, 2);
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+   * BLOOMING STATE — fires when .decay-card gets .blooming class
+   * JS adds the class; motion.css zeros durations for reduced-motion
+   * ══════════════════════════════════════════════════════════════ */
+
+  /* Particles burst outward, scale 0→1→0, staggered */
+  .decay-card.blooming .bloom-particle {
+    animation:
+      bloom-burst
+      var(--motion-ceremony-duration, 600ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1))
+      forwards;
+    animation-delay: var(--particle-delay, 0ms);
+  }
+
+  /* Ring expands with spring overshoot, then fades */
+  .decay-card.blooming .bloom-ring {
+    animation:
+      bloom-ring-expand
+      var(--motion-spring-duration, 800ms)
+      var(--motion-spring-easing, cubic-bezier(0.34, 1.56, 0.64, 1))
+      forwards;
+  }
+
+  /* Warm breath fades over 600ms — not a flash, a glow */
+  .decay-card.blooming .bloom-flash {
+    animation:
+      bloom-warm-breath
+      var(--motion-ceremony-duration, 600ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1))
+      forwards;
+  }
+
+  /* ── Keyframes ──────────────────────────────────────────────── */
+
+  @keyframes bloom-burst {
+    0%   { opacity: 0.9; transform: translate(0, 0) scale(1); }
+    60%  {
+      opacity: 0.6;
+      transform:
+        translate(
+          calc(var(--particle-x) * 0.8),
+          calc(var(--particle-y) * 0.8)
+        ) scale(0.7);
+    }
+    100% {
+      opacity: 0;
+      transform:
+        translate(var(--particle-x), var(--particle-y)) scale(0);
+    }
+  }
+
+  @keyframes bloom-ring-expand {
+    0%   { opacity: 0.75; transform: translate(50%, 50%) scale(0.2); }
+    55%  { opacity: 0.40; transform: translate(50%, 50%) scale(1.1); }
+    100% { opacity: 0;    transform: translate(50%, 50%) scale(1.8); }
+  }
+
+  /* Warm amber card glow — 0.15 opacity peak, then fade (Tanya §3) */
+  @keyframes bloom-warm-breath {
+    0%   { opacity: 0.15; }
+    100% { opacity: 0; }
+  }
+</style>

@@ -316,6 +316,23 @@
     0 4px 16px color-mix(in oklch, var(--clr-red-500) 10%, transparent),
     0 2px 8px rgba(0, 0, 0, 0.3);
 
+  /* ── Canonical Radius Tokens (Tanya §7 — semantic shape aliases) ─────── */
+  /* Primitives: --radius-sm/md/lg/xl/full already defined above.           */
+  /* These semantic aliases give clear intent at usage site.                */
+  --radius-card:   var(--radius-md);    /* 12px — DecayCard, VerdictCard    */
+  --radius-drawer: var(--radius-lg);    /* 16px — StanceDrawer, panels      */
+  --radius-pill:   var(--radius-full);  /* 9999px — KeepButton, StagePill   */
+  --radius-badge:  var(--radius-sm);    /* 6px — all badge types            */
+  --radius-input:  8px;                 /* form inputs                      */
+  --radius-modal:  20px;                /* full modal overlays              */
+
+  /* ── KeepButton Color Tokens (Tanya §3 — 3-phase press ceremony) ──────── */
+  /* Green-leaning — confident "vote that costs something" palette.          */
+  --keep-base:    oklch(62% 0.18 145);   /* idle — confident green           */
+  --keep-pressed: oklch(55% 0.20 145);   /* phase 1: deeper on press         */
+  --keep-accent:  oklch(80% 0.22 80);    /* bloom particles — warm gold      */
+  --keep-warm:    oklch(85% 0.15 80);    /* post-keep breath tint            */
+
   /* ── Atmosphere Tokens — stage-scoped page surface layer ─────────────── */
   /* Default (fresh/neutral) values live here on :root.                     */
   /* Stage overrides in atmosphere.css shadow these at [data-atmosphere].   */
@@ -329,4 +346,5 @@
   --atm-grain-opacity: 0;                     /* entombed museum-glass grain      */
   --atm-sepia-filter:  0%;                    /* entombed age tone — 15% at max   */
   --atm-glow-color:    transparent;           /* risen revival bloom              */
+  --atm-bloom-color:   var(--keep-accent);    /* bloom particle color per stage   */
 }

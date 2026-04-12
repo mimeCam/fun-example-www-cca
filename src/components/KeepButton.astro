@@ -53,7 +53,7 @@ const hasPact     = decayFactor !== undefined;
       />
     </svg>
     <span class="keep-icon">&#9829;</span>
-    <span class="keep-label">Keep this alive</span>
+    <span class="keep-label">KEEP</span>
     {count > 0  && <span class="keep-count"> &middot; {count}</span>}
     {count === 0 && <span class="keep-count keep-count--hidden"></span>}
   </button>
@@ -82,30 +82,30 @@ const hasPact     = decayFactor !== undefined;
   }
 
   /* ── Button ─────────────────────────────────────────────────── */
+  /* Tanya §3: pill shape, mono font — feels like a command, not a suggestion */
   .keep-btn {
     position: relative;           /* anchor the SVG arc absolutely */
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    min-height: 52px;
-    padding: 0.5rem 1.5rem;
-    font-size: 0.82rem;
-    font-weight: 600;
-    font-family: inherit;
-    letter-spacing: 0.02em;
+    min-width: 88px;
+    height: 36px;
+    padding: 0 1.25rem;
+    font-size: var(--text-xs, 0.72rem);
+    font-weight: var(--weight-semibold, 600);
+    font-family: var(--font-mono);
+    letter-spacing: var(--tracking-widest, 0.10em);
     color: rgba(var(--mood-accent-rgb, 120,120,120), 0.80);
     background: rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
     border: 1.5px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.25);
-    border-radius: calc(10px + var(--arc-progress, 0) * 9989px); /* calcifies toward pill */
+    border-radius: var(--radius-pill, 9999px);
     cursor: pointer;
     transition:
-      border-color 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      background   200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow   200ms ease,
-      transform    200ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      opacity      600ms ease-out;
-    /* border-radius transition driven by --arc-progress (not keyframes) */
-    will-change: border-radius;
+      border-color var(--motion-flow-duration) var(--motion-easing-spring),
+      background   var(--motion-flow-duration) var(--motion-easing-spring),
+      box-shadow   var(--motion-flow-duration) ease,
+      transform    var(--motion-flow-duration) var(--motion-easing-spring),
+      opacity      var(--duration-slow) ease-out;
   }
 
   .keep-btn:hover {
@@ -115,7 +115,12 @@ const hasPact     = decayFactor !== undefined;
     transform: scale(1.02);
   }
 
-  .keep-btn:active { transform: scale(0.98); }
+  /* Phase 1 — Resistance: slight compression, like pressing a real button */
+  .keep-btn:active {
+    transform: scale(0.96);
+    cursor: grabbing;
+    background: rgba(var(--mood-accent-rgb, 120,120,120), 0.10);
+  }
 
   /* Pact open — button glows subtly */
   .keep-btn[data-pact-state="open"] {
@@ -251,16 +256,23 @@ const hasPact     = decayFactor !== undefined;
   // Covers: feed cards, DeathClockBanner — anywhere without decayFactor + RevivalCounter.
   // Skips: buttons with data-pact-trigger (handled by keep-pact.ts)
   //        buttons in .revival-footer (handled by revival-counter.ts)
-  //        buttons with data-wired="ceremony" (handled by CeremonyController above)
   (function wireKeepButtons() {
+    const BLOOM_MS = 1200; // matches --duration-bloom in motion.css
+
     function getSessionId(): string | null {
       try { return sessionStorage.getItem('session-token'); } catch { return null; }
+    }
+
+    function isOwned(btn: HTMLButtonElement): boolean {
+      return !!(btn.dataset.orchestrated || btn.dataset.wired ||
+                btn.dataset.pactTrigger !== undefined ||
+                btn.classList.contains('kept'));
     }
 
     function markKept(btn: HTMLButtonElement): void {
       btn.classList.add('kept');
       const label = btn.querySelector('.keep-label');
-      if (label) label.textContent = 'Keeping this';
+      if (label) label.textContent = 'KEPT';
       const icon = btn.querySelector('.keep-icon');
       if (icon) icon.textContent = '✓';
     }
@@ -275,41 +287,55 @@ const hasPact     = decayFactor !== undefined;
     function rollback(btn: HTMLButtonElement, prevCount: number): void {
       btn.classList.remove('kept');
       const label = btn.querySelector('.keep-label');
-      if (label) label.textContent = 'Keep this alive';
+      if (label) label.textContent = 'KEEP';
       const icon = btn.querySelector('.keep-icon');
       if (icon) icon.textContent = '♥';
       updateCount(btn, prevCount);
     }
 
+    /** Add .blooming to parent card; returns cleanup fn for rollback. */
+    function addBlooming(card: HTMLElement | null): () => void {
+      if (!card) return () => {};
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {};
+      card.classList.add('blooming');
+      const t = setTimeout(() => card.classList.remove('blooming'), BLOOM_MS);
+      return () => { clearTimeout(t); card.classList.remove('blooming'); };
+    }
+
+    function getPrevCount(btn: HTMLButtonElement): number {
+      const span = btn.querySelector('.keep-count');
+      return parseInt(span?.textContent?.replace(/\D/g, '') ?? '0', 10) || 0;
+    }
+
+    function makeHeaders(): Record<string, string> {
+      const h: Record<string, string> = { 'Content-Type': 'application/json' };
+      const sid = getSessionId();
+      if (sid) h['x-session-id'] = sid;
+      return h;
+    }
+
+    function submitRevive(slug: string): Promise<{ ok: boolean; count: number }> {
+      return fetch('/api/revive', {
+        method: 'POST', keepalive: true, headers: makeHeaders(),
+        body: JSON.stringify({ slug }),
+      }).then(r => {
+        if (!r.ok) return Promise.reject(new Error(String(r.status)));
+        return r.json() as Promise<{ ok: boolean; count: number }>;
+      });
+    }
+
     function handleClick(btn: HTMLButtonElement): void {
-      if (btn.dataset.orchestrated) return; // orchestrator owns this (pointerdown)
-      if (btn.dataset.wired) return;        // revival-counter.ts owns this
-      if (btn.dataset.pactTrigger !== undefined) return; // keep-pact.ts owns this
-      if (btn.classList.contains('kept')) return;
+      if (isOwned(btn)) return;
       const slug = btn.dataset.keepSlug;
       if (!slug) return;
-
-      const countSpan = btn.querySelector('.keep-count');
-      const prevCount = parseInt(countSpan?.textContent?.replace(/\D/g, '') ?? '0', 10) || 0;
+      const prevCount = getPrevCount(btn);
       markKept(btn);
       updateCount(btn, prevCount + 1);
-
-      const sessionId = getSessionId();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (sessionId) headers['x-session-id'] = sessionId;
-
-      fetch('/api/revive', {
-        method: 'POST', keepalive: true, headers,
-        body: JSON.stringify({ slug }),
-      })
-        .then(r => {
-          if (r.status === 429) { rollback(btn, prevCount); return null; }
-          return r.ok ? r.json() : null;
-        })
-        .then((data: { ok: boolean; count: number } | null) => {
-          if (data) updateCount(btn, data.count);
-        })
-        .catch(() => rollback(btn, prevCount));
+      // Optimistic bloom — removed on error, kept on success (auto-expires)
+      const removeBlooming = addBlooming(btn.closest<HTMLElement>('.decay-card'));
+      submitRevive(slug)
+        .then((data) => { if (data?.ok) updateCount(btn, data.count); })
+        .catch(() => { rollback(btn, prevCount); removeBlooming(); });
     }
 
     document.addEventListener('click', (e) => {

@@ -4,6 +4,43 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v73 — KEEP-WEIGHT Bloom (2026-04-12)
+#   Sprint: KeepButton bloom ceremony — hold-to-keep now fires a 3-phase micro-
+#     animation on the DecayCard: particle burst (12 orbs, staggered 0–80 ms),
+#     bloom ring (spring overshoot, 800 ms), warm-breath card glow (600 ms fade).
+#     Atmosphere-aware: --atm-bloom-color overrides per stage so the burst hue
+#     matches the page mood (amber endangered → emerald risen → gold vindicated).
+#     DecayCard footer reduced to exactly 3 slots (clock · badge · keep) with a
+#     48px fixed height, border-top, backdrop-filter blur(8px), and bottom-radius
+#     pinned to --radius-card. Badge priority cascade: risen > tension > revival.
+#     decay-freshness span and footer-dot removed (de-cluttered).
+#   Updated files:
+#     src/components/BloomParticles.astro — <style> block added: .bloom-particles,
+#       .bloom-particle (opacity 0 at rest), .bloom-ring, .bloom-flash; .decay-card
+#       .blooming trigger rules; @keyframes bloom-burst / bloom-ring-expand /
+#       bloom-warm-breath. No new HTML — animations are CSS-only class toggles.
+#     src/components/KeepButton.astro — adds/removes .blooming on .decay-card
+#       ancestor on optimistic success; rolled back on network error; aria-label
+#       updated to reflect hold interaction weight.
+#     src/lib/client/revival-orchestrator.ts — onRevived() fires .blooming on the
+#       enclosing .decay-card element after successful POST /api/revive; clears
+#       class after ceremony duration (800 ms).
+#     src/components/DecayCard.astro — footer rewritten: 3-slot flex row, 48px
+#       height, margin-top: auto (card is now flex-column), border-top, glass
+#       backdrop, bottom corner radius. Badge slot is a single conditional render
+#       (risen > tensionResult ≠ 'indifferent' > revivalCount > 0 > null).
+#     src/styles/tokens.css — --radius-card/drawer/pill/badge/input/modal aliases
+#       (single source of truth for border-radius; --radius kept as legacy alias);
+#       --keep-base/pressed/accent/warm palette; --atm-bloom-color default.
+#     src/styles/atmosphere.css — --atm-bloom-color per stage overrides (fresh:
+#       gold, endangered: amber, entombed: dim, risen: emerald, verdict: slate,
+#       vindicated: emerald, gold: amber); atmosphere-aware --shadow-card-lift and
+#       --shadow-card-hover per Tanya §7.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     SQLITE_VOLUME, DATA_VOLUME, ADMIN_SECRET, GITHUB_PAT unchanged.
+#     DISPUTE_QUORUM_RATIO unchanged. deploy.sh: no changes to startup sequence
+#     or post-start hooks (deadline-sweep + ots-upgrade calls unchanged).
+#
 # Architecture v72 — Ceremony Atmosphere (2026-04-11)
 #   Sprint: Conviction seal ceremony now drives body atmosphere lifecycle.
 #     Two new AtmosphereStage values ('gold', 'vindicated') wire the seal

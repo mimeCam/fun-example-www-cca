@@ -44,6 +44,7 @@ const DAMPING           = 14;      // critical damping — no overshoots mid-hol
 const THRESHOLD         = 0.999;   // arc ≥ 99.9% → submit
 const COOLDOWN_MS       = 5_000;   // client UX cooldown after revival
 const ARC_CIRCUMFERENCE = 125.664; // 2π × r=20 matches SVG in KeepButton.astro
+const BLOOM_DURATION_MS = 1200;    // matches --duration-bloom in motion.css
 
 // ── Pure spring step ───────────────────────────────────────────────────────────
 
@@ -223,7 +224,17 @@ export class RevivalOrchestrator {
     document.dispatchEvent(new CustomEvent('revival:confirmed', { detail }));
     this.el.dispatchEvent(new CustomEvent('revival:confirmed', { detail, bubbles: true }));
     triggerCascadeBloom(this.slug, data.relatedSlugs ?? []);
+    this.addBlooming();
     setTimeout(() => { this.setState('idle'); this.setProgress(0); }, COOLDOWN_MS);
+  }
+
+  /** Add .blooming to the parent .decay-card for the bloom animation duration. */
+  private addBlooming(): void {
+    if (this.rm) return;
+    const card = this.el.closest<HTMLElement>('.decay-card');
+    if (!card) return;
+    card.classList.add('blooming');
+    setTimeout(() => card.classList.remove('blooming'), BLOOM_DURATION_MS);
   }
 
   private onError(): void {

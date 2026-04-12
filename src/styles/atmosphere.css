@@ -33,6 +33,66 @@ body::after {
   transition: background var(--motion-drift-duration) var(--motion-drift-easing);
 }
 
+/* ── Stage: fresh (explicit) — warm green lift, healthy and present ─────── */
+/* Matches :root defaults — explicit block makes stage intent legible.       */
+[data-atmosphere="fresh"] {
+  --atm-bloom-color: var(--clr-amber-400);     /* warm amber bloom */
+  --shadow-raised:
+    0 2px 8px oklch(55% 0.18 145 / 0.18),
+    0 1px 3px oklch(0% 0 0 / 0.08);
+}
+
+/* ── Atmosphere-aware shadow tokens (Tanya §7) ───────────────────────────── */
+/* Components reference --shadow-raised; body[data-atmosphere] overrides it. */
+/* Rule: only this block writes --shadow-raised overrides.                   */
+
+[data-atmosphere="endangered"] {
+  --shadow-raised:
+    0 2px 12px oklch(60% 0.22 40 / 0.22),
+    0 1px 4px oklch(0% 0 0 / 0.12);
+}
+
+[data-atmosphere="fossil"] {
+  --shadow-raised:
+    0 1px 4px oklch(30% 0.04 240 / 0.20),
+    0 0px 2px oklch(0% 0 0 / 0.14);
+}
+
+[data-atmosphere="entombed"] {
+  --shadow-raised: 0 1px 2px oklch(20% 0.02 240 / 0.30);
+  --shadow-lifted: 0 2px 6px oklch(20% 0.02 240 / 0.20);
+}
+
+[data-atmosphere="risen"] {
+  --shadow-raised:
+    0 4px 20px oklch(70% 0.20 145 / 0.24),
+    0 1px 6px oklch(0% 0 0 / 0.06);
+  --shadow-lifted:
+    0 8px 36px oklch(70% 0.20 145 / 0.28),
+    0 2px 10px oklch(0% 0 0 / 0.08);
+}
+
+[data-atmosphere="gold"] {
+  --shadow-raised:
+    0 4px 24px oklch(80% 0.22 80 / 0.30),
+    0 1px 6px oklch(70% 0.18 60 / 0.18);
+}
+
+[data-atmosphere="vindicated"] {
+  --shadow-raised:
+    0 6px 32px oklch(80% 0.20 80 / 0.35),
+    0 2px 12px oklch(75% 0.18 90 / 0.20);
+  --shadow-float:
+    0 12px 48px oklch(80% 0.22 80 / 0.40),
+    0 4px 16px oklch(0% 0 0 / 0.08);
+}
+
+[data-atmosphere="verdict"] {
+  --shadow-raised:
+    0 3px 16px oklch(55% 0.18 290 / 0.22),
+    0 1px 6px oklch(0% 0 0 / 0.10);
+}
+
 /* ── Stage: gold — ceremony in progress, room warms as the author commits ─── */
 /* Barely perceptible 2.5% amber tint: peripheral vision catches it first.   */
 /* body::after overlay gets gold-breathe — 3s pulse, 0.4% amplitude.         */
@@ -40,6 +100,7 @@ body::after {
   --atm-bg-primary:   oklch(11% 0.025 60);
   --atm-tint:         rgba(245, 166, 35, 0.025);
   --atm-border-color: var(--gold-border);
+  --atm-bloom-color:  var(--gold);                /* gold conviction bloom */
   --surface-base:     oklch(11% 0.025 60);
   --surface-raised:   rgba(245, 166, 35, 0.045);
   --border-subtle:    rgba(245, 166, 35, 0.10);
@@ -58,6 +119,7 @@ body[data-atmosphere="gold"]::after {
   --atm-tint:         rgba(16, 185, 129, 0.018);
   --atm-border-color: var(--clr-emerald-500);
   --atm-glow-color:   var(--clr-emerald-500);
+  --atm-bloom-color:  var(--clr-emerald-500);     /* bright emerald bloom */
   --surface-base:     oklch(11% 0.022 145);
   --surface-raised:   rgba(16, 185, 129, 0.04);
   --border-subtle:    rgba(16, 185, 129, 0.10);
@@ -73,6 +135,7 @@ body[data-atmosphere="gold"]::after {
   --atm-tint:         rgba(245, 166, 35, 0.018);
   --atm-border-color: var(--urgency-warning-color);
   --atm-shadow-lift:  var(--shadow-card-fresh);
+  --atm-bloom-color:  oklch(67% 0.185 55);         /* red-amber urgency bloom */
   /* Override base surface tokens so components inherit atmosphere for free */
   --surface-base:     oklch(12% 0.018 55);
   --surface-raised:   rgba(245, 166, 35, 0.035);
@@ -99,6 +162,7 @@ body[data-atmosphere="gold"]::after {
   --atm-tint:         rgba(245, 166, 35, 0.015);
   --atm-glow-color:   var(--color-revival);
   --atm-border-color: var(--clr-emerald-500);
+  --atm-bloom-color:  var(--clr-green-400);        /* emerald phoenix bloom */
   /* Override base surface tokens */
   --surface-base:     oklch(12% 0.022 70);
   --surface-raised:   rgba(245, 166, 35, 0.06);

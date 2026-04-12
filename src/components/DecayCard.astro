@@ -60,20 +60,18 @@ const conviction = post.conviction ?? null;
   {post.description && <p class="post-excerpt">{post.description}</p>}
   <div class="card-footer">
     <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} />
+    {/* Single badge slot — priority: risen > tension > revival > empty.
+        Mutually exclusive: only ONE badge renders (Mike Koch arch §2).
+        TensionBadge embedded=true suppresses the tension-memory sub-label. */}
     <div class="card-footer-meta">
-      <span class="decay-freshness" aria-label={`Freshness: ${post.freshness}`}>
-        {post.freshness}
-      </span>
-      {post.revivalCount > 0 && <span class="footer-dot">&middot;</span>}
-      {/* TensionBadge replaces RevivalBadge when ≥3 stances exist (Tanya §5.1).
-          RevivalBadge stays as the "remembered by N" micro-count below the badge. */}
-      <TensionBadge
-        tensionResult={post.tensionResult}
-        revivalCount={post.revivalCount}
-        slug={post.slug}
-      />
-      {!post.tensionResult && <RevivalBadge count={post.revivalCount} />}
-      <RisenBadge visible={post.recentlyRisen} />
+      {post.recentlyRisen
+        ? <RisenBadge visible={true} />
+        : (post.tensionResult && post.tensionResult.label !== 'indifferent')
+          ? <TensionBadge tensionResult={post.tensionResult} revivalCount={post.revivalCount} slug={post.slug} embedded={true} />
+          : post.revivalCount > 0
+            ? <RevivalBadge count={post.revivalCount} />
+            : null
+      }
     </div>
     <KeepButton slug={post.slug} count={post.revivalCount} urgency={urgency} conviction={conviction} />
   </div>
@@ -84,11 +82,13 @@ const conviction = post.conviction ?? null;
     position: relative;
     overflow: hidden;
     padding: 0;                         /* cover image bleeds edge-to-edge */
-    border-radius: var(--radius, 16px); /* Tanya: 16px cards */
+    border-radius: var(--radius-card, var(--radius, 12px));
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(var(--mood-accent-rgb, 120,120,120), 0.06);
     max-width: 40rem;
     margin: 0 auto 1.25rem;
+    display: flex;
+    flex-direction: column;
   }
 
   /* ── Cover image: physics layer — decay filters applied from CSS vars ── */
@@ -171,19 +171,33 @@ const conviction = post.conviction ?? null;
     opacity: 0.7;
   }
 
+  /* Footer: exactly 3 slots — clock · badge · keep (Tanya §2, Mike §arch) */
   .card-footer {
     display: flex;
     align-items: center;
     gap: 0.625rem;
-    margin-top: 1rem;
-    padding-bottom: 1.5rem;
+    height: 48px;
+    margin-top: auto;          /* push to bottom of flex column card */
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(12, 12, 14, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius:
+      0 0
+      var(--radius-card, var(--radius, 12px))
+      var(--radius-card, var(--radius, 12px));
   }
 
+  /* Center badge slot — natural width, no flex-grow */
   .card-footer-meta {
     display: flex;
     align-items: center;
-    gap: 0.375rem;
-    flex: 1;
     min-width: 0;
+  }
+
+  /* KeepButton pushed to far right */
+  .card-footer :global(.pact-wrapper) {
+    margin-left: auto;
   }
 </style>
