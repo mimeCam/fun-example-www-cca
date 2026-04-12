@@ -11,7 +11,9 @@
 //   anchor   → POST in flight, gold arc animation (1800ms minimum)
 //   receipt  → SealReceipt.astro display, share button
 //
-// Credits: Mike (4-phase spec, capability token), Tanya (ceremony UX, motion contract)
+// Sensory layer: seal-phase-orchestrator.ts owns all score sound/haptic/tier logic.
+// Credits: Mike (4-phase spec, capability token, §seal-phase-orchestrator),
+//          Tanya (ceremony UX, motion contract, §score-tier-labels)
 
 import SealReceipt      from './SealReceipt.astro';
 import NotarizeStamp   from './NotarizeStamp.astro';
@@ -31,6 +33,8 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
   data-phase="compose"
   data-slug={slug}
   data-author={authorSlug}
+  data-score="5"
+  data-seal-score-tier="mid"
   aria-label="Seal your conviction"
   data-atmosphere="gold"
 >
@@ -66,6 +70,8 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
         <span class="sc-score-denom">/10</span>
       </span>
     </div>
+    <!-- Semantic tier label: updated by seal-phase-orchestrator on each dot click -->
+    <span class="sc-score-tier-label" data-score-tier-label aria-live="polite">Moderate</span>
 
     <!-- Conviction note -->
     <label class="sc-input-label" for={`sc-note-${slug}`}>Your conviction in one sentence</label>
@@ -159,7 +165,8 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
   import {
     initSealSound, playSealLock, playNotarizeChime, playReceiptReveal, playSealError,
   } from '../lib/client/seal-sound';
-  import { hapticForEvent } from '../lib/client/seal-haptic';
+  import { hapticForEvent }                    from '../lib/client/seal-haptic';
+  import { initOrchestrator, onScoreChange }   from '../lib/client/seal-phase-orchestrator';
 
   document.querySelectorAll<HTMLElement>('.seal-ceremony').forEach(initCeremony);
 
@@ -170,7 +177,9 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
     let token = '';
     // Initialise AudioContext on first gesture — satisfies autoplay policy
     el.addEventListener('pointerdown', () => initSealSound(), { once: true });
-    setupDots(el, v => { score = v; });
+    // Orchestrator: score tier label, hesitation beat, score sound/haptic
+    initOrchestrator(el);
+    setupDots(el, v => { score = v; onScoreChange(el, v); });
     const noteEl = el.querySelector<HTMLTextAreaElement>('[data-note]')!;
     noteEl.addEventListener('input', () => toggleComposeCta(el, noteEl.value.trim()));
     el.querySelector('[data-compose-cta]')!.addEventListener('click', () =>
@@ -195,6 +204,7 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
     const dots = el.querySelectorAll<HTMLElement>('[data-dots] .seal-dot');
     dots.forEach((dot, i) => dot.addEventListener('click', () => {
       const val = i + 1;
+      springFillDot(dot);
       syncDots(dots, val);
       el.querySelector('[data-score-display]')!.textContent = String(val);
       onChange(val);
@@ -207,6 +217,14 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
       d.classList.toggle('is-filled', i < val);
       d.setAttribute('aria-pressed', String(i < val));
     });
+  }
+
+  /** Spring-fill animation on the clicked dot (200ms spring — Tanya §10.1). */
+  function springFillDot(dot: HTMLElement): void {
+    dot.classList.remove('is-spring-filling');
+    void dot.offsetWidth;  // reflow: resets animation so it replays on repeat clicks
+    dot.classList.add('is-spring-filling');
+    setTimeout(() => dot.classList.remove('is-spring-filling'), 250);
   }
 
   // ── CTA enable/disable ─────────────────────────────────────────
@@ -401,7 +419,34 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
     box-shadow:     var(--shadow-e3);
     padding:        var(--space-7) var(--space-6);
     margin:         var(--space-6) 0;
-    transition:     box-shadow var(--motion-flow-duration) var(--motion-flow-easing);
+    transition:
+      box-shadow   var(--motion-flow-duration, 300ms) var(--motion-flow-easing, ease),
+      border-color var(--motion-flow-duration, 300ms) var(--motion-flow-easing, ease);
+  }
+
+  /* ── Phase shadow escalation (Tanya §ShadowDepthHierarchy) ─────────────── */
+  /* Scoped here so specificity beats global gold-atmosphere rule.              */
+  /* confirm=ceremony ring; receipt=E4 gold ambient (Tanya §1 Phase 4).        */
+
+  .seal-ceremony[data-phase="confirm"] {
+    box-shadow: var(--shadow-seal-ceremony);
+  }
+
+  .seal-ceremony[data-phase="receipt"] {
+    box-shadow: var(--shadow-e4);
+  }
+
+  /* ── Score tier border escalation (scoped — beats global gold-border) ───── */
+
+  .seal-ceremony[data-seal-score-tier="high"] {
+    border-color: color-mix(in oklch, var(--seal-score-tier-high) 30%, transparent);
+  }
+
+  .seal-ceremony[data-seal-score-tier="max"] {
+    border-color: color-mix(in oklch, var(--seal-score-tier-max) 40%, transparent);
+    box-shadow:
+      var(--shadow-e3),
+      0 0 16px color-mix(in oklch, var(--gold) 8%, transparent);
   }
 
   /* ── Phase visibility: phase div shows only when matching ─────── */
@@ -708,5 +753,6 @@ const { slug, title, authorSlug = 'host' } = Astro.props;
     .sc-arc-fill,
     .sc-cta            { transition: none; }
     .sc-textarea       { transition: none; }
+    .seal-ceremony     { transition: none; }
   }
 </style>

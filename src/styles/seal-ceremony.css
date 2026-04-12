@@ -1,8 +1,10 @@
 /* src/styles/seal-ceremony.css
  * Seal ceremony animations — CSS drives all visual phase transitions.
- * The TS state machine writes [data-seal-phase] + --seal-phase (0–4).
+ * The TS state machine writes [data-seal-phase] + data-seal-score-tier.
  * Zero runtime JS for visuals. Spring curves, @starting-style, clip-path.
- * Credits: Mike (§CSS-state-machine, §spring-curve), DevBrain (@starting-style)
+ * Credits: Mike (§CSS-state-machine, §spring-curve, §HesitationBeat),
+ *          Tanya (§ScoreDots §score-tier-labels §ShadowDepthHierarchy),
+ *          DevBrain (@starting-style)
  */
 
 /* ── Score dots ─────────────────────────────────────────── */
@@ -298,6 +300,81 @@
   box-shadow:   var(--shadow-e3), 0 0 24px color-mix(in oklch, var(--gold) 6%, transparent);
 }
 
+/* ── Score tier: CSS variable bridge from [data-seal-score-tier] ─────────── */
+/* JS orchestrator (seal-phase-orchestrator.ts) writes the attribute.          */
+/* CSS reads --score-tier-color; zero extra JS for all visual tier states.     */
+
+[data-seal-score-tier="low"]  { --score-tier-color: var(--seal-score-tier-low);  }
+[data-seal-score-tier="mid"]  { --score-tier-color: var(--seal-score-tier-mid);  }
+[data-seal-score-tier="high"] { --score-tier-color: var(--seal-score-tier-high); }
+[data-seal-score-tier="max"]  { --score-tier-color: var(--seal-score-tier-max);  }
+
+/* ── Score tier semantic label — lives below the dot row ─────────────────── */
+
+.sc-score-tier-label {
+  display:        block;
+  font-size:      var(--text-2xs);
+  font-weight:    var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--score-tier-color, var(--text-ghost));
+  margin-top:     var(--space-1);
+  transition:     color var(--motion-flow-duration) var(--motion-flow-easing);
+  min-height:     1.2em;  /* prevents layout shift as text appears */
+}
+
+/* ── Score dot spring click-fill (Tanya §10.1 — 200ms spring) ─────────────── */
+/* Hover fill stays at 120ms standard (existing .seal-dot transition).          */
+/* Click fill uses spring overshoot — author feels the weight of the selection. */
+
+@keyframes dot-spring-fill {
+  0%   { transform: scale(1);    }
+  40%  { transform: scale(1.45); border-color: var(--gold); background: var(--gold); }
+  72%  { transform: scale(0.90); }
+  100% { transform: scale(1);    background:   var(--gold); border-color: var(--gold); }
+}
+
+.seal-dot.is-spring-filling {
+  animation: dot-spring-fill
+    var(--motion-duration-dot-click, 200ms)
+    var(--motion-easing-spring)
+    forwards;
+}
+
+/* ── Gap separator after position 5 (Tanya §10.1 — 6px tier visual break) ─── */
+/* The 10 dots read as [1–5] | [6–10] — a pause between low-mid and high-max. */
+
+.cs-dots .seal-dot:nth-child(6) { margin-left: 6px; }
+
+/* ── Hesitation beat: 400ms CTA lock after score change ────────────────────── */
+/* data-hesitating is set by seal-phase-orchestrator during HESITATION_MS.      */
+/* The disabled state is real — JS sets btn.disabled = true for 400ms.          */
+/* This animation communicates the wait, not just hides the button.             */
+
+@keyframes hesitation-pulse {
+  0%,  100% { opacity: 0.45; }
+  50%        { opacity: 0.30; }
+}
+
+.seal-ceremony[data-hesitating] [data-compose-cta] {
+  animation: hesitation-pulse
+    var(--seal-hesitation-duration, 400ms)
+    ease-in-out
+    1;  /* fires once — not a loop */
+}
+
+/* ── Score tier border glow: ceremony panel responds to conviction weight ───── */
+/* Subtle border escalation signals that a higher stake choice has been made.    */
+/* Applied on .seal-ceremony — works alongside [data-atmosphere="gold"].         */
+
+.seal-ceremony[data-seal-score-tier="high"] {
+  border-color: color-mix(in oklch, var(--seal-score-tier-high) 30%, transparent);
+}
+
+.seal-ceremony[data-seal-score-tier="max"] {
+  border-color: color-mix(in oklch, var(--seal-score-tier-max) 40%, transparent);
+}
+
 /* ── Reduced motion: collapse to instant transitions ─────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -313,4 +390,8 @@
   .seal-irrev-notice                      { animation: none; }
   .seal-ceremony[data-phase="anchor"],
   .seal-ceremony[data-phase="notarize"]   { animation: none; }
+  /* New animations: instant state, no motion */
+  .seal-dot.is-spring-filling             { animation: none; background: var(--gold); border-color: var(--gold); }
+  .seal-ceremony[data-hesitating] [data-compose-cta] { animation: none; }
+  .sc-score-tier-label                    { transition: none; }
 }

@@ -539,6 +539,34 @@
   --gold-hover:        color-mix(in oklch, var(--gold) 14%, transparent);
   --gold-deep:         color-mix(in oklch, var(--gold) 75%, oklch(30% 0.10 55));
 
+  /* ── Motion Tier Tokens (Tanya §MotionChoreography — token audit) ────────── */
+  /* snap=micro, flow=ambient, drift=slow mood, ceremony=one-shot active.       */
+  /* Referenced throughout seal-ceremony.css + SealCeremony.astro but          */
+  /* previously undefined — CSS was silently falling back to no transition.     */
+  --motion-snap-duration:     120ms;           /* micro snap: dot hover, button state */
+  --motion-snap-easing:       ease-in-out;
+  --motion-flow-duration:     300ms;           /* phase transitions, panel changes    */
+  --motion-flow-easing:       ease;
+  --motion-drift-duration:    600ms;           /* slow ambient: atmosphere tints      */
+  --motion-drift-easing:      ease-in-out;
+  --motion-ceremony-duration: 600ms;           /* one-shot active: stamp, receipt     */
+  --motion-ceremony-easing:   cubic-bezier(0.34, 1.56, 0.64, 1);  /* spring */
+
+  /* ── Score Dot Click Timing (Tanya §10.1 — spring fill on click) ──────────── */
+  --motion-duration-dot-click: 200ms;          /* spring fill; upgrades fast(150ms) */
+
+  /* ── Seal Score Tier Tokens (Mike §ScoreTierColors, Tanya §ScoreDots) ──────── */
+  /* Escalate from cool caution → warm confidence → conviction gold.             */
+  /* Applied via [data-seal-score-tier="low|mid|high|max"] on .seal-ceremony.    */
+  --seal-score-tier-low:  oklch(65% 0.06 220deg);  /* cool blue — caution      */
+  --seal-score-tier-mid:  oklch(68% 0.10  80deg);  /* warm amber — weighing up */
+  --seal-score-tier-high: oklch(72% 0.14  68deg);  /* gold-adjacent — committed */
+  --seal-score-tier-max:  var(--gold);              /* full conviction gold      */
+
+  /* ── Hesitation Beat Token (Mike §HesitationBeat) ───────────────────────── */
+  /* 400ms = Doherty threshold; author feels the weight before proceeding.      */
+  --seal-hesitation-duration: 400ms;
+
   /* ── Sound Toggle Tokens (SealSoundToggle.astro) ─────────────────────────── */
   /* Isolated: only SealSoundToggle reads these. Pull from existing primitives.  */
   --seal-sound-toggle-color-off: var(--text-ghost);

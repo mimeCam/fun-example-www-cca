@@ -4,6 +4,50 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v104 — Seal Phase Orchestrator: Score Tier System (2026-04-12)
+#   Sprint: Conviction Seal Ceremony gains a full score-tier sensory layer —
+#     coordinated sound/haptic/label/animation pipeline wired to every dot
+#     selection. Zero new infrastructure; pure UIX polish pass on the seal flow.
+#   New files:
+#     src/lib/client/seal-phase-orchestrator.ts — MutationObserver-based side-
+#       effect coordinator; onScoreChange() fires tier label update, CSS attr
+#       write (data-seal-score-tier), score sound (playScoreSelect), haptic
+#       (hapticForEvent('PRESS')), and 400ms hesitation beat (CTA lock via
+#       data-hesitating + btn.disabled) — all in one place; initOrchestrator()
+#       wires phase MutationObserver to reset tier on compose-phase return;
+#       returns Unsubscribe for SPA teardown; imports Unsubscribe type from
+#       frame-scheduler.ts (no new deps).
+#   Modified files:
+#     src/components/SealCeremony.astro — imports initOrchestrator + onScoreChange
+#       from seal-phase-orchestrator; setupDots() callback now also calls
+#       onScoreChange(); initOrchestrator(el) called once per ceremony mount;
+#       springFillDot() helper (200ms spring reflow resets on repeat clicks) added
+#       and called on every dot click; data-score="5" + data-seal-score-tier="mid"
+#       SSR defaults on .seal-ceremony; .sc-score-tier-label <span aria-live="polite">
+#       added below dot row; phase shadow escalation (confirm → --shadow-seal-
+#       ceremony, receipt → --shadow-e4); score tier border escalation
+#       (high → 30% tier-high mix, max → 40% tier-max mix + gold ambient glow);
+#       .seal-ceremony transition expanded to also animate border-color (fallback
+#       values added for safety); prefers-reduced-motion gains .seal-ceremony rule.
+#     src/styles/seal-ceremony.css — CSS variable bridge for score tier colors
+#       ([data-seal-score-tier="low|mid|high|max"] → --score-tier-color);
+#       .sc-score-tier-label styles (text-2xs, semibold, uppercase, token-color,
+#       min-height prevents layout shift); @keyframes dot-spring-fill (scale 1 →
+#       1.45 → 0.90 → 1, gold fill/border at peak); .seal-dot.is-spring-filling
+#       class applies animation; 6px margin-left gap after 5th dot (tier visual
+#       break); @keyframes hesitation-pulse (opacity 0.45 ↔ 0.30); [data-hesitating]
+#       [data-compose-cta] wires pulse to CTA during 400ms lock window.
+#     src/styles/tokens.css — 3 new token groups: Motion Tier Tokens (snap 120ms /
+#       flow 300ms / drift 600ms / ceremony 600ms spring — were undefined, silently
+#       falling back); score dot click timing (--motion-duration-dot-click: 200ms);
+#       seal score tier colors (low cool-blue, mid warm-amber, high gold-adjacent,
+#       max var(--gold)); hesitation beat duration (--seal-hesitation-duration: 400ms).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v103).
+#
 # Architecture v103 — Nav Overflow Pill & CSS Extraction (2026-04-12)
 #   Sprint: Responsive nav overflow pill collapses community · leaderboard · now
 #     into a ··· button at ≤768 px. All SiteNav inline styles migrated to a
