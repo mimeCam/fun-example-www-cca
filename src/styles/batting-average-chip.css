@@ -1,12 +1,15 @@
 /* src/styles/batting-average-chip.css
  * Feed-level conviction chip — 3-state visual signal: cold | provisional | live.
  * Token-only: zero hardcoded colors, zero hardcoded sizes.
- * Gold (--clr-gold-400) appears ONLY at bac--live + bac--strong intersection.
+ * Gold (--clr-gold-400) appears ONLY at bac--live + [data-ba-tier="gold"] intersection.
+ *
+ * Size scale: inline (11px) · sm (11.5px) · chip/md (13px) · hero (base)
+ * Per-tier inner glows wired in BattingAverageChip.astro <style> (scoped to component).
  *
  * Architecture: Michael Koch · UX: Tanya Donska · Elon (n≥5 confidence rule)
  */
 
-/* ── Base ──────────────────────────────────────────────────────────────── */
+/* ── Base ──────────────────────────────────────────────────────────────────── */
 
 .bac {
   display: inline-flex;
@@ -18,7 +21,7 @@
   white-space: nowrap;
   cursor: default;
   user-select: none;
-  /* Mount animation — badge-enter from motion.css: slides up from 4px below */
+  /* Entrance: badge-enter from motion.css — slides up from 4px below */
   animation: badge-enter var(--motion-flow-duration, 200ms) var(--motion-flow-easing, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
@@ -45,20 +48,37 @@
   line-height: 1;
 }
 
-/* ── Size Variants ─────────────────────────────────────────────────────── */
+/* ── Size Variants ─────────────────────────────────────────────────────────── */
+/* Inline: densest — embedded in prose or tight nav contexts */
 
-.bac--sm {
+.bac--inline {
+  font-size: var(--text-xs);
+  padding: 1px 5px;
+  gap: 3px;
+}
+
+/* Sm / chip: default feed chip */
+.bac--sm,
+.bac--chip {
   font-size: var(--text-xs);
   padding: 2px 6px;
 }
 
+/* Md: leaderboard card — slightly more breathing room */
 .bac--md {
   font-size: var(--text-sm);
   padding: 4px 10px;
 }
 
-/* ── State: cold — no verdicts yet; 45% opacity is intentional dimming ── */
-/* Not hidden (visibility: hidden), not zero — it tells a story: clock running */
+/* Hero: nav bar, author header — 32px height per Tanya §4.1 */
+.bac--hero {
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
+  min-height: 32px;
+}
+
+/* ── State: cold — no verdicts yet; dimmed but present ───────────────────── */
+/* Not hidden — it tells a story: clock running, record not yet earned.       */
 
 .bac--cold {
   opacity: 0.45;
@@ -67,7 +87,7 @@
   background: transparent;
 }
 
-/* ── State: provisional — 1–4 verdicts; slate color; no gold ─────────── */
+/* ── State: provisional — 1–4 verdicts; slate color; no gold ────────────── */
 /* Honest signal about thin sample size (Elon's n-mandate) */
 
 .bac--provisional {
@@ -76,21 +96,21 @@
   background: color-mix(in oklch, var(--clr-slate-400) 6%, transparent);
 }
 
-/* ── State: live — ≥5 resolved verdicts; color determined by colorMod ── */
+/* ── State: live — ≥5 resolved verdicts; tier drives color ──────────────── */
 
 .bac--live {
   border-color: var(--gold-border);
   background: var(--gold-bg);
 }
 
-/* Hover shimmer on live only — gold border intensifies */
+/* Hover shimmer on live: border intensifies + lift (transition defined in component) */
 .bac--live:hover {
   border-color: var(--gold-border-strong);
-  transition: border-color var(--motion-snap-duration, 120ms) var(--motion-snap-easing, cubic-bezier(0.25, 0, 0, 1));
 }
 
-/* ── Color Modifiers — live only; BEM chain enforces gold discipline ──── */
-/* Gold is sacred: --clr-gold-400 appears ONLY here, ONLY when earned.    */
+/* ── Color Modifiers — live only; BEM chain enforces gold discipline ──────── */
+/* Gold (--clr-gold-400) is exclusive to the strong modifier.                 */
+/* Never dilute by applying it outside bac--strong.                           */
 
 .bac--strong {
   color: var(--clr-gold-400);
@@ -109,15 +129,41 @@
   background: var(--verdict-wrong-bg);
 }
 
-/* ── Responsive ────────────────────────────────────────────────────────── */
+/* ── Tier-crossing flash ceremony ────────────────────────────────────────── */
+/* Fires only when score crosses a tier boundary (JS adds .bac--tier-flash).  */
+/* 3-frame: current → gold burst → target tier color.                         */
+/* Duration: --motion-duration-deliberate (500ms) — ceremony weight.          */
+
+.bac--tier-flash {
+  animation: bac-tier-flash var(--motion-duration-deliberate, 500ms) var(--motion-easing-standard) both;
+}
+
+@keyframes bac-tier-flash {
+  0%   { filter: brightness(1);   }
+  40%  { filter: brightness(1.8); }
+  100% { filter: brightness(1);   }
+}
+
+/* ── @starting-style entrance (Baseline 2025) ────────────────────────────── */
+/* For non-JS static contexts — native CSS fade-in on element attachment.     */
+/* Fallback: badge-enter @keyframes (defined in motion.css) for Safari <17.5  */
+
+@supports (selector(:has(*))) {
+  @starting-style {
+    .bac { opacity: 0; transform: translateY(4px); }
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 480px) {
   .bac__label { display: none; }
   .bac__count { display: none; }
 }
 
-/* ── Accessibility ─────────────────────────────────────────────────────── */
+/* ── Accessibility ──────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .bac { animation: none; }
+  .bac           { animation: none; }
+  .bac--tier-flash { animation: none; filter: none; }
 }

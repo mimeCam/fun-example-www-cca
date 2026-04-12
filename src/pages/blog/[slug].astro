@@ -10,6 +10,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
+import BattingAverageChip from '../../components/BattingAverageChip.astro';
 import PostNav from '../../components/PostNav.astro';
 import ConvictionSeal from '../../components/ConvictionSeal.astro';
 import SealCeremony from '../../components/SealCeremony.astro';
@@ -58,6 +59,8 @@ export async function getStaticPaths() {
 const { post, nav } = Astro.props;
 const { Content }   = await post.render();
 const readingTime   = getReadingTime(post.body);
+// Pre-fetch totalPublished once — passed to BattingAverageChip to avoid duplicate getCollection call
+const totalPublished = (await getCollection('blog')).length;
 const pubDate       = formatPubDate(post.data.pubDate);
 const pubDateISO    = post.data.pubDate.toISOString();
 const lifespan      = post.data.lifespan ?? 365;
@@ -152,6 +155,17 @@ const jsonLd      = [
       }
       <time datetime={pubDateISO}>{pubDate}</time>
       <h1>{post.data.title}</h1>
+      {/* Author meta row: name + chip — Tanya §5.2: "never hide it; it's the trust connection" */}
+      <div class="post-author-row">
+        <a href={`/author/${post.data.authorSlug ?? 'host'}`} class="post-author-link">
+          {post.data.authorSlug ?? 'host'}
+        </a>
+        <BattingAverageChip
+          authorSlug={post.data.authorSlug ?? 'host'}
+          size="inline"
+          totalPublished={totalPublished}
+        />
+      </div>
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
 
@@ -380,6 +394,24 @@ const jsonLd      = [
     letter-spacing: -0.03em;
     color: var(--mood-accent, inherit);
   }
+
+  /* Author meta row — name + batting average chip (Tanya §5.2) */
+  .post-author-row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .post-author-link {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    text-decoration: none;
+    letter-spacing: var(--tracking-wide);
+    transition: color var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  .post-author-link:hover { color: var(--text-secondary); }
 
   /* Article body */
   .post-body {

@@ -4,6 +4,58 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v95 — BattingAverageChip Count-Up Ceremony + Post Author Context (2026-04-12)
+#   Sprint: UIX polish — BattingAverageChip gains a full client ceremony layer
+#     (count-up entrance, tier-crossing flash, live SSE binding) and moves from
+#     feed cards onto the post detail page as an inline author-trust signal.
+#     DecayCard loses the chip (cognitive-load reduction per Tanya §4.2);
+#     blog/[slug].astro gains a post-author-row (name link + inline chip).
+#     Pure UIX — zero infra changes.
+#   New files:
+#     src/lib/client/batting-average-chip.ts — client ceremony layer; module
+#       singleton IntersectionObserver drives count-up (0%→final at 50% viewport
+#       entry, 1200ms spring-eased ticker); tier-crossing flash adds .bac--tier-flash
+#       for a 3-frame brightness burst (500ms deliberate-weight) on boundary cross;
+#       live SSE: subscribes to verdict:declared on window.__heartbeat EventSource
+#       and animates all [data-bac-slug=X] chips to the new score in real time;
+#       prefers-reduced-motion snaps to final value, zero animation; zero DOM access
+#       at module scope (DOMContentLoaded-deferred).
+#   Modified files:
+#     src/components/BattingAverageChip.astro — extended size scale: 'inline'
+#       (11px, 1px 5px padding, dense prose embedding), 'chip' alias for 'sm',
+#       'hero' (32px min-height, nav/author-header use); 'live' prop (boolean,
+#       default false) adds data-bac-live for SSE binding; 'class' prop for layout
+#       passthrough; data-score (SSR source of truth for JS count-up) and
+#       data-live-pct on .bac__pct (animation target); client <script> imports
+#       batting-average-chip.ts (Astro deduplicates across N chip instances);
+#       hover lift: translateY(-1px) — elevation not scale (Tanya §6.3); gold-tier
+#       inner glow (inset 0 0 8px --ba-chip-gold-glow), diamond cold shimmer;
+#       gold hover adds outer 4px 12px glow; prefers-reduced-motion: transform none.
+#     src/components/DecayCard.astro — BattingAverageChip removed from card and
+#       .card-author-row CSS removed; authorSlug prop dropped (Tanya §4.2: batting
+#       average on feed card = cognitive overload; reputation lives on author page).
+#     src/pages/blog/[slug].astro — post-author-row injected below <h1>: author
+#       name as /author/[slug] link + BattingAverageChip at size="inline";
+#       totalPublished pre-fetched once (getCollection) and threaded to chip to
+#       avoid duplicate content-collection scans; .post-author-row + .post-author-link
+#       token-driven styles added (Tanya §5.2: trust connection must not be hidden).
+#     src/styles/batting-average-chip.css — inline/chip/hero size variants added;
+#       tier-crossing flash: .bac--tier-flash + @keyframes bac-tier-flash (3-frame
+#       brightness burst); @starting-style entrance for non-JS static contexts
+#       (Baseline 2025; badge-enter @keyframes fallback for Safari <17.5);
+#       hover transition removed from .bac--live:hover rule (now owned by
+#       component <style> for better cascade isolation); prefers-reduced-motion
+#       guard extended to cover .bac--tier-flash (animation+filter both cancelled).
+#     src/styles/tokens.css — --ba-tier-bronze recalibrated to oklch(68% 0.13 55deg)
+#       warm amber-bronze (Tanya §1.2 skin-in-game warmth); remaining diff may
+#       include additional ba-chip glow tokens (--ba-chip-gold-glow,
+#       --ba-chip-gold-hover-glow, --ba-chip-diamond-glow).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v94).
+#
 # Architecture v94 — Design Token Compliance Pass (2026-04-12)
 #   Sprint: Full design-system token compliance enforcement. All raw hex, rgba(),
 #     hsl() and bare-rem font-size literals eliminated from component stylesheets;

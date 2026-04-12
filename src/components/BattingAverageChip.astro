@@ -1,14 +1,23 @@
 ---
 // src/components/BattingAverageChip.astro
-// Compact inline conviction signal — SSR only, zero client hydration.
+// Compact inline conviction signal — SSR renders final value, client animates count-up.
 // 3 states: locked (🔒 N verdicts) | provisional (pct, slate) | live (🏆 pct · sel%).
-// chip border/bg color = trophy tier color. selectivityRate always shown alongside BA.
+// Trophy tier drives all color via [data-ba-tier] → --ba-tier-color polymorphism.
 //
-// totalPublished: caller may pass it; if omitted fetches from content collection.
-// This keeps existing card-level callers (DecayCard, LeaderboardCard) zero-change.
+// Client layer (batting-average-chip.ts):
+//   - IntersectionObserver count-up: 0% → final on 50% viewport entry (earned feel).
+//   - Tier-crossing flash: 3-frame gold burst on boundary crossing.
+//   - Live SSE: verdict:declared → tick old → new pct in real time.
 //
-// Credits: Mike Koch (arch spec §BA-Integrity), Tanya Donska (UX chip spec §4.4),
-//          Elon (selection-bias: show sealed/published ratio always)
+// data-score: SSR source of truth; JS reads, replaces text with 0%, animates up.
+// data-live-pct: marker for client to locate the animatable percentage span.
+// data-bac-live: present when live=true; triggers SSE binding for this chip.
+//
+// Backward-compatible: size 'sm'/'md' still accepted alongside 'inline'/'chip'/'hero'.
+//
+// Credits: Mike Koch (arch spec §BattingAverageChip, count-up §5, SSE §3),
+//          Tanya Donska (UX §4.1 chip anatomy, hover +1px, IBM Plex Mono numerics),
+//          Elon (selection-bias: selectivity always shown; n≥5 confidence gate)
 
 import '../styles/batting-average.css';
 import '../styles/batting-average-chip.css';
@@ -18,20 +27,30 @@ import type { TrophyTier } from '../lib/batting-average';
 
 interface Props {
   authorSlug:      string;
-  size?:           'sm' | 'md';
-  totalPublished?: number;
+  size?:           'sm' | 'md' | 'inline' | 'chip' | 'hero';
+  live?:           boolean;     // wire SSE listener; adds data-bac-live
+  totalPublished?: number;      // optional pre-fetched total — skips content collection call
+  class?:          string;      // layout passthrough
 }
 
-const { authorSlug, size = 'sm', totalPublished: publishedProp } = Astro.props;
+const { authorSlug, size = 'sm', live = false, totalPublished: publishedProp, class: extraClass } = Astro.props;
 
 const totalPublished = publishedProp ?? (await getCollection('blog')).length;
 const result         = getBattingAverageResult(authorSlug, totalPublished);
 
 const pctInt    = result.battingAverage !== null ? Math.round(result.battingAverage * 100) : 0;
 const selPctInt = result.selectivityRate !== null ? Math.round(result.selectivityRate * 100) : 0;
-const sizeClass = 'bac--' + size;
 const needsMore = 5 - result.resolvedTotal;
 const needsStr  = needsMore + ' verdict' + (needsMore !== 1 ? 's' : '');
+
+// Normalise legacy size aliases onto the new scale
+const sizeClass = (() => {
+  if (size === 'md')     return 'bac--md';
+  if (size === 'chip')   return 'bac--chip';
+  if (size === 'hero')   return 'bac--hero';
+  if (size === 'inline') return 'bac--inline';
+  return 'bac--sm';  // default: 'sm'
+})();
 
 const tierIcons: Record<TrophyTier, string> = {
   locked:  '🔒',
@@ -50,7 +69,7 @@ const hasSelectivity = result.selectivityRate !== null;
 const ariaLabel = isLocked
   ? 'Batting average locked — needs ' + needsStr
   : isProvisional
-    ? pctInt + '% provisional ('+result.resolvedTotal+' of 5 verdicts)'
+    ? pctInt + '% provisional (' + result.resolvedTotal + ' of 5 verdicts)'
     : pctInt + '% batting average, ' + selPctInt + '% selectivity';
 
 const tooltip = isLocked
@@ -59,9 +78,11 @@ const tooltip = isLocked
 ---
 
 <span
-  class:list={['bac', sizeClass, stateClass]}
+  class:list={['bac', sizeClass, stateClass, extraClass]}
   data-ba-tier={result.trophyTier}
   data-bac-slug={authorSlug}
+  data-score={isLive ? pctInt : undefined}
+  data-bac-live={live ? '' : undefined}
   title={tooltip}
   aria-label={ariaLabel}
   role="status"
@@ -81,20 +102,34 @@ const tooltip = isLocked
 
   {isLive && (
     <span class="bac__live">
-      <span class="bac__pct">{pctInt}%</span>
+      {/* data-live-pct marks this span for client count-up animation */}
+      <span class="bac__pct" data-live-pct>{pctInt}%</span>
       {hasSelectivity && <span class="bac__sep" aria-hidden="true">·</span>}
       {hasSelectivity && <span class="bac__sel">{selPctInt}% sel</span>}
     </span>
   )}
 </span>
 
+{/* Client ceremony layer — Astro deduplicates this across multiple chip instances */}
+<script>
+  import '../lib/client/batting-average-chip';
+</script>
+
 <style>
-  /* Supplement batting-average-chip.css — tier-color overrides for live state */
+  /* Supplement batting-average-chip.css — tier-color overrides scoped to live state */
 
   .bac {
-    transition: border-color var(--motion-duration-fast) var(--motion-easing-standard);
+    transition:
+      transform    var(--motion-snap-duration) var(--motion-snap-easing),
+      border-color var(--motion-snap-duration) var(--motion-snap-easing);
   }
 
+  /* Hover lift — Tanya §6.3: elevation not scale, no blur, just +1px */
+  .bac:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Live tier-driven color cascade */
   .bac--live {
     border-color: color-mix(in oklch, var(--ba-tier-color, var(--ba-tier-gold)) 40%, transparent);
     background:   color-mix(in oklch, var(--ba-tier-color, var(--ba-tier-gold)) 10%, transparent);
@@ -105,6 +140,23 @@ const tooltip = isLocked
     border-color: color-mix(in oklch, var(--ba-tier-color, var(--ba-tier-gold)) 65%, transparent);
   }
 
+  /* Gold tier — inner glow (Tanya §4.1) */
+  .bac--live[data-ba-tier="gold"] {
+    box-shadow: inset 0 0 8px var(--ba-chip-gold-glow);
+  }
+
+  .bac--live[data-ba-tier="gold"]:hover {
+    box-shadow:
+      inset 0 0 8px var(--ba-chip-gold-glow),
+      0 4px 12px var(--ba-chip-gold-hover-glow);
+  }
+
+  /* Diamond tier — cold shimmer (Tanya §4.1) */
+  .bac--live[data-ba-tier="diamond"] {
+    box-shadow: inset 0 0 12px var(--ba-chip-diamond-glow);
+  }
+
+  /* Icon */
   .bac__icon { line-height: 1; flex-shrink: 0; }
 
   .bac__provisional,
@@ -114,6 +166,7 @@ const tooltip = isLocked
     gap: 4px;
   }
 
+  /* IBM Plex Mono for the number — communicates precision/data authority (Tanya §4.1) */
   .bac__pct {
     font-family: var(--font-mono);
     font-weight: var(--weight-semibold);
@@ -155,6 +208,7 @@ const tooltip = isLocked
     background: transparent;
   }
 
+  /* Mobile: strip secondary signals — pct alone carries the story */
   @media (max-width: 480px) {
     .bac__sel   { display: none; }
     .bac__sep   { display: none; }
@@ -162,6 +216,6 @@ const tooltip = isLocked
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .bac { animation: none; }
+    .bac { animation: none; transform: none !important; }
   }
 </style>

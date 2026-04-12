@@ -481,11 +481,19 @@
   /* ── Batting Average Trophy Tier Tokens ─────────────────────────────────── */
   /* Single source for all trophy-tier colors — chip, hero, and API all branch  */
   /* on TrophyTier; each tier maps to exactly one token. Zero hardcoding.        */
-  --ba-tier-locked:  oklch(60% 0.00   0deg);   /* neutral grey  — not yet earned  */
-  --ba-tier-bronze:  oklch(65% 0.10  45deg);   /* warm bronze   — skin in game    */
-  --ba-tier-silver:  oklch(75% 0.05 200deg);   /* cool silver   — proven reliable */
-  --ba-tier-gold:    var(--clr-gold-400);       /* conviction gold — brand anchor  */
-  --ba-tier-diamond: oklch(85% 0.18 260deg);   /* prestige blue-white — elite     */
+  --ba-tier-locked:  oklch(60% 0.00   0deg);   /* neutral grey  — not yet earned      */
+  --ba-tier-bronze:  oklch(68% 0.13  55deg);   /* warm amber-bronze — skin in game    (Tanya §1.2) */
+  --ba-tier-silver:  oklch(78% 0.03 250deg);   /* cool metallic silver — credible     (Tanya §1.2) */
+  --ba-tier-gold:    var(--clr-gold-400);       /* conviction gold — brand anchor      */
+  --ba-tier-diamond: oklch(92% 0.06 250deg);   /* cool blue-white oracle              (Tanya §1.2) */
+
+  /* ── Batting Average Chip Per-Tier Glow Tokens (Tanya §4.1) ─────────────── */
+  /* Surface exclusively in BattingAverageChip live states — nowhere else.     */
+  /* gold: warm inner shimmer — trust earned, glow deserved.                   */
+  /* diamond: cold shimmer — oracle status, museum-glass precision.            */
+  --ba-chip-gold-glow:       oklch(78% 0.14 68deg / 0.15);   /* inset 0 0 8px  */
+  --ba-chip-gold-hover-glow: oklch(78% 0.14 68deg / 0.25);   /* hover lift aura */
+  --ba-chip-diamond-glow:    oklch(92% 0.06 250deg / 0.12);  /* inset 0 0 12px */
 
   /* Notarize Moment tokens (Phase 3.5 ceremony) ────────────────────────────── */
   /* Referenced exclusively by notarize-stamp.css — no other consumers.        */
