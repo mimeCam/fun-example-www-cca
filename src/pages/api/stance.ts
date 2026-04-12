@@ -75,7 +75,7 @@ export const POST: APIRoute = async ({ request }) => {
   // dist is included so StickyStanceBar can update bar segment widths live.
   broadcastNamed('tension:updated', { slug, ...tensionScore, dist });
 
-  return jsonOk({ ok: recorded, tensionScore });
+  return jsonOk({ ok: recorded, tensionScore, dist });
 };
 
 // ---------------------------------------------------------------------------

@@ -60,7 +60,7 @@ const hasVotes    = dist.total > 0;
     role="img"
     aria-label={`${dist.agree} agree · ${dist.torn} torn · ${dist.disagree} disagree`}
   >
-    <div class="ssb-bar">
+    <div class="ssb-bar" id="ssb-bar">
       <div class="ssb-seg ssb-seg--agree"    data-seg="agree"    style={`width:${agreePct}%`}></div>
       <div class="ssb-seg ssb-seg--torn"     data-seg="torn"     style={`width:${tornPct}%`}></div>
       <div class="ssb-seg ssb-seg--disagree" data-seg="disagree" style={`width:${disagreePct}%`}></div>
@@ -93,6 +93,12 @@ const hasVotes    = dist.total > 0;
 
     <!-- Voted chip: replaces vote group after cast; hidden until vote recorded -->
     <div class="ssb-voted-chip" id="ssb-voted-chip" hidden aria-live="polite"></div>
+
+    <!-- Crowd verdict — hidden until stance cast; fades in at t=500ms of ceremony -->
+    <div class="ssb-verdict" id="ssb-verdict" hidden aria-live="polite">
+      <span class="ssb-verdict-copy" id="ssb-verdict-copy"></span>
+      <span class="ssb-verdict-sub"  id="ssb-verdict-sub"  hidden></span>
+    </div>
 
   </div>
 
@@ -238,31 +244,110 @@ const hasVotes    = dist.total > 0;
 
   // ── Vote submission ───────────────────────────────────────────────────────
 
-  async function postStance(sessionId: string, stance: string): Promise<boolean> {
+  type StanceDist = { agree: number; torn: number; disagree: number; total: number };
+  interface PostResult { success: boolean; dist: StanceDist | null; }
+
+  async function postStance(sessionId: string, stance: string): Promise<PostResult> {
     try {
       const res = await fetch('/api/stance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId },
         body: JSON.stringify({ slug, stance, score: 3 }),
       });
-      return res.ok;
-    } catch {
-      return false;
-    }
+      if (!res.ok) return { success: false, dist: null };
+      const data = await res.json() as { ok?: boolean; dist?: StanceDist };
+      return { success: Boolean(data.ok), dist: data.dist ?? null };
+    } catch { return { success: false, dist: null }; }
   }
 
   async function submitVote(stance: string): Promise<void> {
     const sessionId = getSessionId();
     if (!sessionId) return;
     setVoteGroupDisabled(true);
-    const ok = await postStance(sessionId, stance);
-    if (ok) { persistVote(stance); lockToVotedState(stance); }
-    else setVoteGroupDisabled(false);
+    const result = await postStance(sessionId, stance);
+    if (result.success) {
+      persistVote(stance);
+      revealVotedState(stance, result.dist);
+    } else {
+      setVoteGroupDisabled(false);
+    }
   }
 
   function persistVote(stance: string): void {
     setSession(SESS_KEY, '1');  // tells StanceDrawer: already voted this session
     setLocal(LOC_KEY, stance);  // tells DisputeChallenge: stance is recorded
+  }
+
+  // ── Ceremony choreography ─────────────────────────────────────────────────
+  // t=0ms:   bar switches to CEREMONY speed for this one transition only
+  // t=0ms:   segments animate to post-vote distribution (spring easing)
+  // t=100ms: voted segment glows (stance-color pulse, forwards fill)
+  // t=400ms: voted chip replaces vote group
+  // t=500ms: crowd verdict copy fades in
+  // t=650ms: bar reverts to FLOW speed for subsequent SSE updates
+
+  function setCeremonySpeed(): void {
+    const el = document.getElementById('ssb-bar');
+    if (el) el.style.setProperty('--ssb-seg-duration', 'var(--motion-ceremony-duration)');
+  }
+
+  function revertToFlowSpeed(): void {
+    const el = document.getElementById('ssb-bar');
+    if (el) el.style.removeProperty('--ssb-seg-duration');
+  }
+
+  function pulseVotedSeg(stance: string): void {
+    const seg = bar.querySelector<HTMLElement>(`[data-seg="${stance}"]`);
+    if (seg) seg.dataset.voted = '1';
+  }
+
+  function showVotedChip(stance: string): void {
+    const group   = document.getElementById('ssb-vote-group');
+    const weighIn = document.getElementById('ssb-weigh-in');
+    const chip    = document.getElementById('ssb-voted-chip');
+    if (group)   group.hidden = true;
+    if (weighIn) weighIn.hidden = true;
+    if (!chip) return;
+    chip.hidden    = false;
+    chip.className = `ssb-voted-chip ssb-voted-chip--${stance}`;
+    chip.innerHTML = `<span aria-hidden="true">${GLYPHS[stance] ?? ''}</span> ${LABELS[stance] ?? stance}`;
+  }
+
+  // Inline classification — avoids Astro island bundler boundary (Mike §3 Points of Interest)
+  function pct(n: number, total: number): number {
+    return total > 0 ? Math.round((n / total) * 100) : 0;
+  }
+
+  function classifyCrowd(stance: string, d: StanceDist): { copy: string; subCopy?: string; intensity: string } {
+    if (d.total === 1) return { copy: "You're first to weigh in.", intensity: 'strong' };
+    const userPct = pct((d as Record<string, number>)[stance] ?? 0, d.total);
+    const maxPct  = Math.max(pct(d.agree, d.total), pct(d.torn, d.total), pct(d.disagree, d.total));
+    if (maxPct < 40)   return { copy: "This one's genuinely split.", subCopy: "No side has it.",         intensity: 'quiet'    };
+    if (userPct < 15)  return { copy: "You're a lone voice.",         subCopy: `Only ${userPct}% agree.`, intensity: 'strong'   };
+    if (userPct <= 33) return { copy: "You're in the minority.",       subCopy: `${userPct}% share your view.`, intensity: 'moderate' };
+    if (userPct <= 59) return { copy: "You're with the crowd.",        subCopy: `${userPct}% agree.`,     intensity: 'quiet'    };
+    if (userPct <= 79) return { copy: "You're with the majority.",     subCopy: `${userPct}% agree.`,     intensity: 'quiet'    };
+    return { copy: "The crowd agrees with you.", subCopy: `${userPct}% align.`, intensity: 'strong' };
+  }
+
+  function showVerdict(stance: string, dist: StanceDist | null): void {
+    if (!dist) return;
+    const v     = classifyCrowd(stance, dist);
+    const panel = document.getElementById('ssb-verdict');
+    const copyEl = document.getElementById('ssb-verdict-copy');
+    const subEl  = document.getElementById('ssb-verdict-sub');
+    if (copyEl) copyEl.textContent = v.copy;
+    if (subEl && v.subCopy) { subEl.textContent = v.subCopy; subEl.hidden = false; }
+    if (panel) { panel.dataset.intensity = v.intensity; panel.hidden = false; }
+  }
+
+  function revealVotedState(stance: string, dist: StanceDist | null): void {
+    setCeremonySpeed();
+    if (dist) updateBar(dist);
+    setTimeout(() => pulseVotedSeg(stance), 100);
+    setTimeout(() => showVotedChip(stance),  400);
+    setTimeout(() => showVerdict(stance, dist), 500);
+    setTimeout(revertToFlowSpeed, 650);
   }
 
   function setVoteGroupDisabled(disabled: boolean): void {
@@ -386,7 +471,8 @@ const hasVotes    = dist.total > 0;
   .ssb-seg {
     height: 100%;
     min-width: 0;
-    transition: width var(--motion-flow-duration) var(--motion-flow-easing);
+    /* JS sets --ssb-seg-duration on #ssb-bar during ceremony, then removes it */
+    transition: width var(--ssb-seg-duration, var(--motion-flow-duration)) var(--motion-flow-easing);
   }
 
   /* Minimum visible width for non-zero segments */
@@ -395,6 +481,17 @@ const hasVotes    = dist.total > 0;
   .ssb-seg--agree    { background: var(--stance-agree);    border-radius: var(--radius-full) 0 0 var(--radius-full); }
   .ssb-seg--torn     { background: var(--stance-torn); }
   .ssb-seg--disagree { background: var(--stance-disagree); border-radius: 0 var(--radius-full) var(--radius-full) 0; }
+
+  /* Voted segment glow — fires once on vote, forwards-fill stays harmlessly */
+  .ssb-seg[data-voted="1"] {
+    animation: seg-voted-pulse var(--motion-spring-duration) var(--motion-spring-easing) forwards;
+  }
+
+  @keyframes seg-voted-pulse {
+    0%   { filter: brightness(1)    saturate(1);   }
+    30%  { filter: brightness(1.35) saturate(1.6); }
+    100% { filter: brightness(1)    saturate(1);   }
+  }
 
   /* Counts row below the bar */
   .ssb-counts {
@@ -550,6 +647,37 @@ const hasVotes    = dist.total > 0;
     color: var(--stance-disagree-color);
   }
 
+  /* ── Crowd verdict — appears at t=500ms of vote ceremony ──────────────── */
+  .ssb-verdict {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex-shrink: 0;
+    animation: badge-enter var(--motion-flow-duration) var(--motion-flow-easing) both;
+  }
+
+  .ssb-verdict-copy {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .ssb-verdict-sub {
+    font-size: var(--text-3xs);
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  /* Intensity variants — data-intensity set by JS from classifyCrowd() */
+  .ssb-verdict[data-intensity="strong"] .ssb-verdict-copy { color: var(--gold); }
+  .ssb-verdict[data-intensity="moderate"] .ssb-verdict-copy { color: var(--text-secondary); }
+
+  /* Mobile: sub-copy hidden; verdict copy still shows */
+  @media (max-width: 639px) { .ssb-verdict-sub { display: none; } }
+
   /* ── Dismiss button ─────────────────────────────────────────────────────── */
   .ssb-dismiss {
     width: 24px;
@@ -591,9 +719,11 @@ const hasVotes    = dist.total > 0;
 
   /* ── Accessibility override ─────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .ssb         { transition: none; }
-    .ssb-dot     { animation: none; opacity: 0.85; }
-    .ssb-seg     { transition: none; }
-    .ssb-voted-chip { animation: none; }
+    .ssb                     { transition: none; }
+    .ssb-dot                 { animation: none; opacity: 0.85; }
+    .ssb-seg                 { transition: none; }
+    .ssb-voted-chip          { animation: none; }
+    .ssb-seg[data-voted="1"] { animation: none; }
+    .ssb-verdict             { animation: none; }
   }
 </style>

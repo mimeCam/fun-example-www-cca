@@ -4,6 +4,41 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v93 — Crowd Verdict Ceremony (2026-04-12)
+#   Sprint: Post-vote emotional payoff — after casting a stance, StickyStanceBar
+#     now plays a 650ms ceremony: bar transitions at CEREMONY speed, voted segment
+#     pulses with a brightness/saturation glow, voted chip replaces vote buttons,
+#     and a crowd-verdict copy panel fades in at t=500ms classifying the user's
+#     position among all stancers (lone voice / minority / torn house / with many /
+#     majority / near-unanimous). Pure UIX — zero infra changes.
+#   New files:
+#     src/lib/crowd-verdict.ts — pure function crowd-verdict classifier; no DOM,
+#       no side effects, SSR-safe; CrowdPosition (6 states), CrowdVerdict interface,
+#       getCrowdVerdict(stance, dist) public API; mirrors the inline classifier
+#       inlined in StickyStanceBar (Astro island bundler boundary constraint);
+#       single source of copy truth for any future SSR/audit consumers.
+#   Modified files:
+#     src/components/StickyStanceBar.astro — crowd verdict ceremony choreography:
+#       ssb-bar gains id="ssb-bar" for JS targeting; new ssb-verdict panel
+#       (ssb-verdict-copy + ssb-verdict-sub) hidden until ceremony t=500ms;
+#       postStance() returns PostResult { success, dist } (was boolean);
+#       revealVotedState() orchestrates 650ms ceremony sequence
+#       (setCeremonySpeed → updateBar → pulseVotedSeg@100ms →
+#        showVotedChip@400ms → showVerdict@500ms → revertToFlowSpeed@650ms);
+#       --ssb-seg-duration CSS custom property on #ssb-bar switches between
+#       CEREMONY and FLOW transition speeds for that single animation beat;
+#       seg-voted-pulse @keyframes (brightness/saturate glow, forwards fill);
+#       .ssb-verdict / .ssb-verdict-copy / .ssb-verdict-sub token-driven styles;
+#       crowd classifier inlined for island bundler boundary (mirrors crowd-verdict.ts).
+#     src/pages/api/stance.ts — POST response now returns dist alongside ok and
+#       tensionScore; StickyStanceBar reads dist from the vote response directly
+#       (no separate fetch needed); backward-compatible (additive change only).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v92).
+#
 # Architecture v92 — StickyStanceBar + Stance Design Token Polish (2026-04-12)
 #   Sprint: Sticky stance bar ships end-to-end; stance timer tokenised; dispute
 #     hold time raised for accidental-tap prevention; SSE tension:updated event
