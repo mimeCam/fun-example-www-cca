@@ -20,7 +20,7 @@
 /* ── Trophy icon ─────────────────────────────────────────────────────────── */
 
 .ba-trophy {
-  font-size: 2rem;
+  font-size: var(--text-2xl);
   line-height: 1;
   color: var(--ba-tier-color, var(--ba-tier-locked));
   display: block;
@@ -113,7 +113,7 @@
 }
 
 .ba-locked__icon {
-  font-size: 1rem;
+  font-size: var(--text-base);
   opacity: 0.6;
 }
 

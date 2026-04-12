@@ -98,12 +98,12 @@ body::after {
 /* body::after overlay gets gold-breathe — 3s pulse, 0.4% amplitude.         */
 [data-atmosphere="gold"] {
   --atm-bg-primary:   oklch(11% 0.025 60);
-  --atm-tint:         rgba(245, 166, 35, 0.025);
+  --atm-tint:         color-mix(in oklch, var(--gold) 2.5%, transparent);
   --atm-border-color: var(--gold-border);
   --atm-bloom-color:  var(--gold);                /* gold conviction bloom */
   --surface-base:     oklch(11% 0.025 60);
-  --surface-raised:   rgba(245, 166, 35, 0.045);
-  --border-subtle:    rgba(245, 166, 35, 0.10);
+  --surface-raised:   color-mix(in oklch, var(--gold) 4.5%, transparent);
+  --border-subtle:    color-mix(in oklch, var(--gold) 10%, transparent);
 }
 
 [data-atmosphere="gold"] body::after,
@@ -116,13 +116,13 @@ body[data-atmosphere="gold"]::after {
 /* Overlay near-zero — clarity after ceremony, not a celebration.            */
 [data-atmosphere="vindicated"] {
   --atm-bg-primary:   oklch(11% 0.022 145);
-  --atm-tint:         rgba(16, 185, 129, 0.018);
+  --atm-tint:         color-mix(in oklch, var(--clr-emerald-500) 1.8%, transparent);
   --atm-border-color: var(--clr-emerald-500);
   --atm-glow-color:   var(--clr-emerald-500);
   --atm-bloom-color:  var(--clr-emerald-500);     /* bright emerald bloom */
   --surface-base:     oklch(11% 0.022 145);
-  --surface-raised:   rgba(16, 185, 129, 0.04);
-  --border-subtle:    rgba(16, 185, 129, 0.10);
+  --surface-raised:   color-mix(in oklch, var(--clr-emerald-500) 4%, transparent);
+  --border-subtle:    color-mix(in oklch, var(--clr-emerald-500) 10%, transparent);
 }
 
 /* Settle: transitions FROM gold naturally via body transition (DRIFT profile). */
@@ -132,14 +132,14 @@ body[data-atmosphere="gold"]::after {
 /* Room lit by a low amber lamp: visible only on neutral surfaces.            */
 [data-atmosphere="endangered"] {
   --atm-bg-primary:   oklch(12% 0.018 55);
-  --atm-tint:         rgba(245, 166, 35, 0.018);
+  --atm-tint:         color-mix(in oklch, var(--gold) 1.8%, transparent);
   --atm-border-color: var(--urgency-warning-color);
   --atm-shadow-lift:  var(--shadow-card-fresh);
   --atm-bloom-color:  oklch(67% 0.185 55);         /* red-amber urgency bloom */
   /* Override base surface tokens so components inherit atmosphere for free */
   --surface-base:     oklch(12% 0.018 55);
-  --surface-raised:   rgba(245, 166, 35, 0.035);
-  --border-subtle:    rgba(245, 166, 35, 0.09);
+  --surface-raised:   color-mix(in oklch, var(--gold) 3.5%, transparent);
+  --border-subtle:    color-mix(in oklch, var(--gold) 9%, transparent);
 }
 
 /* ── Stage: entombed — warm charcoal, heavy, still, fossil flatness ──────── */
@@ -159,14 +159,14 @@ body[data-atmosphere="gold"]::after {
 /* Same amber warmth as endangered but more luminous: dawn after a long night */
 [data-atmosphere="risen"] {
   --atm-bg-primary:   oklch(12% 0.022 70);
-  --atm-tint:         rgba(245, 166, 35, 0.015);
+  --atm-tint:         color-mix(in oklch, var(--gold) 1.5%, transparent);
   --atm-glow-color:   var(--color-revival);
   --atm-border-color: var(--clr-emerald-500);
   --atm-bloom-color:  var(--clr-green-400);        /* emerald phoenix bloom */
   /* Override base surface tokens */
   --surface-base:     oklch(12% 0.022 70);
-  --surface-raised:   rgba(245, 166, 35, 0.06);
-  --border-subtle:    rgba(245, 166, 35, 0.12);
+  --surface-raised:   color-mix(in oklch, var(--gold) 6%, transparent);
+  --border-subtle:    color-mix(in oklch, var(--gold) 12%, transparent);
 }
 
 /* ── Stage: verdict — courtroom, outcome-conditional color at 4% ─────────── */
@@ -193,7 +193,7 @@ body[data-atmosphere="gold"]::after {
 /* A post can be entombed AND disputed simultaneously.                        */
 [data-atmosphere][data-disputed="true"] {
   --atm-border-color: var(--urgency-critical-color);
-  --border-subtle:    rgba(245, 166, 35, 0.14);
+  --border-subtle:    color-mix(in oklch, var(--gold) 14%, transparent);
 }
 
 /* ── TensionBadge micro-animation (Tanya §6) ─────────────────────────────── */
@@ -210,8 +210,8 @@ body[data-atmosphere="gold"]::after {
 }
 
 @keyframes tension-heartbeat {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(245, 166, 35, 0); }
-  50%       { box-shadow: 0 0 0 5px rgba(245, 166, 35, 0.14); }
+  0%, 100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--gold) 0%, transparent); }
+  50%       { box-shadow: 0 0 0 5px color-mix(in oklch, var(--gold) 14%, transparent); }
 }
 
 @keyframes tension-glyph-pulse {

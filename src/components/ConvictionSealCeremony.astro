@@ -1,0 +1,575 @@
+---
+// src/components/ConvictionSealCeremony.astro
+// Unsealed conviction ceremony — 5-phase interactive form (phases 0→4).
+// CSS custom property [data-seal-phase] drives all visual transitions.
+// Progressive enhancement: works as plain <form> without JS.
+//
+// Contract: receives slug, title, context from ConvictionSeal.astro (orchestrator).
+// DB logic lives in the orchestrator only — never here.
+//
+// Credits: Mike (§Architecture, §CSS-state-machine, §Spring-curve timing),
+//          Tanya (§6.3 ceremony spec, §11 micro-animation choreography),
+//          DevBrain (@starting-style, spring-curve timing)
+
+import NotarizeStamp  from './NotarizeStamp.astro';
+import SealReceipt    from './SealReceipt.astro';
+import SealSoundToggle from './SealSoundToggle.astro';
+import ShareSealButton from './ShareSealButton.astro';
+
+interface Props {
+  slug:     string;
+  title?:   string;           // shown in form header when provided
+  context?: 'post' | 'admin'; // 'admin' always shows form; 'post' gates via cookie
+}
+
+const { slug, title, context = 'post' } = Astro.props;
+---
+
+<div
+  class={`conviction-seal conviction-seal--ceremony ${context === 'admin' ? 'conviction-seal--admin' : ''}`}
+  data-slug={slug}
+  data-seal-phase="0"
+  style="--seal-phase:0"
+>
+  <!-- Author-gated notice: visible to non-authors on post page -->
+  {context === 'post' && (
+    <div class="cs-unsealed-notice" data-unsealed-notice>
+      <span class="cs-unsealed-icon">◇</span>
+      <span class="cs-unsealed-label">Conviction score not yet sealed</span>
+    </div>
+  )}
+
+  <!-- Ceremony form: always visible in admin; revealed by JS on post page -->
+  <form
+    class="seal-form cs-form"
+    method="POST"
+    action="/api/conviction-seal"
+    data-seal-form
+    aria-label="Seal your conviction"
+    style={context === 'post' ? 'display:none' : ''}
+  >
+    {title && <p class="cs-form-title">{title}</p>}
+
+    <div class="cs-form-header">
+      <span class="cs-eyebrow">UNSEALED CLAIM</span>
+      <p class="cs-form-headline">Stake your reputation on this.</p>
+      <p class="cs-form-body">
+        Once sealed, it enters the accountability loop. The community can dispute
+        it within 72 hours. There is no unseal.
+      </p>
+      <!-- Sound toggle: opt-in sensory layer — hides itself at phase 4 -->
+      <div class="cs-sound-toggle-wrap">
+        <SealSoundToggle />
+      </div>
+    </div>
+
+    <!-- Score dots: 10 discrete levels — more deliberate than a slider -->
+    <div class="cs-dots-wrap" role="group" aria-label="Conviction score 1 to 10">
+      <div class="cs-dots" data-dots>
+        {Array.from({ length: 10 }, (_, i) => (
+          <button
+            type="button"
+            class="seal-dot"
+            data-value={i + 1}
+            aria-label={`Score ${i + 1} out of 10`}
+            aria-pressed="false"
+          ></button>
+        ))}
+      </div>
+      <span class="cs-score-readout">
+        <span data-score-display>5</span><span class="cs-score-denom-sm">/10</span>
+      </span>
+    </div>
+
+    <!-- Weight meter: visual feedback tied to --seal-weight -->
+    <div class="cs-meter-wrap" aria-hidden="true">
+      <div class="seal-weight-meter cs-meter" data-weight-meter></div>
+    </div>
+
+    <input type="hidden" name="slug" value={slug} />
+    <input type="hidden" name="score" value="5" data-score-input />
+
+    <label class="cs-label" for={`cs-note-${slug}`}>Author note</label>
+    <textarea
+      id={`cs-note-${slug}`}
+      name="authorNote"
+      rows="3"
+      maxlength="280"
+      placeholder="One sentence: what you believed when you sealed this."
+      class="cs-textarea"
+      required
+    ></textarea>
+
+    <!-- Seal button with SVG arc ring for hold-to-seal -->
+    <div class="cs-btn-wrap">
+      <button type="submit" class="seal-btn cs-seal-btn" data-seal-btn>
+        <svg class="cs-arc-svg" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
+          <circle cx="20" cy="20" r="18" class="cs-arc-track" />
+          <circle cx="20" cy="20" r="18" class="seal-arc" data-arc />
+        </svg>
+        <span class="seal-btn-label cs-btn-label">SEAL THIS CLAIM</span>
+        <span class="seal-spinner cs-spinner" aria-hidden="true"></span>
+      </button>
+      <p class="seal-error cs-error" data-error aria-live="polite"></p>
+    </div>
+
+    <!-- Phase 3 lock overlay: irreversibility notice + cancel CTA -->
+    <!-- Visibility driven by [data-seal-phase="3"] in seal-ceremony.css -->
+    <div class="seal-lock-overlay" aria-live="polite">
+      <p class="seal-irrev-notice">
+        Sealing your conviction. This cannot be undone — your credibility is on record.
+      </p>
+      <button type="button" class="seal-cancel-btn" data-cancel-btn>
+        Cancel
+      </button>
+    </div>
+  </form>
+
+  <!-- Phase 4 receipt: SealReceipt.astro controls its own display -->
+  <!-- Visibility driven by [data-seal-phase="4"] in seal-ceremony.css  -->
+  <SealReceipt />
+
+  <!-- Phase 5: ShareSealButton — share card rises below receipt after seal -->
+  <!-- Score populated by JS via [data-share-score]; visibility driven by phase 4 CSS -->
+  <ShareSealButton slug={slug} title={title ?? slug} />
+
+  <!-- Phase 3.5 notarize ceremony — outside form so form display:none doesn't hide it -->
+  <!-- Shown by [data-seal-phase="3.5"] selector; hidden at all other phases          -->
+  <NotarizeStamp />
+</div>
+
+<style>
+  @import '../styles/seal-ceremony.css';
+
+  /* ── Ceremony container ──────────────────────────────────── */
+  .conviction-seal {
+    margin: 0 0 var(--space-10);
+  }
+
+  .conviction-seal--ceremony {
+    background:    var(--surface-deep);
+    border:        1px solid var(--gold-border);
+    border-radius: var(--radius-lg);
+    padding:       var(--space-8);
+    box-shadow:    var(--shadow-seal-ceremony);
+  }
+
+  /* Unsealed notice (post context, non-admin) */
+  .cs-unsealed-notice {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-3);
+    padding:     0.85rem var(--space-5);
+    border:      1px dashed var(--gold-border);
+    border-radius: var(--radius-tombstone);
+    background:  var(--gold-bg);
+  }
+
+  .cs-unsealed-icon  { font-size: var(--text-sm); color: var(--gold-dim); }
+
+  .cs-unsealed-label {
+    font-size:  var(--text-xs);
+    color:      var(--text-tertiary);
+    font-style: italic;
+  }
+
+  /* Form header */
+  .cs-form-title {
+    font-size:   var(--text-xs);
+    font-family: var(--font-mono);
+    color:       var(--text-ghost);
+    margin:      0 0 var(--space-4);
+  }
+
+  .cs-form-header {
+    margin-bottom: var(--space-6);
+    position:      relative;
+  }
+
+  .cs-sound-toggle-wrap {
+    position: absolute;
+    top:      0;
+    right:    0;
+  }
+
+  .cs-eyebrow {
+    display:        block;
+    font-size:      var(--text-3xs);
+    font-weight:    var(--weight-semibold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color:          var(--gold);
+    margin-bottom:  var(--space-2);
+  }
+
+  .cs-form-headline {
+    font-size:   var(--text-base);
+    font-weight: var(--weight-semibold);
+    color:       var(--text-primary);
+    margin:      0 0 var(--space-2);
+  }
+
+  .cs-form-body {
+    font-size:   var(--text-sm);
+    color:       var(--text-secondary);
+    line-height: var(--leading-normal);
+    margin:      0;
+  }
+
+  /* Score dots */
+  .cs-dots-wrap {
+    display:       flex;
+    align-items:   center;
+    gap:           var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+
+  .cs-dots {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-2);
+  }
+
+  .cs-score-readout {
+    font-family: var(--font-mono);
+    font-size:   var(--text-lg);
+    font-weight: var(--weight-bold);
+    color:       var(--gold);
+  }
+
+  .cs-score-denom-sm {
+    font-size: var(--text-sm);
+    color:     var(--gold-dim);
+  }
+
+  /* Weight meter */
+  .cs-meter-wrap {
+    height:        24px;
+    display:       flex;
+    align-items:   flex-end;
+    margin-bottom: var(--space-4);
+  }
+
+  .cs-meter { height: 100%; }
+
+  /* Form fields */
+  .cs-label {
+    display:        block;
+    font-size:      var(--text-xs);
+    color:          var(--text-tertiary);
+    letter-spacing: var(--tracking-wide);
+    margin-bottom:  var(--space-2);
+  }
+
+  .cs-textarea {
+    width:         100%;
+    background:    var(--surface-raised);
+    border:        1px solid var(--border-interactive);
+    border-radius: var(--radius-sm);
+    padding:       var(--space-3);
+    font-size:     var(--text-sm);
+    color:         var(--text-primary);
+    resize:        vertical;
+    outline:       none;
+    font-family:   inherit;
+    line-height:   var(--leading-normal);
+    transition:    border-color var(--motion-duration-fast) var(--motion-easing-standard);
+    box-sizing:    border-box;
+    margin-bottom: var(--space-6);
+  }
+
+  .cs-textarea:focus { border-color: var(--border-focus); }
+
+  /* Seal button */
+  .cs-btn-wrap {
+    display:        flex;
+    flex-direction: column;
+    align-items:    center;
+    gap:            var(--space-2);
+  }
+
+  .cs-seal-btn {
+    position:    relative;
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-3);
+    background:  var(--gold-bg);
+    border:      1px solid var(--gold-border);
+    border-radius: var(--radius-md);
+    padding:     var(--space-3) var(--space-6);
+    min-height:  52px;
+    cursor:      pointer;
+    transition:
+      background   var(--motion-duration-fast) var(--motion-easing-standard),
+      border-color var(--motion-duration-fast) var(--motion-easing-standard),
+      box-shadow   var(--motion-duration-base) var(--motion-easing-spring);
+  }
+
+  .cs-seal-btn:hover {
+    background:   var(--gold-hover);
+    border-color: color-mix(in oklch, var(--gold) 50%, transparent);
+    box-shadow:   0 0 0 1px var(--gold-border);
+  }
+
+  .cs-arc-svg {
+    flex-shrink: 0;
+    opacity:     0.6;
+  }
+
+  .cs-arc-track {
+    fill:         none;
+    stroke:       var(--border-subtle);
+    stroke-width: 2;
+  }
+
+  .seal-arc    { stroke-width: 2; }
+
+  .cs-btn-label {
+    font-size:      var(--text-xs);
+    font-weight:    var(--weight-bold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color:          var(--gold);
+  }
+
+  .cs-spinner { flex-shrink: 0; }
+
+  .cs-error {
+    display:    none;
+    font-size:  var(--text-xs);
+    color:      var(--verdict-wrong);
+    text-align: center;
+  }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    .conviction-seal--ceremony { padding: var(--space-5); }
+    .cs-dots                   { flex-wrap: wrap; }
+  }
+</style>
+
+<script>
+  import { createCeremony }         from '../lib/seal-ceremony';
+  import type { SealPhase, ReceiptData } from '../lib/seal-ceremony';
+  import { ceremonyStart, ceremonyAbort, ceremonyResolve, ceremonyComplete } from '../lib/ceremony-atmosphere';
+  import {
+    initSealSound, playScoreSelect, playSealPress,
+    playSealLock, playNotarizeChime, playReceiptReveal, playSealError,
+  } from '../lib/client/seal-sound';
+  import { hapticForEvent } from '../lib/client/seal-haptic';
+
+  /** Map seal phase transitions to atmosphere lifecycle. */
+  function handleCeremonyAtmosphere(phase: SealPhase, slug: string, active: { v: boolean }): void {
+    if (phase === 2) { active.v = true; ceremonyStart(slug); }
+    else if (phase === 4) {
+      active.v = false;
+      setTimeout(() => ceremonyResolve(slug), 300);
+      setTimeout(() => ceremonyComplete(slug), 3300); // restore neutral after receipt settles
+    }
+    else if (phase === 0 && active.v) { active.v = false; ceremonyAbort(slug); }
+  }
+
+  function initSealForm(container: HTMLElement): void {
+    const form       = container.querySelector<HTMLFormElement>('[data-seal-form]')!;
+    const dotsEl     = container.querySelector<HTMLElement>('[data-dots]')!;
+    const scoreInput = container.querySelector<HTMLInputElement>('[data-score-input]')!;
+    const scoreDisp  = container.querySelector<HTMLElement>('[data-score-display]')!;
+    const arc        = container.querySelector<SVGCircleElement>('[data-arc]')!;
+    const errorEl    = container.querySelector<HTMLElement>('[data-error]')!;
+    const receipt    = container.querySelector<HTMLElement>('[data-receipt]')!;
+    const stamp      = container.querySelector<HTMLElement>('[data-notarize-stamp]')!;
+    const cancelBtn  = container.querySelector<HTMLButtonElement>('[data-cancel-btn]')!;
+    const slug       = container.dataset.slug!;
+
+    let score    = 5;
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Boxed boolean — mutated by handleCeremonyAtmosphere across closures.
+    const active = { v: false };
+
+    // Warm AudioContext on first user touch — satisfies browser autoplay policy.
+    // Must happen before any phase sound fires. { once: true } ensures single call.
+    container.addEventListener('pointerdown', initSealSound, { once: true });
+
+    const ceremony = createCeremony(slug, {
+      onPhase: (phase) => {
+        container.dataset.sealPhase = String(phase);
+        container.style.setProperty('--seal-phase', String(phase));
+        // --seal-weight: pre-computed float for weight meter (avoids calc on string 'notarize')
+        const weight = phase === 'notarize' ? '0.875' : String((phase as number) / 4);
+        container.style.setProperty('--seal-weight', weight);
+        arc.classList.toggle('is-filling', phase === 2);
+        handleCeremonyAtmosphere(phase, slug, active);
+        // Sensory layer: sound + haptic observers — never drive state, only react to it.
+        if (phase === 2)          { playSealPress();    hapticForEvent('PRESS');    }
+        else if (phase === 3)     { playSealLock();     hapticForEvent('LOCK');     }
+        else if (phase === 4)     { playReceiptReveal(); hapticForEvent('RECEIPT'); }
+      },
+      onNotarize: (data) => {
+        populateNotarize(stamp, data);
+        playNotarizeChime();
+        hapticForEvent('NOTARIZE');
+      },
+      onReceipt:  (data) => {
+        populateReceipt(receipt, data, slug);
+        populateShareCard(container, data);
+        container.dispatchEvent(new CustomEvent('conviction:sealed', { bubbles: true, detail: { slug } }));
+      },
+      onError:    (msg)  => {
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+        playSealError();
+        hapticForEvent('ERROR');
+      },
+      onAlreadySealed: () => showAlreadySealed(errorEl),
+      onCancel:   () => { /* clean slate — atmosphere already restored by onPhase(0) */ },
+    });
+
+    cancelBtn.addEventListener('click', () => ceremony.cancel());
+
+    // Escape key: abort only when not locked (phase < 3 = POST not yet in flight).
+    const onEscape = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && ceremony.phase() < 3 && active.v) ceremonyAbort(slug);
+    };
+    // Navigation: unconditional cleanup — prevents gold atmosphere leaking across pages.
+    const onNavigation = (): void => { if (active.v) { active.v = false; ceremonyAbort(slug); } };
+
+    document.addEventListener('keydown', onEscape);
+    document.addEventListener('astro:before-preparation', onNavigation);
+
+    function setScore(n: number): void {
+      score = n;
+      scoreInput.value = String(n);
+      scoreDisp.textContent = String(n);
+      dotsEl.querySelectorAll<HTMLElement>('.seal-dot').forEach((dot, i) => {
+        dot.classList.toggle('is-filled', i < n);
+        dot.setAttribute('aria-pressed', String(i < n));
+      });
+    }
+
+    function startHold(): void {
+      ceremony.press();
+      holdTimer = setTimeout(() => submitForm(), 600);
+    }
+
+    function cancelHold(): void {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      ceremony.release();
+    }
+
+    async function submitForm(): Promise<void> {
+      holdTimer = null;
+      const note = (form.querySelector<HTMLTextAreaElement>('textarea'))!.value.trim();
+      if (!note) { errorEl.textContent = 'Author note is required'; errorEl.style.display = 'block'; ceremony.release(); return; }
+      errorEl.style.display = 'none';
+      await ceremony.submit(score, note);
+    }
+
+    dotsEl.addEventListener('click', (e) => {
+      const dot = (e.target as HTMLElement).closest<HTMLElement>('.seal-dot');
+      if (!dot?.dataset.value) return;
+      const val = Number(dot.dataset.value) as 1|2|3|4|5|6|7|8|9|10;
+      setScore(val);
+      playScoreSelect(val);
+    });
+
+    const btn = container.querySelector<HTMLButtonElement>('[data-seal-btn]')!;
+    btn.addEventListener('mousedown',  startHold);
+    btn.addEventListener('touchstart', startHold, { passive: true });
+    btn.addEventListener('mouseup',    cancelHold);
+    btn.addEventListener('mouseleave', cancelHold);
+    btn.addEventListener('touchend',   cancelHold);
+
+    form.addEventListener('submit', (e) => { e.preventDefault(); submitForm(); });
+
+    container.querySelector<HTMLElement>('[data-seal-btn]')
+      ?.addEventListener('mouseenter', () => ceremony.hover());
+    container.querySelector<HTMLElement>('[data-seal-btn]')
+      ?.addEventListener('mouseleave', () => ceremony.unhover());
+
+    setScore(5);
+  }
+
+  /** Populates the phase 3.5 NotarizeStamp shell with live seal data. */
+  function populateNotarize(el: HTMLElement, data: ReceiptData): void {
+    const tsEl    = el.querySelector<HTMLElement>('[data-ns-ts]')!;
+    const hashEl  = el.querySelector<HTMLElement>('[data-ns-hash]')!;
+    const labelEl = el.querySelector<HTMLElement>('[data-ns-label]')!;
+    const dt      = new Date(data.sealedAt);
+    tsEl.textContent  = dt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
+    tsEl.setAttribute('datetime', dt.toISOString());
+    hashEl.textContent  = data.hash.slice(0, 32) + '…';
+    // Null tst_token path: ceremony still plays, label explains state — no JS error.
+    labelEl.textContent = data.tst_token ? 'NOTARIZED' : 'Anchoring locally…';
+  }
+
+  /** 409 response — sealed already is good news, not an error. Show gold informative text. */
+  function showAlreadySealed(el: HTMLElement): void {
+    el.textContent = '✓ Already sealed — conviction is locked.';
+    el.style.cssText = 'display:block; color: var(--gold-dim);';
+  }
+
+  function populateReceipt(el: HTMLElement, data: ReceiptData, slug: string): void {
+    const dateEl      = el.querySelector<HTMLElement>('[data-receipt-date]')!;
+    const scoreEl     = el.querySelector<HTMLElement>('[data-receipt-score]')!;
+    const hashEl      = el.querySelector<HTMLElement>('[data-receipt-hash]')!;
+    const anchorRow   = el.querySelector<HTMLElement>('[data-receipt-anchor-row]')!;
+    const anchorEl    = el.querySelector<HTMLAnchorElement>('[data-receipt-anchor]')!;
+    const tstNoteEl   = el.querySelector<HTMLElement>('[data-receipt-tst-note]')!;
+    const downloadBtn = el.querySelector<HTMLButtonElement>('[data-receipt-download]')!;
+    const auditLink   = el.querySelector<HTMLAnchorElement>('[data-receipt-audit]')!;
+
+    dateEl.textContent  = new Date(data.sealedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    (dateEl as HTMLTimeElement).dateTime = new Date(data.sealedAt).toISOString();
+    scoreEl.textContent = String(data.score);
+    hashEl.textContent  = data.hash;
+    tstNoteEl.textContent = data.tst_token ? 'Notarized via RFC 3161' : 'Local anchor (TSA unavailable)';
+    auditLink.href      = `/audit/${slug}`;
+
+    if (data.anchorUrl) {
+      anchorEl.href = data.anchorUrl;
+      anchorRow.style.display = '';
+    }
+
+    wireDownload(downloadBtn, data);
+  }
+
+  /** Populates the Phase 5 share card score slot — title is SSR-baked. */
+  function populateShareCard(container: HTMLElement, data: ReceiptData): void {
+    const card    = container.querySelector<HTMLElement>('[data-share-card]');
+    const scoreEl = card?.querySelector<HTMLElement>('[data-share-score]');
+    if (scoreEl) scoreEl.textContent = String(data.score);
+  }
+
+  /** Create a Blob URL download from the full receipt payload. */
+  function wireDownload(btn: HTMLButtonElement, data: ReceiptData): void {
+    const json  = JSON.stringify(data, null, 2);
+    const blob  = new Blob([json], { type: 'application/json' });
+    const url   = URL.createObjectURL(blob);
+    const fname = `conviction-receipt-${data.postSlug ?? 'seal'}.json`;
+
+    btn.addEventListener('click', () => {
+      const a = Object.assign(document.createElement('a'), { href: url, download: fname });
+      a.click();
+    }, { once: false });
+  }
+
+  function revealForAdmin(container: HTMLElement): void {
+    const notice = container.querySelector<HTMLElement>('[data-unsealed-notice]');
+    const form   = container.querySelector<HTMLElement>('[data-seal-form]');
+    if (notice) notice.style.display = 'none';
+    if (form)   form.style.display   = '';
+  }
+
+  function isAdminCookiePresent(): boolean {
+    return document.cookie.includes('admin_token=');
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-slug][data-seal-phase]').forEach(el => {
+    // Reveal form for admins on post pages
+    if (el.classList.contains('conviction-seal--ceremony') && !el.classList.contains('conviction-seal--admin')) {
+      if (isAdminCookiePresent()) revealForAdmin(el);
+    }
+    initSealForm(el);
+  });
+</script>

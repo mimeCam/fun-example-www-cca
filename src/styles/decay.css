@@ -24,8 +24,8 @@
   box-shadow:
     0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
     color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent, oklch(80% 0.22 80))) calc(var(--decay-shadow-alpha, 0.22) * 100%), transparent),
-    0 2px 8px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, calc(0.08 * var(--decay-opacity, 1)));
+    0 2px 8px oklch(0% 0 0 / 0.12),
+    inset 0 1px 0 oklch(100% 0 0 / calc(0.08 * var(--decay-opacity, 1)));
   transition:
     opacity       var(--motion-drift-duration)    var(--motion-drift-easing),
     filter        var(--motion-drift-duration)    var(--motion-drift-easing),

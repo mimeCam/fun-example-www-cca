@@ -44,8 +44,8 @@
 .cs-dots:has(.seal-dot:nth-child(8):hover)  .seal-dot:nth-child(-n+8):not(.is-filled),
 .cs-dots:has(.seal-dot:nth-child(9):hover)  .seal-dot:nth-child(-n+9):not(.is-filled),
 .cs-dots:has(.seal-dot:nth-child(10):hover) .seal-dot:nth-child(-n+10):not(.is-filled) {
-  background:   rgba(245, 166, 35, 0.40);
-  border-color: rgba(245, 166, 35, 0.40);
+  background:   color-mix(in oklch, var(--gold) 40%, transparent);
+  border-color: color-mix(in oklch, var(--gold) 40%, transparent);
 }
 
 /* ── Weight meter: interpolated via --seal-weight (set by JS, avoids calc on string phase) ── */
@@ -134,8 +134,8 @@
 }
 
 @keyframes hash-ink-dry {
-  from { color: rgba(255, 255, 255, 0.22); }        /* --text-ghost */
-  to   { color: rgba(245, 166, 35, 0.70); }         /* --gold-dim */
+  from { color: var(--text-ghost); }
+  to   { color: var(--gold-dim); }
 }
 
 .seal-receipt-hash {
@@ -154,7 +154,7 @@
 
 [data-atmosphere="gold"] .seal-weight-meter {
   background: var(--gold);
-  box-shadow: 0 0 6px rgba(245, 166, 35, 0.35);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--gold) 35%, transparent);
   transition: box-shadow var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
@@ -171,7 +171,7 @@
   text-align:     center;
   border:         1px solid var(--gold-border);
   border-radius:  var(--radius-lg);
-  background:     rgba(245, 166, 35, 0.04);
+  background:     var(--gold-bg);
   margin-top:     var(--space-4);
 }
 
@@ -260,8 +260,8 @@
 /* the border glows with a soft conviction-gold halo.                 */
 
 [data-atmosphere="gold"].seal-ceremony {
-  border-color: var(--gold-border-strong, rgba(245, 166, 35, 0.35));
-  box-shadow:   var(--shadow-e3), 0 0 24px rgba(245, 166, 35, 0.06);
+  border-color: var(--gold-border-strong);
+  box-shadow:   var(--shadow-e3), 0 0 24px color-mix(in oklch, var(--gold) 6%, transparent);
 }
 
 /* ── Reduced motion: collapse to instant transitions ─────── */

@@ -305,7 +305,7 @@
 }
 
 .community-detail__body pre {
-  background: rgba(0, 0, 0, 0.35);
+  background: oklch(0% 0 0 / 0.35);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-4) var(--space-5);

@@ -521,6 +521,18 @@
   --dispute-upheld:     var(--color-dispute-upheld);
   --dispute-overturned: var(--color-dispute-overturned);
 
+  /* ── Conviction Seal Surface Tokens (Mike §2, Tanya §6.3 Phase 4) ──────────── */
+  /* --surface-sealed / --border-sealed: Phase 4 receipt background + ring.      */
+  /* Cool 280° hue = archived, permanent — distinct from warm gold ceremony.     */
+  /* --note-italic-color: italic aside text in sealed display (Tanya §10).       */
+  /* --gold-hover: 14% gold tint — hover backgrounds, never solid fills.         */
+  /* --gold-deep:  gradient terminus for bar-fill — darker, richer anchor.       */
+  --surface-sealed:    oklch(18% 0.025 280);
+  --border-sealed:     oklch(30% 0.04 280);
+  --note-italic-color: oklch(72% 0.008 0 / 0.88);
+  --gold-hover:        color-mix(in oklch, var(--gold) 14%, transparent);
+  --gold-deep:         color-mix(in oklch, var(--gold) 75%, oklch(30% 0.10 55));
+
   /* ── Sound Toggle Tokens (SealSoundToggle.astro) ─────────────────────────── */
   /* Isolated: only SealSoundToggle reads these. Pull from existing primitives.  */
   --seal-sound-toggle-color-off: var(--text-ghost);

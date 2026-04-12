@@ -49,9 +49,9 @@
 /* ── Correct pill: highlight on fresh correct verdict ────────────────────── */
 
 @keyframes cm-correct-pop {
-  0%   { background: rgba(80, 200, 100, 0.1); }
-  40%  { background: rgba(80, 200, 100, 0.28); }
-  100% { background: rgba(80, 200, 100, 0.1); }
+  0%   { background: color-mix(in oklch, var(--clr-green-400) 10%, transparent); }
+  40%  { background: color-mix(in oklch, var(--clr-green-400) 28%, transparent); }
+  100% { background: color-mix(in oklch, var(--clr-green-400) 10%, transparent); }
 }
 
 .conviction-meter--verdict-correct [data-cm-correct] {
