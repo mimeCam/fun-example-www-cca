@@ -177,6 +177,24 @@ export function shadowAlphaFromDecay(f: number): number {
   return +((1 - f) * 0.18).toFixed(3);
 }
 
+/** Sepia tint: 0 (fresh) → 0.15 (ancient). Vintage age tone — Tanya §4.5. */
+export function sepiaFromDecay(f: number): number {
+  return +(f * 0.15).toFixed(3);
+}
+
+/**
+ * Grain overlay opacity per Tanya §3 staged spec.
+ * Staged — not continuous — to give each band a clearly distinct visual identity.
+ * Stage 1 (0–0.2): invisible. Stage 2 (0.2–0.4): faint. … Stage 5 (0.8–1.0): dense.
+ */
+export function grainFromDecay(f: number): number {
+  if (f < 0.2) return 0;
+  if (f < 0.4) return 0.04;
+  if (f < 0.6) return 0.09;
+  if (f < 0.8) return 0.14;
+  return 0.18;
+}
+
 // ---------------------------------------------------------------------------
 // Time bands — homepage grouping
 // ---------------------------------------------------------------------------
@@ -218,6 +236,9 @@ export interface DecayCSSVars {
   '--decay-opacity': string;
   '--decay-blur': string;
   '--decay-saturation': string;
+  '--decay-sepia': string;
+  '--decay-grain': string;
+  '--decay-factor': string;
   '--decay-shadow-y': string;
   '--decay-shadow-spread': string;
   '--decay-shadow-alpha': string;
@@ -226,12 +247,15 @@ export interface DecayCSSVars {
 /** Returns CSS custom properties for inline style binding. */
 export function decayCSSVars(factor: number): DecayCSSVars {
   return {
-    '--decay-opacity': String(opacityFromDecay(factor)),
-    '--decay-blur': `${blurFromDecay(factor)}px`,
-    '--decay-saturation': String(saturationFromDecay(factor)),
-    '--decay-shadow-y': `${shadowYFromDecay(factor)}px`,
+    '--decay-opacity':       String(opacityFromDecay(factor)),
+    '--decay-blur':          `${blurFromDecay(factor)}px`,
+    '--decay-saturation':    String(saturationFromDecay(factor)),
+    '--decay-sepia':         String(sepiaFromDecay(factor)),
+    '--decay-grain':         String(grainFromDecay(factor)),
+    '--decay-factor':        factor.toFixed(4),
+    '--decay-shadow-y':      `${shadowYFromDecay(factor)}px`,
     '--decay-shadow-spread': `${shadowSpreadFromDecay(factor)}px`,
-    '--decay-shadow-alpha': String(shadowAlphaFromDecay(factor)),
+    '--decay-shadow-alpha':  String(shadowAlphaFromDecay(factor)),
   };
 }
 
@@ -329,7 +353,9 @@ export function decayEngineClientScript(): string {
     el.style.setProperty('--decay-opacity',Math.max(.35,1-f*.65));
     el.style.setProperty('--decay-blur',(f*1.5).toFixed(2)+'px');
     el.style.setProperty('--decay-saturation',(1-f*.4).toFixed(2));
-    el.style.setProperty('--decay-sepia',(f*.15).toFixed(3));  /* Tanya §4.5 */
+    el.style.setProperty('--decay-sepia',(f*.15).toFixed(3));
+    el.style.setProperty('--decay-grain',f<.2?'0':f<.4?'.04':f<.6?'.09':f<.8?'.14':'.18');
+    el.style.setProperty('--decay-factor',f.toFixed(4));
     el.style.setProperty('--decay-shadow-y',((1-f)*8).toFixed(1)+'px');
     el.style.setProperty('--decay-shadow-spread',((1-f)*32).toFixed(1)+'px');
     el.style.setProperty('--decay-shadow-alpha',((1-f)*.18).toFixed(3));
@@ -431,13 +457,26 @@ export function _testDecayEngine(): void {
   console.assert(readingBonus(30) > 0, 'one interval has bonus');
   console.assert(readingBonus(30) < 0.08, 'one interval below cap');
 
+  // Sepia + grain + factor
+  console.assert(sepiaFromDecay(0) === 0, 'fresh sepia');
+  console.assert(sepiaFromDecay(1) === 0.15, 'fossil sepia');
+  console.assert(grainFromDecay(0.1) === 0, 'stage1 grain=0');
+  console.assert(grainFromDecay(0.3) === 0.04, 'stage2 grain');
+  console.assert(grainFromDecay(0.5) === 0.09, 'stage3 grain');
+  console.assert(grainFromDecay(0.7) === 0.14, 'stage4 grain');
+  console.assert(grainFromDecay(0.9) === 0.18, 'stage5 grain');
+
   // CSS vars
   const css = decayCSSVars(0.5);
   console.assert(css['--decay-opacity'] === String(opacityFromDecay(0.5)), 'css opacity');
+  console.assert(css['--decay-grain'] === String(grainFromDecay(0.5)), 'css grain');
+  console.assert(css['--decay-sepia'] === String(sepiaFromDecay(0.5)), 'css sepia');
+  console.assert(css['--decay-factor'] === (0.5).toFixed(4), 'css factor');
 
   // Style string
   const style = decayStyleString(0);
   console.assert(style.includes('--decay-opacity:1'), 'style string');
+  console.assert(style.includes('--decay-grain:0'), 'style grain fresh');
 
   // Risen badge
   const now = new Date('2026-04-06');

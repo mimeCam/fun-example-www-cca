@@ -4,6 +4,39 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v88 — Decay Engine Sepia/Grain/Factor + Design Token Gap-Fill (2026-04-12)
+#   Sprint: Visual polish pass — decay system gains three new CSS vars (sepia,
+#     grain, factor) wired consistently across SSR and client paths; design token
+#     system gap-filled with stage-specific grain, blur, border, seal-glow,
+#     batting-average, erosion-bar, tombstone, and presence-dot tokens;
+#     SealReceipt gains a ⬡ notarize watermark; seal-ceremony phase 3 becomes
+#     a fixed full-screen modal on narrow viewports. Pure UIX — zero infra changes.
+#   Modified files:
+#     src/lib/decay-engine.ts — sepiaFromDecay(): 0→0.15 linear (Tanya §4.5);
+#       grainFromDecay(): staged 5-band classifier (0/0.04/0.09/0.14/0.18 per
+#       Tanya §3); decayCSSVars() extended with --decay-sepia, --decay-grain,
+#       --decay-factor; client script IIFE sets all three in live-update loop;
+#       DecayCSSVars interface updated; _testDecayEngine() assertions added.
+#     src/lib/live-decay.ts — sepia() + grain() private helpers added; patchCard()
+#       now sets --decay-sepia, --decay-grain, --decay-factor alongside existing
+#       opacity/blur/saturation/shadow vars; client script IIFE updated to match.
+#     src/styles/tokens.css — --decay-factor default (0); 4 grain-stage tokens
+#       (fading/aged/endangered/fossil); 2 blur-stage tokens; 1 aged border token;
+#       5 seal-glow tokens (idle/hover/press/lock/receipt); 3 ba-locked tokens;
+#       2 erosion-bar tokens; 3 tombstone tokens; 3 presence-dot tokens.
+#     src/styles/seal-ceremony.css — phase 3 lock overlay becomes position:fixed /
+#       inset:0 / backdrop-blur modal on max-width:768px (Tanya §2 P0); enlarged
+#       lock icon area; cancel button responsive sizing.
+#     src/components/SealReceipt.astro — position:relative + overflow:hidden on
+#       .sr-root; ::before pseudo adds ⬡ (U+2B21) watermark at bottom-right
+#       (font-size 4.5rem, opacity 0.12, rotate −12°, pointer-events none);
+#       .sr-root > * { position:relative; z-index:1 } keeps content above mark.
+#     AGENTS.md — Recent Polish block updated with all four changes.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO
+#     unchanged. In-process cron runner (v82) continues to own ongoing scheduling.
+#     deploy.sh startup sequence unchanged (steps 1–8 identical to v87).
+#
 # Architecture v87 — Seal Share Card + Phase 5 ShareSealButton (2026-04-12)
 #   Sprint: Conviction loop closure — Phase 5 ShareSealButton rises below the
 #     SealReceipt after a successful seal; shareable 1200×630 OG conviction card

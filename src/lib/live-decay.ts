@@ -44,6 +44,19 @@ function saturation(f: number): string {
   return (1 - f * 0.4).toFixed(2);
 }
 
+function sepia(f: number): string {
+  return (f * 0.15).toFixed(3);
+}
+
+/** Staged grain per Tanya §3 — each band clearly distinct, not a linear ramp. */
+function grain(f: number): string {
+  if (f < 0.2) return '0';
+  if (f < 0.4) return '0.04';
+  if (f < 0.6) return '0.09';
+  if (f < 0.8) return '0.14';
+  return '0.18';
+}
+
 function shadowY(f: number): string {
   return `${((1 - f) * 8).toFixed(1)}px`;
 }
@@ -65,11 +78,14 @@ function patchCard(el: HTMLElement, nowMs: number, maxDays: number): void {
   const pubMs = new Date(el.dataset.pubDate!).getTime();
   const revivals = +(el.dataset.revivalCount || '0');
   const f = factor(pubMs, nowMs, revivals, maxDays);
-  el.style.setProperty('--decay-opacity', opacity(f));
-  el.style.setProperty('--decay-blur', blur(f));
-  el.style.setProperty('--decay-saturation', saturation(f));
-  el.style.setProperty('--decay-shadow-y', shadowY(f));
-  el.style.setProperty('--decay-shadow-spread', shadowSpread(f));
+  el.style.setProperty('--decay-opacity',      opacity(f));
+  el.style.setProperty('--decay-blur',         blur(f));
+  el.style.setProperty('--decay-saturation',   saturation(f));
+  el.style.setProperty('--decay-sepia',        sepia(f));
+  el.style.setProperty('--decay-grain',        grain(f));
+  el.style.setProperty('--decay-factor',       f.toFixed(4));
+  el.style.setProperty('--decay-shadow-y',     shadowY(f));
+  el.style.setProperty('--decay-shadow-spread',shadowSpread(f));
   el.style.setProperty('--decay-shadow-alpha', shadowAlpha(f));
 }
 
@@ -110,6 +126,9 @@ export function liveDecayScript(): string {
     e.style.setProperty('--decay-opacity',Math.max(.35,1-d*.65));
     e.style.setProperty('--decay-blur',(d*1.5).toFixed(2)+'px');
     e.style.setProperty('--decay-saturation',(1-d*.4).toFixed(2));
+    e.style.setProperty('--decay-sepia',(d*.15).toFixed(3));
+    e.style.setProperty('--decay-grain',d<.2?'0':d<.4?'.04':d<.6?'.09':d<.8?'.14':'.18');
+    e.style.setProperty('--decay-factor',d.toFixed(4));
     e.style.setProperty('--decay-shadow-y',((1-d)*8).toFixed(1)+'px');
     e.style.setProperty('--decay-shadow-spread',((1-d)*32).toFixed(1)+'px');
     e.style.setProperty('--decay-shadow-alpha',((1-d)*.18).toFixed(3))}

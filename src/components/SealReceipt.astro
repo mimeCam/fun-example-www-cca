@@ -158,6 +158,8 @@
   /* ── Root: visual shell ──────────────────────────────────────────── */
 
   .sr-root {
+    position:      relative;               /* contain the absolute stamp watermark */
+    overflow:      hidden;
     background:    var(--surface-raised);
     border:        1px solid var(--gold-border);
     border-left:   3px solid rgba(245, 166, 35, 0.55);
@@ -165,6 +167,32 @@
     padding:       var(--space-5) var(--space-6);
     margin-top:    var(--space-4);
     font-variant-numeric: tabular-nums;       /* fixed-width digits on all numbers */
+  }
+
+  /* ── NotarizeStamp watermark — Tanya §4 Phase 4 ──────────────────── */
+  /* Positioned beneath the text like a real notary stamp. Not decorative. */
+  /* Communicates authenticity at a glance — the ⬡ is the conviction mark. */
+
+  .sr-root::before {
+    content:        '⬡';
+    position:       absolute;
+    bottom:         var(--space-3);
+    right:          var(--space-4);
+    font-size:      4.5rem;
+    line-height:    1;
+    color:          var(--gold);
+    opacity:        0.12;
+    transform:      rotate(-12deg);
+    pointer-events: none;
+    user-select:    none;
+    z-index:        0;
+  }
+
+  /* ── Content stacking: all children above watermark ─────────── */
+
+  .sr-root > * {
+    position: relative;
+    z-index:  1;
   }
 
   /* ── Header ─────────────────────────────────────────────────── */

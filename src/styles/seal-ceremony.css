@@ -210,6 +210,36 @@
   outline-offset: 2px;
 }
 
+/* ── Mobile phase 3 full-screen takeover — Tanya §2 P0 ────── */
+/* On narrow viewports the lock overlay becomes a fixed modal.  */
+/* Nothing competes for attention during the irreversible act.  */
+
+@media (max-width: 768px) {
+  [data-seal-phase="3"] .seal-lock-overlay {
+    position:       fixed;
+    inset:          0;
+    z-index:        var(--z-modal);
+    border-radius:  0;
+    border:         none;
+    background:     oklch(9% 0.01 50 / 0.97);
+    backdrop-filter: blur(8px);
+    margin:         0;
+    padding:        var(--space-10) var(--space-6);
+    justify-content: center;
+  }
+
+  /* Lock icon: enlarged for full-screen ceremony */
+  [data-seal-phase="3"] .seal-lock-overlay .seal-irrev-notice {
+    font-size: var(--text-sm);
+    max-width:  32ch;
+  }
+
+  [data-seal-phase="3"] .seal-lock-overlay .seal-cancel-btn {
+    font-size: var(--text-sm);
+    padding: var(--space-3) var(--space-8);
+  }
+}
+
 /* ── Reduced motion: collapse to instant transitions ─────── */
 
 @media (prefers-reduced-motion: reduce) {
