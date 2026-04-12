@@ -306,6 +306,18 @@
   --stance-disagree-border: color-mix(in oklch, var(--clr-red-500) 35%, transparent);
   --stance-disagree-color:  oklch(71% 0.15 25);  /* light red — honest, not punitive */
 
+  /* ── Stance agree semantic tokens — emerald (aligned conviction) ─────── */
+  /* Elon: token gap diagnosis · Tanya §1: emerald 163 ≠ verdict-true 145 */
+  --stance-agree-bg:     color-mix(in oklch, var(--clr-emerald-500) 10%, transparent);
+  --stance-agree-border: color-mix(in oklch, var(--clr-emerald-500) 35%, transparent);
+  --stance-agree-color:  oklch(72% 0.15 163);   /* light emerald — honest assent   */
+
+  /* ── Stance torn semantic tokens — amber (suspended judgment) ────────── */
+  /* Amber 58 = pause, consideration, honest doubt — not crisis, not gold   */
+  --stance-torn-bg:     color-mix(in oklch, var(--clr-amber-500) 10%, transparent);
+  --stance-torn-border: color-mix(in oklch, var(--clr-amber-500) 35%, transparent);
+  --stance-torn-color:  oklch(82% 0.14 58);     /* light amber — uncertain, not weak */
+
   /* ── Extended Shadow System (Tanya §13) ────────────────────────────── */
   /* Conviction ceremony: the act of sealing has elevation                */
   --shadow-seal-ceremony:

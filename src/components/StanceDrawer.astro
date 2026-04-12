@@ -149,7 +149,7 @@ const { slug } = Astro.props;
     background: var(--surface-modal);
     border: 1px solid var(--border-light);
     border-bottom: none;
-    border-radius: 12px 12px 0 0;
+    border-radius: var(--radius-drawer) var(--radius-drawer) 0 0;
     box-shadow: var(--shadow-drawer);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -212,7 +212,7 @@ const { slug } = Astro.props;
   }
 
   .stance-question {
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
@@ -274,33 +274,56 @@ const { slug } = Astro.props;
     transform: translateY(-1px);
   }
 
+  /* Neutral fallback — a selected stance that needs no semantic hue override */
   .stance-btn[aria-pressed="true"] {
-    background: var(--gold-bg-strong);
-    border-color: var(--gold-border-strong);
-    color: var(--stance-torn);
+    background: var(--surface-hover);
+    border-color: var(--border-interactive-hover);
+    color: var(--text-primary);
   }
 
-  .stance-btn[data-stance="agree"][aria-pressed="true"] {
-    background: oklch(25% 0.08 185 / 0.15);
-    border-color: oklch(68% 0.14 185 / 0.45);
-    color: oklch(68% 0.14 185);
+  /* Stance-specific overrides — specificity 0,3,0 beats fallback 0,2,0 cleanly */
+  .stance-choices [data-stance="agree"][aria-pressed="true"] {
+    background: var(--stance-agree-bg);
+    border-color: var(--stance-agree-border);
+    color: var(--stance-agree-color);
   }
 
-  .stance-btn[data-stance="disagree"][aria-pressed="true"] {
+  .stance-choices [data-stance="torn"][aria-pressed="true"] {
+    background: var(--stance-torn-bg);
+    border-color: var(--stance-torn-border);
+    color: var(--stance-torn-color);
+  }
+
+  .stance-choices [data-stance="disagree"][aria-pressed="true"] {
     background: var(--stance-disagree-bg);
     border-color: var(--stance-disagree-border);
     color: var(--stance-disagree-color);
   }
 
-  .stance-btn-glyph { font-size: 1.1rem; }
-
-  /* ── Conviction slider — hidden until stance selected ───────── */
-  .stance-slider-row {
-    padding: 0 1rem 0.6rem;
-    display: none;
+  /* Glyph breathes with selection — Tanya §1 micro-animation */
+  .stance-btn-glyph {
+    font-size: 1.1rem;
+    transition: transform var(--motion-snap-duration) var(--motion-snap-easing);
   }
 
-  .stance-slider-row[data-visible] { display: block; }
+  .stance-btn[aria-pressed="true"] .stance-btn-glyph { transform: scale(1.15); }
+
+  /* ── Conviction slider — fades in after stance selected ────── */
+  /* max-height transition avoids layout jump; no JS change needed */
+  .stance-slider-row {
+    padding: 0 1rem 0.6rem;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      max-height var(--motion-flow-duration) var(--motion-flow-easing),
+      opacity    var(--motion-flow-duration) var(--motion-flow-easing);
+  }
+
+  .stance-slider-row[data-visible] {
+    max-height: 56px;
+    opacity: 1;
+  }
 
   .stance-slider-label {
     display: block;
