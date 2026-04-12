@@ -13,10 +13,16 @@
 // Haptics: pulse at 25 / 50 / 75 / 100% arc progress.
 // API:     POST /api/revive with AbortController. Dispatches revival:confirmed on success.
 //
-// Credits: Mike Koch (arch spec §1–§3), Tanya §4.3 choreography, DevBrain spring guide.
+// The revival spring RAF is intentionally independent — it fires only during the
+// hold gesture (~800ms) and self-cancels on completion. It hooks into
+// FrameScheduler's onPause callback instead of its own visibilitychange listener.
+//
+// Credits: Mike Koch (arch spec §1–§3, §RAF Master Frame Scheduler),
+//          Tanya §4.3 choreography, DevBrain spring guide.
 
 import { haptic, PRESS_START, TENSION_RAMP, PEAK_CONFIRM, CANCEL, HOLD_25, HOLD_50, HOLD_75 } from './haptics';
 import { triggerCascadeBloom } from './cascade-bloom';
+import scheduler from './frame-scheduler';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -133,10 +139,9 @@ export class RevivalOrchestrator {
     el.addEventListener('keyup',   e => { if (isAction(e)) this.onRelease(); });
   }
 
+  /** FrameScheduler onPause replaces the own visibilitychange listener. */
   private wireGlobal(): void {
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) this.onCancel();
-    });
+    scheduler.onPause(() => this.onCancel());
   }
 
   // ── Pointer / keyboard handlers ────────────────────────────────────────────

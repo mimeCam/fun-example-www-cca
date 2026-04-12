@@ -5,7 +5,9 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute, conviction ledger, OTS/RFC 3161, seal-phases, batting average, author-token, cron
-- `src/lib/client/` — heartbeat orchestrator (RAF → CSS vars), decay color lerp, sensory (audio/haptic)
+- `src/lib/client/frame-scheduler.ts` — master RAF singleton (priority buckets + FPS watchdog + Battery saver)
+- `src/lib/client/` — heartbeat orchestrator, revival orchestrator, decay color lerp, sensory (audio/haptic)
+- `src/components/FrameSchedulerProvider.astro` — bootstraps master RAF in `<head>`; must precede all animation islands
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/tokens.css` — master design token registry (single source of truth)

@@ -4,6 +4,53 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v102 — RAF Master Frame Scheduler (2026-04-12)
+#   Sprint: Consolidates competing animation loops into a single shared RAF via a
+#     priority-bucketed master scheduler singleton. HeartbeatOrchestrator migrated
+#     from its own RAF loop to FrameScheduler.register() (IMMEDIATE + THROTTLED
+#     buckets); epsilon-gated CSS var writes skip no-op frames (|Δintensity|<0.002,
+#     |Δfactor|<0.01). Color lerp promoted from IMMEDIATE (60fps) → THROTTLED
+#     (8fps), cutting style recalculations from ~60/s → ≤8/s on steady-state
+#     reading. RevivalOrchestrator keeps its own RAF for the short hold gesture
+#     (~800ms) but replaces its visibilitychange listener with scheduler.onPause().
+#     Guardrails: FPS watchdog (rolling 10-frame avg < 30fps → demote IMMEDIATE →
+#     THROTTLED, recover after 3s); Battery API saver mode (level < 20% → double
+#     all intervals); prefers-reduced-motion skips IMMEDIATE tasks; single
+#     visibilitychange listener pause/resumes all tasks; BACKGROUND tasks routed
+#     through requestIdleCallback. Pure UIX — zero infra changes.
+#   New files:
+#     src/lib/client/frame-scheduler.ts — FrameScheduler singleton factory;
+#       FramePriority const (IMMEDIATE 16ms / THROTTLED 120ms / LOW 5s /
+#       BACKGROUND 60s via rIC); register(id, fn, priority) → Unsubscribe; single
+#       RAF tick dispatches all due tasks per priority bucket; FPS watchdog (10-
+#       frame rolling avg, 3s recovery window); Battery API watcher (async,
+#       degrades gracefully on Safari/Firefox); requestIdleCallback routing for
+#       BACKGROUND tasks; onPause(cb) observer for external components; destroy()
+#       clears tasks + pauseCbs (used on astro:before-swap).
+#     src/components/FrameSchedulerProvider.astro — <head> bootstrap component;
+#       sets window.__frameScheduler = scheduler; wires astro:before-swap →
+#       destroy() and astro:after-swap → resume() for View Transitions
+#       compatibility; must precede any island that registers animation tasks.
+#   Modified files:
+#     src/layouts/BaseLayout.astro — imports FrameSchedulerProvider; inserts
+#       <FrameSchedulerProvider /> in <head> before <style set:html> to guarantee
+#       scheduler is ready before any island DOMContentLoaded handler fires.
+#     src/lib/client/heartbeat-orchestrator.ts — own RAF loop + own
+#       visibilitychange listener removed; start() calls scheduler.register() for
+#       two tasks (heartbeat-physics at IMMEDIATE, heartbeat-color at THROTTLED);
+#       stop() calls unsubAll(); fossil threshold now unregisters tasks (was:
+#       cancel RAF); INTENSITY_EPSILON (0.002) + COLOR_FACTOR_EPSILON (0.01)
+#       epsilon gates added to skip no-op CSS var writes.
+#     src/lib/client/revival-orchestrator.ts — own visibilitychange listener
+#       replaced with scheduler.onPause(() => this.onCancel()); RAF for hold-
+#       gesture arc animation unchanged (short-lived, self-cancels on completion).
+#     AGENTS.md — Recently Completed section added.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. In-process cron runner (v82) continues
+#     to own ongoing scheduling. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v101).
+#
 # Architecture v101 — Living Landing Hero (2026-04-12)
 #   Sprint: Visceral product demo in the first viewport — a synthetic "endangered"
 #     post (45 days old, maxDays=100, ~68% decay) breathes, pulses, and decays live

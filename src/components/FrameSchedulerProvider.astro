@@ -1,0 +1,45 @@
+---
+// src/components/FrameSchedulerProvider.astro
+// Initializes the master RAF scheduler and exposes it on window.__frameScheduler.
+//
+// PLACEMENT: Must be included inside <head> in BaseLayout.astro, before any
+// island component that registers animation tasks.
+//
+// The scheduler singleton is created when frame-scheduler.ts is first imported
+// (ES module caching guarantees all importers share the same instance). This
+// component ensures the scheduler is initialized early, sets the global bridge
+// for non-module consumers, and handles View Transitions cleanup.
+//
+// View Transitions lifecycle:
+//   astro:before-swap → scheduler.destroy() — stops all tasks, clears registry
+//   astro:after-swap  → scheduler.resume()  — re-enables the scheduler for
+//                        new-page islands to register their tasks
+//
+// Credits: Mike Koch (arch §FrameSchedulerProvider.astro, §Astro Island Ordering).
+---
+
+<script>
+  import scheduler from '../lib/client/frame-scheduler';
+
+  // Expose globally so non-module consumers can subscribe to pause events.
+  // Typed globally in frame-scheduler.ts via the FrameScheduler interface.
+  declare global {
+    interface Window {
+      __frameScheduler?: typeof scheduler;
+    }
+  }
+  window.__frameScheduler = scheduler;
+
+  // View Transitions: stop all tasks before the DOM swaps to prevent
+  // orphaned RAF handles and stale closure references in task functions.
+  document.addEventListener('astro:before-swap', () => {
+    scheduler.destroy();
+  });
+
+  // View Transitions: re-enable scheduler after the new DOM is in place.
+  // New-page island scripts register their tasks on DOMContentLoaded,
+  // which fires after astro:after-swap — so the scheduler is ready for them.
+  document.addEventListener('astro:after-swap', () => {
+    scheduler.resume();
+  });
+</script>

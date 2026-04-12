@@ -14,6 +14,7 @@ import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import SiteNav from '../components/SiteNav.astro';
 import OnboardingOverlay from '../components/OnboardingOverlay.astro';
+import FrameSchedulerProvider from '../components/FrameSchedulerProvider.astro';
 // Design system: tokens → motion → atmosphere → feature CSS layers
 import '../styles/global.css';
 import '../styles/atmosphere.css';
@@ -83,6 +84,8 @@ const showOnboarding = onboardingForced || !onboardingSeen;
     <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} jsonLd={jsonLd} />
     <meta name="decay-max-days" content="365" />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
+    <!-- Master RAF scheduler — must precede any island that registers animation tasks -->
+    <FrameSchedulerProvider />
     <style set:html={`:root {\n${cssString}\n}`} />
     <script set:html={sessionScript} />
     <script set:html={decayScript} />

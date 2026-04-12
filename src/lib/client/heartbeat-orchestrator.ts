@@ -9,17 +9,22 @@
 //   Release   (t 0.62→1.0): critically-damped exponential decay.
 //
 // BPM model: 72 (fresh) → 55 (fading) → 38 (critical) → 22 (ghost + jitter).
-// Fossil (≥0.97): RAF stops; static state written once. Stillness = death.
+// Fossil (≥0.97): unregisters from scheduler; static state written once.
 //
-// Circuit breaker: RAF suspends on tab-hidden; resumes phase-correct.
-// prefers-reduced-motion: static OKLCH color written once, RAF never starts.
+// Animation is coordinated by the master FrameScheduler — no own RAF loop.
+//   IMMEDIATE bucket  → waveform physics (epsilon-gated CSS var writes)
+//   THROTTLED bucket  → OKLCH color lerp  (writes only when factor Δ > 0.01)
 //
-// Credits: Mike Koch (arch spec §Decay Pulse Orchestrator), Tanya §2.1 (color),
-//          existing spring-easing.ts + decay-color-lerp.ts utilities.
+// prefers-reduced-motion: static OKLCH color written once, never registers.
+// visibilitychange: handled by FrameScheduler — no per-class listener.
+//
+// Credits: Mike Koch (arch spec §Decay Pulse Orchestrator, §RAF Master Frame Scheduler),
+//          Tanya §2.1 (color), spring-easing.ts + decay-color-lerp.ts utilities.
 
 import { springFrame }   from '../spring-easing';
 import { decayColorLerp } from './decay-color-lerp';
 import type { OklchColor } from './decay-color-lerp';
+import scheduler, { FramePriority } from './frame-scheduler';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -28,12 +33,14 @@ const BPM_FADING   = 55;
 const BPM_CRITICAL = 38;
 const BPM_GHOST    = 22;
 
-const FOSSIL_THRESHOLD = 0.97;  // DOD §4: no pulse above this
-const GHOST_THRESHOLD  = 0.85;  // arrhythmic jitter zone
+const FOSSIL_THRESHOLD    = 0.97;   // DOD §4: no pulse above this
+const GHOST_THRESHOLD     = 0.85;   // arrhythmic jitter zone
+const INTENSITY_EPSILON   = 0.002;  // skip physics write if |Δintensity| < this
+const COLOR_FACTOR_EPSILON = 0.01;  // skip color write if |Δfactor| < this
 
-const JITTER_EVERY  = 8;        // jitter every N beats
-const JITTER_BOUND  = 0.028;    // ±10° in normalized phase space
-const JITTER_DELTA  = 0.032;    // maximum per-event phase nudge
+const JITTER_EVERY = 8;        // jitter every N beats
+const JITTER_BOUND = 0.028;    // ±10° in normalized phase space
+const JITTER_DELTA = 0.032;    // maximum per-event phase nudge
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
@@ -43,9 +50,9 @@ function clamp01(v: number): number {
 
 function bpmForFactor(f: number): number {
   if (f >= FOSSIL_THRESHOLD) return 0;
-  if (f >= 0.75)  return BPM_GHOST;
-  if (f >= 0.50)  return BPM_CRITICAL;
-  if (f >= 0.25)  return BPM_FADING;
+  if (f >= 0.75) return BPM_GHOST;
+  if (f >= 0.50) return BPM_CRITICAL;
+  if (f >= 0.25) return BPM_FADING;
   return BPM_FRESH;
 }
 
@@ -109,48 +116,66 @@ function writeStaticState(factor: number): void {
 // ── Orchestrator class ────────────────────────────────────────────────────────
 
 export class HeartbeatOrchestrator {
-  private rafId: number | null = null;
-  private startTs = 0;
-  private phaseOffset = 0;
-  private beatCount = 0;
-  private prevTNorm = 0;
+  private startTs        = 0;
+  private phaseOffset    = 0;
+  private beatCount      = 0;
+  private prevTNorm      = 0;
+  private prevIntensity  = 0;
+  private prevColorFactor = -1;  // force first color write on register
+  private unsubAll: (() => void) | null = null;
   private factor: number;
   private readonly reducedMotion: boolean;
 
   constructor(private readonly cardEl: HTMLElement) {
-    this.factor = clamp01(parseFloat(cardEl.dataset.decayFactor ?? '0'));
+    this.factor       = clamp01(parseFloat(cardEl.dataset.decayFactor ?? '0'));
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   start(): void {
     if (this.reducedMotion) { writeStaticState(this.factor); return; }
     if (this.factor >= FOSSIL_THRESHOLD) { writeStaticState(this.factor); return; }
-    this.addVisibilityListener();
     this.startTs = performance.now();
-    this.schedule();
+    const u1 = scheduler.register('heartbeat-physics', ts => this.tickFrame(ts), FramePriority.IMMEDIATE);
+    const u2 = scheduler.register('heartbeat-color',   ts => this.tickColor(ts),   FramePriority.THROTTLED);
+    this.unsubAll = (): void => { u1(); u2(); };
   }
 
   stop(): void {
-    if (this.rafId !== null) cancelAnimationFrame(this.rafId);
-    this.rafId = null;
+    if (this.unsubAll) { this.unsubAll(); this.unsubAll = null; }
   }
 
-  private tick(now: number): void {
+  // ── IMMEDIATE frame handler — waveform physics ─────────────────────────────
+
+  /** Called every frame (~16ms) by FrameScheduler. Epsilon-gated CSS var writes. */
+  tickFrame(ts: DOMHighResTimeStamp): void {
     this.syncFactor();
-    if (this.factor >= FOSSIL_THRESHOLD) { writeStaticState(this.factor); return; }
-    const bpm    = bpmForFactor(this.factor);
-    const period = periodMs(bpm);
-    const tRaw   = (((now - this.startTs) % period) / period + this.phaseOffset) % 1;
-    const tNorm  = clamp01(tRaw);
+    if (this.factor >= FOSSIL_THRESHOLD) { this.stop(); writeStaticState(this.factor); return; }
+    const { intensity, bpm, tNorm } = this.computeWave(ts);
     this.checkBeatJitter(tNorm);
     this.prevTNorm = tNorm;
-    writePhysics(clamp01(heartbeatWave(tNorm)), bpm);
-    writeColor(decayColorLerp(this.factor));
-    this.schedule();
+    if (Math.abs(intensity - this.prevIntensity) > INTENSITY_EPSILON) {
+      writePhysics(intensity, bpm); this.prevIntensity = intensity;
+    }
   }
 
-  private schedule(): void {
-    this.rafId = requestAnimationFrame(now => this.tick(now));
+  // ── THROTTLED frame handler — color lerp ──────────────────────────────────
+
+  /** Called every ~120ms by FrameScheduler. Writes color only when factor changes. */
+  tickColor(_ts: DOMHighResTimeStamp): void {
+    if (Math.abs(this.factor - this.prevColorFactor) > COLOR_FACTOR_EPSILON) {
+      writeColor(decayColorLerp(this.factor));
+      this.prevColorFactor = this.factor;
+    }
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
+  private computeWave(ts: DOMHighResTimeStamp): { intensity: number; bpm: number; tNorm: number } {
+    const bpm    = bpmForFactor(this.factor);
+    const period = periodMs(bpm);
+    const tRaw   = (((ts - this.startTs) % period) / period + this.phaseOffset) % 1;
+    const tNorm  = clamp01(tRaw);
+    return { intensity: clamp01(heartbeatWave(tNorm)), bpm, tNorm };
   }
 
   /** Re-reads --decay-factor from the card element (live-decay updates it 1×/min). */
@@ -168,16 +193,6 @@ export class HeartbeatOrchestrator {
     if (this.beatCount % JITTER_EVERY !== 0) return;
     const delta = (Math.random() - 0.5) * JITTER_DELTA;
     this.phaseOffset = Math.max(-JITTER_BOUND, Math.min(JITTER_BOUND, this.phaseOffset + delta));
-  }
-
-  /** Suspends RAF when tab is hidden; resumes phase-correct on reveal. */
-  private addVisibilityListener(): void {
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { this.stop(); return; }
-      const period = periodMs(bpmForFactor(this.factor));
-      this.startTs = performance.now() - (this.phaseOffset * period);
-      this.schedule();
-    });
   }
 }
 
