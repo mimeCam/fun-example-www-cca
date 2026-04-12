@@ -4,6 +4,33 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v91 — Shadow Elevation System + Cold-Start Ghost Timeline (2026-04-12)
+#   Sprint: Pure UIX polish — spatial depth system (E1–E4 shadows) wired end-to-end;
+#     TrajectoryBlock.astro cold-state fully redesigned around anticipation + clarity.
+#   Modified files:
+#     src/styles/tokens.css — --shadow-e1/e2/e3/e4 four-level elevation token set;
+#       E1 resting (feed cards/chips), E2 interactive hover (card lift),
+#       E3 raised (SealCeremony panels, overlays), E4 ceremony-only (seal confirm +
+#       receipt gold ambient ring); OKLCH palette, zero hardcoded hex; compose with
+#       existing decay/age shadows.
+#     src/styles/card-base.css — .card-e3 / .card-e4 modifier classes added;
+#       E4 hover transform suppressed (ceremony surfaces don't lift — Tanya §1);
+#       fixes pre-existing bug where --shadow-e3 was referenced in SealCeremony
+#       and seal-ceremony.css but never defined in the token file.
+#     src/components/TrajectoryBlock.astro — cold-state completely redesigned per
+#       Tanya §3 anticipation spec; 3-row ghost timeline (blurred illustrative rows,
+#       shimmer animation, aria-hidden/role=presentation); floating CTA card with
+#       E3 shadow, gold border, stamp SVG icon, conviction copy, gold CTA button;
+#       ghost caption "Records shown are illustrative only"; CTA headline + body +
+#       href adapt based on sealedCount (0 → "Seal your first conviction" / else
+#       → "Await your first verdict").
+#     AGENTS.md — Shadow E1–E4 + cold-state ghost timeline logged as completed.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, GITHUB_PAT, DISPUTE_QUORUM_RATIO,
+#     HMAC_SECRET all unchanged. In-process cron runner (v82) continues to own
+#     ongoing scheduling. deploy.sh startup sequence unchanged (steps 1–8 identical
+#     to v90).
+#
 # Architecture v90 — Self-Service Conviction Seal (2026-04-12)
 #   Sprint: Authors can now seal their own posts without needing ADMIN_SECRET.
 #     A single-use HMAC capability token (15-min TTL) is issued via

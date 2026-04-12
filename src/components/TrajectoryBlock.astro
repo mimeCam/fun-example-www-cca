@@ -1,17 +1,15 @@
 ---
 // src/components/TrajectoryBlock.astro
-// Cold-start trajectory — shown when zero verdicts have resolved.
-// Three milestone cards: Posts Sealed · Days to First Verdict · Conviction Rate.
+// Cold-start empty state — shown when zero verdicts have resolved.
+// Design: anticipation with clarity. User sees a ghost of their future ledger,
+// overlaid with one unmistakable CTA. No confusion, no overwhelm, one action.
 //
-// Design principle: show trajectory, not emptiness. Like a seed packet showing
-// the flower it will become. (Tanya §15)
+// Layout:
+//   Ghost timeline zone  — 3 blurred fake rows (aria-hidden)
+//   CTA card             — E3 shadow, stamp icon, headline, body, button
+//   Ghost caption        — "Records shown are illustrative only"
 //
-// Replaces Acts II+III (ledger + sparkline) during cold state only.
-// Fades out and yields to ledger on first resolved verdict (SSE / page reload).
-//
-// No new tokens. Zero new CSS files. Uses only existing design system tokens.
-//
-// Credits: Tanya (UX §15 — cold-start trajectory spec), Mike (arch §2 cold trajectory)
+// Credits: Tanya (UX §3 cold-start spec), Mike (arch §cold-trajectory)
 
 import type { ColdTrajectory } from '../lib/track-record';
 
@@ -20,149 +18,308 @@ interface Props {
 }
 
 const { trajectory } = Astro.props;
+const { sealedCount } = trajectory;
 
-// Format the "opens" date from days remaining
-function formatOpenDate(daysToFirst: number): string {
-  const d = new Date(Date.now() + daysToFirst * 86_400_000);
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
+// CTA headline adapts based on whether the author has any seals yet
+const ctaHeadline = sealedCount === 0
+  ? 'Seal your first conviction'
+  : 'Await your first verdict';
 
-const { sealedCount, pendingCount, daysToFirst } = trajectory;
+const ctaBody = sealedCount === 0
+  ? 'Put your reputation on the line. Cryptographically timestamped. Undeniably yours. When verdicts resolve, your track record builds here.'
+  : 'Your sealed posts are aging toward a verdict. Each resolved prediction will appear here, scored and permanent.';
 
-const sealedSubline = sealedCount === 0
-  ? 'write & seal your first post'
-  : `${pendingCount} post${pendingCount === 1 ? '' : 's'} awaiting verdict`;
-
-const verdictValue  = daysToFirst !== null ? `~${daysToFirst}d` : '—';
-const verdictSubline = daysToFirst !== null
-  ? `Opens ${formatOpenDate(daysToFirst)}`
-  : sealedCount > 0 ? 'Eligible now' : 'First verdict window';
+const ctaLabel = sealedCount === 0 ? 'Write your first post →' : 'View sealed posts →';
+const ctaHref  = sealedCount === 0 ? '/' : '/blog';
 ---
 
-<div class="traj" aria-label="Track record trajectory">
-  <p class="traj-intro">
-    Verdicts take time — posts must age before outcomes become clear.
-    Here's where things stand.
-  </p>
+<div class="cold-root">
 
-  <div class="traj-cards">
+  <!-- Ghost timeline — blurred illustrative rows; aria-hidden to screen readers -->
+  <div class="ghost-zone" aria-hidden="true" role="presentation">
+    <div class="ghost-row">
+      <div class="ghost-col ghost-col--wide">
+        <div class="ghost-pill ghost-pill--sm"></div>
+        <div class="ghost-pill ghost-pill--lg"></div>
+      </div>
+      <div class="ghost-col ghost-col--narrow">
+        <div class="ghost-pill ghost-pill--md"></div>
+        <div class="ghost-pill ghost-pill--sm"></div>
+      </div>
+      <div class="ghost-col ghost-col--narrow">
+        <div class="ghost-chip ghost-chip--true"></div>
+      </div>
+    </div>
+    <div class="ghost-row">
+      <div class="ghost-col ghost-col--wide">
+        <div class="ghost-pill ghost-pill--sm"></div>
+        <div class="ghost-pill ghost-pill--xl"></div>
+      </div>
+      <div class="ghost-col ghost-col--narrow">
+        <div class="ghost-pill ghost-pill--md"></div>
+        <div class="ghost-pill ghost-pill--sm"></div>
+      </div>
+      <div class="ghost-col ghost-col--narrow">
+        <div class="ghost-chip ghost-chip--wrong"></div>
+      </div>
+    </div>
+    <div class="ghost-row">
+      <div class="ghost-col ghost-col--wide">
+        <div class="ghost-pill ghost-pill--sm"></div>
+        <div class="ghost-pill ghost-pill--md"></div>
+      </div>
+      <div class="ghost-col ghost-col--narrow">
+        <div class="ghost-pill ghost-pill--md"></div>
+        <div class="ghost-pill ghost-pill--sm"></div>
+      </div>
+      <div class="ghost-col ghost-col--narrow">
+        <div class="ghost-chip ghost-chip--pending"></div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Card 1: Posts Sealed -->
-    <div class="traj-card" aria-label="Posts sealed">
-      <span class="traj-label">Posts Sealed</span>
-      <span class:list={['traj-value', sealedCount === 0 && 'traj-value--empty']}>
-        {sealedCount > 0 ? sealedCount : '—'}
-      </span>
-      <span class="traj-subline">{sealedSubline}</span>
+  <!-- CTA card — floats above the ghost, E3 elevation -->
+  <div class="cta-card" role="region" aria-label="Get started">
+
+    <!-- Stamp icon — 40px seal SVG in conviction gold -->
+    <div class="cta-icon" aria-hidden="true">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="presentation">
+        <!-- Hexagon seal mark -->
+        <path
+          d="M20 3L35 11.5V28.5L20 37L5 28.5V11.5L20 3Z"
+          stroke="currentColor"
+          stroke-width="1.5"
+          fill="none"
+          stroke-linejoin="round"
+        />
+        <!-- Inner lock body -->
+        <rect x="15" y="20" width="10" height="8" rx="1.5" fill="currentColor" opacity="0.8"/>
+        <!-- Lock shackle -->
+        <path
+          d="M16.5 20V17.5C16.5 15.567 18.067 14 20 14C21.933 14 23.5 15.567 23.5 17.5V20"
+          stroke="currentColor"
+          stroke-width="1.5"
+          fill="none"
+          stroke-linecap="round"
+        />
+        <!-- Keyhole dot -->
+        <circle cx="20" cy="24" r="1.2" fill="var(--surface-base, #0c0c0e)"/>
+      </svg>
     </div>
 
-    <!-- Card 2: Days to First Verdict -->
-    <div class="traj-card" aria-label="Days to first verdict">
-      <span class="traj-label">First Verdict</span>
-      <span class:list={['traj-value', daysToFirst === null && sealedCount === 0 && 'traj-value--empty']}>
-        {verdictValue}
-      </span>
-      <span class="traj-subline">{verdictSubline}</span>
-    </div>
+    <h2 class="cta-headline">{ctaHeadline}</h2>
+    <p class="cta-body">{ctaBody}</p>
 
-    <!-- Card 3: Conviction Rate (greyed ring — not yet earned) -->
-    <div class="traj-card traj-card--rate" aria-label="Conviction rate — pending">
-      <span class="traj-label">Conviction Rate</span>
-      <span class="traj-value traj-value--empty" aria-label="No data yet">—</span>
-      <span class="traj-subline">Updates with each verdict</span>
-    </div>
+    <a href={ctaHref} class="cta-btn">
+      {ctaLabel}
+    </a>
 
   </div>
+
+  <!-- Attribution — keeps the ghost rows honest -->
+  <p class="ghost-caption" aria-label="Disclaimer">
+    Records shown above are illustrative only
+  </p>
+
 </div>
 
 <style>
-  /* ── Trajectory block — cold state replacement for Acts II+III ── */
-  .traj {
-    max-width: 720px;
+  /* ── Root ─────────────────────────────────────────────────────────────────── */
+  .cold-root {
+    position: relative;
+    max-width: 760px;
     margin: 0 auto;
-    padding: 0 var(--space-4, 1rem) var(--space-8, 2rem);
+    padding: 0 var(--space-4) var(--space-12);
   }
 
-  /* Quiet intro — not apologetic, just honest */
-  .traj-intro {
-    font-size: var(--text-sm, 0.82rem);
-    color: var(--text-tertiary);
-    margin: 0 0 var(--space-5, 1.25rem);
-    font-style: italic;
-    line-height: var(--leading-normal, 1.55);
-  }
-
-  /* ── Three-column card grid ── */
-  .traj-cards {
+  /* ── Ghost timeline zone ──────────────────────────────────────────────────── */
+  /* Blurred fake rows — give structural preview of what the warm state looks   */
+  /* like. pointer-events off; aria-hidden; user-select none.                   */
+  .ghost-zone {
+    pointer-events: none;
+    user-select: none;
     display: flex;
-    gap: var(--space-4, 1rem);
+    flex-direction: column;
+    gap: var(--space-3);
+    opacity: 0.22;
+    filter: blur(3px) saturate(0.2) brightness(0.8);
+    /* Fade bottom edge so the CTA card reads as floating above */
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+    mask-image:         linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
   }
 
-  /* ── Individual trajectory card ── */
-  .traj-card {
+  /* Individual ghost row — mirrors card-base geometry */
+  .ghost-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
     background: var(--surface-raised);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg, 12px);
-    padding: var(--space-5, 1.25rem) var(--space-4, 1rem);
-    box-shadow: none; /* cold state — no elevation, no life yet (Tanya §19) */
+    border-radius: var(--radius-md);
+    padding: var(--space-4) var(--space-5);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Shimmer sweep — scanning radar feel (Tanya §3 ghost timeline) */
+  .ghost-row::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 40%,
+      oklch(1 0 0 / 0.03) 50%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: ghost-shimmer 2.4s linear infinite;
+  }
+
+  @keyframes ghost-shimmer {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+
+  /* Layout columns inside each row */
+  .ghost-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .ghost-col--wide   { flex: 1; min-width: 0; }
+  .ghost-col--narrow { flex: 0 0 100px; }
+
+  /* Placeholder pills — fake text lines */
+  .ghost-pill {
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--text-ghost);
+  }
+
+  .ghost-pill--sm  { width: 60px; }
+  .ghost-pill--md  { width: 120px; }
+  .ghost-pill--lg  { width: 200px; }
+  .ghost-pill--xl  { width: 260px; }
+
+  /* Verdict outcome chips */
+  .ghost-chip {
+    height: 22px;
+    width: 72px;
+    border-radius: var(--radius-sm);
+  }
+
+  .ghost-chip--true    { background: var(--verdict-true-bg);    border: 1px solid var(--verdict-true-border); }
+  .ghost-chip--wrong   { background: var(--verdict-wrong-bg);   border: 1px solid var(--verdict-wrong-border); }
+  .ghost-chip--pending { background: var(--verdict-pending-bg); border: 1px solid var(--verdict-pending-border); }
+
+  /* ── CTA card — floats over ghost rows ───────────────────────────────────── */
+  .cta-card {
+    position: relative;          /* sits above ghost zone via normal flow + margin */
+    margin-top: -96px;           /* pull card up to overlap the faded ghost bottom */
+    background: var(--surface-raised);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-e3);
+    padding: var(--space-8) var(--space-10);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
-    flex: 1;
-    min-width: 0;
+    text-align: center;
+    gap: var(--space-4);
   }
 
-  /* ── Card label (above the value) ── */
-  .traj-label {
-    font-size: var(--text-2xs, 0.64rem);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-tertiary);
+  /* ── Stamp icon ── */
+  .cta-icon {
+    color: var(--gold);
+    margin-bottom: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Headline ── */
+  .cta-headline {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
     font-family: var(--font-sans);
-    text-align: center;
-  }
-
-  /* ── Card value — the big number or em dash ── */
-  .traj-value {
-    font-family: var(--font-mono);
-    font-size: var(--text-xl, 1.5rem);
-    font-weight: var(--weight-bold, 700);
     color: var(--text-primary);
-    line-height: 1;
-    letter-spacing: var(--tracking-display, -0.03em);
+    margin: 0;
+    line-height: var(--leading-snug);
   }
 
-  /* Em dash — no data / not yet earned (Tanya §15: never show "0%") */
-  .traj-value--empty {
-    color: var(--text-disabled);
+  /* ── Body copy ── */
+  .cta-body {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-normal);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+    max-width: 44ch;
+    margin: 0;
   }
 
-  /* ── Subline — italic context beneath the value ── */
-  .traj-subline {
-    font-size: var(--text-2xs, 0.64rem);
-    color: var(--text-tertiary);
-    font-style: italic;
+  /* ── CTA button — full-touch, conviction gold ── */
+  .cta-btn {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    padding: 0 var(--space-6);
+    height: 48px;
+    line-height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--gold);
+    color: var(--clr-earth-900);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+    font-family: var(--font-sans);
+    text-decoration: none;
     text-align: center;
-    line-height: var(--leading-snug, 1.35);
+    transition:
+      transform  var(--motion-duration-fast) ease-out,
+      box-shadow var(--motion-duration-fast) ease-out;
+    margin-top: var(--space-2);
   }
 
-  /* ── Mobile: stack vertically ── */
-  @media (max-width: 480px) {
-    .traj-cards {
-      flex-direction: column;
+  .cta-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-e2);
+  }
+
+  .cta-btn:active {
+    transform: translateY(0);
+  }
+
+  .cta-btn:focus-visible {
+    outline: 2px solid oklch(0.78 0.15 85 / 0.6);
+    outline-offset: 2px;
+  }
+
+  /* ── Ghost caption ── */
+  .ghost-caption {
+    font-size: var(--text-2xs);
+    color: var(--text-disabled);
+    text-align: center;
+    margin: var(--space-4) 0 0;
+    letter-spacing: var(--tracking-wide);
+    font-style: italic;
+  }
+
+  /* ── Mobile ───────────────────────────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .cta-card {
+      padding: var(--space-6) var(--space-5);
+      margin-top: -72px;
     }
 
-    /* Cards 2+3 collapse to a compact row on very tight widths */
-    .traj-card--rate {
-      flex-direction: row;
-      align-items: center;
-      gap: var(--space-3, 0.75rem);
-      padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-    }
+    .ghost-col--narrow { display: none; } /* simplify ghost rows on small screens */
 
-    .traj-card--rate .traj-label  { text-align: left; }
-    .traj-card--rate .traj-value  { font-size: var(--text-base, 1rem); }
-    .traj-card--rate .traj-subline { text-align: left; flex: 1; }
+    .cta-btn { max-width: 100%; }
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    .ghost-row::before { animation: none; }
+    .cta-btn { transition: none; }
   }
 </style>

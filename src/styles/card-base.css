@@ -94,6 +94,28 @@
   box-shadow: var(--shadow-grave-card);
 }
 
+/* ── Elevation modifiers — spatial depth, compose with age shadows ───────── */
+/* Elevation is orthogonal to temporal state. Compose freely:                 */
+/*   class="card-base card-fresh card-e3"                                     */
+
+/* E3: raised surfaces — SealCeremony panel, receipt preview, overlays */
+.card-e3 {
+  box-shadow: var(--shadow-e3);
+  border-radius: var(--radius-lg);
+}
+
+/* E4: ceremony surface — receipt display, verdict reveal (gold ambient).     */
+/* Rule: never on resting or hover — permanence is once-only. (Tanya §1)      */
+.card-e4 {
+  box-shadow: var(--shadow-e4);
+  border-radius: var(--radius-xl);
+}
+
+.card-e4:hover {
+  transform: none;            /* ceremony surfaces don't lift — they're fixed */
+  box-shadow: var(--shadow-e4);
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .card-base {
