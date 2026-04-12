@@ -1,89 +1,174 @@
 ---
 // src/pages/author/[slug].astro
-// Per-author conviction profile — their track record, scored.
+// Per-author conviction profile — batting average gauge, stats grid, conviction timeline.
 // Scoped to a single author_slug from the leaderboard.
-// Empty state when author has no sealed convictions yet.
 //
-// Credits: Mike (arch spec §author profile page), Tanya (UX §10)
+// One question per page: has this author been right?
+// Answer: animated gauge + full sealed-conviction history with verdicts.
+//
+// SSR required (prerender = false) — decay states are live, not static snapshots.
+// Returns 404 when author slug is unknown.
+//
+// Pagination: 20 entries per page, ?p=N query param.
+//
+// Credits: Mike (arch spec §Author Profile Page), Tanya (UX §6)
 
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import TrackRecord from '../../components/TrackRecord.astro';
-import { getAuthorStats } from '../../lib/leaderboard';
-import { getSealsByAuthor } from '../../lib/conviction-ledger';
-import { buildTrackRecord } from '../../lib/track-record';
-import { getCollection } from 'astro:content';
+import AuthorProfileHero from '../../components/AuthorProfileHero.astro';
+import AuthorConvictionTimeline from '../../components/AuthorConvictionTimeline.astro';
+import { getBattingAverageResult }  from '../../lib/batting-average';
+import { getSealsByAuthor }         from '../../lib/conviction-ledger';
+import { buildTrackRecord }         from '../../lib/track-record';
+import { getCollection }            from 'astro:content';
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect('/leaderboard');
 
-const stats = getAuthorStats(slug);
+// ── Data assembly ──────────────────────────────────────────────────────────
 
-// Build author-scoped track record: filter posts to those sealed by this author.
-const allPosts   = await getCollection('blog');
+const allPosts       = await getCollection('blog');
 const sealedByAuthor = getSealsByAuthor(slug).map(s => s.post_slug);
+
+// 404 when the slug has never sealed anything AND isn't in the content collection.
+const isKnown = sealedByAuthor.length > 0 || allPosts.some(p => p.slug === slug);
+if (!isKnown) return Astro.redirect('/leaderboard');
+
 const authorPosts = allPosts.filter(p => sealedByAuthor.includes(p.slug));
-const trackData  = buildTrackRecord(authorPosts);
+const trackData   = buildTrackRecord(authorPosts);
 
-// Override avg with the author-specific one (buildTrackRecord computes sitewide avg).
-const displayAvg = stats?.avg ?? { status: 'cold' as const, total: 0 };
-const data       = { ...trackData, avg: displayAvg };
+// Per-author batting average with full integrity data.
+// totalPublished: posts sealed by this author from the content collection (best proxy available).
+const result = getBattingAverageResult(slug, authorPosts.length);
 
-const initial  = slug.charAt(0).toUpperCase();
+// ── Pagination ─────────────────────────────────────────────────────────────
+
+const PAGE_SIZE   = 20;
+const rawPage     = parseInt(Astro.url.searchParams.get('p') ?? '1', 10);
+const totalPages  = Math.max(1, Math.ceil(trackData.entries.length / PAGE_SIZE));
+const page        = Math.max(1, Math.min(rawPage, totalPages));
+
+// Newest-first: reverse then slice.
+const sortedEntries = [...trackData.entries].sort((a, b) => b.sealedAt - a.sealedAt);
+const pageEntries   = sortedEntries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+// ── Meta ───────────────────────────────────────────────────────────────────
+
+const initial = slug.charAt(0).toUpperCase();
 
 function fmtDate(ts: number | null | undefined): string {
   if (!ts) return '—';
   return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-const pageTitle = stats
-  ? `${slug} — ${stats.avg.status === 'live' ? stats.avg.pct + '% accuracy' : 'no verdicts yet'}`
-  : `${slug} — Author Profile`;
+const avgLive  = result.eligible && result.battingAverage !== null;
+const pctDisp  = avgLive ? Math.round(result.battingAverage! * 100) : null;
+const pageTitle = pctDisp !== null
+  ? `${slug} · ${pctDisp}% conviction accuracy`
+  : `${slug} · Author Profile`;
+const pageDesc  = `Conviction track record for ${slug}. ${trackData.entries.length} sealed prediction${trackData.entries.length !== 1 ? 's' : ''}.`;
+
+// Profile share URL — absolute path for the copy-to-clipboard button.
+const profileUrl = Astro.url.href;
 ---
 
-<BaseLayout title={pageTitle} description={`Conviction track record for ${slug}.`}>
-  <main class="ap-page">
+<BaseLayout title={pageTitle} description={pageDesc}>
+  <main
+    class="ap-page"
+    data-tier={result.trophyTier}
+    aria-label={`${slug}'s conviction profile`}
+  >
 
     <a href="/leaderboard" class="ap-back">← Leaderboard</a>
 
-    <!-- Author header -->
+    {/* ── Author header ─────────────────────────────────────────────────── */}
     <header class="ap-header">
       <div class="ap-avatar-lg" aria-hidden="true">{initial}</div>
       <div class="ap-identity">
         <h1 class="ap-slug">{slug}</h1>
-        {stats?.firstSeal && (
-          <span class="ap-since">on record since {fmtDate(stats.firstSeal)}</span>
+        {trackData.firstSealDate && (
+          <span class="ap-since">on record since {fmtDate(trackData.firstSealDate)}</span>
         )}
       </div>
+      <span class:list={['ap-tier-badge', `ap-tier-badge--${result.trophyTier}`]}>
+        {result.trophyTier}
+      </span>
     </header>
 
-    {stats?.avg.status === 'live' ? (
-      <!-- Stats panel -->
+    {/* ── Batting average hero — the loudest element on the page ────────── */}
+    <AuthorProfileHero result={result} slug={slug} />
+
+    {/* ── Stats grid — 4 cells: accuracy · correct · wrong · total ─────── */}
+    {trackData.entries.length > 0 && (
       <div class="ap-stats" role="group" aria-label="Conviction accuracy summary">
         <div class="ap-stat">
-          <span class="ap-stat-value">{stats.avg.pct}%</span>
+          <span class:list={['ap-stat-value', avgLive && 'ap-stat-value--gold']}>
+            {pctDisp !== null ? `${pctDisp}%` : '—'}
+          </span>
           <span class="ap-stat-label">accuracy</span>
         </div>
         <div class="ap-stat">
-          <span class="ap-stat-value ap-stat-value--correct">{stats.avg.correct}</span>
+          <span class="ap-stat-value ap-stat-value--correct">{result.resolvedCorrect}</span>
           <span class="ap-stat-label">correct</span>
         </div>
         <div class="ap-stat">
-          <span class="ap-stat-value ap-stat-value--wrong">{stats.avg.wrong}</span>
+          <span class="ap-stat-value ap-stat-value--wrong">
+            {result.resolvedTotal - result.resolvedCorrect}
+          </span>
           <span class="ap-stat-label">wrong</span>
         </div>
+        <div class="ap-stat">
+          <span class="ap-stat-value">{trackData.entries.length}</span>
+          <span class="ap-stat-label">verdicts</span>
+        </div>
       </div>
-    ) : (
-      <div class="ap-empty">This author hasn't staked a claim yet.</div>
     )}
 
-    <!-- Conviction ledger (reuses existing TrackRecord component) -->
-    {data.entries.length > 0 && <TrackRecord data={data} />}
+    {/* ── Conviction timeline ───────────────────────────────────────────── */}
+    <AuthorConvictionTimeline
+      entries={pageEntries}
+      page={page}
+      totalPages={totalPages}
+      slug={slug}
+    />
+
+    {/* ── Share profile ─────────────────────────────────────────────────── */}
+    <div class="ap-share-row">
+      <button
+        class="ap-share-btn"
+        data-profile-url={profileUrl}
+        aria-label="Copy profile link to clipboard"
+      >
+        share profile ↗
+      </button>
+    </div>
 
   </main>
 </BaseLayout>
 
+{/* Share-to-clipboard — thin inline script, no framework needed */}
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-profile-url]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const url = btn.dataset.profileUrl ?? location.href;
+      try {
+        await navigator.clipboard.writeText(url);
+        const orig = btn.textContent;
+        btn.textContent = 'copied ✓';
+        setTimeout(() => { btn.textContent = orig; }, 1800);
+      } catch {
+        // Fallback: select the URL in a temporary input.
+        const inp = Object.assign(document.createElement('input'), { value: url });
+        document.body.appendChild(inp);
+        inp.select();
+        document.execCommand('copy');
+        inp.remove();
+      }
+    });
+  });
+</script>
+
 <style>
-  @import '../../styles/leaderboard.css';
+  @import '../../styles/author-profile.css';
 </style>

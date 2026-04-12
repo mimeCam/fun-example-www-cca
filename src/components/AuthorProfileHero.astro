@@ -1,0 +1,324 @@
+---
+// src/components/AuthorProfileHero.astro
+// The trust signal: animated batting-average gauge, conviction tier badge,
+// and win/loss/pending tally chips.
+//
+// Gauge: SVG arc fills 0 → pct% over --motion-ceremony-duration via RAF
+//        registered in IMMEDIATE bucket (frame-scheduler.ts).
+// Locked state (< MIN_VERDICTS): gauge grayed, motivational copy shown.
+// null vs 0: explicit branching — null = not enough data, 0 = calibrated/wrong.
+//
+// Design: Tanya §6 (author profile layout), §11 (motion — one-shot, ceremony bucket).
+// Architecture: Michael Koch (arch spec §AuthorProfileHero).
+//
+// Credits: Tanya Donska (UX), Michael Koch (arch)
+
+import type { BattingAverageResult, TrophyTier } from '../lib/batting-average';
+
+interface Props {
+  result: BattingAverageResult;
+  slug: string;
+}
+
+const { result, slug } = Astro.props;
+
+const { battingAverage, trophyTier, resolvedCorrect, resolvedTotal, totalSealed, eligible } = result;
+const wrong   = resolvedTotal - resolvedCorrect;
+const pending = totalSealed - resolvedTotal;
+
+// battingAverage is 0–1 decimal or null (not eligible).
+// pct is the integer for display and gauge fill (0–100).
+const pctInt = battingAverage !== null ? Math.round(battingAverage * 100) : null;
+
+// Gauge geometry (SVG circle, r=42 → circumference ≈ 263.9).
+const RADIUS = 42;
+const CIRC   = +(2 * Math.PI * RADIUS).toFixed(2);
+
+// Tier label map — keeps template clean.
+const TIER_LABEL: Record<TrophyTier, string> = {
+  locked:  'unranked',
+  bronze:  'rookie',
+  silver:  'calibrated',
+  gold:    'accurate',
+  diamond: 'oracle',
+};
+
+const tierLabel = TIER_LABEL[trophyTier];
+
+// Short fingerprint for anti-impersonation (first 8 chars of slug hash is fine for display).
+const fingerprint = slug.slice(0, 8).padEnd(8, '·');
+---
+
+<div class="aph-hero" data-tier={trophyTier}>
+
+  {/* SVG Gauge — arc fills clockwise from top */}
+  <div class="aph-gauge-wrap" aria-hidden="true">
+    <svg class="aph-gauge" viewBox="0 0 100 100" role="img">
+      {/* Background track */}
+      <circle
+        class="aph-gauge-track"
+        cx="50" cy="50" r={RADIUS}
+        fill="none"
+        stroke-width="6"
+        stroke-dasharray={CIRC}
+        stroke-dashoffset="0"
+      />
+      {/* Fill arc — animated by client script below */}
+      <circle
+        class="aph-gauge-fill"
+        cx="50" cy="50" r={RADIUS}
+        fill="none"
+        stroke-width="6"
+        stroke-linecap="round"
+        stroke-dasharray={CIRC}
+        stroke-dashoffset={CIRC}
+        data-circ={CIRC}
+        data-target={eligible && pctInt !== null ? pctInt : 0}
+      />
+    </svg>
+
+    {/* Center label */}
+    <div class="aph-gauge-center">
+      {eligible && pctInt !== null ? (
+        <span class="aph-gauge-pct" data-gauge-pct>{pctInt}%</span>
+      ) : (
+        <span class="aph-gauge-lock" title="Unlocks at 5 resolved verdicts">🔒</span>
+      )}
+    </div>
+  </div>
+
+  {/* Text block beside gauge */}
+  <div class="aph-info">
+    <div class="aph-tier">
+      <span class:list={['aph-tier-badge', `aph-tier-badge--${trophyTier}`]}>
+        {trophyTier === 'diamond' && '⬡ '}{tierLabel}
+      </span>
+    </div>
+
+    {eligible && pctInt !== null ? (
+      <p class="aph-accuracy-label">batting average</p>
+    ) : (
+      <p class="aph-locked-copy">
+        Calibration unlocks at {5} resolved verdicts
+        {resolvedTotal > 0 && ` · ${resolvedTotal} so far`}
+      </p>
+    )}
+
+    {/* Win / Loss / Pending chips */}
+    <div class="aph-chips" role="list" aria-label="Verdict tally">
+      <span class="aph-chip aph-chip--correct" role="listitem" title="Upheld verdicts">
+        {resolvedCorrect}<span class="aph-chip-label">correct</span>
+      </span>
+      <span class="aph-chip aph-chip--wrong" role="listitem" title="Overturned verdicts">
+        {wrong}<span class="aph-chip-label">wrong</span>
+      </span>
+      {pending > 0 && (
+        <span class="aph-chip aph-chip--pending" role="listitem" title="Awaiting verdict">
+          {pending}<span class="aph-chip-label">pending</span>
+        </span>
+      )}
+    </div>
+
+    {/* Author fingerprint — anti-impersonation */}
+    <p class="aph-fingerprint" title={`Author identifier: ${slug}`}>
+      id·{fingerprint}
+    </p>
+  </div>
+
+</div>
+
+{/* Gauge fill animation — IMMEDIATE bucket, one-shot, respects prefers-reduced-motion */}
+<script>
+  import scheduler, { FramePriority } from '../lib/client/frame-scheduler';
+
+  function animateGauge(): void {
+    const fill   = document.querySelector<SVGCircleElement>('.aph-gauge-fill');
+    const label  = document.querySelector<HTMLElement>('[data-gauge-pct]');
+    if (!fill) return;
+
+    const circ   = parseFloat(fill.dataset.circ  ?? '0');
+    const target = parseFloat(fill.dataset.target ?? '0');
+    if (circ <= 0) return;
+
+    // Respect prefers-reduced-motion: snap to final value immediately.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      fill.style.strokeDashoffset = String(circ * (1 - target / 100));
+      return;
+    }
+
+    const DURATION_MS = 600; // --motion-ceremony-duration
+    const start = { ts: 0 };
+
+    const id = `author-gauge-${Date.now()}`;
+    const unsub = scheduler.register(id, (ts) => {
+      if (!start.ts) start.ts = ts;
+      const elapsed  = ts - start.ts;
+      const progress = Math.min(elapsed / DURATION_MS, 1);
+      const eased    = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const current  = target * eased;
+      fill.style.strokeDashoffset = String(circ * (1 - current / 100));
+      if (label) label.textContent = Math.round(current) + '%';
+      if (progress >= 1) unsub();
+    }, FramePriority.IMMEDIATE);
+  }
+
+  // Run after DOM is ready; re-run after Astro view transitions.
+  if (document.readyState !== 'loading') animateGauge();
+  else document.addEventListener('DOMContentLoaded', animateGauge, { once: true });
+  document.addEventListener('astro:after-swap', animateGauge);
+</script>
+
+<style>
+  .aph-hero {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+    padding: var(--space-6);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-e1);
+  }
+
+  /* ── Gauge ──────────────────────────────────── */
+
+  .aph-gauge-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 7rem;
+    height: 7rem;
+  }
+
+  .aph-gauge {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg); /* start arc at 12 o'clock */
+  }
+
+  .aph-gauge-track { stroke: var(--border-subtle); }
+
+  .aph-gauge-fill {
+    stroke: var(--clr-gold-400);
+    transition: stroke-dashoffset var(--motion-duration-deliberate) var(--motion-easing-standard);
+  }
+
+  .aph-hero[data-tier="diamond"] .aph-gauge-fill { stroke: var(--clr-violet-400); }
+  .aph-hero[data-tier="bronze"]  .aph-gauge-fill { stroke: var(--clr-amber-400); }
+  .aph-hero[data-tier="silver"]  .aph-gauge-fill { stroke: var(--clr-slate-400); }
+  .aph-hero[data-tier="locked"]  .aph-gauge-fill { stroke: var(--color-decay-ghost); }
+
+  .aph-gauge-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .aph-gauge-pct {
+    font-family: var(--font-mono);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-display);
+    color: var(--clr-gold-400);
+  }
+
+  .aph-gauge-lock {
+    font-size: var(--text-xl);
+    line-height: 1;
+  }
+
+  /* ── Info block ─────────────────────────────── */
+
+  .aph-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .aph-tier { display: flex; }
+
+  .aph-tier-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+  }
+
+  .aph-tier-badge--locked  { color: var(--text-ghost);         border-color: var(--border-subtle);    background: transparent; }
+  .aph-tier-badge--bronze  { color: var(--clr-amber-400);       border-color: color-mix(in oklch, var(--clr-amber-400) 30%, transparent); background: color-mix(in oklch, var(--clr-amber-400) 8%, transparent); }
+  .aph-tier-badge--silver  { color: var(--clr-slate-400);       border-color: color-mix(in oklch, var(--clr-slate-400) 30%, transparent); background: color-mix(in oklch, var(--clr-slate-400) 8%, transparent); }
+  .aph-tier-badge--gold    { color: var(--clr-gold-400);        border-color: var(--gold-border);     background: var(--gold-bg); }
+  .aph-tier-badge--diamond { color: var(--clr-violet-400);      border-color: color-mix(in oklch, var(--clr-violet-400) 30%, transparent); background: color-mix(in oklch, var(--clr-violet-400) 8%, transparent); }
+
+  .aph-accuracy-label {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    letter-spacing: var(--tracking-wide);
+    margin: 0;
+  }
+
+  .aph-locked-copy {
+    font-size: var(--text-xs);
+    color: var(--color-decay-ghost);
+    letter-spacing: var(--tracking-wide);
+    margin: 0;
+  }
+
+  /* ── Tally chips ────────────────────────────── */
+
+  .aph-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .aph-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3em;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    border: 1px solid;
+  }
+
+  .aph-chip--correct { color: var(--verdict-true);    background: var(--verdict-true-bg);    border-color: var(--verdict-true-border); }
+  .aph-chip--wrong   { color: var(--verdict-wrong);   background: var(--verdict-wrong-bg);   border-color: var(--verdict-wrong-border); }
+  .aph-chip--pending { color: var(--verdict-pending); background: var(--verdict-pending-bg); border-color: var(--verdict-pending-border); }
+
+  .aph-chip-label {
+    font-size: var(--text-3xs);
+    font-weight: var(--weight-normal);
+    letter-spacing: var(--tracking-wide);
+    opacity: 0.75;
+  }
+
+  /* ── Fingerprint ────────────────────────────── */
+
+  .aph-fingerprint {
+    font-family: var(--font-mono);
+    font-size: var(--text-3xs);
+    color: var(--text-ghost);
+    letter-spacing: var(--tracking-wide);
+    margin: 0;
+  }
+
+  /* ── Responsive ─────────────────────────────── */
+
+  @media (max-width: 500px) {
+    .aph-hero { flex-direction: column; align-items: flex-start; }
+    .aph-gauge-wrap { width: 5.5rem; height: 5.5rem; }
+    .aph-gauge-pct { font-size: var(--text-lg); }
+  }
+</style>

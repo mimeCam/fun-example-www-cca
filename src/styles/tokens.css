@@ -213,6 +213,12 @@
     0 8px 28px oklch(0 0 0 / 0.55),
     0 0 0 1px color-mix(in oklch, var(--gold) 12%, transparent);
 
+  /* ConvictionStrip — E1-class but conviction-tinted (Tanya §8).
+     Gold hairline on top communicates earned status without E4 ceremony weight. */
+  --shadow-conviction-strip:
+    0 1px 0 var(--gold-border),
+    0 8px 24px oklch(0.78 0.15 85 / 0.06);
+
   /* UI structural shadows — not age-dependent */
   --shadow-chip:    0 0 10px rgba(245, 166, 35, 0.18);
   --shadow-tooltip: 0 4px 16px rgba(0, 0, 0, 0.5);

@@ -36,6 +36,7 @@ import type { StageFilter } from '../lib/river-data';
 import { paginate, parsePage } from '../lib/pagination';
 import { decayFactor } from '../lib/decay-engine';
 import LandingHero from '../components/LandingHero.astro';
+import ConvictionStrip from '../components/ConvictionStrip.astro';
 import '../styles/river-filter.css';
 
 // ─── Stage param ──────────────────────────────────────────────────────────────
@@ -134,6 +135,11 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
   {/* Zone 1 — Living Landing Hero: demo post breathes + decays in the first viewport */}
   {/* Visitor feels posts are alive before reading a single word (Paul Kim / Tanya §4) */}
   <LandingHero decayProgress={heroDecay} stage={heroStage} />
+
+  {/* Zone 1.5 — Conviction Strip: batting average distilled for first-time visitors */}
+  {/* The killer feature visible above the feed without requiring a navigation click. */}
+  {/* Tanya §3.2: max-width 40rem, gold-border, shadow-conviction-strip              */}
+  <ConvictionStrip />
 
   {/* Zone 2 — Unified River Feed */}
   <main class="feed" id="bets" data-stage={currentStage}>

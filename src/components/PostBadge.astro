@@ -36,12 +36,12 @@ const { readingTime, badge, size = 'md' } = Astro.props;
     align-items: center;
     gap: 0.375rem;
     border-radius: 9999px;
-    background: color-mix(in srgb, var(--mood-accent, currentColor) 10%, transparent);
+    background: color-mix(in oklch, var(--mood-accent) 10%, transparent);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(var(--mood-accent-rgb, 0, 0, 0), 0.18);
+    border: 1px solid color-mix(in oklch, var(--mood-accent) 18%, transparent);
     box-shadow:
-      0 1px 4px rgba(var(--mood-shadow-rgb, 0, 0, 0), 0.10),
+      0 1px 4px color-mix(in oklch, var(--mood-accent) 10%, transparent),
       inset 0 1px 0 rgba(255, 255, 255, 0.14);
     font-weight: 500;
     letter-spacing: 0.03em;

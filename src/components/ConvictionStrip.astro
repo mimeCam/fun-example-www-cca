@@ -1,0 +1,166 @@
+---
+// src/components/ConvictionStrip.astro
+// Zone 1.5 — compact batting average strip between LandingHero and river feed.
+// Purpose: surface the killer feature for first-time visitors without burying
+//          them in the full BattingAverageHero. Distillation, not duplication.
+//
+// Cold state (< 5 resolved verdicts): dashed border, locked-icon, explains the mechanic.
+// Live state: 🏆 NN% · N resolved · N✓ N✗  + fill bar + "full track record →" link.
+//
+// Design tokens: Tanya §3.2 (ConvictionStrip component spec), §8 (shadow system).
+// Animation: fill bar width driven by CSS custom property set inline — no RAF needed
+//            for a static bar; the gauge animation lives in AuthorProfileHero (RAF).
+//
+// Credits: Tanya Donska (UX spec §3), Michael Koch (arch §Zone 1.5)
+
+import { computeBattingAverage, MIN_VERDICTS } from '../lib/batting-average';
+
+const avg = computeBattingAverage();
+const isLive = avg.status === 'live';
+const pct    = isLive ? avg.pct : 0;
+const total  = isLive ? avg.total    : 0;
+const correct = isLive ? avg.correct : 0;
+const wrong   = isLive ? avg.wrong   : 0;
+
+// Resolved = correct + wrong (pending doesn't count toward the bar).
+const resolved = correct + wrong;
+
+// Locked when not enough resolved verdicts.
+const locked = !isLive || resolved < MIN_VERDICTS;
+
+// Fill bar width as a safe inline CSS property (no raw value in <style>).
+const fillPct = locked ? 0 : pct;
+---
+
+<div
+  class:list={['cs-strip', locked && 'cs-strip--locked']}
+  aria-label={locked ? 'Batting average locked — fewer than 5 resolved verdicts' : `Batting average: ${pct}%`}
+>
+  {locked ? (
+    <div class="cs-locked">
+      <span class="cs-lock-icon" aria-hidden="true">🔒</span>
+      <span class="cs-locked-copy">
+        Batting average unlocks after 5 verdicts
+        {total > 0 && <span class="cs-locked-progress"> · {resolved} of {MIN_VERDICTS} so far</span>}
+      </span>
+    </div>
+  ) : (
+    <>
+      <div class="cs-top">
+        <span class="cs-trophy" aria-hidden="true">🏆</span>
+        <span class="cs-pct">{pct}%</span>
+        <span class="cs-caption">
+          batting average
+          <span class="cs-sep" aria-hidden="true"> · </span>
+          {resolved} resolved
+          <span class="cs-sep" aria-hidden="true"> · </span>
+          <span class="cs-correct">{correct}✓</span>
+          <span class="cs-sep" aria-hidden="true"> </span>
+          <span class="cs-wrong">{wrong}✗</span>
+        </span>
+        <a href="/track-record" class="cs-link">full record →</a>
+      </div>
+      <div class="cs-bar-track" aria-hidden="true">
+        <div class="cs-bar-fill" style={`--cs-fill: ${fillPct}%`}></div>
+      </div>
+    </>
+  )}
+</div>
+
+<style>
+  .cs-strip {
+    max-width: 40rem;
+    margin: 0 auto var(--space-8);
+    padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    border: 1px solid var(--gold-border);
+    box-shadow: var(--shadow-conviction-strip);
+  }
+
+  .cs-strip--locked {
+    border-style: dashed;
+    opacity: 0.65;
+  }
+
+  /* ── Locked state ───────────────────────────── */
+  .cs-locked {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .cs-lock-icon {
+    font-size: var(--text-xl);
+    line-height: 1;
+  }
+
+  .cs-locked-copy {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .cs-locked-progress {
+    color: var(--text-tertiary);
+  }
+
+  /* ── Live state top row ─────────────────────── */
+  .cs-top {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .cs-trophy {
+    font-size: var(--text-xl);
+    line-height: 1;
+  }
+
+  .cs-pct {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-display);
+    color: var(--clr-gold-400);
+    line-height: 1;
+  }
+
+  .cs-caption {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    letter-spacing: var(--tracking-wide);
+    flex: 1;
+  }
+
+  .cs-correct { color: var(--verdict-true); }
+  .cs-wrong   { color: var(--verdict-wrong); }
+
+  .cs-link {
+    font-size: var(--text-xs);
+    color: var(--gold-dim);
+    text-decoration: none;
+    letter-spacing: var(--tracking-wide);
+    white-space: nowrap;
+    transition: color var(--motion-duration-fast) ease;
+  }
+  .cs-link:hover { color: var(--clr-gold-400); text-decoration: underline; }
+
+  /* ── Fill bar ───────────────────────────────── */
+  .cs-bar-track {
+    margin-top: var(--space-3);
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--border-subtle);
+    overflow: hidden;
+  }
+
+  .cs-bar-fill {
+    height: 100%;
+    width: var(--cs-fill, 0%);
+    border-radius: var(--radius-full);
+    background: var(--clr-gold-400);
+    transition: width var(--motion-duration-deliberate) var(--motion-easing-standard);
+  }
+</style>

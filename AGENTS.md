@@ -20,4 +20,3 @@
 
 - Delete `ConvictionSealCeremony.astro` → `SealCeremony variant="conviction"` (update `admin.astro`)
 - Delete `ConvictionSeal.astro`, `ConvictionSealDisplay.astro`, `SealReceipt.astro` → inline into `SealCeremony.astro`
-- Nav rationalization: 3 links max; community moves to river filter pill

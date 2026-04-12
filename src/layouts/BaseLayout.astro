@@ -113,7 +113,7 @@ const showOnboarding = onboardingForced || !onboardingSeen;
         pointer-events: none;
         background: radial-gradient(
           ellipse at 50% 30%,
-          var(--mood-accent-glow, rgba(120,120,120,0.04)) 0%,
+          color-mix(in oklch, var(--mood-accent) 4%, transparent) 0%,
           transparent 70%
         );
       }
@@ -123,14 +123,20 @@ const showOnboarding = onboardingForced || !onboardingSeen;
         border-top: 1px solid rgba(255, 255, 255, 0.04);
         margin-top: 3rem;
       }
-      .site-footer__write {
+      .site-footer__links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem 1.25rem;
+      }
+      .site-footer__link {
         font-size: 0.7rem;
         color: rgba(255, 255, 255, 0.20);
         text-decoration: none;
         letter-spacing: 0.04em;
         transition: color 200ms ease;
       }
-      .site-footer__write:hover { color: rgba(255, 255, 255, 0.50); }
+      .site-footer__link:hover { color: rgba(255, 255, 255, 0.50); }
     </style>
   </head>
   <body
@@ -142,7 +148,13 @@ const showOnboarding = onboardingForced || !onboardingSeen;
     {showOnboarding && <OnboardingOverlay />}
     <slot />
     <footer class="site-footer">
-      <a href="/submit" class="site-footer__write">✍ write for this blog →</a>
+      <nav class="site-footer__links" aria-label="Footer navigation">
+        <a href="/submit"      class="site-footer__link">✍ write</a>
+        <a href="/now"         class="site-footer__link">now</a>
+        <a href="/community"   class="site-footer__link">community ↗</a>
+        <a href="/feed.xml"    class="site-footer__link">RSS</a>
+        <a href="/api/docs"    class="site-footer__link">API</a>
+      </nav>
     </footer>
     <!-- Atmosphere controller: re-applies on View Transitions, watches river filter -->
     <script>

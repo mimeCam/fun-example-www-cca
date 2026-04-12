@@ -37,7 +37,9 @@ const avgRaw  = computeBattingAverage();
 const avgLive = avgRaw.status === 'live' && avgRaw.total > 0 ? avgRaw : null;
 
 // Overflow pill — active when current page is one of the collapsed links.
-const OVERFLOW_PAGES: PageId[] = ['community', 'leaderboard', 'now'];
+// Primary nav: posts · verdict · leaderboard (Tanya §2 — 3 links, no exceptions).
+// Demoted: community (→ river filter pill + footer), now (→ footer).
+const OVERFLOW_PAGES: PageId[] = ['community', 'now'];
 const isOverflowActive = OVERFLOW_PAGES.includes(pageId);
 
 function chipMod(pct: number): string {
@@ -59,9 +61,6 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     <a href="/" class:list={['nav-link', pageId === 'home' && 'nav-link--active']}>
       posts
     </a>
-    <a href="/community" class:list={['nav-link nav-link--community', pageId === 'community' && 'nav-link--active']}>
-      community
-    </a>
     <a
       href="/verdict"
       class:list={[
@@ -72,8 +71,12 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
     >
       verdict
     </a>
-    <a href="/leaderboard" class:list={['nav-link nav-link--overflow', pageId === 'leaderboard' && 'nav-link--active']}>
+    <a href="/leaderboard" class:list={['nav-link', pageId === 'leaderboard' && 'nav-link--active']}>
       leaderboard
+    </a>
+    <!-- community + now demoted to overflow only (Tanya §2: 3 primary links) -->
+    <a href="/community" class:list={['nav-link nav-link--overflow', pageId === 'community' && 'nav-link--active']}>
+      community
     </a>
     <a href="/now" class:list={['nav-link nav-link--overflow', pageId === 'now' && 'nav-link--active']}>
       now

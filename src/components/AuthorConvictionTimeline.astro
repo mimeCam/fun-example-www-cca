@@ -1,0 +1,306 @@
+---
+// src/components/AuthorConvictionTimeline.astro
+// Chronological sealed-conviction log with verdict outcome for one author.
+// Shows: outcome icon · post title · seal date · conviction score · verdict badge.
+// Hover lifts to E2; reveals verdict date inline.
+// Empty state: copy encouraging first conviction — never a blank table.
+//
+// Pagination: LIMIT/OFFSET at caller; this component receives the slice.
+// All timestamp formatting here (Intl.DateTimeFormat) — never in the query layer.
+//
+// Design tokens: Tanya §6 (conviction list spec), §7 (verdict badge colors).
+// Credits: Tanya Donska (UX), Michael Koch (arch spec §AuthorConvictionTimeline)
+
+import type { TrackRecordEntry } from '../lib/track-record';
+
+interface Props {
+  entries: TrackRecordEntry[];
+  page: number;
+  totalPages: number;
+  slug: string;
+}
+
+const { entries, page, totalPages, slug } = Astro.props;
+
+// Outcome icon map — quick scanner signal without relying on color alone.
+const OUTCOME_ICON: Record<string, string> = {
+  'still-true': '✓',
+  'wrong':      '✗',
+  'abandoned':  '✗',
+  'evolved':    '~',
+};
+const PENDING_ICON = '·';
+
+function outcomeIcon(entry: TrackRecordEntry): string {
+  if (!entry.verdict) return PENDING_ICON;
+  return OUTCOME_ICON[entry.verdict] ?? PENDING_ICON;
+}
+
+// Human-readable date from unix ms timestamp.
+const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+function fmtDate(ts: number | null): string {
+  return ts ? fmt.format(new Date(ts)) : '—';
+}
+
+// Badge label displayed in verdict column.
+function verdictLabel(entry: TrackRecordEntry): string {
+  if (!entry.verdict) return 'pending';
+  const MAP: Record<string, string> = {
+    'still-true': 'upheld',
+    'wrong':      'overturned',
+    'abandoned':  'overturned',
+    'evolved':    'evolved',
+  };
+  return MAP[entry.verdict] ?? entry.verdict;
+}
+
+// CSS modifier for verdict badge coloring (maps to --verdict-* tokens).
+function verdictMod(entry: TrackRecordEntry): string {
+  if (!entry.verdict) return 'pending';
+  const MAP: Record<string, string> = {
+    'still-true': 'true',
+    'wrong':      'wrong',
+    'abandoned':  'wrong',
+    'evolved':    'evolved',
+  };
+  return MAP[entry.verdict] ?? 'pending';
+}
+---
+
+<section class="act-section">
+  <h2 class="ap-section-title">Sealed Convictions ({entries.length > 0 ? `showing ${entries.length}` : '0'})</h2>
+
+  {entries.length === 0 ? (
+    <div class="act-empty">
+      <p class="act-empty-copy">This author hasn't staked a claim yet.</p>
+      <p class="act-empty-sub">
+        Sealing a conviction stakes your reputation on a prediction.
+        The community decides if it held up.
+      </p>
+    </div>
+  ) : (
+    <ol class="act-list" aria-label="Conviction timeline">
+      {entries.map((entry) => (
+        <li class:list={['act-entry', `act-entry--${entry.status}`]}
+            data-verdict={entry.verdict ?? 'pending'}>
+
+          {/* Outcome icon — scannable at a glance */}
+          <span
+            class:list={['act-icon', `act-icon--${verdictMod(entry)}`]}
+            aria-label={verdictLabel(entry)}
+          >
+            {outcomeIcon(entry)}
+          </span>
+
+          {/* Post title + meta */}
+          <div class="act-body">
+            <a href={`/blog/${entry.slug}`} class="act-title">
+              {entry.title}
+            </a>
+            <div class="act-meta">
+              <span class="act-score" title="Conviction score">{entry.score}/10</span>
+              <span class="act-dot" aria-hidden="true">·</span>
+              <time class="act-date" datetime={new Date(entry.sealedAt).toISOString()}>
+                sealed {fmtDate(entry.sealedAt)}
+              </time>
+              {entry.verdictAt && (
+                <>
+                  <span class="act-dot" aria-hidden="true">·</span>
+                  <time class="act-verdict-date">
+                    verdict {fmtDate(entry.verdictAt)}
+                  </time>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Verdict badge — right-aligned */}
+          <span class:list={['act-badge', `act-badge--${verdictMod(entry)}`]}>
+            {verdictLabel(entry)}
+          </span>
+
+        </li>
+      ))}
+    </ol>
+  )}
+
+  {/* Simple prev/next pagination */}
+  {totalPages > 1 && (
+    <nav class="act-pagination" aria-label="Timeline pages">
+      {page > 1 && (
+        <a href={`/author/${slug}?p=${page - 1}`} class="act-page-btn">← prev</a>
+      )}
+      <span class="act-page-info">{page} / {totalPages}</span>
+      {page < totalPages && (
+        <a href={`/author/${slug}?p=${page + 1}`} class="act-page-btn">next →</a>
+      )}
+    </nav>
+  )}
+</section>
+
+<style>
+  .act-section { margin-top: var(--space-8); }
+
+  /* ── Timeline list ─────────────────────────── */
+
+  .act-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .act-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-2);
+    border-radius: var(--radius-sm);
+    border-bottom: 1px solid var(--border-faint);
+    transition:
+      background var(--motion-duration-fast) ease,
+      box-shadow  var(--motion-duration-fast) ease;
+  }
+
+  .act-entry:last-child { border-bottom: none; }
+
+  .act-entry:hover {
+    background: var(--surface-hover);
+    box-shadow: var(--shadow-e2);
+  }
+
+  /* ── Outcome icon ──────────────────────────── */
+
+  .act-icon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-bold);
+    border-radius: var(--radius-full);
+    border: 1px solid;
+  }
+
+  .act-icon--true    { color: var(--verdict-true);    border-color: var(--verdict-true-border);    background: var(--verdict-true-bg); }
+  .act-icon--wrong   { color: var(--verdict-wrong);   border-color: var(--verdict-wrong-border);   background: var(--verdict-wrong-bg); }
+  .act-icon--evolved { color: var(--verdict-evolved); border-color: var(--verdict-evolved-border); background: var(--verdict-evolved-bg); }
+  .act-icon--pending { color: var(--verdict-pending); border-color: var(--verdict-pending-border); background: var(--verdict-pending-bg); }
+
+  /* ── Body ──────────────────────────────────── */
+
+  .act-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .act-title {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: var(--weight-medium);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color var(--motion-duration-fast) ease;
+  }
+  .act-title:hover { color: var(--clr-gold-400); }
+
+  .act-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--text-2xs);
+    color: var(--text-tertiary);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .act-score {
+    font-family: var(--font-mono);
+    color: var(--clr-gold-400);
+  }
+
+  .act-dot { opacity: 0.35; }
+
+  .act-verdict-date { color: var(--text-ghost); }
+
+  /* ── Verdict badge ─────────────────────────── */
+
+  .act-badge {
+    flex-shrink: 0;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-3xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+
+  .act-badge--true    { color: var(--verdict-true);    background: var(--verdict-true-bg);    border-color: var(--verdict-true-border); }
+  .act-badge--wrong   { color: var(--verdict-wrong);   background: var(--verdict-wrong-bg);   border-color: var(--verdict-wrong-border); }
+  .act-badge--evolved { color: var(--verdict-evolved); background: var(--verdict-evolved-bg); border-color: var(--verdict-evolved-border); }
+  .act-badge--pending { color: var(--verdict-pending); background: var(--verdict-pending-bg); border-color: var(--verdict-pending-border); }
+
+  /* ── Empty state ───────────────────────────── */
+
+  .act-empty {
+    padding: var(--space-10) var(--space-4);
+    text-align: center;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+
+  .act-empty-copy {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0 0 var(--space-2);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .act-empty-sub {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin: 0;
+    max-width: 30rem;
+    margin-inline: auto;
+    line-height: var(--leading-normal);
+  }
+
+  /* ── Pagination ────────────────────────────── */
+
+  .act-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+  }
+
+  .act-page-btn {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--gold-dim);
+    text-decoration: none;
+    letter-spacing: var(--tracking-wide);
+    transition: color var(--motion-duration-fast) ease;
+  }
+  .act-page-btn:hover { color: var(--clr-gold-400); }
+
+  .act-page-info {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-ghost);
+  }
+</style>
