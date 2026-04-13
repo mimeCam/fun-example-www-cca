@@ -628,6 +628,46 @@
   --hb-color-c: 0.190;
   --hb-color-h: 145;
 
+  /* ── Stage Identity Tokens (Decay Stage Identity System — Mike Koch §napkin, Tanya §3) ──── */
+  /* Border anchors: each stage gets its own border color from the decay color ramp.          */
+  /* Rule: no raw hex — all values alias existing --color-decay-* primitives above.           */
+  --stage-fresh-border:                var(--color-decay-fresh);        /* oklch(66% 0.195 145) */
+  --stage-fading-border:               var(--color-decay-fading);       /* oklch(60% 0.130  85) */
+  --stage-endangered-border:           var(--color-decay-endangered);   /* oklch(56% 0.210  32) */
+  --stage-ghost-border:                var(--color-decay-ghost);        /* oklch(48% 0.085  18) */
+  --stage-fossil-border:               var(--color-decay-fossil);       /* oklch(38% 0.025  60) */
+
+  /* Title weight ladder — Tanya §3 Stage Identity Table */
+  --stage-fresh-title-weight:          700;
+  --stage-fading-title-weight:         600;
+  --stage-endangered-title-weight:     600;  /* urgency = max contrast, never reduce */
+  --stage-ghost-title-weight:          400;
+  --stage-fossil-title-weight:         400;
+
+  /* Endangered pulse timing — 0.5 Hz (2s period): visible urgency, not alarm */
+  --stage-endangered-pulse-dur:        2s;
+  --stage-endangered-pulse-ease:       ease-in-out;
+
+  /* Stage-aware border radius — life = roundness; death = angular stone. Tanya §3.2.
+     "As a post loses life, it loses its roundness. It becomes a tombstone."
+     From 14px (alive, organic) → 10px (ghost, receding) → 8px (fossil, stone slab). */
+  --radius-stage-alive:                14px;  /* fresh + fading + endangered */
+  --radius-stage-ghost:                10px;  /* ghost */
+  --radius-stage-fossil:                8px;  /* fossil / entombed */
+
+  /* Conviction-exclusive shadow tokens — Tanya §13.
+     Gold is the accountability color — nothing else uses this shadow. */
+  --shadow-conviction:                 0 8px 40px oklch(78% 0.14 68deg / 0.12);
+  --shadow-conviction-glow:            0 0 20px oklch(78% 0.14 68deg / 0.22);
+
+  /* Endangered pulsing ring — animated via border-pulse @keyframes in decay-stage-identity.css */
+  --pulse-ring-color:                  var(--color-decay-endangered);
+  --pulse-expand:                      0px;  /* future: heartbeat orchestrator writes 0px→2px→0px */
+
+  /* Receipt surface — Tanya §6.3 (distinct from default background, warm gold wash) */
+  --surface-receipt:                   oklch(14% 0.015 68deg);
+  --border-receipt:                    var(--gold-border);
+
   /* ── Stage-Crossing Flash Tokens (Tanya §3 — decay:stage-change visual flinch) ── */
   /* Flash color comes from --color-decay-* ramp — no new hex values.               */
   /* Ring opacity = border glow peak; tint opacity = cover image overlay peak.       */

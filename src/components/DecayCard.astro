@@ -49,12 +49,25 @@ function cardAtmosphere(factor: number): string {
   return 'entombed';
 }
 const atmosphere = cardAtmosphere(post.decay);
+
+// Stage identity attribute — drives [data-decay-stage] CSS selectors in decay-stage-identity.css.
+// Thresholds mirror stage-identity.ts stageFor() and heartbeat-orchestrator FOSSIL_THRESHOLD.
+// JS (applyStageTokens) updates this dynamically; SSR sets the initial correct value.
+function stageAttr(factor: number): string {
+  if (factor >= 0.97) return 'fossil';
+  if (factor >= 0.75) return 'ghost';
+  if (factor >= 0.50) return 'endangered';
+  if (factor >= 0.25) return 'fading';
+  return 'fresh';
+}
+const decayStage = stageAttr(post.decay);
 ---
 
 <article
   class="decay-card post-card choreo-pending"
   style={post.decayStyle}
   data-atmosphere={atmosphere}
+  data-decay-stage={decayStage}
   data-slug={post.slug}
   data-pub-date={post.pubDateISO}
   data-decay-factor={post.decay.toFixed(4)}
@@ -135,7 +148,8 @@ const atmosphere = cardAtmosphere(post.decay);
       saturate(calc(1 - var(--decay-factor, 0) * 0.8))
       sepia(calc(var(--decay-factor, 0) * var(--decay-sepia, 0)))
       opacity(calc(1 - var(--decay-factor, 0) * 0.55))
-      blur(calc(var(--decay-factor, 0) * 2px));
+      /* Tanya §5: cap blur at 1.2px — 2px looks broken, not aged */
+      blur(calc(var(--decay-factor, 0) * 1.2px));
     transition: filter 600ms ease;
     will-change: filter;
   }
@@ -252,11 +266,28 @@ const atmosphere = cardAtmosphere(post.decay);
     fossil:     300,
   };
 
+  /**
+   * Adobe circuit-breaker: stops infinite border-pulse after 15s on tab restore.
+   * Only fires if card is still in endangered stage after 15s (stuck animation edge case).
+   * Tanya §12 Rule 4 + Adobe "How Can Web Animations Fail Safely?"
+   */
+  function armCircuitBreaker(card: HTMLElement): void {
+    setTimeout(() => {
+      if (!document.contains(card)) return;
+      if (card.dataset.decayStage !== 'endangered') return;
+      card.style.setProperty('animation', 'none');
+    }, 15_000);
+  }
+
   function handleStageChange(e: Event): void {
     const card   = e.currentTarget as HTMLElement;
     const detail = (e as CustomEvent<{ stage: string }>).detail;
     if (!detail?.stage) return;
     if (card.className.includes(PREFIX)) return;  // re-entry: already crossing
+    // Sync data-decay-stage on card — activates [data-decay-stage] CSS identity selectors.
+    // JS applyStageTokens() also sets this for the blog-detail orchestrator path.
+    card.dataset.decayStage = detail.stage;
+    if (detail.stage === 'endangered') armCircuitBreaker(card);
     card.classList.add(PREFIX + detail.stage);
     setTimeout(() => card.classList.remove(PREFIX + detail.stage), FLASH_MS[detail.stage] ?? 600);
   }

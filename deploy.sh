@@ -4,6 +4,57 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v114 — Decay Stage Identity System (2026-04-13)
+#   Sprint: Five discrete visual worlds layered over the existing continuous decay
+#     gradient. Each stage (fresh/fading/endangered/ghost/fossil) now has a complete
+#     visual identity: stage-specific border color, title font-weight, excerpt opacity,
+#     border radius (alive=organic 14px → ghost=stiffening 10px → fossil=tombstone 8px),
+#     and box-shadow. Endangered gains a slow pulsing border (0.5 Hz, 2s period) as an
+#     urgency signal; an Adobe-pattern circuit-breaker (armCircuitBreaker, 15s setTimeout)
+#     guards against stuck animations on tab restore. Fossil cards are tombstones: no
+#     elevation, no hover lift, no pulse — completely still. The system is card-scoped:
+#     --si-* vars written to el.style (never :root) to prevent cascade pollution between
+#     cards at different decay stages co-existing on the same page.
+#   New files:
+#     src/lib/client/stage-identity.ts — stageFor() maps decay factor [0,1] to StageId;
+#       tokensFor() returns full StageTokens record; applyStageTokens(el, stage) writes
+#       7 --si-* CSS vars to card element inline style and sets data-decay-stage attribute;
+#       idempotent guard (no-op if stage already matches); pure functions — zero new RAF
+#       registrations; FOSSIL_THRESHOLD=0.97 mirrors heartbeat-orchestrator constant.
+#     src/styles/decay-stage-identity.css — [data-decay-stage="*"].decay-card selectors
+#       for all 5 worlds; fresh: high-chroma green lift shadow; fading: warmth-retreating
+#       amber shadow; endangered: pressure ring box-shadow + border-pulse @keyframes (0.5
+#       Hz) + title color=--color-decay-endangered; ghost: near-flat shadow + letter-
+#       spacing 0.02em (text recedes, users lean in); fossil: box-shadow:none + hover
+#       lift override (transform:none); cover-wrap border-radius concentric match per
+#       stage; reduced-motion guard cancels border-pulse, preserves all other identity
+#       properties (weight/opacity/shadow/radius are non-animated — Tanya §12 Rule 5).
+#   Modified files:
+#     src/components/DecayCard.astro — stageAttr() SSR-computes initial data-decay-stage
+#       from post.decay factor; data-decay-stage attribute added to article root (no FOUC
+#       before JS); handleStageChange() syncs data-decay-stage on decay:stage-change event;
+#       armCircuitBreaker() cancels stuck border-pulse after 15s if card still endangered
+#       (Adobe §circuit-breaker + Tanya §12 Rule 4); cover-image blur capped at 1.2px
+#       (was 2px — Tanya §5: cap blur at 1.2px, 2px looks broken not aged).
+#     src/lib/client/heartbeat-orchestrator.ts — imports applyStageTokens + stageFor
+#       from stage-identity; writeStaticState() gains el: HTMLElement param and calls
+#       applyStageTokens(el, stage) (fossil exit path — Mike Koch §napkin-plan); tickColor()
+#       calls applyStageTokens every THROTTLED 120ms tick (idempotent guard, card-scoped);
+#       tickFrame() fossil-threshold branch passes cardEl to writeStaticState.
+#     src/styles/tokens.css — stage border tokens (--stage-{fresh|fading|endangered|
+#       ghost|fossil}-border aliasing --color-decay-* ramp, no raw hex); title weight
+#       ladder per stage; --stage-endangered-pulse-dur/ease; radius ladder (--radius-
+#       stage-alive 14px / ghost 10px / fossil 8px); --shadow-conviction + --shadow-
+#       conviction-glow (gold accountability, Tanya §13); --surface-receipt + --border-
+#       receipt (Tanya §6.3); --pulse-ring-color.
+#     src/layouts/BaseLayout.astro — imports decay-stage-identity.css immediately after
+#       decay.css (import order enforces specificity: [data-decay-stage].decay-card beats
+#       .decay-card — intentional cascade override).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v113).
+#
 # Architecture v113 — Stage-Crossing Flash: Decay Card Visual Flinch System (2026-04-13)
 #   Sprint: DecayCard gains a stage-crossing visual flinch fired the instant the
 #     decay:stage-change CustomEvent bubbles up from a DecayClock ring. A client

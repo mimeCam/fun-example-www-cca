@@ -1,0 +1,231 @@
+/* src/styles/decay-stage-identity.css
+ * Decay Stage Identity System — five distinct visual worlds, not five opacities.
+ * Consumes --si-* CSS vars written per-card by stage-identity.ts (applyStageTokens).
+ * Activated by data-decay-stage="fresh|fading|endangered|ghost|fossil" on .decay-card.
+ *
+ * Specificity: [data-decay-stage].decay-card beats .decay-card — intentional cascade.
+ * Import order: after decay.css (in BaseLayout.astro) — stage identity overrides base decay.
+ *
+ * Rule: zero raw hex values. All colors reference --color-decay-* or other tokens.css primitives.
+ * Rule: zero new requestAnimationFrame registrations — border-pulse is pure CSS keyframe.
+ * Rule: prefers-reduced-motion suppresses all animations — static state preserved.
+ *
+ * Architecture: Mike Koch §napkin-plan (§Stage Identity Layer)
+ * UX: Tanya Donska §3 (Five Worlds stage identity table, §3.2 radius philosophy)
+ * A11y: Adobe "How Can Web Animations Fail Safely?" — circuit-breaker for border-pulse in JS.
+ *
+ * Credits: Mike Koch (arch), Tanya Donska (UX spec), DevBrain (ambient animation principles)
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * STAGE: FRESH — Alive. Confident. High-chroma green lift.
+ * Factor 0–0.25 | BPM 72 | Weight 700 | Shadow: warm green bloom
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+[data-decay-stage="fresh"].decay-card {
+  /* Override calcification radius — fresh posts are fully rounded (alive = organic) */
+  --card-computed-radius: var(--radius-stage-alive, 14px);
+  /* Stage-specific shadow: warm lifted green — the post floats off the page */
+  box-shadow:
+    0 2px 8px  oklch(0% 0 0 / 0.20),
+    0 8px 32px color-mix(in oklch, var(--color-decay-fresh) 16%, transparent);
+  /* Stage border: high-chroma green at 12% opacity */
+  border-color: color-mix(in oklch,
+    var(--si-border-color, var(--color-decay-fresh))
+    calc(var(--si-border-opacity, 0.12) * 100%), transparent);
+}
+
+[data-decay-stage="fresh"] .post-title {
+  font-weight: var(--si-title-weight, 700);
+  opacity:     var(--si-title-opacity, 1.0);
+}
+
+[data-decay-stage="fresh"] .post-excerpt {
+  opacity: var(--si-excerpt-opacity, 0.70);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * STAGE: FADING — Wistful. Soft warmth retreating.
+ * Factor 0.25–0.50 | BPM 55 | Weight 600 | Shadow: amber pulling back
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+[data-decay-stage="fading"].decay-card {
+  --card-computed-radius: var(--radius-stage-alive, 14px);
+  /* Shadow: warmth retreating — still elevated, glow pulling back */
+  box-shadow:
+    0 2px 6px  oklch(0% 0 0 / 0.18),
+    0 6px 20px color-mix(in oklch, var(--color-decay-fading) 10%, transparent);
+  border-color: color-mix(in oklch,
+    var(--si-border-color, var(--color-decay-fading))
+    calc(var(--si-border-opacity, 0.08) * 100%), transparent);
+}
+
+[data-decay-stage="fading"] .post-title {
+  font-weight: var(--si-title-weight, 600);
+  opacity:     var(--si-title-opacity, 0.92);
+}
+
+[data-decay-stage="fading"] .post-excerpt {
+  opacity: var(--si-excerpt-opacity, 0.65);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * STAGE: ENDANGERED — Urgent. Contrasted. The card trembles.
+ * Factor 0.50–0.75 | BPM 38 | Weight 600 | Pulse ring | Full opacity
+ *
+ * Tanya §3: endangered is the highest contrast state — urgency demands
+ * maximum legibility. Never reduce contrast of a post that needs saving.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+[data-decay-stage="endangered"].decay-card {
+  --card-computed-radius: var(--radius-stage-alive, 14px);
+  /* Shadow ring: pulsing border effect — card feels under pressure */
+  box-shadow:
+    0 2px 8px oklch(0% 0 0 / 0.25),
+    0 0 0 2px color-mix(in oklch, var(--color-decay-endangered) 20%, transparent);
+  /* Border pulses via animation — stage-crossing flash already handles the ring */
+  border-color: color-mix(in oklch,
+    var(--si-border-color, var(--color-decay-endangered))
+    calc(var(--si-border-opacity, 0.15) * 100%), transparent);
+  /* Pulsing border animation — 0.5 Hz (2s period), visible urgency not alarm */
+  animation: border-pulse var(--si-pulse-duration, 2s)
+    var(--stage-endangered-pulse-ease, ease-in-out) infinite;
+}
+
+[data-decay-stage="endangered"] .post-title {
+  font-weight: var(--si-title-weight, 600);
+  opacity:     var(--si-title-opacity, 1.0);
+  /* Stage color: endangered title signals urgency directly */
+  color: var(--color-decay-endangered);
+}
+
+[data-decay-stage="endangered"] .post-excerpt {
+  opacity: var(--si-excerpt-opacity, 0.70);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * STAGE: GHOST — Barely there. Lean in to read.
+ * Factor 0.75–0.97 | BPM 22 + jitter | Weight 400 | Nearly flat shadow
+ *
+ * Tanya §3: ghost cards look cold and thin — users instinctively lean in.
+ * The 0.02em letter-spacing makes text recede — distance made typographic.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+[data-decay-stage="ghost"].decay-card {
+  /* Radius contracts: alive=14px, ghost=10px — the shape stiffens */
+  --card-computed-radius: var(--radius-stage-ghost, 10px);
+  /* Shadow: almost nothing — the card barely exists above the surface */
+  box-shadow:
+    0 1px 4px  oklch(0% 0 0 / 0.15),
+    0 2px 8px  color-mix(in oklch, var(--color-decay-ghost) 4%, transparent);
+  border-color: color-mix(in oklch,
+    var(--si-border-color, var(--color-decay-ghost))
+    calc(var(--si-border-opacity, 0.04) * 100%), transparent);
+}
+
+[data-decay-stage="ghost"] .post-title {
+  font-weight:    var(--si-title-weight, 400);
+  opacity:        var(--si-title-opacity, 0.65);
+  letter-spacing: 0.02em;  /* text recedes; users lean in to read */
+}
+
+[data-decay-stage="ghost"] .post-excerpt {
+  opacity: var(--si-excerpt-opacity, 0.45);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * STAGE: FOSSIL — Archive. Tombstone. Stone weight, no elevation.
+ * Factor 0.97–1.0 | BPM 0 (still) | Weight 400 | No shadow at all
+ *
+ * Tanya §3: fossil cards feel like archived artefacts — heavy, still,
+ * sepia-tinged. The tombstone has no elevation. Any motion would undermine
+ * the entire metaphor. Rule 4: fossil cards are completely still.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+[data-decay-stage="fossil"].decay-card {
+  /* Radius: sharpest corners — stone slab. The shape is now a tombstone. */
+  --card-computed-radius: var(--radius-stage-fossil, 8px);
+  /* Flat. Dead. The tombstone has no elevation. */
+  box-shadow: none;
+  /* Muted stone border — barely perceptible */
+  border-color: color-mix(in oklch, var(--color-decay-fossil) 5%, transparent);
+}
+
+[data-decay-stage="fossil"] .post-title {
+  font-weight: var(--si-title-weight, 400);
+  opacity:     var(--si-title-opacity, 0.40);
+}
+
+[data-decay-stage="fossil"] .post-excerpt {
+  opacity: var(--si-excerpt-opacity, 0.30);
+}
+
+/* Fossil hover override: fossil cards do not lift — stone is heavy.
+   Tanya §12 Rule 4: "No hover animation. No cursor change beyond pointer." */
+[data-decay-stage="fossil"].decay-card:hover,
+[data-decay-stage="fossil"].decay-card:focus-within {
+  box-shadow: none;
+  transform:  none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * SHARED: Cover-wrap radius concentric matching
+ * Tanya §5: footer bottom corners must exactly match card's stage radius.
+ * Covered by --card-computed-radius already used in DecayCard.astro.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* Fresh/Fading/Endangered: 14px top corners on cover image */
+[data-decay-stage="fresh"] .cover-wrap,
+[data-decay-stage="fading"] .cover-wrap,
+[data-decay-stage="endangered"] .cover-wrap {
+  border-radius: var(--radius-stage-alive, 14px) var(--radius-stage-alive, 14px) 0 0;
+}
+[data-decay-stage="fresh"] .cover-gradient,
+[data-decay-stage="fading"] .cover-gradient,
+[data-decay-stage="endangered"] .cover-gradient {
+  border-radius: var(--radius-stage-alive, 14px) var(--radius-stage-alive, 14px) 0 0;
+}
+
+/* Ghost: 10px */
+[data-decay-stage="ghost"] .cover-wrap,
+[data-decay-stage="ghost"] .cover-gradient {
+  border-radius: var(--radius-stage-ghost, 10px) var(--radius-stage-ghost, 10px) 0 0;
+}
+
+/* Fossil: 8px */
+[data-decay-stage="fossil"] .cover-wrap,
+[data-decay-stage="fossil"] .cover-gradient {
+  border-radius: var(--radius-stage-fossil, 8px) var(--radius-stage-fossil, 8px) 0 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * @keyframes: border-pulse
+ * Endangered pulsing border — 0.5 Hz (2s period).
+ * Visible urgency, not aggressive noise. Color transitions via border-color.
+ * Adobe §circuit-breaker: JS setTimeout(15s) removes stuck infinite loop on tab restore.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes border-pulse {
+  0%, 100% {
+    border-color: color-mix(in oklch,
+      var(--si-border-color, var(--color-decay-endangered))  8%, transparent);
+  }
+  50% {
+    border-color: color-mix(in oklch,
+      var(--si-border-color, var(--color-decay-endangered)) 22%, transparent);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * REDUCED MOTION
+ * prefers-reduced-motion: suppress border-pulse; all other identity
+ * properties (weight, opacity, shadow, radius) are non-animated — they apply.
+ * Tanya §12 Rule 5: "reduced-motion users still get all feedback, just
+ * without the choreography."
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-decay-stage="endangered"].decay-card {
+    animation: none;
+  }
+}

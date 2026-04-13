@@ -25,6 +25,7 @@ import { springFrame }   from '../spring-easing';
 import { decayColorLerp } from './decay-color-lerp';
 import type { OklchColor } from './decay-color-lerp';
 import scheduler, { FramePriority } from './frame-scheduler';
+import { applyStageTokens, stageFor } from './stage-identity';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -107,10 +108,14 @@ function writeColor(color: OklchColor): void {
   r.style.setProperty('--hb-color-h', color.h.toFixed(1));
 }
 
-/** Full static state — used by reduced-motion path and fossil stage. */
-function writeStaticState(factor: number): void {
+/** Full static state — used by reduced-motion path and fossil stage.
+ *  el: the card element to receive card-scoped --si-* vars and data-decay-stage.
+ *  Mike Koch §napkin-plan: "Also add a one-time call in writeStaticState() (fossil exit path)."
+ */
+function writeStaticState(factor: number, el: HTMLElement): void {
   writePhysics(0, bpmForFactor(factor));
   writeColor(decayColorLerp(factor));
+  applyStageTokens(el, stageFor(factor));
 }
 
 // ── Orchestrator class ────────────────────────────────────────────────────────
@@ -132,8 +137,8 @@ export class HeartbeatOrchestrator {
   }
 
   start(): void {
-    if (this.reducedMotion) { writeStaticState(this.factor); return; }
-    if (this.factor >= FOSSIL_THRESHOLD) { writeStaticState(this.factor); return; }
+    if (this.reducedMotion) { writeStaticState(this.factor, this.cardEl); return; }
+    if (this.factor >= FOSSIL_THRESHOLD) { writeStaticState(this.factor, this.cardEl); return; }
     this.startTs = performance.now();
     const u1 = scheduler.register('heartbeat-physics', ts => this.tickFrame(ts), FramePriority.IMMEDIATE);
     const u2 = scheduler.register('heartbeat-color',   ts => this.tickColor(ts),   FramePriority.THROTTLED);
@@ -149,7 +154,7 @@ export class HeartbeatOrchestrator {
   /** Called every frame (~16ms) by FrameScheduler. Epsilon-gated CSS var writes. */
   tickFrame(ts: DOMHighResTimeStamp): void {
     this.syncFactor();
-    if (this.factor >= FOSSIL_THRESHOLD) { this.stop(); writeStaticState(this.factor); return; }
+    if (this.factor >= FOSSIL_THRESHOLD) { this.stop(); writeStaticState(this.factor, this.cardEl); return; }
     const { intensity, bpm, tNorm } = this.computeWave(ts);
     this.checkBeatJitter(tNorm);
     this.prevTNorm = tNorm;
@@ -160,10 +165,11 @@ export class HeartbeatOrchestrator {
 
   // ── THROTTLED frame handler — color lerp ──────────────────────────────────
 
-  /** Called every ~120ms by FrameScheduler. Writes color only when factor changes. */
+  /** Called every ~120ms by FrameScheduler. Writes color + stage identity when factor changes. */
   tickColor(_ts: DOMHighResTimeStamp): void {
     if (Math.abs(this.factor - this.prevColorFactor) > COLOR_FACTOR_EPSILON) {
       writeColor(decayColorLerp(this.factor));
+      applyStageTokens(this.cardEl, stageFor(this.factor));  // card-scoped, idempotent
       this.prevColorFactor = this.factor;
     }
   }
