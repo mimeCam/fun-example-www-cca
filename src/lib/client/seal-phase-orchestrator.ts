@@ -94,6 +94,19 @@ function watchPhaseAttr(el: HTMLElement): MutationObserver {
   return obs;
 }
 
+// ── Receipt phase: emotional peak hold ──────────────────────────────────────
+// 1800ms before share CTA becomes interactive — let the weight register.
+// CSS [data-receipt-cta-locked] drives pointer-events + opacity (seal-receipt.css).
+// Tanya §6.3 Phase 4: "the user seals and immediately wants to tell someone."
+// The hold guarantees the trophy lands before the share prompt appears.
+
+const RECEIPT_CTA_HOLD_MS = 1800;
+
+function lockShareCta(btn: HTMLButtonElement): void {
+  btn.dataset.receiptCtaLocked = '';
+  setTimeout(() => delete btn.dataset.receiptCtaLocked, RECEIPT_CTA_HOLD_MS);
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -115,4 +128,14 @@ export function initOrchestrator(el: HTMLElement): Unsubscribe {
   const obs = watchPhaseAttr(el);
   applyScoreTier(el, Number(el.dataset.score ?? '5'));
   return (): void => obs.disconnect();
+}
+
+/**
+ * Call once the receipt DOM is populated. Locks the share CTA for 1800ms
+ * so the trophy visual registers before the author is prompted to share.
+ * Pass the [data-receipt] element (not the outer ceremony container).
+ */
+export function onReceiptPhase(receiptEl: HTMLElement): void {
+  const btn = receiptEl.querySelector<HTMLButtonElement>('[data-receipt-share]');
+  if (btn) lockShareCta(btn);
 }

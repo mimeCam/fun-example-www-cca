@@ -4,6 +4,46 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v108 — SealReceipt Standalone Trophy Component (2026-04-13)
+#   Sprint: SealReceipt extracted from inlined SealCeremony HTML into a
+#     dedicated certificate-grade trophy component. Elevated visual language:
+#     hex notary stamp (SVG emboss with gold glow), conviction score bar
+#     (fill-animated, gradient gold track), HMAC fingerprint chip (first 8 hex
+#     chars), RFC 3161 status row, BattingAverageChip snapshot at moment of
+#     seal, author conviction note blockquote (revealed by JS), share CTA with
+#     1800ms emotional peak hold (onReceiptPhase in seal-phase-orchestrator.ts),
+#     download proof + audit trail secondary actions. Print layout: A4-safe
+#     parchment surface, glow-free, share/download hidden. Pure UIX — zero
+#     infra changes. DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET,
+#     GITHUB_PAT, DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup
+#     sequence unchanged (steps 1–8 identical to v107).
+#   New files:
+#     src/components/SealReceipt.astro — standalone trophy artifact; imports
+#       BattingAverageChip (SSR-rendered at moment of seal); static shell —
+#       SealCeremony's populateReceipt() fills data-* slots post-seal;
+#       data-receipt-share btn triggers Web Share API with clipboard fallback;
+#       data-receipt-cta-locked CSS attribute drives 1800ms pointer-events lock.
+#     src/styles/seal-receipt.css — single-source-of-truth styles; receipt-unfurl
+#       drift-tier (600ms ease-out) entry animation; sr-bar-fill gradient transition;
+#       sr-share-btn gold fill with hover lift + 1800ms locked opacity 0.35;
+#       print @media: parchment white, no glow, share/download hidden; reduced-
+#       motion guard: animation + transitions cancelled.
+#   Modified files:
+#     src/components/SealCeremony.astro — imports SealReceipt; receipt phase
+#       uses <SealReceipt slug title authorSlug> instead of 2380-byte inlined block;
+#       onReceiptPhase(receipt) called at both receipt entry points (conviction
+#       hold-to-seal + self-seal triggerReceiptBloom path); populateReceipt()
+#       refactored: fmtSealDate() (ISO with time + UTC zone), setReceiptMeta()
+#       (date/fingerprint/score-fill/note/anchor), setScoreFill(), setReceiptNote(),
+#       setAnchorRow() — single-responsibility helpers replace monolith block.
+#     src/lib/client/seal-phase-orchestrator.ts — onReceiptPhase(el) exported;
+#       lockShareCta() sets data-receipt-cta-locked on [data-receipt-share] btn
+#       then clears after RECEIPT_CTA_HOLD_MS = 1800ms; CSS drives pointer-events
+#       + opacity; Tanya §6.3 Phase 4 emotional-peak-hold spec.
+#     AGENTS.md — Receipt phase section added: SealReceipt arch summary, data-*
+#       slot contract, credits (Mike Koch hex emboss spec, Tanya §6.3 layout).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#
 # Architecture v107 — SealCeremony Consolidation Phase 2 (2026-04-13)
 #   Sprint: ConvictionSeal, ConvictionSealCeremony, ConvictionSealDisplay, and
 #     SealReceipt all deleted and inlined into the unified SealCeremony component.

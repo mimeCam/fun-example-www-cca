@@ -5,8 +5,7 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute, conviction ledger, OTS/RFC 3161, seal-phases, batting average, author-token, cron; `client/` holds animation orchestrators + sensory
-- `src/lib/client/frame-scheduler.ts` — master RAF singleton (priority buckets, FPS watchdog, battery saver); all animations route through this
-- `src/components/FrameSchedulerProvider.astro` — bootstraps RAF in `<head>`; must precede all animation islands
+- `src/lib/client/frame-scheduler.ts` — master RAF singleton; all animations route through this
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/tokens.css` — master design token registry (single source of truth)
@@ -18,8 +17,7 @@
 
 ## Seal Ceremony
 
-Single component: `src/components/SealCeremony.astro`  
-- `variant="self"` — self-seal on post page (4-phase: compose → confirm → anchor → receipt)  
-- `variant="conviction"` — admin conviction seal (hold-to-seal, `createCeremony()`)  
-- `sealEntry={entry}` — sealed display branch (zero JS, CSS only)  
-DB orchestration lives in the caller (`admin.astro`, `blog/[slug].astro`) — never in the component.
+`src/components/SealCeremony.astro` — two variants (`self` / `conviction`), sealed display branch (zero JS).  
+`src/components/SealReceipt.astro` — trophy artifact at ceremony end; populated via `data-*` slots by `SealCeremony` JS.  
+`src/styles/seal-receipt.css` — certificate visual language for receipt card.  
+DB orchestration lives in callers (`admin.astro`, `blog/[slug].astro`), never in components.

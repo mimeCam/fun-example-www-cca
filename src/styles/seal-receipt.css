@@ -1,0 +1,328 @@
+/* src/styles/seal-receipt.css
+ * Certificate visual language for the SealReceipt trophy artifact.
+ * All values route through tokens.css — zero hardcoded colors or radii.
+ * Entry animation: receipt-unfurl (drift tier 600ms, ease-out — arrival, not bounce).
+ * Print layout: A4-safe, clean white surface, no glow shadows.
+ *
+ * Credits: Mike Koch (§SealReceipt arch, hex emboss, print spec),
+ *          Tanya Donska (§6.3 Phase 4 trophy layout, share CTA, shadow spec)
+ */
+
+/* ── Root card ──────────────────────────────────────────────────── */
+
+.seal-receipt {
+  position:      relative;
+  background:    var(--surface-sealed);
+  border:        1px solid var(--border-sealed);
+  border-top:    3px solid var(--gold);       /* brand mark — sealed document signal */
+  border-radius: var(--radius-lg);
+  box-shadow:    var(--shadow-e4);
+  padding:       var(--space-8);
+  animation:     receipt-unfurl var(--motion-drift-duration) ease-out both;
+}
+
+/* ── Entry animation (drift tier — arrival, not bounce) ─────────── */
+
+@keyframes receipt-unfurl {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+/* ── Header: eyebrow row ────────────────────────────────────────── */
+
+.sr-header { margin-bottom: var(--space-5); }
+
+.sr-eyebrow-row {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-3);
+}
+
+.sr-eyebrow {
+  font-size:      var(--text-2xs);
+  font-weight:    var(--weight-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--gold);
+}
+
+.sr-rfc-tag {
+  font-size:      var(--text-2xs);
+  font-family:    var(--font-mono);
+  letter-spacing: 0.04em;
+  color:          var(--text-tertiary);
+  margin-left:    auto;
+}
+
+/* ── Title + hex seal side-by-side ──────────────────────────────── */
+
+.sr-title-area {
+  display:         flex;
+  align-items:     flex-start;
+  gap:             var(--space-5);
+  margin-bottom:   var(--space-6);
+}
+
+.sr-title {
+  flex:           1;
+  font-size:      var(--text-xl);
+  font-weight:    var(--weight-semibold);
+  line-height:    var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  color:          var(--text-primary);
+  margin:         0;
+}
+
+/* ── Hex seal SVG emboss ─────────────────────────────────────────── */
+
+.sr-hex-svg {
+  flex-shrink: 0;
+  color:       var(--gold);
+  filter:      drop-shadow(0 0 8px color-mix(in oklch, var(--gold) 28%, transparent));
+  margin-top:  2px;   /* optical align with title cap-height */
+}
+
+/* ── Field rows ──────────────────────────────────────────────────── */
+
+.sr-row {
+  display:       flex;
+  align-items:   baseline;
+  gap:           var(--space-3);
+  padding:       var(--space-2) 0;
+  border-bottom: 1px solid var(--border-faint);
+}
+
+.sr-row:last-of-type { border-bottom: none; }
+
+.sr-label {
+  flex-shrink:    0;
+  width:          6.5rem;
+  font-size:      var(--text-2xs);
+  font-family:    var(--font-mono);
+  font-weight:    var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--text-tertiary);
+  line-height:    1.4;
+}
+
+.sr-value {
+  font-size:   var(--text-xs);
+  color:       var(--text-secondary);
+  font-family: var(--font-mono);
+  line-height: 1.4;
+  min-width:   0;
+  word-break:  break-all;
+}
+
+/* ── Conviction score bar ────────────────────────────────────────── */
+
+.sr-score-display {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-3);
+  flex:        1;
+  min-width:   0;
+}
+
+.sr-bar-track {
+  flex:          1;
+  height:        4px;
+  background:    var(--border-subtle);
+  border-radius: var(--radius-full);
+  overflow:      hidden;
+  max-width:     120px;
+}
+
+.sr-bar-fill {
+  height:        100%;
+  background:    linear-gradient(90deg, var(--gold-deep), var(--gold));
+  border-radius: var(--radius-full);
+  width:         0%;
+  transition:    width var(--motion-drift-duration) var(--motion-drift-easing);
+}
+
+.sr-score-readout {
+  display:     flex;
+  align-items: baseline;
+  gap:         2px;
+  flex-shrink: 0;
+}
+
+.sr-score-num {
+  font-family: var(--font-mono);
+  font-size:   var(--text-lg);
+  font-weight: var(--weight-bold);
+  color:       var(--gold);
+  line-height: 1;
+}
+
+.sr-score-denom {
+  font-family: var(--font-mono);
+  font-size:   var(--text-xs);
+  color:       var(--gold-dim);
+}
+
+/* ── Receipt fingerprint ─────────────────────────────────────────── */
+
+.sr-fingerprint {
+  color:          var(--gold-dim);
+  font-weight:    var(--weight-semibold);
+  letter-spacing: 0.04em;
+}
+
+/* ── Hash row: ink-dry animation lives in seal-ceremony.css ──────── */
+/* .seal-receipt-hash class drives clip-path + color transition.     */
+
+.sr-hash-row .sr-value { color: var(--text-ghost); } /* overridden by animation */
+
+/* ── TST / RFC 3161 status text ──────────────────────────────────── */
+
+.sr-tst-status { margin: 0; }
+
+/* ── Anchor row link ─────────────────────────────────────────────── */
+
+.sr-link {
+  color:      var(--color-interactive);
+  transition: color var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+.sr-link:hover { color: var(--color-interactive-hover); }
+
+/* ── Author row: chip sits on baseline ───────────────────────────── */
+
+.sr-author-row { align-items: center; }
+
+/* ── Divider ─────────────────────────────────────────────────────── */
+
+.sr-rule {
+  height:        1px;
+  background:    var(--border-subtle);
+  margin:        var(--space-5) 0;
+}
+
+/* ── Conviction note ─────────────────────────────────────────────── */
+
+.sr-conviction-note {
+  margin:        0 0 var(--space-5);
+  padding:       var(--space-3) var(--space-4);
+  border-left:   2px solid var(--gold-border);
+  background:    var(--surface-inset);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.sr-note-text {
+  font-size:   var(--text-sm);
+  color:       var(--note-italic-color);
+  font-style:  italic;
+  line-height: var(--leading-normal);
+  margin:      0;
+}
+
+/* ── Actions footer ──────────────────────────────────────────────── */
+
+.sr-actions {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-4);
+  flex-wrap:   wrap;
+}
+
+/* ── Share button — primary gold fill (the reward CTA) ───────────── */
+
+.sr-share-btn {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           var(--space-2);
+  padding:       var(--space-3) var(--space-6);
+  background:    var(--gold);
+  border:        none;
+  border-radius: var(--radius-md);   /* concentric: inside radius-lg card, 8px pad → 12px btn */
+  color:         oklch(15% 0.02 280);
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-semibold);
+  cursor:        pointer;
+  box-shadow:    0 4px 16px color-mix(in oklch, var(--gold) 25%, transparent);
+  transition:
+    transform    var(--motion-snap-duration) var(--motion-snap-easing),
+    box-shadow   var(--motion-snap-duration) var(--motion-snap-easing),
+    opacity      var(--motion-drift-duration) var(--motion-drift-easing);
+}
+
+.sr-share-btn:hover {
+  transform:  translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 20px color-mix(in oklch, var(--gold) 32%, transparent);
+}
+
+.sr-share-btn:active { transform: scale(0.98); }
+
+/* 1800ms emotional peak hold — pointer-events off until weight registers */
+.sr-share-btn[data-receipt-cta-locked] {
+  pointer-events: none;
+  opacity:        0.35;
+}
+
+/* ── Secondary actions ───────────────────────────────────────────── */
+
+.sr-secondary-actions {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-4);
+  margin-left: auto;
+}
+
+.sr-download-btn {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           var(--space-2);
+  padding:       var(--space-3) var(--space-4);
+  background:    transparent;
+  border:        1px solid var(--border-sealed);
+  border-radius: var(--radius-md);
+  color:         var(--text-secondary);
+  font-size:     var(--text-xs);
+  cursor:        pointer;
+  transition:
+    background   var(--motion-snap-duration) var(--motion-snap-easing),
+    border-color var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+.sr-download-btn:hover {
+  background:   var(--surface-hover);
+  border-color: var(--border-medium);
+}
+
+.sr-audit-link {
+  font-size:  var(--text-xs);
+  color:      var(--text-tertiary);
+  transition: color var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+.sr-audit-link:hover { color: var(--text-secondary); }
+
+/* ── Print layout — A4-safe, clean parchment ─────────────────────── */
+
+@media print {
+  /* Parchment white surface, muted borders — no glow on paper */
+  .seal-receipt {
+    background:    oklch(98% 0.006 75);   /* --clr-earth-50 equiv */
+    border:        1px solid oklch(67% 0.03 250 / 0.35);
+    border-top:    3px solid oklch(78% 0.14 68deg);  /* --clr-gold-400 equiv */
+    box-shadow:    none;
+    padding:       1.5rem;
+    animation:     none;
+    color:         oklch(14% 0.012 55);   /* --clr-earth-900 equiv */
+  }
+
+  .sr-hex-svg   { width: 40px; height: 40px; filter: none; }
+  .sr-share-btn { display: none; }
+  .sr-secondary-actions .sr-download-btn { display: none; }
+  .sr-rule      { background: oklch(88% 0.004 250 / 0.5); }
+}
+
+/* ── Reduced motion: collapse animations ─────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .seal-receipt { animation: none; }
+  .sr-bar-fill  { transition: none; }
+}

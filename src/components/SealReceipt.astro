@@ -1,0 +1,217 @@
+---
+// src/components/SealReceipt.astro
+// The trophy artifact — certificate-grade receipt at the seal ceremony's peak.
+// Static shell: SealCeremony.astro's JS populates data-* slots post-seal.
+// BattingAverageChip and title are SSR-rendered — snapshot at moment of sealing.
+//
+// data-receipt           → root anchor used by populateReceipt() selector
+// data-receipt-date      → human-readable timestamp (e.g. "Apr 13, 2026, 02:32 PM UTC")
+// data-receipt-score     → conviction score number (1–10)
+// data-receipt-score-fill → score bar fill — JS sets style.width
+// data-receipt-hash      → full 64-char content hash (ink-dry animation via .seal-receipt-hash)
+// data-receipt-fingerprint → "Receipt #XXXXXXXX" (first 8 hex chars of hash)
+// data-receipt-tst-note  → RFC 3161 / TST status text
+// data-receipt-anchor-row → wrapper row; hidden by default, shown when anchorUrl is set
+// data-receipt-anchor    → conviction anchor href
+// data-receipt-audit     → audit trail link href
+// data-receipt-download  → download receipt JSON button
+// data-receipt-note      → conviction note blockquote (hidden until JS reveals it)
+// data-receipt-note-text → conviction note body text
+//
+// Credits: Mike Koch (napkin §SealReceipt arch + hex emboss spec),
+//          Tanya Donska (§6.3 Phase 4 trophy layout + share CTA spec)
+
+import BattingAverageChip from './BattingAverageChip.astro';
+
+interface Props {
+  slug:        string;
+  title?:      string;
+  authorSlug?: string;
+}
+
+const { slug, title, authorSlug = 'host' } = Astro.props;
+---
+
+<article
+  class="seal-receipt"
+  data-receipt
+  aria-live="polite"
+  aria-label="Conviction sealed — receipt"
+  role="region"
+>
+
+  <!-- ── Header: eyebrow + RFC badge ──────────────────────────────── -->
+  <header class="sr-header">
+    <div class="sr-eyebrow-row">
+      <span class="sr-eyebrow">SEALED CONVICTION</span>
+      <span class="sr-rfc-tag" aria-label="RFC 3161 timestamp certified">🔒 RFC&nbsp;3161</span>
+    </div>
+  </header>
+
+  <!-- ── Title + hex seal emboss ───────────────────────────────────── -->
+  <div class="sr-title-area">
+    {title && <h2 class="sr-title">{title}</h2>}
+    <!-- Hex notary stamp — conviction-gold, radial glow -->
+    <svg
+      class="sr-hex-svg"
+      viewBox="0 0 64 64"
+      width="52"
+      height="52"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <!-- Outer hexagon (pointed-top) -->
+      <path
+        class="sr-hex-outer"
+        d="M32 4L55 18L55 46L32 60L9 46L9 18Z"
+        stroke="currentColor"
+        stroke-width="1.5"
+        fill="color-mix(in oklch, currentColor 6%, transparent)"
+      />
+      <!-- Inner seal ring -->
+      <circle cx="32" cy="32" r="11" stroke="currentColor" stroke-width="1"/>
+      <!-- Notary checkmark -->
+      <path
+        d="M26 32.5L30 37L38 26.5"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </div>
+
+  <!-- ── Conviction score ───────────────────────────────────────────── -->
+  <div class="sr-row">
+    <span class="sr-label">CONVICTION</span>
+    <div class="sr-score-display">
+      <div class="sr-bar-track" role="presentation" aria-hidden="true">
+        <div class="sr-bar-fill" data-receipt-score-fill></div>
+      </div>
+      <span class="sr-score-readout">
+        <span class="sr-score-num" data-receipt-score></span>
+        <span class="sr-score-denom">/10</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Sealed timestamp ──────────────────────────────────────────── -->
+  <div class="sr-row">
+    <span class="sr-label">SEALED AT</span>
+    <time class="sr-value" data-receipt-date></time>
+  </div>
+
+  <!-- ── Receipt fingerprint (HMAC — first 8 hex chars) ────────────── -->
+  <div class="sr-row">
+    <span class="sr-label">RECEIPT</span>
+    <span class="sr-value sr-fingerprint" data-receipt-fingerprint aria-label="Receipt fingerprint"></span>
+  </div>
+
+  <!-- ── Content hash — ink-dry clip-path reveal ───────────────────── -->
+  <div class="sr-row sr-hash-row">
+    <span class="sr-label">HASH</span>
+    <p class="seal-receipt-hash sr-value" data-receipt-hash aria-label="Content hash"></p>
+  </div>
+
+  <!-- ── RFC 3161 / TST status ─────────────────────────────────────── -->
+  <div class="sr-row">
+    <span class="sr-label">TIMESTAMP</span>
+    <p class="sr-value sr-tst-status" data-receipt-tst-note>Anchoring…</p>
+  </div>
+
+  <!-- ── Conviction anchor (hidden until anchorUrl set by JS) ──────── -->
+  <div class="sr-row" style="display:none" data-receipt-anchor-row>
+    <span class="sr-label">ANCHOR</span>
+    <a
+      class="sr-value sr-link"
+      data-receipt-anchor
+      href="#"
+      target="_blank"
+      rel="noopener noreferrer"
+    >View on GitHub ↗</a>
+  </div>
+
+  <!-- ── Author batting average at moment of seal ──────────────────── -->
+  <div class="sr-row sr-author-row">
+    <span class="sr-label">AUTHOR STAKE</span>
+    <BattingAverageChip authorSlug={authorSlug} size="chip" />
+  </div>
+
+  <!-- ── Divider ───────────────────────────────────────────────────── -->
+  <div class="sr-rule" aria-hidden="true"></div>
+
+  <!-- ── Conviction note (hidden until JS reveals it) ──────────────── -->
+  <blockquote class="sr-conviction-note" data-receipt-note style="display:none">
+    <p class="sr-note-text" data-receipt-note-text></p>
+  </blockquote>
+
+  <!-- ── Actions ──────────────────────────────────────────────────── -->
+  <footer class="sr-actions">
+    <button
+      type="button"
+      class="sr-share-btn"
+      data-receipt-share
+      aria-label="Share this sealed conviction"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+        <polyline points="16 6 12 2 8 6"/>
+        <line x1="12" y1="2" x2="12" y2="15"/>
+      </svg>
+      <span class="sr-share-label">Share this receipt</span>
+    </button>
+
+    <div class="sr-secondary-actions">
+      <button
+        type="button"
+        class="sr-download-btn"
+        data-receipt-download
+        aria-label="Download proof as JSON"
+      >
+        <span aria-hidden="true">⬇</span> Download proof
+      </button>
+      <a class="sr-audit-link" data-receipt-audit href={`/audit/${slug}`}>
+        Audit trail ↓
+      </a>
+    </div>
+  </footer>
+
+</article>
+
+<script>
+  // ── Share button: Web Share API with clipboard fallback ────────────
+  // Fires on click. Targets current page URL (post with sealed conviction).
+  // data-receipt-cta-locked disables share for 1800ms (emotional peak hold).
+
+  document.querySelectorAll<HTMLButtonElement>('[data-receipt-share]').forEach(btn => {
+    btn.addEventListener('click', () => handleShare(btn));
+  });
+
+  function handleShare(btn: HTMLButtonElement): void {
+    const receipt = btn.closest<HTMLElement>('[data-receipt]');
+    const titleEl = receipt?.querySelector<HTMLElement>('.sr-title');
+    const shareTitle = titleEl?.textContent?.trim() ?? 'Sealed Conviction';
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: shareTitle, url }).catch(() => copyToClipboard(btn, url));
+    } else {
+      copyToClipboard(btn, url);
+    }
+  }
+
+  function copyToClipboard(btn: HTMLButtonElement, url: string): void {
+    const label = btn.querySelector<HTMLElement>('.sr-share-label');
+    navigator.clipboard.writeText(url).then(() => {
+      if (label) label.textContent = 'Copied!';
+      setTimeout(() => { if (label) label.textContent = 'Share this receipt'; }, 2200);
+    }).catch(() => {});
+  }
+</script>
+
+<style>
+  @import '../styles/seal-receipt.css';
+</style>

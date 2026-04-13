@@ -16,6 +16,7 @@
 
 import NotarizeStamp   from './NotarizeStamp.astro';
 import BloomParticles  from './BloomParticles.astro';
+import SealReceipt     from './SealReceipt.astro';
 import SealSoundToggle from './SealSoundToggle.astro';
 import ShareSealButton from './ShareSealButton.astro';
 import DecayClock      from './DecayClock.astro';
@@ -290,50 +291,7 @@ const riskText = variant === 'conviction'
 
     <!-- ── PHASE: RECEIPT ──────────────────────────────────────────── -->
     <div class="sc-phase sc-phase--receipt" aria-hidden="true" data-receipt-phase>
-      <!-- Inlined from SealReceipt.astro — @starting-style slide-up preserved -->
-      <div
-        class="seal-receipt sr-root"
-        data-receipt
-        aria-live="polite"
-        aria-label="Conviction sealed — receipt"
-        role="region"
-      >
-        <div class="sr-header">
-          <div class="sr-eyebrow-row">
-            <span class="sr-check-icon" aria-hidden="true">✦</span>
-            <span class="sr-eyebrow">CONVICTION SEALED</span>
-          </div>
-          <time class="sr-date" data-receipt-date></time>
-        </div>
-        <div class="sr-rule" aria-hidden="true"></div>
-        <div class="sr-score-row">
-          <div class="sr-field-label">CONVICTION SCORE</div>
-          <div class="sr-score-value">
-            <span data-receipt-score class="sr-score-num"></span>
-            <span class="sr-score-denom">/10</span>
-          </div>
-        </div>
-        <div class="sr-hash-block">
-          <div class="sr-field-label">CONTENT HASH</div>
-          <p class="seal-receipt-hash sr-hash" data-receipt-hash aria-label="Content hash"></p>
-        </div>
-        <div class="sr-tst-row">
-          <div class="sr-field-label">RFC 3161 TIMESTAMP</div>
-          <p class="sr-tst-note" data-receipt-tst-note>Anchoring…</p>
-        </div>
-        <div class="sr-anchor-row" style="display:none" data-receipt-anchor-row>
-          <div class="sr-field-label">CONVICTION ANCHOR</div>
-          <a class="sr-anchor-link" data-receipt-anchor href="#" target="_blank" rel="noopener noreferrer">
-            View on GitHub ↗
-          </a>
-        </div>
-        <div class="sr-actions">
-          <button type="button" class="sr-download-btn" data-receipt-download aria-label="Download receipt as JSON">
-            <span aria-hidden="true">⬇</span> Download Receipt
-          </button>
-          <a class="sr-audit-link" data-receipt-audit href="#conviction-audit">View Audit Record ↓</a>
-        </div>
-      </div>
+      <SealReceipt slug={slug} title={title} authorSlug={authorSlug} />
       <BloomParticles variant="receipt" />
     </div>
 
@@ -346,7 +304,7 @@ const riskText = variant === 'conviction'
 
 <script>
   // ── Shared imports ───────────────────────────────────────────────
-  import { initOrchestrator, onScoreChange } from '../lib/client/seal-phase-orchestrator';
+  import { initOrchestrator, onScoreChange, onReceiptPhase } from '../lib/client/seal-phase-orchestrator';
   import {
     initSealSound, playSealLock, playNotarizeChime, playReceiptReveal,
     playSealError, playScoreSelect, playSealPress,
@@ -429,6 +387,7 @@ const riskText = variant === 'conviction'
         delete el.dataset.sealPhase;
         populateReceipt(receipt, data, slug);
         populateShareScore(el, data);
+        onReceiptPhase(receipt);
         el.dispatchEvent(new CustomEvent('conviction:sealed', { bubbles: true, detail: { slug } }));
       },
       onError:         (msg) => { errorEl.textContent = msg; errorEl.style.display = 'block'; playSealError(); hapticForEvent('ERROR'); },
@@ -627,6 +586,7 @@ const riskText = variant === 'conviction'
     el.querySelector<HTMLElement>('[data-receipt-phase]')!.dataset.sealPhase = '4';
     setPhase(el, 'receipt');
     playForPhase('receipt');
+    onReceiptPhase(receipt);
     el.classList.add('blooming-receipt');
     setTimeout(() => el.classList.remove('blooming-receipt'), 800);
   }
@@ -645,21 +605,48 @@ const riskText = variant === 'conviction'
 
   function populateReceipt(el: HTMLElement, data: ReceiptData, slug: string): void {
     const dt = new Date(data.sealedAt);
-    setText(el, '[data-receipt-date]',     dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+    setText(el, '[data-receipt-date]',     fmtSealDate(dt));
     setText(el, '[data-receipt-score]',    String(data.score));
     setText(el, '[data-receipt-hash]',     data.hash);
     setText(el, '[data-receipt-tst-note]', data.tst_token ? 'Notarized via RFC 3161' : 'Local anchor (TSA unavailable)');
-    const dateEl = el.querySelector<HTMLTimeElement>('[data-receipt-date]');
-    if (dateEl) dateEl.setAttribute('datetime', dt.toISOString());
-    const auditEl = el.querySelector<HTMLAnchorElement>('[data-receipt-audit]');
-    if (auditEl) auditEl.href = `/audit/${slug}`;
-    if (data.anchorUrl) {
-      const anchor = el.querySelector<HTMLAnchorElement>('[data-receipt-anchor]');
-      const row    = el.querySelector<HTMLElement>('[data-receipt-anchor-row]');
-      if (anchor) anchor.href = data.anchorUrl as string;
-      if (row)    row.style.display = '';
-    }
+    setReceiptMeta(el, data, dt, slug);
     wireDownload(el, data);
+  }
+
+  function fmtSealDate(dt: Date): string {
+    return dt.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short',
+    });
+  }
+
+  function setReceiptMeta(el: HTMLElement, data: ReceiptData, dt: Date, slug: string): void {
+    el.querySelector<HTMLTimeElement>('[data-receipt-date]')?.setAttribute('datetime', dt.toISOString());
+    el.querySelector<HTMLAnchorElement>('[data-receipt-audit]')!.href = `/audit/${slug}`;
+    setText(el, '[data-receipt-fingerprint]', 'Receipt #' + data.hash.slice(0, 8).toUpperCase());
+    setScoreFill(el, data.score);
+    setReceiptNote(el, data.authorNote);
+    setAnchorRow(el, data.anchorUrl);
+  }
+
+  function setScoreFill(el: HTMLElement, score: number): void {
+    const fill = el.querySelector<HTMLElement>('[data-receipt-score-fill]');
+    if (fill) fill.style.width = `${(score / 10) * 100}%`;
+  }
+
+  function setReceiptNote(el: HTMLElement, note: string): void {
+    if (!note) return;
+    setText(el, '[data-receipt-note-text]', note);
+    const noteEl = el.querySelector<HTMLElement>('[data-receipt-note]');
+    if (noteEl) noteEl.style.display = '';
+  }
+
+  function setAnchorRow(el: HTMLElement, anchorUrl: string | null): void {
+    if (!anchorUrl) return;
+    const anchor = el.querySelector<HTMLAnchorElement>('[data-receipt-anchor]');
+    const row    = el.querySelector<HTMLElement>('[data-receipt-anchor-row]');
+    if (anchor) anchor.href = anchorUrl;
+    if (row)    row.style.display = '';
   }
 
   function populateShareScore(container: HTMLElement, data: ReceiptData): void {
