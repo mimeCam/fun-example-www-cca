@@ -183,6 +183,9 @@
   /* Rule: compose with decay/age shadows — do not replace them. Stack values.  */
   /* Rule: E4 gold ambient is CEREMONY ONLY — never resting, never hover.       */
 
+  /* Nav bar depth: hairline + soft drop (~2px perceived lift) — Tanya §12 */
+  --shadow-nav: 0 4px 12px oklch(0 0 0 / 0.30);
+
   /* E1 — resting: feed cards, chips, badges, stance count pills */
   --shadow-e1:
     0 1px 2px oklch(0.10 0.02 45 / 0.12),
@@ -516,6 +519,7 @@
   --notarize-bloom-edge:     oklch(55% 0.08 50);   /* amber deep  — fades to nothing */
   --notarize-ts-size:        2rem;                  /* RFC 3161 hero timestamp size   */
   --notarize-mark-size:      2.4rem;                /* ⬡ seal mark in bloom           */
+  --receipt-watermark-size:  4.5rem;                /* ⬡ background ghost watermark in receipt (larger, 0.12 opacity) */
   --notarize-bloom-duration: var(--motion-duration-deliberate); /* 500ms primary     */
   --notarize-pause-duration: 800ms;                 /* ceremonial pause — do not change */
   --notarize-shadow:

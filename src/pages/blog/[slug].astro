@@ -12,7 +12,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostBadge from '../../components/PostBadge.astro';
 import BattingAverageChip from '../../components/BattingAverageChip.astro';
 import PostNav from '../../components/PostNav.astro';
-import ConvictionSeal from '../../components/ConvictionSeal.astro';
 import SealCeremony from '../../components/SealCeremony.astro';
 import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
@@ -25,7 +24,7 @@ import PredictionCard from '../../components/PredictionCard.astro';
 import DisputeChallenge from '../../components/DisputeChallenge.astro';
 import DisputeTally from '../../components/DisputeTally.astro';
 import { flattenPredictions } from '../../lib/prediction-engine';
-// TensionBadge is rendered inside ConvictionSeal (embedded in status row).
+// TensionBadge is rendered inside SealCeremony sealed branch (embedded in status row).
 import { allPostDisplayData, extractMeta } from '../../lib/postMeta';
 import { getPostNav } from '../../lib/postNav';
 import { getReadingTime } from '../../lib/readingTime';
@@ -78,7 +77,7 @@ const postDecay      = decayFactor(pubDateISO, lifespan, new Date(), revivalCoun
 const daysRemaining  = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS);
 const postUrgency    = clockUrgency(daysRemaining);
 
-// Grace state — discriminated union drives ConvictionSeal's clock section
+// Grace state — discriminated union drives SealCeremony's sealed display clock section
 const graceState     = safeRead(() => getGraceState(post.slug, pubDateISO, postDecay, daysRemaining));
 
 function safeRead<T>(fn: () => T, fallback?: T): T {
@@ -169,27 +168,22 @@ const jsonLd      = [
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
 
-    <!-- Conviction: sealed display OR self-service seal ceremony.
-         Sealed → ConvictionSeal (score/clock/tension display).
-         Unsealed → SealCeremony (self-service 4-phase ceremony, no admin gate).
-         Admin context preserves ConvictionSeal form via /admin page. -->
-    {sealEntry ? (
-      <ConvictionSeal
-        slug={post.slug}
-        context="post"
-        graceState={safeGraceState}
-        revivalCount={revivalCount}
-        conviction={dominantVerdict}
-        tensionResult={tensionResult}
-        tst={tstData}
-      />
-    ) : (
-      <SealCeremony
-        slug={post.slug}
-        title={post.data.title}
-        authorSlug={post.data.authorSlug ?? 'host'}
-      />
-    )}
+    <!-- Conviction: single SealCeremony handles sealed display OR self-service ceremony.
+         sealEntry != null → sealed display (zero JS, permanent record).
+         sealEntry == null → self-seal ceremony (variant="self", 4-phase flow).
+         Admin conviction sealing lives in /admin (variant="conviction"). -->
+    <SealCeremony
+      slug={post.slug}
+      title={post.data.title}
+      authorSlug={post.data.authorSlug ?? 'host'}
+      variant="self"
+      sealEntry={sealEntry ?? null}
+      graceState={safeGraceState}
+      revivalCount={revivalCount}
+      conviction={dominantVerdict}
+      tensionResult={tensionResult}
+      tst={tstData}
+    />
 
     <!-- DecayClock bar: renders only when author has set a resolution_deadline.
          Maps to DeadlineStatus discriminated union — no booleans, no nullable flags.

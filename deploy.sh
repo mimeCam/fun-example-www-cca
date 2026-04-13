@@ -4,6 +4,43 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v107 — SealCeremony Consolidation Phase 2 (2026-04-13)
+#   Sprint: ConvictionSeal, ConvictionSealCeremony, ConvictionSealDisplay, and
+#     SealReceipt all deleted and inlined into the unified SealCeremony component.
+#     SealCeremony now drives both self-seal (variant="self", post page) and
+#     conviction sealing (variant="conviction", /admin). Sealed display branch is
+#     zero-JS / CSS-only; DB orchestration stays in the caller page.
+#     admin.astro wired to SealCeremony variant="conviction" with sealEntry +
+#     convictionStage props; deriveConvictionStage() helper resolves dispute state.
+#     blog/[slug].astro simplified: single <SealCeremony> replaces conditional
+#     ConvictionSeal / SealCeremony pair. seal-ceremony.css fully migrated to
+#     string [data-phase] selectors; nav.css border-bottom shadow tightened;
+#     tokens.css additions. Pure UIX — zero infra changes.
+#   Deleted files:
+#     src/components/ConvictionSeal.astro — merged into SealCeremony sealed branch
+#     src/components/ConvictionSealCeremony.astro — merged into SealCeremony
+#     src/components/ConvictionSealDisplay.astro — merged into SealCeremony
+#     src/components/SealReceipt.astro — merged into SealCeremony receipt phase
+#   Modified files:
+#     src/components/SealCeremony.astro — unified component; variant="self"|
+#       "conviction"; sealEntry prop drives sealed display; createCeremony()
+#       orchestrates conviction hold-to-seal; zero external component deps.
+#     src/pages/admin.astro — ConvictionSeal → SealCeremony variant="conviction";
+#       getDisputeResolution() + deriveConvictionStage() added; sealEntry +
+#       convictionStage threaded through PostStatus type.
+#     src/pages/blog/[slug].astro — ConvictionSeal import removed; single
+#       <SealCeremony variant="self" sealEntry={…}> replaces dual conditional.
+#     src/styles/seal-ceremony.css — new stylesheet centralising all ceremony
+#       phase animations; @keyframes seal-lock-snap, seal-receipt-bloom,
+#       seal-gold-arc, seal-hesitation-pulse; reduced-motion guard.
+#     src/styles/nav.css — nav border-bottom shadow refined.
+#     src/styles/tokens.css — minor token additions.
+#     AGENTS.md — WIP section promoted to completed Seal Ceremony entry.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v106).
+#
 # Architecture v106 — Author Profile Page + ConvictionStrip (2026-04-12)
 #   Sprint: Author profile page fully overhauled around the batting-average
 #     killer feature; ConvictionStrip Zone 1.5 surfaces site-wide track record

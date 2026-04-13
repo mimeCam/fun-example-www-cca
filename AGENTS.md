@@ -16,7 +16,10 @@
 
 `ADMIN_SECRET` (req) · `HMAC_SECRET` (req) · `GITHUB_PAT` (opt) · `RFC3161_URL` (opt)
 
-## WIP — Seal Ceremony Consolidation (Phase 2)
+## Seal Ceremony
 
-- Delete `ConvictionSealCeremony.astro` → `SealCeremony variant="conviction"` (update `admin.astro`)
-- Delete `ConvictionSeal.astro`, `ConvictionSealDisplay.astro`, `SealReceipt.astro` → inline into `SealCeremony.astro`
+Single component: `src/components/SealCeremony.astro`  
+- `variant="self"` — self-seal on post page (4-phase: compose → confirm → anchor → receipt)  
+- `variant="conviction"` — admin conviction seal (hold-to-seal, `createCeremony()`)  
+- `sealEntry={entry}` — sealed display branch (zero JS, CSS only)  
+DB orchestration lives in the caller (`admin.astro`, `blog/[slug].astro`) — never in the component.

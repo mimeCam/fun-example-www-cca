@@ -14,11 +14,13 @@ export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import { createHmac } from 'crypto';
-import { getSealEntry } from '../lib/conviction-ledger';
+import { getSealEntry, type LedgerEntry } from '../lib/conviction-ledger';
+import { getDisputeResolution } from '../lib/verdict-dispute';
 import { getVerdictRecord } from '../lib/collectiveMemory';
 import { getDeadlineStatus } from '../lib/deadline-enforcer';
-import ConvictionSeal from '../components/ConvictionSeal.astro';
+import SealCeremony from '../components/SealCeremony.astro';
 import VerdictResolutionPanel from '../components/VerdictResolutionPanel.astro';
+import type { ConvictionStage } from '../components/TrustBadge.astro';
 
 // ---------------------------------------------------------------------------
 // Auth helpers
@@ -71,6 +73,7 @@ if (Astro.request.method === 'POST') {
 
 type PostStatus = {
   slug: string; title: string; sealed: boolean; score: number | null; sealedAt: string | null;
+  sealEntry: LedgerEntry | null; convictionStage: ConvictionStage;
   verdictSealed: boolean; verdict: string | null; verdictNote: string | null; verdictSealedAt: string | null;
 };
 
@@ -78,6 +81,14 @@ type DeadlineRow = {
   slug: string; title: string;
   deadline: Date; daysRemaining: number; status: string;
 };
+
+function deriveConvictionStage(entry: LedgerEntry | null, slug: string): ConvictionStage {
+  if (!entry) return 'unsealed';
+  let resolution = null;
+  try { resolution = getDisputeResolution(slug); } catch { /* DB not ready */ }
+  if (!resolution) return 'sealed';
+  return resolution.state as ConvictionStage;
+}
 
 async function buildPostStatuses(): Promise<PostStatus[]> {
   const posts = await getCollection('blog');
@@ -88,6 +99,8 @@ async function buildPostStatuses(): Promise<PostStatus[]> {
       slug: p.slug,
       title: p.data.title as string,
       sealed: !!entry,
+      sealEntry: entry ?? null,
+      convictionStage: deriveConvictionStage(entry ?? null, p.slug),
       score: entry?.conviction_score ?? null,
       sealedAt: entry
         ? new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -340,10 +353,13 @@ const sealedCount = posts.filter(p => p.sealed).length;
       <div class="post-list">
         {posts.map(post => (
           <div class="admin-post-group">
-            <ConvictionSeal
+            <SealCeremony
               slug={post.slug}
               title={post.title}
+              variant="conviction"
               context="admin"
+              sealEntry={post.sealEntry}
+              convictionStage={post.convictionStage}
             />
             <VerdictResolutionPanel
               slug={post.slug}
