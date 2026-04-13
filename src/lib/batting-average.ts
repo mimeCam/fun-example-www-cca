@@ -245,3 +245,38 @@ export function getSealedSlugs(): string[] {
     return fetchSealSlugs(d).map(s => s.post_slug);
   } catch { return []; }
 }
+
+// ── Unlock Progress (Mike napkin §BattingProgressRing) ────────────────────────
+// Derived state — never persisted. COUNT of resolved verdicts, queried from ledger.
+// "Query it, don't write it." — Mike §points-of-interest #9
+
+export interface UnlockProgress {
+  authorSlug: string;
+  resolved:   number;   // 0–MIN_VERDICTS (capped for ring display)
+  required:   number;   // MIN_VERDICTS = 5
+  pct:        number;   // 0.0–1.0
+  unlocked:   boolean;  // true when unique resolved >= required
+}
+
+/** Count unique posts that have at least one verdict event (first-write-wins). */
+function countUniqueVerdicts(events: VerdictEventRow[]): number {
+  return new Set(events.map(e => e.post_slug)).size;
+}
+
+/** Derived progress toward batting average unlock. Read-only — safe at SSR time. */
+export function getUnlockProgress(authorSlug: string): UnlockProgress {
+  try {
+    const seals  = getSealsByAuthor(authorSlug);
+    const events = getVerdictEventsForSlugs(seals.map(s => s.post_slug));
+    const unique = countUniqueVerdicts(events);
+    return {
+      authorSlug,
+      resolved: Math.min(unique, MIN_VERDICTS),
+      required: MIN_VERDICTS,
+      pct:      Math.min(unique / MIN_VERDICTS, 1),
+      unlocked: unique >= MIN_VERDICTS,
+    };
+  } catch {
+    return { authorSlug, resolved: 0, required: MIN_VERDICTS, pct: 0, unlocked: false };
+  }
+}

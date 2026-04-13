@@ -371,6 +371,25 @@ export function getPendingOtsSeals(limit = 20): Array<{
 // Two simple COUNT(*) queries — zero schema changes needed.
 // ---------------------------------------------------------------------------
 
+/** SQL for recent verdicts per-author (last N rows by recency). */
+function recentVerdictSql(slugCount: number): string {
+  const ph = Array(slugCount).fill('?').join(', ');
+  return `SELECT post_slug, payload_json, timestamp FROM conviction_ledger WHERE event_type = 'verdict' AND post_slug IN (${ph}) ORDER BY id DESC LIMIT ?`;
+}
+
+/** Returns the most recent verdict events for an author (for the progress API). */
+export function getVerdictsByAuthorRecent(
+  authorSlug: string,
+  limit = 5,
+): { post_slug: string; payload_json: string | null; timestamp: number }[] {
+  const seals = getSealsByAuthor(authorSlug);
+  if (!seals.length) return [];
+  const slugs = seals.map(s => s.post_slug);
+  return db().prepare(recentVerdictSql(slugs.length)).all(...slugs, limit) as {
+    post_slug: string; payload_json: string | null; timestamp: number
+  }[];
+}
+
 /** Count sealed posts for a given author. Used for selectivity rate. */
 export function countSealed(authorSlug: string): number {
   const row = db()

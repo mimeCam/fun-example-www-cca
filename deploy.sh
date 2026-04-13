@@ -4,6 +4,74 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v115 — BattingProgressRing + BattingUnlockCeremony + Progress API (2026-04-13)
+#   Sprint: Conviction unlock progress visualised as a circular SVG gauge on the
+#     author profile page and leaderboard rows. Three-phase unlock ceremony fires
+#     once per author when the 5th verdict resolves. Public REST endpoint exposes
+#     the same derived progress data for API consumers.
+#   New files:
+#     src/components/BattingProgressRing.astro — SVG conviction unlock ring;
+#       two variants: default (96px, author profile — counter label + caption)
+#       and compact (36px, leaderboard rows — ring only). Geometry: viewBox
+#       0 0 100 100, r=40, circumference≈251.33; 5 tick marks at 72° intervals
+#       starting at 12-o'clock; stroke-dashoffset SSR-computed from
+#       progress.pct (no FOUC); DOM contract: data-bpr-slug, data-bpr-resolved,
+#       data-bpr-unlocked read by BattingUnlockCeremony client. Imports
+#       batting-progress.css; pure SSR — no JS waterfall.
+#     src/components/BattingUnlockCeremony.astro — one-time 3-phase ceremony
+#       overlay triggered when batting average unlocks: Phase 1 (0ms)
+#       ring.bpr--has-shattered → lock icon exits; Phase 2 (300ms) gold flash
+#       overlay fades in/out; Phase 3 (700ms) 'batting-unlock-complete' event
+#       fires for downstream decoration. Session guard: localStorage key
+#       batting-unlock-ceremony-${authorSlug} prevents replay across reloads.
+#       Also listens to 'bah:unlock' CustomEvent for real-time delivery.
+#       Circuit breaker: if unlocked=true on page load + ceremony not yet
+#       shown, runs after 200ms (handles stale-cache scenario). Reduced-motion
+#       guard: instant swap, no animation. CSS-class-driven — no RAF math.
+#     src/pages/api/batting-progress/[slug].ts — GET /api/batting-progress/
+#       :authorSlug; public — no auth. Returns { authorSlug, resolved, required,
+#       pct, unlocked, recentVerdicts[] }; recentVerdicts[] shape: { postSlug,
+#       state: 'upheld'|'overturned', resolvedAt (unix ms) }. 404 for unknown
+#       slugs (getAllAuthorSlugs gate). Cache-Control: public max-age=60,
+#       stale-while-revalidate=300 (progress ticks infrequently). API-parity
+#       rule: external consumers get the same data the ring renders from SSR.
+#     src/styles/batting-progress.css — ring fill + tick-pop + lock-shatter +
+#       count-reveal + unlock-pulse animations; token-compliant (zero raw
+#       hex/rgba); local :root aliases --ring-track-color, --ring-pending-color,
+#       --ring-unlocked-color, --ring-notch-filled, --ring-notch-empty;
+#       @keyframes ring-fill (stroke-dashoffset sweep), tick-pop (spring
+#       overshoot via CSS linear()), lock-shatter, bpr-unlock-pulse;
+#       reduced-motion guard cancels all animations.
+#   Modified files:
+#     src/components/LeaderboardCard.astro — imports BattingProgressRing +
+#       getUnlockProgress; adds <BattingProgressRing compact={true} /> to
+#       lb-stats slot alongside existing BattingAverageChip.
+#     src/lib/batting-average.ts — UnlockProgress interface (authorSlug,
+#       resolved 0–MIN_VERDICTS, required, pct 0.0–1.0, unlocked bool);
+#       getUnlockProgress(authorSlug) derived-only — never persisted; queries
+#       getSealsByAuthor + getVerdictEventsForSlugs; countUniqueVerdicts uses
+#       Set over post_slug (first-write-wins per slug). "Query it, don't write
+#       it." — Mike §POI #9.
+#     src/lib/conviction-ledger.ts — getVerdictsByAuthorRecent(authorSlug,
+#       limit=5) returns last N verdict events for the progress API; uses
+#       recentVerdictSql() builder for parameterised IN clause.
+#     src/pages/api/verdict-resolve.ts — after verdict commit, calls
+#       getUnlockProgress(authorSlug) and broadcasts 'batting-unlock' SSE
+#       event when progress.resolved === MIN_VERDICTS (exact crossing check);
+#       getSealEntry(slug) used to resolve authorSlug; fire-and-forget — verdict
+#       already committed before this runs; error caught silently.
+#     src/pages/author/[slug].astro — imports BattingProgressRing +
+#       BattingUnlockCeremony + getUnlockProgress; renders ap-ring-row div
+#       containing both components after AuthorProfileHero.
+#     src/styles/author-profile.css — ap-ring-row layout styles for the
+#       ring + ceremony slot on the author profile page.
+#     src/styles/tokens.css — ring primitive tokens aliased in
+#       batting-progress.css :root block.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v114).
+#
 # Architecture v114 — Decay Stage Identity System (2026-04-13)
 #   Sprint: Five discrete visual worlds layered over the existing continuous decay
 #     gradient. Each stage (fresh/fading/endangered/ghost/fossil) now has a complete

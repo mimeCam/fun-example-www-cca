@@ -6,6 +6,8 @@
 
 import type { AuthorStats } from '../lib/leaderboard';
 import BattingAverageChip from './BattingAverageChip.astro';
+import BattingProgressRing from './BattingProgressRing.astro';
+import { getUnlockProgress } from '../lib/batting-average';
 
 interface Props {
   author: AuthorStats;
@@ -13,6 +15,7 @@ interface Props {
 
 const { author } = Astro.props;
 const { slug, avg, firstSeal, rank, isActive } = author;
+const progress = getUnlockProgress(slug);
 
 const initial = slug.charAt(0).toUpperCase();
 
@@ -50,8 +53,15 @@ function recordLabel(a: typeof avg): string {
     <span class="lb-meta">On record since {fmtDate(firstSeal)}</span>
   </div>
 
-  <!-- Stats: chip + record — chip enforces color-mod thresholds (strong/mid/weak) -->
+  <!-- Stats: compact ring + chip + record -->
   <div class="lb-stats">
+    <BattingProgressRing
+      resolved={progress.resolved}
+      required={progress.required}
+      unlocked={progress.unlocked}
+      authorSlug={slug}
+      compact={true}
+    />
     <BattingAverageChip authorSlug={slug} size="md" />
     <span class="lb-record">{recordLabel(avg)}</span>
   </div>

@@ -17,8 +17,8 @@ import { getCollection } from 'astro:content';
 import { broadcastNamed } from '../../lib/heartbeat';
 import { resolveVerdict, VerdictAlreadySealedError } from '../../lib/verdict-resolver';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
-import { computeBattingAverage } from '../../lib/batting-average';
-import { getAnchorGistId } from '../../lib/conviction-ledger';
+import { computeBattingAverage, getUnlockProgress, MIN_VERDICTS } from '../../lib/batting-average';
+import { getAnchorGistId, getSealEntry } from '../../lib/conviction-ledger';
 import { anchorVerdict }          from '../../lib/conviction-anchor';
 import { stamp, hashContent }     from '../../lib/rfc3161-client';
 import { storeTst }               from '../../lib/timestamp-store';
@@ -123,6 +123,16 @@ export const POST: APIRoute = async ({ request }) => {
       const pending  = batting.status === 'live' ? batting.pending  : 0;
       broadcastNamed('verdict:declared', { slug, verdict, newBattingAvg: newBattingAverage, correct, wrong, pending, sealedAt: record.sealedAt });
     } catch { /* broadcast failure must never reject the POST */ }
+
+    // Broadcast batting-unlock if this verdict just crossed the unlock threshold.
+    // Derived state — no new ledger event; count it, don't write it (Mike §POI #9).
+    try {
+      const authorSlug = getSealEntry(slug)?.author_slug ?? 'host';
+      const progress   = getUnlockProgress(authorSlug);
+      if (progress.resolved === MIN_VERDICTS) {
+        broadcastNamed('batting-unlock', { type: 'batting-unlock', authorSlug, ts: Date.now() });
+      }
+    } catch { /* non-critical — verdict already committed */ }
 
     // Structured response — contract for API consumers (Mike §verdict-resolve endpoint).
     return json({

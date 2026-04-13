@@ -100,6 +100,18 @@
 .ap-page[data-tier="diamond"] { --ap-tint: color-mix(in oklch, var(--clr-violet-400) 4%, transparent); }
 .ap-page { background: var(--ap-tint, transparent); border-radius: var(--radius-xl); }
 
+/* ── Unlock ring row — ring + ceremony side-by-side ─────────────────── */
+/* Position: below hero, above stats grid (Mike napkin §6 integration).  */
+
+.ap-ring-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--space-4);
+  margin-bottom:   var(--space-8);
+  flex-wrap:       wrap;
+}
+
 /* ── Stats grid ─────────────────────────────────────────────────────── */
 
 .ap-stats {

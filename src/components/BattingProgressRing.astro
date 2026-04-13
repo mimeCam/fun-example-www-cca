@@ -1,0 +1,145 @@
+---
+// src/components/BattingProgressRing.astro
+// SVG progress ring — conviction track record visualised as a circular gauge.
+// Pure SSR rendering: stroke-dashoffset from server-fetched props; no JS waterfall.
+// CSS drives the fill animation; JS only needed for live mid-session update.
+//
+// Variants:
+//   default — author profile: 96px ring, counter label, caption
+//   compact — leaderboard rows: 36px ring, no label, no ceremony
+//
+// SVG geometry: viewBox="0 0 100 100", r=40, cx=cy=50, circumference≈251.33
+// Ticks: 5 marks at 72° intervals starting from top (-90°).
+// Rotation group: rotate(-90 50 50) makes fill start at 12-o'clock.
+//
+// DOM contract (read by BattingUnlockCeremony.astro client):
+//   data-bpr-slug      — author slug
+//   data-bpr-resolved  — 0–5 resolved verdicts
+//   data-bpr-unlocked  — attribute present when unlocked
+//
+// Credits: Mike Koch (napkin spec §3 BattingProgressRing),
+//          Tanya Donska (UX §7.3 ring unlock progression)
+
+import '../styles/batting-progress.css';
+import { MIN_VERDICTS } from '../lib/batting-average';
+
+interface Props {
+  resolved:   number;   // 0–5+
+  required:   number;   // 5 (always MIN_VERDICTS)
+  unlocked:   boolean;
+  authorSlug: string;
+  compact?:   boolean;  // leaderboard variant: 36px, no labels, no ceremony
+}
+
+const { resolved, required, unlocked, authorSlug, compact = false } = Astro.props;
+
+// ── Ring geometry ──────────────────────────────────────────────────────────
+
+const CX = 50, CY = 50, R = 40;
+const CIRCUMFERENCE = parseFloat((2 * Math.PI * R).toFixed(2)); // 251.33
+const clamped       = Math.min(resolved, required);
+const fillOffset    = parseFloat((CIRCUMFERENCE * (1 - clamped / required)).toFixed(2));
+
+// ── Tick coordinates (polar → Cartesian, starting at top / -90°) ──────────
+
+function tick(i: number): { x1: string; y1: string; x2: string; y2: string } {
+  const rad = (-90 + (i / required) * 360) * (Math.PI / 180);
+  return {
+    x1: (CX + 36 * Math.cos(rad)).toFixed(2),
+    y1: (CY + 36 * Math.sin(rad)).toFixed(2),
+    x2: (CX + 44 * Math.cos(rad)).toFixed(2),
+    y2: (CY + 44 * Math.sin(rad)).toFixed(2),
+  };
+}
+
+const ticks = Array.from({ length: required }, (_, i) => tick(i));
+
+// ── Center label ───────────────────────────────────────────────────────────
+
+const centerLabel = unlocked
+  ? `${Math.round((clamped / required) * 100)}%`
+  : `${clamped}/${required}`;
+
+const ariaLabel = `Conviction track record: ${clamped} of ${required} verdicts resolved${unlocked ? ' — batting average unlocked' : ''}`;
+---
+
+<figure
+  class:list={['bpr', compact ? 'bpr--compact' : 'bpr--full']}
+  data-bpr-slug={authorSlug}
+  data-bpr-resolved={resolved}
+  data-bpr-unlocked={unlocked ? '' : undefined}
+>
+  <svg
+    class="bpr__ring"
+    viewBox="0 0 100 100"
+    role="progressbar"
+    aria-valuenow={clamped}
+    aria-valuemax={required}
+    aria-label={ariaLabel}
+    style={`--ring-circumference:${CIRCUMFERENCE};--ring-offset:${fillOffset}`}
+  >
+    {/* Track and fill rotate -90° so fill begins at 12-o'clock */}
+    <g transform="rotate(-90 50 50)">
+      <circle
+        class="bpr__track"
+        cx={CX} cy={CY} r={R}
+        stroke-dasharray={CIRCUMFERENCE}
+        stroke-dashoffset="0"
+      />
+      <circle
+        class:list={['bpr__fill', unlocked ? 'bpr__fill--unlocked' : '']}
+        cx={CX} cy={CY} r={R}
+        stroke-dasharray={CIRCUMFERENCE}
+        stroke-dashoffset={fillOffset}
+      />
+    </g>
+
+    {/* Notch tick marks at 72° intervals */}
+    {ticks.map((t, i) => (
+      <line
+        class:list={['tick', i < clamped ? 'tick--filled' : '']}
+        x1={t.x1} y1={t.y1}
+        x2={t.x2} y2={t.y2}
+        style={`animation-delay:${i * 80}ms`}
+      />
+    ))}
+
+    {/* Center: lock icon + counter when locked; pct when unlocked */}
+    {!compact && !unlocked && (
+      <g class="bpr__center-locked">
+        <text
+          class="bpr__lock"
+          x={CX} y={CY - 7}
+          text-anchor="middle"
+          dominant-baseline="central"
+          font-size="11"
+          aria-hidden="true"
+        >🔒</text>
+        <text
+          class="bpr__center-text"
+          x={CX} y={CY + 9}
+          text-anchor="middle"
+          dominant-baseline="central"
+        >{centerLabel}</text>
+      </g>
+    )}
+
+    {!compact && unlocked && (
+      <text
+        class="bpr__center-pct"
+        x={CX} y={CY}
+        text-anchor="middle"
+        dominant-baseline="central"
+      >{centerLabel}</text>
+    )}
+  </svg>
+
+  {!compact && (
+    <figcaption class="bpr__label">
+      {unlocked
+        ? 'Batting average unlocked'
+        : `${required - clamped} verdict${required - clamped !== 1 ? 's' : ''} to unlock`
+      }
+    </figcaption>
+  )}
+</figure>

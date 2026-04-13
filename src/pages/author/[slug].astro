@@ -18,7 +18,9 @@ export const prerender = false;
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AuthorProfileHero from '../../components/AuthorProfileHero.astro';
 import AuthorConvictionTimeline from '../../components/AuthorConvictionTimeline.astro';
-import { getBattingAverageResult }  from '../../lib/batting-average';
+import BattingProgressRing from '../../components/BattingProgressRing.astro';
+import BattingUnlockCeremony from '../../components/BattingUnlockCeremony.astro';
+import { getBattingAverageResult, getUnlockProgress } from '../../lib/batting-average';
 import { getSealsByAuthor }         from '../../lib/conviction-ledger';
 import { buildTrackRecord }         from '../../lib/track-record';
 import { getCollection }            from 'astro:content';
@@ -40,7 +42,8 @@ const trackData   = buildTrackRecord(authorPosts);
 
 // Per-author batting average with full integrity data.
 // totalPublished: posts sealed by this author from the content collection (best proxy available).
-const result = getBattingAverageResult(slug, authorPosts.length);
+const result   = getBattingAverageResult(slug, authorPosts.length);
+const progress = getUnlockProgress(slug);
 
 // ── Pagination ─────────────────────────────────────────────────────────────
 
@@ -98,6 +101,18 @@ const profileUrl = Astro.url.href;
 
     {/* ── Batting average hero — the loudest element on the page ────────── */}
     <AuthorProfileHero result={result} slug={slug} />
+
+    {/* ── Conviction unlock ring — progress toward batting average unlock ── */}
+    {/* Always shown: tracks progress when cold, confirms unlock when live.  */}
+    <div class="ap-ring-row">
+      <BattingProgressRing
+        resolved={progress.resolved}
+        required={progress.required}
+        unlocked={progress.unlocked}
+        authorSlug={slug}
+      />
+      <BattingUnlockCeremony authorSlug={slug} unlocked={progress.unlocked} />
+    </div>
 
     {/* ── Stats grid — 4 cells: accuracy · correct · wrong · total ─────── */}
     {trackData.entries.length > 0 && (
