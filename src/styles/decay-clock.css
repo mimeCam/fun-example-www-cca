@@ -1,0 +1,163 @@
+/* src/styles/decay-clock.css
+ * Decay Clock — animation soul.
+ * All color values via CSS tokens from tokens.css — zero raw OKLCH literals.
+ *
+ * Architecture: Mike Koch (DecayClock spec §3 "The Soul")
+ * Design tokens: Tanya Donska (§2.1 decay ramp, §3.1 shadow ramp)
+ *
+ * Key pattern: @property registers --decay-ring-color as <color>, enabling
+ * native OKLCH interpolation via CSS transition. Without this, browsers treat
+ * custom props as strings and can't tween between them — transitions binary-flip.
+ *
+ * Three-layer animation:
+ *   1. Outer arc ring  — stroke-dashoffset driven by --live-decay (1Hz JS writes)
+ *   2. Inner pulse ring — @keyframes decay-pulse synced to --pulse-interval per stage
+ *   3. Ambient glow div — decay-glow + decay-breathe at 1.3× and 2× pulse interval
+ */
+
+/* ── @property registrations ─────────────────────────────────────────────── */
+
+/* <color> type enables native OKLCH interpolation via CSS transition.
+   Without @property the browser treats it as an opaque string — no tweening. */
+@property --decay-ring-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(66% 0.195 145);  /* fresh green — mirrors --color-decay-fresh */
+}
+
+/* <number> type lets stroke-dashoffset: calc(175.93 * var(--live-decay)) work.
+   JS writes this once per second per clock; CSS handles the arc geometry.   */
+@property --live-decay {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* ── Stage-aware pulse rates ──────────────────────────────────────────────── */
+/* JS orchestrator writes --pulse-interval on init and stage change.          */
+/* These provide the instant CSS fallback before JS fires (no FOUC).          */
+
+.decay-clock[data-stage="fresh"]      { --pulse-interval: 4000ms; --glow-opacity: 0.12; }
+.decay-clock[data-stage="fading"]     { --pulse-interval: 3000ms; --glow-opacity: 0.20; }
+.decay-clock[data-stage="endangered"] { --pulse-interval: 1200ms; --glow-opacity: 0.50; }
+.decay-clock[data-stage="ghost"]      { --pulse-interval: 2500ms; --glow-opacity: 0.16; }
+.decay-clock[data-stage="fossil"]     { --pulse-interval: 0ms;    --glow-opacity: 0;    }
+
+/* ── Stage → ring color (OKLCH interpolation via registered custom prop) ─── */
+
+.decay-clock[data-stage="fresh"]      { --decay-ring-color: var(--color-decay-fresh); }
+.decay-clock[data-stage="fading"]     { --decay-ring-color: var(--color-decay-fading); }
+.decay-clock[data-stage="endangered"] { --decay-ring-color: var(--color-decay-endangered); }
+.decay-clock[data-stage="ghost"]      { --decay-ring-color: var(--color-decay-ghost); }
+.decay-clock[data-stage="fossil"]     { --decay-ring-color: var(--color-decay-fossil); }
+
+/* Smooth OKLCH stage transition — no grey mudpoint, no binary flip */
+.decay-clock__ring { transition: --decay-ring-color 800ms ease; }
+
+/* ── Live decay arc (outer ring) ─────────────────────────────────────────── */
+/* r=28 → circumference = 2π×28 = 175.929…  Decay 0=full ring, 1=empty.     */
+/* @property makes calc(circumference * var(--live-decay)) valid CSS math.   */
+
+.decay-clock__ring {
+  stroke: var(--decay-ring-color);
+  stroke-dasharray: 175.93;
+  stroke-dashoffset: calc(175.93 * var(--live-decay, 0));
+}
+
+/* ── Heartbeat keyframe (physiological shape) ────────────────────────────── */
+/* Fast systolic rise (15%) → diastolic settle (40%) → rest (100%).           */
+/* Josh W. Comeau linear() pattern: encodes weight, not bounce.               */
+
+@keyframes decay-pulse {
+  0%   { opacity: 0.55; transform: scale(1);    }
+  15%  { opacity: 1;    transform: scale(1.07); }   /* systolic peak */
+  40%  { opacity: 0.80; transform: scale(0.97); }   /* diastolic settle */
+  100% { opacity: 0.55; transform: scale(1);    }   /* resting */
+}
+
+/* ── Ambient glow keyframes ──────────────────────────────────────────────── */
+/* Two animations at different speeds create organic, non-mechanical feel.    */
+/* Pattern: Smashing Magazine layered ambient motion.                         */
+
+@keyframes decay-glow {
+  0%, 100% { opacity: var(--glow-opacity, 0); }
+  50%       { opacity: calc(var(--glow-opacity, 0) * 1.6); }
+}
+
+@keyframes decay-breathe {
+  0%, 100% { transform: scale(1.00); }
+  50%       { transform: scale(1.05); }
+}
+
+/* ── Inner pulse ring ────────────────────────────────────────────────────── */
+/* r=20 → circumference ≈ 125.66. Full ring, pulses with heartbeat rhythm.   */
+
+.decay-clock__pulse-ring {
+  fill: none;
+  stroke: var(--decay-ring-color);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  transform-origin: 32px 32px;
+  transform: rotate(-90deg);
+  opacity: 0.35;
+  animation: decay-pulse var(--pulse-interval, 4000ms) ease-in-out infinite;
+}
+
+/* Fossil = silence. Stopped clock is more haunting than a slow one. (Mike §6) */
+.decay-clock[data-stage="fossil"] .decay-clock__pulse-ring { animation: none; opacity: 0; }
+
+/* ── Ambient glow div ────────────────────────────────────────────────────── */
+/* Positioned behind SVG; grows and fades at 1.3× and 2× the pulse interval. */
+
+.decay-clock__glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, var(--decay-ring-color) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 800ms ease;
+}
+
+.decay-clock[data-stage] .decay-clock__glow {
+  opacity: var(--glow-opacity, 0);
+  animation:
+    decay-glow calc(var(--pulse-interval, 4000ms) * 1.3) ease-in-out infinite,
+    decay-breathe calc(var(--pulse-interval, 4000ms) * 2) ease-in-out infinite;
+}
+
+.decay-clock[data-stage="fossil"] .decay-clock__glow { animation: none; opacity: 0; }
+
+/* ── Endangered card shadow pulse (Tanya §3.1) ───────────────────────────── */
+/* Shadow synced to BPM: 38 BPM ≈ 1575ms cycle. Card literally has a pulse.  */
+/* Only applies to data-atmosphere="endangered" — not any living card.        */
+
+@keyframes endangered-shadow-pulse {
+  0%, 100% { box-shadow: var(--shadow-card-fading); }
+  50%       { box-shadow: var(--shadow-card-fresh);  }
+}
+
+[data-atmosphere="endangered"] {
+  animation: endangered-shadow-pulse 1575ms ease-in-out infinite;
+}
+
+/* ── @supports fallback for browsers without @property ──────────────────── */
+/* ~7% of users. Static token fallback — no transition, correct stage color. */
+
+@supports not (background: paint(id)) {
+  .decay-clock__ring      { stroke: var(--color-decay-fading); }
+  .decay-clock__pulse-ring { stroke: var(--color-decay-fading); }
+}
+
+/* ── Reduced motion — static ring, no animation, full a11y ──────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .decay-clock__ring,
+  .decay-clock__pulse-ring,
+  .decay-clock__ring-wrap,
+  .decay-clock__glow,
+  [data-atmosphere="endangered"] {
+    animation: none;
+    transition: none;
+  }
+}

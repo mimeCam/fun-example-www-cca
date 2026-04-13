@@ -12,7 +12,7 @@
 
 import { formatPubDate } from '../lib/dates';
 import { urgencyLevel, endangeredStyleString } from '../lib/endangered';
-import { decayStyleString } from '../lib/decay-engine';
+import { decayStyleString, convictionMultiplier } from '../lib/decay-engine';
 import type { PostDisplayData } from '../lib/postMeta';
 import DecayBar from './DecayBar.astro';
 import DecayClock from './DecayClock.astro';
@@ -24,6 +24,7 @@ const href = `/blog/${post.slug}`;
 const formattedDate = formatPubDate(post.pubDate);
 const urgency = urgencyLevel(post.decay);
 const style = [decayStyleString(post.decay), endangeredStyleString(post.decay)].join(';');
+const verdictModifier = convictionMultiplier(post.conviction ?? null);
 ---
 
 <article
@@ -34,6 +35,7 @@ const style = [decayStyleString(post.decay), endangeredStyleString(post.decay)].
   data-decay-factor={post.decay.toFixed(4)}
   data-revival-count={post.revivalCount}
   data-urgency={urgency}
+  data-atmosphere="endangered"
   tabindex="0"
   aria-label={`${post.title} — endangered, ${post.daysRemaining} days left. Hold to revive.`}
 >
@@ -44,6 +46,8 @@ const style = [decayStyleString(post.decay), endangeredStyleString(post.decay)].
       urgency={post.clockUrgency}
       compact={true}
       conviction={post.conviction}
+      decayFactor={post.decay}
+      verdictModifier={verdictModifier}
     />
     <div class="endangered-card-body">
       <a href={href} class="post-link">

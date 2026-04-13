@@ -4,6 +4,59 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v112 — Living Decay Clock: Per-Clock Heartbeat Orchestrator (2026-04-13)
+#   Sprint: DecayClock ring elevated from a static SSR arc to a fully-live,
+#     per-clock decay engine. Each ring on the page now has its own 1Hz delta
+#     computation that drifts the arc in real time from the server-render
+#     snapshot; conviction multiplier (verdictModifier) modulates the decay
+#     speed per ring (still-true=0.7×, evolved=0.9×, base=1.0×, wrong=1.4×).
+#     Stage transitions (fresh→fading→endangered→ghost→fossil) detected client-
+#     side and surfaced via data-stage attr + CustomEvent; haptic pattern fires
+#     on stage crossing (warning-tier haptic). IntersectionObserver pauses off-
+#     screen clocks (perf — river page has 20+ rings); MutationObserver handles
+#     DOM removal cleanup. Three-layer visual system: outer arc ring (--live-decay
+#     → stroke-dashoffset, 1Hz JS writes), inner pulse ring (@keyframes decay-
+#     pulse, synced to --pulse-interval), ambient glow div (decay-glow + decay-
+#     breathe). CSS @property registers --decay-ring-color as <color> (enables
+#     native OKLCH interpolation; without it browsers binary-flip transitions).
+#   New files:
+#     src/lib/client/decay-heartbeat-orchestrator.ts — per-clock orchestrator;
+#       bootstraps each clock from data-* server snapshot; 1Hz LOW-bucket task
+#       via frame-scheduler; writes --live-decay + --pulse-interval CSS vars;
+#       stage transition detection + haptic; IntersectionObserver idle-pause;
+#       MutationObserver cleanup; pure delta model (trusts server render).
+#     src/styles/decay-clock.css — animation soul for the decay clock;
+#       @property --decay-ring-color (<color>) + --live-decay (<number>);
+#       five staged color stops mapped to --color-decay-* tokens (zero raw
+#       OKLCH literals); @keyframes decay-pulse (inner pulse ring), decay-glow
+#       + decay-breathe (ambient glow div); reduced-motion guard cancels all.
+#   Modified files:
+#     src/components/DecayCard.astro — imports convictionMultiplier from
+#       decay-engine; computes verdictModifier; passes verdictModifier to
+#       DecayClock ring; cover-gradient gains max(2%, …) guard to preserve
+#       ghost of warmth at fossil stage (Tanya §7.1); card footer background
+#       migrated from inline rgba(12,12,14,0.95) to --surface-footer token.
+#     src/components/DecayClock.astro — imports decay-clock.css; adds
+#       computedAt (ISO timestamp, delta origin) + verdictModifier props;
+#       exposes data-computed-at, data-verdict-modifier, data-stage attrs;
+#       ambient glow <div class="decay-clock__glow" /> inserted behind SVG;
+#       inner <circle class="decay-clock__pulse-ring" /> added; --live-decay
+#       seed written server-side (no FOUC before JS loads); ring stroke
+#       migrated to var(--decay-ring-color) with hsl() fallback; initDecay-
+#       Heartbeat() wired alongside initHeartbeatOrchestrator() on DOMContent-
+#       Loaded; stroke-dasharray fixed to 175.93 (circumference of r=28).
+#     src/components/EndangeredCard.astro — imports convictionMultiplier;
+#       data-atmosphere="endangered" added to article root; passes decayFactor
+#       + verdictModifier to DecayClock (endangered cards now get live arc too).
+#     src/styles/tokens.css — --surface-footer token (card footer bg, Tanya
+#       §11); decay color ramp revised for perceptual distance (each stage must
+#       feel like a different world — chroma + lightness gaps widened at all
+#       stops); --shadow-card-fading added (missing token filled, Tanya §3.1).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v111).
+#
 # Architecture v111 — ConvictionStrip Zone 2B + OnboardingOverlay Step 3 (2026-04-13)
 #   Sprint: ConvictionStrip WIP resolved — the live batting-average strip is now
 #     wired in two placements: (A) OnboardingOverlay Step 3 (variant="overlay"),

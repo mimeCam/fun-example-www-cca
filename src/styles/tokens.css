@@ -31,6 +31,7 @@
   --surface-raised:     rgba(255, 255, 255, 0.04);
   --surface-hover:      rgba(255, 255, 255, 0.06);
   --surface-overlay:    rgba(12, 12, 14, 0.75);
+  --surface-footer:     rgba(12, 12, 14, 0.95); /* card footer bg — replaces inline rgba (Tanya §11) */
 
   /* ── Text Alpha Ramp (white-on-dark) ───────────────────────────────── */
   --text-primary:   rgba(255, 255, 255, 0.88);
@@ -66,11 +67,13 @@
   --river-meta-color:    var(--text-tertiary);
 
   /* ── Semantic Decay Colors ──────────────────────────────────────────── */
-  --color-decay-fresh:      var(--clr-green-400);   /* oklch(64% 0.190 145) */
-  --color-decay-fading:     oklch(62% 0.155  95);   /* Tanya §2.1 — warm, still here */
-  --color-decay-endangered: oklch(58% 0.195  35);   /* Tanya §2.1 — urgent amber-red */
-  --color-decay-ghost:      oklch(52% 0.110  20);   /* Tanya §2.1 — muted red, fading */
-  --color-decay-fossil:     oklch(42% 0.04 60deg);  /* Tanya §7: stone gray — "at rest", not alarm */
+  /* Ramp revised Tanya §2.1: each stage must feel like a different WORLD,  */
+  /* not just a different shade. Perceptual distance increased at all stops. */
+  --color-decay-fresh:      oklch(66%  0.195 145);  /* lighter + higher chroma — more alive */
+  --color-decay-fading:     oklch(60%  0.130  85);  /* chroma pulled DOWN, hue into warm amber */
+  --color-decay-endangered: oklch(56%  0.210  32);  /* chroma UP — urgent, unambiguous */
+  --color-decay-ghost:      oklch(48%  0.085  18);  /* darker + desaturated — clearly weakened */
+  --color-decay-fossil:     oklch(38%  0.025  60);  /* near-dead stone — darker still */
   --color-decay-revival:    oklch(72% 0.160  70);   /* one-shot bloom only — Tanya §2.1 */
   --color-revival:          var(--clr-amber-400);
 
@@ -168,6 +171,11 @@
   --shadow-card-hover:
     0 12px 40px color-mix(in oklch, var(--clr-amber-400) 28%, transparent),
     0 2px  8px  rgba(0, 0, 0, 0.4);
+
+  /* Fading — glow retreating; still warm but dimming (Tanya §3.1 — missing token filled) */
+  --shadow-card-fading:
+    0 6px 20px color-mix(in oklch, var(--clr-amber-400) 14%, transparent),
+    0 1px 4px rgba(0, 0, 0, 0.28);
 
   /* Aged — faint, cold, losing color signal */
   --shadow-card-aged: 0 4px 16px rgba(0, 0, 0, 0.22);

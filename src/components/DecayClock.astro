@@ -11,9 +11,16 @@
 // Pulse at "final" tier: only the ring strokes breathe. Numbers stay still.
 // Accessible: role="img"/"progressbar", aria-label computed server-side.
 //
-// Credits: Mike (arch §Module-2 "one countdown timer"),
+// Client hydration bridge (variant="ring"):
+//   data-computed-at     → ISO timestamp when server rendered (delta origin)
+//   data-verdict-modifier → conviction multiplier (0.7–1.4, default 1.0)
+//   data-stage           → DecayStage string (decay-clock.css picks up immediately)
+//   --live-decay         → initial CSS var set server-side; updated 1Hz by orchestrator
+//
+// Credits: Mike (arch §Module-2, §DecayClock-rewrite "The Living Decay Clock"),
 //          Tanya (UX §2 DecayClock spec, ring drain spec, banner spec)
 
+import '../styles/decay-clock.css';
 import type { ClockUrgency, ConvictionVerdict } from '../lib/decay-engine';
 import {
   deathClockDayDisplay,
@@ -39,6 +46,10 @@ interface Props {
   conviction?:    ConvictionVerdict | null;
   /** Decimal 0–1 decay factor. When provided, enables visibility rules + heartbeat. */
   decayFactor?:  number;
+  /** ISO timestamp when server computed decayFactor — client reads delta from here. */
+  computedAt?:   string;
+  /** Conviction multiplier: 0.7 (still-true) / 0.9 (evolved) / 1.0 (base) / 1.4 (wrong). */
+  verdictModifier?: number;
   /** For variant="bar" */
   slug?:        string;
   publishDate?: Date;
@@ -46,12 +57,14 @@ interface Props {
 }
 
 const {
-  variant      = 'ring',
-  daysRemaining = 0,
-  urgency       = 'aging',
-  compact       = false,
-  conviction    = null,
+  variant         = 'ring',
+  daysRemaining   = 0,
+  urgency         = 'aging',
+  compact         = false,
+  conviction      = null,
   decayFactor,
+  computedAt      = new Date().toISOString(),
+  verdictModifier = 1.0,
   slug,
   publishDate,
   deadline,
@@ -101,11 +114,15 @@ const heartbeatStyle = [
   `--heartbeat-delay:${heartbeat.delay}ms`,
   `--clock-ring-opacity:${ringOpacity}`,
 ].join(';');
-const inlineStyle = baseStyle ? `${baseStyle};${heartbeatStyle}` : heartbeatStyle;
+// --live-decay seed: server snapshot drives the arc before JS loads (no FOUC).
+const liveDecayInit = decayFactor !== undefined ? `--live-decay:${decayFactor.toFixed(4)}` : '';
+const inlineStyle = [baseStyle, heartbeatStyle, liveDecayInit].filter(Boolean).join(';');
 
-// Expose decayFactor as a data attribute so HeartbeatOrchestrator can:
-// 1. Read it on init, 2. Re-read after live-decay minute-tick updates.
-const dataDecayFactor = decayFactor !== undefined ? decayFactor.toFixed(4) : undefined;
+// Expose decayFactor as a data attribute so orchestrators can:
+// 1. Read it on init, 2. Re-read after live-decay tick updates.
+const dataDecayFactor    = decayFactor !== undefined ? decayFactor.toFixed(4) : undefined;
+// dataVerdictModifier: only expose when non-default (saves bytes in the HTML)
+const dataVerdictModifier = verdictModifier !== 1.0 ? verdictModifier.toFixed(2) : undefined;
 
 // Urgency tier mapping (ring CSS data-attribute drives pulse token)
 function urgencyTier(u: ClockUrgency): 'warning' | 'critical' | 'final' {
@@ -145,18 +162,25 @@ const deadlineFmt = deadline
     class:list={['decay-clock', 'hb-clock-glow', compact && 'decay-clock--compact']}
     data-urgency={urgency}
     data-tier={tier}
+    data-stage={decayStage ?? undefined}
     data-decay-stage={decayStage ?? undefined}
     data-days-remaining={daysRemaining}
     data-conviction={conviction ?? undefined}
     data-decay-factor={dataDecayFactor}
+    data-computed-at={decayFactor !== undefined ? computedAt : undefined}
+    data-verdict-modifier={dataVerdictModifier}
     style={inlineStyle}
     aria-label={a11yLabel}
     title={a11yLabel}
     role="img"
   >
+    {/* Ambient glow — sits behind SVG, animated by decay-clock.css */}
+    <div class="decay-clock__glow" aria-hidden="true" />
     <svg class="decay-clock__ring-wrap hb-ring-wrap" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
       <circle class="decay-clock__track" cx="32" cy="32" r="28" />
       <circle class="decay-clock__ring hb-ring-stroke hb-ring-opacity" cx="32" cy="32" r="28" />
+      {/* Inner pulse ring — heartbeat animation keyed to --pulse-interval */}
+      <circle class="decay-clock__pulse-ring" cx="32" cy="32" r="20" />
     </svg>
     <div class="decay-clock__label" aria-hidden="true">
       <span class="decay-clock__days">{dayDisplay}</span>
@@ -257,14 +281,18 @@ const deadlineFmt = deadline
   }
   .decay-clock__ring {
     fill: none;
-    stroke: hsl(var(--clock-urgency-hue, 220) 65% 60%);
+    /* decay-clock.css sets stroke: var(--decay-ring-color) for staged color.
+       Fallback hsl() applies when data-stage is absent (no decay data passed). */
+    stroke: var(--decay-ring-color, hsl(var(--clock-urgency-hue, 220) 65% 60%));
     stroke-width: 3;
     stroke-linecap: round;
-    stroke-dasharray: 176;
-    stroke-dashoffset: var(--clock-dashoffset, 0);
+    /* decay-clock.css overrides dasharray/dashoffset for --live-decay arc.
+       Fallback below applies when the new CSS is absent (edge case). */
+    stroke-dasharray: 175.93;
+    stroke-dashoffset: calc(175.93 * var(--live-decay, 0));
     transform-origin: 32px 32px;
     transform: rotate(-90deg);
-    transition: stroke-dashoffset 600ms ease, stroke 300ms ease;
+    transition: stroke-dashoffset 1000ms ease;
     filter: drop-shadow(0 0 4px var(--clock-conviction-tint, transparent));
   }
   /* Ring opacity: driven by --hb-opacity from HeartbeatOrchestrator (0.45→1.0).
@@ -445,12 +473,17 @@ const deadlineFmt = deadline
   }
 </style>
 
-{/* Init HeartbeatOrchestrator when the ring variant is present and has decay data. */}
+{/* Init orchestrators when the ring variant is present and has decay data.
+     heartbeat-orchestrator: global BPM waveform physics (scale/opacity/color on :root).
+     decay-heartbeat-orchestrator: per-clock decay delta + stage transitions.
+     Both use frame-scheduler — one RAF to rule them all.                     */}
 {variant === 'ring' && !hiddenByStage && decayFactor !== undefined && (
   <script>
     import { initHeartbeatOrchestrator } from '../lib/client/heartbeat-orchestrator';
+    import { initDecayHeartbeat } from '../lib/client/decay-heartbeat-orchestrator';
     document.addEventListener('DOMContentLoaded', () => {
       initHeartbeatOrchestrator();
+      initDecayHeartbeat();
     }, { once: true });
   </script>
 )}
