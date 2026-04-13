@@ -23,6 +23,7 @@ import BattingUnlockCeremony from '../../components/BattingUnlockCeremony.astro'
 import { getBattingAverageResult, getUnlockProgress } from '../../lib/batting-average';
 import { getSealsByAuthor }         from '../../lib/conviction-ledger';
 import { buildTrackRecord }         from '../../lib/track-record';
+import { canonicalUrl }             from '../../config/seo.config';
 import { getCollection }            from 'astro:content';
 
 const { slug } = Astro.params;
@@ -74,9 +75,12 @@ const pageDesc  = `Conviction track record for ${slug}. ${trackData.entries.leng
 
 // Profile share URL — absolute path for the copy-to-clipboard button.
 const profileUrl = Astro.url.href;
+
+// Per-author OG card — renders trophy tier + author name on social shares.
+const ogImage = canonicalUrl(`/api/og/batting-average.png?author=${slug}`);
 ---
 
-<BaseLayout title={pageTitle} description={pageDesc}>
+<BaseLayout title={pageTitle} description={pageDesc} image={ogImage}>
   <main
     class="ap-page"
     data-tier={result.trophyTier}

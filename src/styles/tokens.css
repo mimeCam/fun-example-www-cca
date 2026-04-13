@@ -177,6 +177,11 @@
     0 6px 20px color-mix(in oklch, var(--clr-amber-400) 14%, transparent),
     0 1px 4px rgba(0, 0, 0, 0.28);
 
+  /* Endangered — thin urgent amber edge glow, still alive (Tanya §4.1 — missing token filled) */
+  --shadow-card-endangered:
+    0 5px 18px color-mix(in oklch, var(--clr-amber-400) 18%, transparent),
+    0 1px 4px oklch(0 0 0 / 0.25);
+
   /* Aged — faint, cold, losing color signal */
   --shadow-card-aged: 0 4px 16px rgba(0, 0, 0, 0.22);
 
@@ -313,6 +318,22 @@
   --tier-ladder-active: var(--gold-dim);
   --tier-ladder-gap:    var(--space-4);
   --tier-ladder-size:   var(--text-sm);
+
+  /* ── BA Embed — portable badge/widget tokens (Mike Portability-Kit) ──── */
+  --ba-embed-bg:         var(--surface-base);
+  --ba-embed-border:     color-mix(in oklch, var(--gold) 20%, transparent);
+  --ba-embed-text:       var(--text-primary);
+  --ba-embed-text-dim:   var(--text-secondary);
+  --ba-embed-text-ghost: var(--text-ghost);
+  --ba-embed-accent:     var(--clr-gold-400);
+  --ba-embed-radius:     var(--radius-md, 12px);
+
+  /* Tier labels — readable names for embed badges */
+  --ba-tier-locked-label:  'locked';
+  --ba-tier-bronze-label:  'bronze';
+  --ba-tier-silver-label:  'silver';
+  --ba-tier-gold-label:    'gold';
+  --ba-tier-diamond-label: 'diamond';
 
   /* ── Erosion Bar Tokens — Tanya §4 Zone A ─────────────────────────────── */
   --erosion-bar-height: 3px;

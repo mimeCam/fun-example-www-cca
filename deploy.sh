@@ -4,6 +4,81 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v116 — Portability Kit + Design Token Polish (2026-04-13)
+#   Sprint: Batting average becomes a portable, embeddable credential. New
+#     /api/batting-average-embed endpoint serves three output formats (JSON,
+#     self-contained HTML widget, shields.io-style SVG badge) for any author.
+#     Per-author OG share cards render trophy tier, name, selectivity chip,
+#     and tier-colored progress bar — threaded through battingAverageLayout →
+#     renderOGImage → batting-average.png endpoint (?author= param). Author
+#     profile pages now set per-author OG image via new BaseLayout `image` prop
+#     → SEOMeta. conviction-stats API auto-resolves ?published= from the content
+#     collection when omitted and includes `author` field in response payload.
+#     Design token compliance pass: OpenLoopCard migrates rgba(var(--mood-accent-
+#     rgb)) → color-mix(in oklch, var(--mood-accent)); ShareSheet replaces raw
+#     z-index, hex colors, and transition values with --z-sticky, --surface-*,
+#     --text-*, --motion-* tokens; StanceDrawer z-index → --z-drawer token,
+#     handle colors → --text-faint/--text-ghost. tokens.css gains --shadow-card-
+#     endangered (missing token per Tanya §4.1), BA embed token suite (--ba-embed-
+#     bg/border/text/accent/radius), and tier label string tokens.
+#   New files:
+#     src/pages/api/batting-average-embed.ts — GET /api/batting-average-embed;
+#       params: ?author= (default 'host'), ?format= ('json'|'html'|'svg',
+#       default 'json'). JSON shape: { author, battingAverage, trophyTier,
+#       resolvedCorrect, resolvedTotal, selectivityRate, eligible, verifyUrl,
+#       ogImageUrl, generatedAt }. HTML: self-contained inline-styled dark card
+#       with pct hero, name, tier badge, verify link. SVG: shields.io-style
+#       flat badge (label|value, tier-colored). Cache-Control: public, max-age=
+#       3600, stale-while-revalidate=86400. Uses getCollection('blog') for
+#       published count. Credits: Mike (Portability Kit spec), Elon (portable
+#       credential insight), Paul Kim (OG card IS the invite), Tanya (embed
+#       visual spec).
+#   Modified files:
+#     src/lib/og/battingAverageLayout.ts — OGAuthor interface exported (slug,
+#       name, tier, selectivity); TIER_COLOR + TIER_GLYPH records for per-author
+#       rendering; authorNameRow() renders name + tier badge + glyph; pctNumber()
+#       + barFill() accept optional tier for tier-colored rendering; selectivity-
+#       Chip() shows "N% selectivity · skin in the game"; coldSubtitle() author-
+#       aware ("5 verdicts to unlock" vs "No resolved bets yet"); C.ghost +
+#       C.white tokens added to color map. battingAverageLayout() now accepts
+#       optional OGAuthor third parameter.
+#     src/lib/og/renderOGImage.ts — OGAuthor type re-exported; renderBatting-
+#       AverageImage() extended with optional author?: OGAuthor param threaded
+#       to battingAverageLayout().
+#     src/pages/api/og/batting-average.png.ts — ?author= query param support;
+#       sitewideCard() (no author) vs authorCard() (per-author) routing;
+#       toBattingAverage() converts BattingAverageResult → BattingAverage
+#       discriminated union; toOGAuthor() maps result to OGAuthor interface;
+#       cache extended to max-age=3600, stale-while-revalidate=86400.
+#     src/pages/api/conviction-stats.ts — GET handler now async; auto-resolves
+#       ?published= from getCollection('blog') when param omitted; response
+#       payload gains `author` field; buildSitewidePayload → buildAuthorPayload
+#       rename; resolvePublishedCount() helper with try/catch fallback to 0.
+#     src/pages/author/[slug].astro — imports canonicalUrl; computes ogImage
+#       URL (/api/og/batting-average.png?author=slug); passes image={ogImage}
+#       to BaseLayout for per-author social share cards.
+#     src/layouts/BaseLayout.astro — new optional `image` prop (string); takes
+#       precedence over ogSlug for OG image URL; threaded through to SEOMeta.
+#     src/components/OpenLoopCard.astro — border + box-shadow migrated from
+#       rgba(var(--mood-accent-rgb)) to color-mix(in oklch, var(--mood-accent));
+#       eliminates dependency on --mood-accent-rgb fallback channel.
+#     src/components/ShareSheet.astro — z-index: 8 → var(--z-sticky); background
+#       raw rgba → --surface-inset-deep / --surface-overlay; color raw hex →
+#       --mood-accent / --text-primary; border raw rgba → color-mix(); transition
+#       durations → --motion-flow-duration/--motion-snap-duration with matching
+#       easing tokens.
+#     src/components/StanceDrawer.astro — overlay z-index: 99 → var(--z-drawer);
+#       drawer z-index: 100 → calc(var(--z-drawer) + 1); handle background →
+#       --text-faint, hover → --text-ghost; transition → --motion-snap-* tokens.
+#     src/styles/tokens.css — --shadow-card-endangered (amber edge glow, Tanya
+#       §4.1); BA embed suite: --ba-embed-bg/border/text/text-dim/text-ghost/
+#       accent/radius; tier label tokens: --ba-tier-{locked|bronze|silver|gold|
+#       diamond}-label.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v115).
+#
 # Architecture v115 — BattingProgressRing + BattingUnlockCeremony + Progress API (2026-04-13)
 #   Sprint: Conviction unlock progress visualised as a circular SVG gauge on the
 #     author profile page and leaderboard rows. Three-phase unlock ceremony fires

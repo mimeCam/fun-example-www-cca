@@ -2,19 +2,20 @@
 // GET /api/conviction-stats — sitewide BA stats OR per-slug conviction stage.
 //
 // Without ?slug=: returns per-author BA result with all integrity fields.
-//   Uses ?author= (default: 'host') and ?published= (total published posts count).
+//   Uses ?author= (default: 'host') and optional ?published=.
+//   When ?published= is omitted, auto-resolves from the content collection.
 //
 // With ?slug=: returns per-slug conviction stage for TrustBadge polling.
 //
-// Sitewide shape (updated — all new integrity fields):
-//   { battingAverage, resolvedTotal, resolvedCorrect,
+// Sitewide shape (all integrity fields):
+//   { author, battingAverage, resolvedTotal, resolvedCorrect,
 //     selectivityRate, totalPublished, totalSealed,
 //     eligible, trophyTier, computedAt }
 //
 // Per-slug shape (polled by trust-badge-ceremony.ts every 5s):
 //   { slug, conviction_stage, sealed_at, verdict }
 //
-// Credits: Mike Koch (spec §BA-Integrity — 5 new API fields),
+// Credits: Mike Koch (spec §BA-Integrity + Portability Kit),
 //          Tanya (§4.4 — trophy display contract), Elon (selectivity visibility)
 
 import type { APIRoute } from 'astro';
@@ -22,6 +23,7 @@ import { getBattingAverageResult } from '../../lib/batting-average';
 import { getSealEntry }            from '../../lib/conviction-ledger';
 import { getTstForSeal }           from '../../lib/timestamp-store';
 import { getDisputeResolution }    from '../../lib/verdict-dispute';
+import { getCollection }           from 'astro:content';
 
 export const prerender = false;
 
@@ -34,17 +36,20 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-function buildSitewidePayload(authorSlug: string, totalPublished: number): Record<string, unknown> {
+function buildAuthorPayload(
+  authorSlug: string, totalPublished: number,
+): Record<string, unknown> {
   const r = getBattingAverageResult(authorSlug, totalPublished);
   return {
-    battingAverage:  r.battingAverage,    // null if not eligible
+    author:          authorSlug,
+    battingAverage:  r.battingAverage,
     resolvedTotal:   r.resolvedTotal,
     resolvedCorrect: r.resolvedCorrect,
-    selectivityRate: r.selectivityRate,   // sealed / published
+    selectivityRate: r.selectivityRate,
     totalPublished:  r.totalPublished,
     totalSealed:     r.totalSealed,
-    eligible:        r.eligible,          // resolvedTotal >= MIN_VERDICTS (5)
-    trophyTier:      r.trophyTier,        // 'locked'|'bronze'|'silver'|'gold'|'diamond'
+    eligible:        r.eligible,
+    trophyTier:      r.trophyTier,
     computedAt:      new Date().toISOString(),
   };
 }
@@ -72,14 +77,25 @@ function buildSlugPayload(slug: string): Record<string, unknown> {
   };
 }
 
-export const GET: APIRoute = ({ url }) => {
+export const GET: APIRoute = async ({ url }) => {
   try {
-    const slug      = url.searchParams.get('slug');
+    const slug = url.searchParams.get('slug');
     if (slug) return json(buildSlugPayload(slug));
-    const author    = url.searchParams.get('author') ?? 'host';
-    const published = parseInt(url.searchParams.get('published') ?? '0', 10);
-    return json(buildSitewidePayload(author, published));
+
+    const author = url.searchParams.get('author') ?? 'host';
+    const pubParam = url.searchParams.get('published');
+    const published = pubParam !== null
+      ? parseInt(pubParam, 10)
+      : await resolvePublishedCount();
+    return json(buildAuthorPayload(author, published));
   } catch {
     return json({ error: 'Stats unavailable' }, 503);
   }
 };
+
+/** Auto-resolve total published from content collection when not provided. */
+async function resolvePublishedCount(): Promise<number> {
+  try {
+    return (await getCollection('blog')).length;
+  } catch { return 0; }
+}

@@ -1,27 +1,59 @@
 // src/lib/og/battingAverageLayout.ts
-// Satori JSX tree builder for the dedicated batting average OG share card.
-// Design spec: Tanya §20 — 1200×630, amber pct hero, progress bar, HMAC badge.
-// Separate from accountabilityLayout to allow independent evolution.
+// Satori JSX tree builder for the batting average OG share card.
+// Supports both sitewide and per-author cards.
+// Design spec: Tanya §20/§SS24 — 1200×630, amber pct hero, progress bar, HMAC badge.
 // Pure function; zero side-effects; no DB access.
 //
-// Credits: Tanya (UX spec §20), Mike (arch spec — battingAverageLayout)
+// Credits: Tanya (UX spec §20, §SS24), Mike (arch spec — Portability Kit)
 
-import type { BattingAverage } from '../batting-average';
+import type { BattingAverage, TrophyTier } from '../batting-average';
 
 // ---------------------------------------------------------------------------
-// Design tokens — Tanya's locked amber system, §24
+// Author identity — optional context for per-author OG cards
+// ---------------------------------------------------------------------------
+
+export interface OGAuthor {
+  slug: string;
+  name: string;
+  tier: TrophyTier;
+  selectivity: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// Design tokens — mirrors tokens.css values (Satori has no CSS custom props)
+// Each value has a comment mapping it to its canonical token name.
 // ---------------------------------------------------------------------------
 
 const C = {
-  bg:    '#0c0c0e',
-  amber: '#F5A623',
-  dim:   'rgba(255,255,255,0.55)',
-  faint: 'rgba(255,255,255,0.28)',
-  quiet: 'rgba(255,255,255,0.08)',
-  grey:  'rgba(255,255,255,0.45)',
-  green: 'rgba(80,200,100,0.85)',
-  red:   'rgba(230,100,100,0.85)',
+  bg:    '#0c0c0e',                   // --surface-base
+  amber: '#F5A623',                   // --clr-gold-400 (oklch(78% 0.14 68deg))
+  dim:   'rgba(255,255,255,0.55)',    // --text-secondary
+  faint: 'rgba(255,255,255,0.28)',    // ~--text-ghost (0.22) + slight lift
+  quiet: 'rgba(255,255,255,0.08)',    // --surface-hover
+  grey:  'rgba(255,255,255,0.45)',    // between --text-ghost and --text-secondary
+  green: 'rgba(80,200,100,0.85)',     // semantic: verdict-correct
+  red:   'rgba(230,100,100,0.85)',    // semantic: verdict-wrong
+  ghost: 'rgba(255,255,255,0.22)',    // --text-ghost
+  white: 'rgba(255,255,255,0.88)',    // --text-primary
 } as const;
+
+// Trophy tier color map — mirrors --ba-tier-* in tokens.css
+const TIER_COLOR: Record<TrophyTier, string> = {
+  locked:  'rgba(255,255,255,0.38)',  // --ba-tier-locked (neutral grey)
+  bronze:  '#C8874B',                 // --ba-tier-bronze (oklch(68% 0.13 55deg))
+  silver:  '#B0B8C8',                 // --ba-tier-silver (oklch(78% 0.03 250deg))
+  gold:    '#F5A623',                 // --ba-tier-gold   (--clr-gold-400)
+  diamond: '#D8E8F8',                 // --ba-tier-diamond (oklch(92% 0.06 250deg))
+};
+
+// Trophy tier symbols — simple chars that render in all Satori fonts
+const TIER_GLYPH: Record<TrophyTier, string> = {
+  locked:  '○',
+  bronze:  '●',
+  silver:  '◈',
+  gold:    '◆',
+  diamond: '◇',
+};
 
 type El = Record<string, unknown>;
 
@@ -29,24 +61,26 @@ type El = Record<string, unknown>;
 // Primitive — single shared element builder
 // ---------------------------------------------------------------------------
 
-function el(type: string, style: Record<string, unknown>, children?: unknown): El {
+function el(
+  type: string,
+  style: Record<string, unknown>,
+  children?: unknown,
+): El {
   return { type, props: { style, children } };
 }
 
 // ---------------------------------------------------------------------------
-// Layout shell
+// Layout shell — 1200×630 dark card
 // ---------------------------------------------------------------------------
 
-function outerStyle(): Record<string, unknown> {
-  return {
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+function outerWrap(children: El[]): El {
+  const style = {
+    display: 'flex', flexDirection: 'column',
+    justifyContent: 'space-between',
     width: '1200px', height: '630px', padding: '60px 70px',
     background: C.bg, fontFamily: 'sans-serif',
   };
-}
-
-function outerWrap(children: El[]): El {
-  return { type: 'div', props: { style: outerStyle(), children } };
+  return { type: 'div', props: { style, children } };
 }
 
 // ---------------------------------------------------------------------------
@@ -54,36 +88,95 @@ function outerWrap(children: El[]): El {
 // ---------------------------------------------------------------------------
 
 function namePlate(siteName: string): El {
-  return el('div', { fontSize: '18px', color: C.grey, letterSpacing: '0.12em' }, siteName.toUpperCase());
+  const style = {
+    fontSize: '18px', color: C.grey,
+    letterSpacing: '0.12em',
+  };
+  return el('div', style, siteName.toUpperCase());
 }
 
 function hmacBadge(): El {
   return el('div', {
-    fontSize: '12px', fontWeight: 700, color: C.amber, padding: '5px 14px',
-    borderRadius: '6px', border: '1px solid rgba(245,166,35,0.3)',
-    background: 'rgba(245,166,35,0.08)', letterSpacing: '0.06em',
+    fontSize: '12px', fontWeight: 700, color: C.amber,
+    padding: '5px 14px', borderRadius: '6px',
+    border: '1px solid rgba(245,166,35,0.3)',
+    background: 'rgba(245,166,35,0.08)',
+    letterSpacing: '0.06em',
   }, 'HMAC SEALED');
 }
 
 function headerRow(siteName: string, showBadge: boolean): El {
-  const rowStyle = { display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' };
-  return { type: 'div', props: { style: rowStyle, children: [namePlate(siteName), showBadge ? hmacBadge() : el('div', {}, undefined)] } };
+  const style = {
+    display: 'flex', flexDirection: 'row',
+    justifyContent: 'space-between', alignItems: 'center',
+  };
+  const right = showBadge ? hmacBadge() : el('div', {});
+  return { type: 'div', props: { style, children: [namePlate(siteName), right] } };
+}
+
+// ---------------------------------------------------------------------------
+// Author name row — only rendered for per-author cards
+// ---------------------------------------------------------------------------
+
+function authorNameRow(author: OGAuthor): El {
+  const tierColor = TIER_COLOR[author.tier];
+  const glyph = TIER_GLYPH[author.tier];
+  const style = {
+    display: 'flex', flexDirection: 'row',
+    alignItems: 'center', gap: '14px',
+  };
+  return { type: 'div', props: { style, children: [
+    el('div', { fontSize: '14px', color: tierColor }, glyph),
+    el('div', {
+      fontSize: '28px', fontWeight: 600,
+      color: C.white, letterSpacing: '-0.01em',
+    }, author.name),
+    tierBadge(author.tier),
+  ] } };
+}
+
+function tierBadge(tier: TrophyTier): El {
+  const color = TIER_COLOR[tier];
+  return el('div', {
+    fontSize: '13px', fontWeight: 700,
+    color, padding: '3px 12px',
+    borderRadius: '6px',
+    border: `1px solid ${color}`,
+    background: 'rgba(255,255,255,0.04)',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+  }, tier);
 }
 
 // ---------------------------------------------------------------------------
 // Hero block: large pct number + subtitle
 // ---------------------------------------------------------------------------
 
-function pctNumber(pct: number): El {
-  return el('div', { fontSize: '96px', fontWeight: 700, color: C.amber, lineHeight: '1', letterSpacing: '-0.02em' }, `${pct}%`);
+function pctNumber(pct: number, tier?: TrophyTier): El {
+  const color = tier ? TIER_COLOR[tier] : C.amber;
+  return el('div', {
+    fontSize: '96px', fontWeight: 700,
+    color, lineHeight: '1', letterSpacing: '-0.02em',
+  }, `${pct}%`);
 }
 
-function pctSubtitle(): El {
-  return el('div', { fontSize: '24px', fontWeight: 400, color: C.dim }, 'of sealed bets held true');
+function pctSubtitle(author?: OGAuthor): El {
+  const text = author
+    ? 'of sealed bets held true'
+    : 'of sealed bets held true';
+  return el('div', {
+    fontSize: '24px', fontWeight: 400, color: C.dim,
+  }, text);
 }
 
-function pctHero(pct: number): El {
-  return { type: 'div', props: { style: { display: 'flex', flexDirection: 'column', gap: '4px' }, children: [pctNumber(pct), pctSubtitle()] } };
+function pctHero(pct: number, author?: OGAuthor): El {
+  const tier = author?.tier;
+  const style = {
+    display: 'flex', flexDirection: 'column', gap: '4px',
+  };
+  return { type: 'div', props: { style, children: [
+    pctNumber(pct, tier), pctSubtitle(author),
+  ] } };
 }
 
 // ---------------------------------------------------------------------------
@@ -91,29 +184,52 @@ function pctHero(pct: number): El {
 // ---------------------------------------------------------------------------
 
 function coldNumber(): El {
-  return el('div', { fontSize: '96px', fontWeight: 700, color: 'rgba(255,255,255,0.15)', lineHeight: '1' }, '\u2014');
+  return el('div', {
+    fontSize: '96px', fontWeight: 700,
+    color: 'rgba(255,255,255,0.15)', lineHeight: '1',
+  }, '\u2014');
 }
 
-function coldSubtitle(): El {
-  return el('div', { fontSize: '24px', fontWeight: 400, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }, 'No resolved bets yet \u2014 clock running.');
+function coldSubtitle(author?: OGAuthor): El {
+  const text = author
+    ? '5 verdicts to unlock batting average'
+    : 'No resolved bets yet \u2014 clock running.';
+  return el('div', {
+    fontSize: '24px', fontWeight: 400,
+    color: 'rgba(255,255,255,0.3)', fontStyle: 'italic',
+  }, text);
 }
 
-function coldHero(): El {
-  return { type: 'div', props: { style: { display: 'flex', flexDirection: 'column', gap: '4px' }, children: [coldNumber(), coldSubtitle()] } };
+function coldHero(author?: OGAuthor): El {
+  const style = {
+    display: 'flex', flexDirection: 'column', gap: '4px',
+  };
+  return { type: 'div', props: { style, children: [
+    coldNumber(), coldSubtitle(author),
+  ] } };
 }
 
 // ---------------------------------------------------------------------------
 // Progress bar: amber fill over quiet track (Tanya §20)
 // ---------------------------------------------------------------------------
 
-function barFill(pct: number): El {
-  return el('div', { width: `${pct}%`, height: '8px', background: C.amber, borderRadius: '4px 0 0 4px' }, undefined);
+function barFill(pct: number, tier?: TrophyTier): El {
+  const color = tier ? TIER_COLOR[tier] : C.amber;
+  return el('div', {
+    width: `${pct}%`, height: '8px',
+    background: color, borderRadius: '4px 0 0 4px',
+  });
 }
 
-function progressBar(correct: number, total: number): El {
+function progressBar(
+  correct: number, total: number, tier?: TrophyTier,
+): El {
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
-  const track = { display: 'flex', height: '8px', borderRadius: '4px', background: C.quiet };
-  return { type: 'div', props: { style: track, children: [barFill(pct)] } };
+  const style = {
+    display: 'flex', height: '8px',
+    borderRadius: '4px', background: C.quiet,
+  };
+  return { type: 'div', props: { style, children: [barFill(pct, tier)] } };
 }
 
 // ---------------------------------------------------------------------------
@@ -121,20 +237,43 @@ function progressBar(correct: number, total: number): El {
 // ---------------------------------------------------------------------------
 
 function statChip(label: string, color: string): El {
-  return el('div', { fontSize: '18px', fontWeight: 400, color, fontFamily: 'monospace' }, label);
+  return el('div', {
+    fontSize: '18px', fontWeight: 400,
+    color, fontFamily: 'monospace',
+  }, label);
 }
 
 function midDot(): El {
-  return el('div', { fontSize: '18px', color: 'rgba(255,255,255,0.22)' }, '\u00b7');
+  return el('div', { fontSize: '18px', color: C.ghost }, '\u00b7');
 }
 
-function statsRow(correct: number, wrong: number, pending: number): El {
+function statsRow(
+  correct: number, wrong: number, pending: number,
+): El {
   const items = [
     statChip(`${correct} correct`, C.green), midDot(),
     statChip(`${wrong} wrong`, C.red),       midDot(),
     statChip(`${pending} pending`, C.grey),
   ];
-  return { type: 'div', props: { style: { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }, children: items } };
+  const style = {
+    display: 'flex', flexDirection: 'row',
+    alignItems: 'center', gap: '10px',
+  };
+  return { type: 'div', props: { style, children: items } };
+}
+
+// ---------------------------------------------------------------------------
+// Selectivity chip — "sealed 8 of 12 posts — 67% skin in the game"
+// ---------------------------------------------------------------------------
+
+function selectivityChip(author: OGAuthor): El | null {
+  if (author.selectivity === null) return null;
+  const pct = Math.round(author.selectivity * 100);
+  const text = `${pct}% selectivity · skin in the game`;
+  return el('div', {
+    fontSize: '14px', color: C.grey,
+    fontFamily: 'monospace', letterSpacing: '0.02em',
+  }, text);
 }
 
 // ---------------------------------------------------------------------------
@@ -142,50 +281,67 @@ function statsRow(correct: number, wrong: number, pending: number): El {
 // ---------------------------------------------------------------------------
 
 function footerRow(siteName: string): El {
-  const style = { display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' };
-  return {
-    type: 'div',
-    props: {
-      style,
-      children: [
-        el('div', { fontSize: '16px', color: C.faint }, 'Conviction sealed before publication. Score anchored to GitHub. Tamper-evident.'),
-        el('div', { fontSize: '20px', color: C.grey }, siteName.toLowerCase()),
-      ],
-    },
+  const style = {
+    display: 'flex', flexDirection: 'row',
+    justifyContent: 'space-between', alignItems: 'flex-end',
   };
+  const fine = 'Conviction sealed before publication. Tamper-evident.';
+  return { type: 'div', props: { style, children: [
+    el('div', { fontSize: '16px', color: C.faint }, fine),
+    el('div', { fontSize: '20px', color: C.grey }, siteName.toLowerCase()),
+  ] } };
 }
 
 // ---------------------------------------------------------------------------
 // Per-variant assemblers
 // ---------------------------------------------------------------------------
 
-function liveLayout(avg: Extract<BattingAverage, { status: 'live' }>, siteName: string): El {
+function liveLayout(
+  avg: Extract<BattingAverage, { status: 'live' }>,
+  siteName: string,
+  author?: OGAuthor,
+): El {
   const total = avg.correct + avg.wrong + avg.pending;
-  return outerWrap([
-    headerRow(siteName, true),
-    pctHero(avg.pct),
-    progressBar(avg.correct, total),
-    statsRow(avg.correct, avg.wrong, avg.pending),
-    footerRow(siteName),
-  ]);
+  const children: El[] = [headerRow(siteName, true)];
+  if (author) children.push(authorNameRow(author));
+  children.push(pctHero(avg.pct, author));
+  children.push(progressBar(avg.correct, total, author?.tier));
+  children.push(statsRow(avg.correct, avg.wrong, avg.pending));
+  if (author) {
+    const chip = selectivityChip(author);
+    if (chip) children.push(chip);
+  }
+  children.push(footerRow(siteName));
+  return outerWrap(children);
 }
 
-function coldLayout(siteName: string): El {
-  return outerWrap([
-    headerRow(siteName, false),
-    coldHero(),
-    el('div', {}, undefined),
-    el('div', { fontSize: '16px', color: 'rgba(255,255,255,0.22)' }, 'The clock is running.'),
-    footerRow(siteName),
-  ]);
+function coldLayout(siteName: string, author?: OGAuthor): El {
+  const children: El[] = [headerRow(siteName, false)];
+  if (author) children.push(authorNameRow(author));
+  children.push(coldHero(author));
+  children.push(el('div', {}));
+  const hint = author
+    ? 'The clock is running.'
+    : 'The clock is running.';
+  children.push(el('div', { fontSize: '16px', color: C.ghost }, hint));
+  children.push(footerRow(siteName));
+  return outerWrap(children);
 }
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Build a satori-compatible element tree for the 1200×630 batting average share card. */
-export function battingAverageLayout(avg: BattingAverage, siteName: string): El {
-  if (avg.status === 'live') return liveLayout(avg, siteName);
-  return coldLayout(siteName);
+/**
+ * Build a satori-compatible element tree for the 1200×630 batting average card.
+ * When `author` is provided, renders a per-author card with name, tier, selectivity.
+ * Falls back to the sitewide card when `author` is omitted.
+ */
+export function battingAverageLayout(
+  avg: BattingAverage,
+  siteName: string,
+  author?: OGAuthor,
+): El {
+  if (avg.status === 'live') return liveLayout(avg, siteName, author);
+  return coldLayout(siteName, author);
 }

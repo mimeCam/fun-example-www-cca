@@ -59,12 +59,12 @@ const style = `--decay: ${ratio.toFixed(3)};`;
     border-radius: calc(8px + 4px * (1 - var(--d)));
     background: rgba(255, 255, 255, calc(0.03 + 0.06 * var(--d)));
     border: calc(1px + 1px * var(--d)) solid
-      rgba(var(--mood-accent-rgb, 120,120,120), calc(0.06 + 0.14 * var(--d)));
+      color-mix(in oklch, var(--mood-accent) calc(6% + 14% * var(--d)), transparent);
     box-shadow:
       0 1px calc(4px + 8px * var(--d))
-        rgba(var(--mood-accent-rgb, 0,0,0), calc(0.02 + 0.08 * var(--d))),
+        color-mix(in oklch, var(--mood-accent) calc(2% + 8% * var(--d)), transparent),
       0 calc(2px * var(--d)) calc(16px * var(--d))
-        rgba(var(--mood-accent-rgb, 0,0,0), calc(0.04 * var(--d)));
+        color-mix(in oklch, var(--mood-accent) calc(4% * var(--d)), transparent);
     transition: box-shadow var(--transition-hover, 120ms);
   }
 

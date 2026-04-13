@@ -11,6 +11,7 @@ import type { OGImageData } from './ogLayout';
 import { accountabilityLayout } from './accountabilityLayout';
 import type { AccountabilityOGData } from './accountabilityData';
 import { battingAverageLayout } from './battingAverageLayout';
+import type { OGAuthor } from './battingAverageLayout';
 import type { BattingAverage } from '../batting-average';
 import { auditLayout } from './auditLayout';
 import type { AuditOGData } from './auditLayout';
@@ -44,8 +45,12 @@ export async function renderAccountabilityImage(data: AccountabilityOGData): Pro
 }
 
 /** Batting average share card pipeline: BattingAverage → PNG buffer. */
-export async function renderBattingAverageImage(avg: BattingAverage, siteName: string): Promise<Uint8Array> {
-  return toPNG(await toSVG(battingAverageLayout(avg, siteName)));
+export async function renderBattingAverageImage(
+  avg: BattingAverage,
+  siteName: string,
+  author?: OGAuthor,
+): Promise<Uint8Array> {
+  return toPNG(await toSVG(battingAverageLayout(avg, siteName, author)));
 }
 
 /** Conviction audit OG card pipeline: AuditOGData → PNG buffer. */
@@ -58,4 +63,4 @@ export async function renderSealImage(data: SealOGData): Promise<Uint8Array> {
   return toPNG(await toSVG(sealLayout(data)));
 }
 
-export type { OGImageData, AuditOGData, SealOGData };
+export type { OGImageData, AuditOGData, SealOGData, OGAuthor };

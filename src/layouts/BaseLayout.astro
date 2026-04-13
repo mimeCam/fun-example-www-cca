@@ -47,6 +47,8 @@ interface Props {
   type?: 'website' | 'article';
   publishedAt?: string;
   ogSlug?: string;
+  /** Direct OG image URL — takes precedence over ogSlug when set. */
+  image?: string;
   /** Pre-serialized JSON-LD strings — passed through to SEOMeta for <script> injection. */
   jsonLd?: string | string[];
   /** Stage atmosphere painted on <body> via data-atmosphere. Defaults to 'fresh'. */
@@ -58,7 +60,7 @@ interface Props {
 }
 
 const {
-  title, description, type, publishedAt, ogSlug, jsonLd,
+  title, description, type, publishedAt, ogSlug, image, jsonLd,
   atmosphere = 'fresh',
   verdictOutcome,
   disputed = false,
@@ -83,7 +85,7 @@ const showOnboarding = onboardingForced || !onboardingSeen;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} jsonLd={jsonLd} />
+    <SEOMeta title={title} description={description} url={pageUrl} type={type} publishedAt={publishedAt} ogSlug={ogSlug} image={image} jsonLd={jsonLd} />
     <meta name="decay-max-days" content="365" />
     <link rel="alternate" type="application/rss+xml" title="Persona Blog" href="/feed.xml" />
     <!-- Master RAF scheduler — must precede any island that registers animation tasks -->

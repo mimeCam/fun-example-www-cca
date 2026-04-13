@@ -45,10 +45,11 @@ const { title, description = '' } = Astro.props;
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    z-index: 8;
+    z-index: var(--z-sticky);
     opacity: 0;
     transform: translateY(8px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    transition: opacity var(--motion-flow-duration) var(--motion-flow-easing),
+                transform var(--motion-flow-duration) var(--motion-flow-easing);
     pointer-events: none;
   }
 
@@ -63,21 +64,22 @@ const { title, description = '' } = Astro.props;
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 1rem;
-    border: 1px solid rgba(var(--mood-accent-rgb, 156,163,175), 0.2);
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid color-mix(in oklch, var(--mood-accent) 20%, transparent);
+    border-radius: var(--radius-pill, 999px);
+    background: var(--surface-inset-deep);
     backdrop-filter: blur(12px);
-    color: var(--mood-accent, #9CA3AF);
+    color: var(--mood-accent);
     font-size: 0.75rem;
     letter-spacing: 0.05em;
     text-transform: lowercase;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    transition: background var(--motion-snap-duration) var(--motion-snap-easing),
+                border-color var(--motion-snap-duration) var(--motion-snap-easing);
   }
 
   .share-btn:hover {
-    background: rgba(0, 0, 0, 0.5);
-    border-color: rgba(var(--mood-accent-rgb, 156,163,175), 0.4);
+    background: var(--surface-overlay);
+    border-color: color-mix(in oklch, var(--mood-accent) 40%, transparent);
   }
 
   .share-btn:focus-visible {
@@ -91,14 +93,15 @@ const { title, description = '' } = Astro.props;
     right: 0;
     padding: 0.4rem 0.8rem;
     border-radius: 6px;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--surface-overlay);
     backdrop-filter: blur(8px);
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--text-primary);
     font-size: 0.7rem;
     white-space: nowrap;
     opacity: 0;
     transform: translateY(4px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity var(--motion-flow-duration) var(--motion-flow-easing),
+                transform var(--motion-flow-duration) var(--motion-flow-easing);
     pointer-events: none;
   }
 
