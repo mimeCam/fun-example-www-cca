@@ -1,0 +1,141 @@
+/* src/styles/ba-unlock-progress.css
+ * Styling for BattingAverageUnlockProgress + TrophyTierLadder.
+ * Token discipline: ZERO raw color/size values.
+ * All values reference --ba-dot-*, --tier-ladder-*, or system tokens.
+ *
+ * Architecture: Mike Koch (napkin spec §CSS Token Additions)
+ * UX: Tanya Donska (§4.4 trophy spec, §6 cold state)
+ */
+
+/* ── Progress dot track ──────────────────────────────────────────────────── */
+
+.ba-unlock-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ba-dot-track {
+  display: flex;
+  align-items: center;
+  gap: var(--ba-dot-gap);
+}
+
+.ba-dot {
+  width:         var(--ba-dot-size);
+  height:        var(--ba-dot-size);
+  border-radius: var(--ba-dot-radius);
+  background:    var(--ba-dot-empty);
+  flex-shrink:   0;
+  transition:
+    background var(--motion-duration-fast) var(--motion-easing-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-easing-standard),
+    transform  var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+/* Filled dot — verdict resolved */
+.ba-dot[data-filled] {
+  background: var(--ba-dot-filled);
+  box-shadow: 0 0 8px var(--ba-dot-glow);
+}
+
+/* Dot fill spring — plays once when JS adds data-filled */
+@media (prefers-reduced-motion: no-preference) {
+  .ba-dot[data-filled] {
+    animation: ba-dot-spring var(--motion-duration-base) var(--motion-easing-spring) both;
+  }
+}
+
+@keyframes ba-dot-spring {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* Cascade bloom burst — all dots on unlock moment */
+.ba-dot[data-bloom] {
+  animation: ba-dot-fill-burst var(--motion-duration-deliberate) var(--motion-easing-spring) both;
+}
+
+@keyframes ba-dot-fill-burst {
+  0%   { transform: scale(1);   box-shadow: 0 0 0 0 var(--ba-dot-glow); }
+  50%  { transform: scale(1.4); box-shadow: 0 0 16px 4px var(--ba-dot-glow); }
+  100% { transform: scale(1);   box-shadow: 0 0 8px var(--ba-dot-glow); }
+}
+
+/* ── Explainer text ──────────────────────────────────────────────────────── */
+
+.ba-unlock-explainer {
+  font-size:      var(--text-xs);
+  color:          var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+  margin: 0;
+}
+
+.ba-unlock-needs {
+  font-size:   var(--text-2xs);
+  color:       var(--text-ghost);
+  font-family: var(--font-mono);
+  margin: 0;
+}
+
+.ba-unlock-sealed { opacity: 0.8; }
+
+/* ── Trophy tier ladder ──────────────────────────────────────────────────── */
+
+.tier-ladder {
+  display:     flex;
+  align-items: center;
+  gap:         var(--tier-ladder-gap);
+  margin-top:  var(--space-2);
+}
+
+.tier-ladder__rung {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            2px;
+  color:          var(--tier-ladder-dim);
+  transition:
+    color   var(--motion-flow-duration) var(--motion-flow-easing),
+    opacity var(--motion-flow-duration) var(--motion-flow-easing);
+}
+
+.tier-ladder__icon {
+  font-size:   var(--text-base);
+  line-height: 1;
+  filter:      grayscale(1) opacity(0.35);
+  transition:  filter var(--motion-flow-duration) var(--motion-flow-easing);
+}
+
+.tier-ladder__label {
+  font-size:   var(--tier-ladder-size);
+  font-family: var(--font-mono);
+  color:       var(--tier-ladder-dim);
+}
+
+/* Next milestone — bronze glows softly as the reachable goal */
+.tier-ladder__rung--next .tier-ladder__icon  { filter: grayscale(0.4) opacity(0.7); }
+.tier-ladder__rung--next .tier-ladder__label { color: var(--tier-ladder-active); }
+
+/* Unlock spring — fires once; JS adds [data-unlocked] after bah:unlock */
+@media (prefers-reduced-motion: no-preference) {
+  .tier-ladder__rung[data-unlocked] .tier-ladder__icon {
+    filter:    grayscale(0) opacity(1);
+    animation: tier-rung-spring var(--motion-ceremony-duration) var(--motion-ceremony-easing) both;
+  }
+}
+
+@keyframes tier-rung-spring {
+  0%   { transform: scale(0.5) translateY(8px); opacity: 0; }
+  60%  { transform: scale(1.1) translateY(-2px); }
+  100% { transform: scale(1)   translateY(0);   opacity: 1; }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .ba-dot,
+  .tier-ladder__rung,
+  .tier-ladder__icon { transition: none; animation: none !important; }
+}

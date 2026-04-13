@@ -1,0 +1,59 @@
+---
+// src/components/BattingAverageUnlockProgress.astro
+// 5-dot progress track for the BA cold state.
+// SSR-only — JS reads [data-ba-dot-track][data-resolved] and animates on verdict:declared.
+//
+// DOM contract:
+//   [data-ba-dot-track][data-resolved="N"]  — container; client reads/writes N
+//   [data-dot-index="0"…"4"]               — individual dots
+//   [data-filled]                          — present on resolved dots (SSR-stamped)
+//
+// Credits: Mike Koch (napkin spec §BattingAverageUnlockProgress)
+
+import '../styles/ba-unlock-progress.css';
+import { MIN_VERDICTS } from '../lib/batting-average';
+
+interface Props {
+  resolvedTotal: number;  // 0–4 (only rendered when !eligible)
+  totalSealed:   number;  // for "N sealed awaiting verdict" context line
+}
+
+const { resolvedTotal, totalSealed } = Astro.props;
+const needsMore = MIN_VERDICTS - resolvedTotal;
+---
+
+<div
+  class="ba-unlock-progress"
+  data-ba-dot-track
+  data-resolved={resolvedTotal}
+  aria-label={`${resolvedTotal} of ${MIN_VERDICTS} verdicts resolved`}
+>
+  <div
+    class="ba-dot-track"
+    role="progressbar"
+    aria-valuenow={resolvedTotal}
+    aria-valuemin={0}
+    aria-valuemax={MIN_VERDICTS}
+    aria-label="Verdict progress"
+  >
+    {Array.from({ length: MIN_VERDICTS }).map((_, i) => (
+      <span
+        class="ba-dot"
+        data-dot-index={i}
+        data-filled={i < resolvedTotal ? '' : undefined}
+        aria-hidden="true"
+      />
+    ))}
+  </div>
+
+  <p class="ba-unlock-explainer">
+    Seal a post → community votes → verdict resolves
+  </p>
+
+  <p class="ba-unlock-needs" aria-live="polite">
+    {needsMore} more verdict{needsMore !== 1 ? 's' : ''} to unlock
+    {totalSealed > 0 && (
+      <span class="ba-unlock-sealed"> · {totalSealed} sealed awaiting verdict</span>
+    )}
+  </p>
+</div>

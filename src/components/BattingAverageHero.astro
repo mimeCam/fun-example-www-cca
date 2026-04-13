@@ -17,6 +17,8 @@
 
 import '../styles/batting-average.css';
 import type { BattingAverageResult, TrophyTier } from '../lib/batting-average';
+import BattingAverageUnlockProgress from './BattingAverageUnlockProgress.astro';
+import TrophyTierLadder from './TrophyTierLadder.astro';
 
 interface Props {
   result:     BattingAverageResult;
@@ -113,6 +115,19 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     </div>
   )}
 
+  <!-- Unlock swap target — present only in cold state; revealed by JS on bah:unlock -->
+  {!result.eligible && (
+    <div class="bah-live bah-live--hidden" aria-hidden="true">
+      <div class="bah-score">
+        <span class="bah-pct" data-cm-pct="0" aria-label="Batting average">0%</span>
+        <span class="bah-subtitle">Batting Average</span>
+      </div>
+      <div class="ba-fill-bar" role="progressbar" aria-valuenow={0} aria-valuemin={0} aria-valuemax={100} style="--ba-fill-width:0%">
+        <div class="ba-fill-bar__track"></div>
+      </div>
+    </div>
+  )}
+
   <!-- Score block: locked path (< MIN_VERDICTS resolved) -->
   {!result.eligible && (
     <div class="bah-cold">
@@ -127,23 +142,12 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
         <span class="bah-subtitle bah-subtitle--cold">Batting Average</span>
       </div>
 
-      <div class="ba-locked">
-        <span class="ba-locked__icon" aria-hidden="true">🔒</span>
-        <span>Needs {needsMore} more resolved verdict{needsMore !== 1 ? 's' : ''} to unlock</span>
-      </div>
+      <BattingAverageUnlockProgress
+        resolvedTotal={result.resolvedTotal}
+        totalSealed={result.totalSealed}
+      />
 
-      {result.totalSealed > 0 && (
-        <div class="ba-stats">
-          <div class="ba-stats__group">
-            <span class="ba-selectivity">{result.totalSealed} sealed</span>
-            <span class="ba-stats__label">of {result.totalPublished} published</span>
-          </div>
-          <div class="ba-stats__group ba-stats__group--right">
-            <span class="ba-selectivity">{result.resolvedTotal}</span>
-            <span class="ba-stats__label">of 5 verdicts</span>
-          </div>
-        </div>
-      )}
+      <TrophyTierLadder currentTier={result.trophyTier} />
     </div>
   )}
 
@@ -169,14 +173,28 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
   // BattingAverageHero — client ceremony layer
   // 1. Share button (clipboard API with prompt() fallback)
   // 2. BA count-up + trophy spring on verdict:declared SSE event
+  // 3. bah:unlock — cold → live DOM swap (fired by ba-unlock-progress.ts)
   //    Trophy spring fires on tier CHANGE only — not on every page load.
   //
-  // Credits: Mike (§3 SSE lifecycle), Tanya (§4.4 trophy spring spec),
+  // Credits: Mike (§3 SSE lifecycle, napkin §UnlockTransition),
+  //          Tanya (§4.4 trophy spring spec),
   //          Elon (reduced-motion guard + bah:ceremony-done CustomEvent)
 
   import { countUp } from '../lib/spring-easing';
+  import '../lib/client/ba-unlock-progress'; // boots dot-fill ceremony on cold state
 
   declare global { interface Window { __heartbeat?: EventSource; } }
+
+  interface VerdictPayload {
+    newBattingAvg: number | null;
+    correct?:      number;
+    wrong?:        number;
+    pending?:      number;
+    trophyTier?:   string;
+  }
+
+  // Stash last verdict payload so bah:unlock handler can animate count-up
+  let _lastPayload: VerdictPayload | null = null;
 
   function getStream(): EventSource {
     if (window.__heartbeat?.readyState !== EventSource.CLOSED) return window.__heartbeat!;
@@ -193,20 +211,12 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
 
   function fireTrophySpring(el: HTMLElement): void {
     el.classList.remove('ba-trophy--spring');
-    void el.offsetWidth; // reflow to restart animation
+    void el.offsetWidth;
     el.classList.add('ba-trophy--spring');
   }
 
   function fireCeremonyDone(pct: number): void {
     document.dispatchEvent(new CustomEvent('bah:ceremony-done', { detail: { pct } }));
-  }
-
-  interface VerdictPayload {
-    newBattingAvg: number | null;
-    correct:       number;
-    wrong:         number;
-    pending:       number;
-    trophyTier?:   string;
   }
 
   function snapUpdate(el: HTMLElement, to: number, pct: number): void {
@@ -215,48 +225,85 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     fireCeremonyDone(to);
   }
 
-  function handleVerdict(payload: VerdictPayload): void {
-    if (payload.newBattingAvg === null) return;
-    const el = getPctEl();
-    if (!el) return;
-    const from   = parseInt(el.dataset.cmPct ?? '0', 10);
-    const pct    = Math.round(payload.newBattingAvg * 100);
-    if (from === pct) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      snapUpdate(el, pct, pct);
-      return;
-    }
+  function animateCountUp(el: HTMLElement, from: number, pct: number, tier?: string): void {
     countUp(from, pct, val => { el.textContent = `${val}%`; }, () => {
       el.dataset.cmPct = String(pct);
       const trophy = getTrophyEl();
-      if (trophy && payload.trophyTier) fireTrophySpring(trophy);
+      if (trophy && tier) fireTrophySpring(trophy);
       fireCeremonyDone(pct);
     });
   }
 
+  function handleVerdict(payload: VerdictPayload): void {
+    if (payload.newBattingAvg === null) return;
+    const el = getPctEl();
+    if (!el) return;
+    const from = parseInt(el.dataset.cmPct ?? '0', 10);
+    const pct  = Math.round(payload.newBattingAvg * 100);
+    if (from === pct) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      snapUpdate(el, pct, pct); return;
+    }
+    animateCountUp(el, from, pct, payload.trophyTier);
+  }
+
+  // ── Unlock DOM swap — fires when ba-unlock-progress.ts dispatches bah:unlock ──
+
+  function revealLiveSection(): void {
+    const live = document.querySelector<HTMLElement>('.bah-live--hidden');
+    if (!live) return;
+    live.classList.remove('bah-live--hidden');
+    live.classList.add('ba-locked--unlocked');
+    live.removeAttribute('aria-hidden');
+  }
+
+  function fadeColdSection(): void {
+    const cold = document.querySelector<HTMLElement>('.bah-cold');
+    if (cold) cold.classList.add('ba-locked--fade-out');
+  }
+
+  function handleUnlock(e: CustomEvent<VerdictPayload>): void {
+    fadeColdSection();
+    setTimeout(() => {
+      revealLiveSection();
+      if (e.detail) handleVerdict(e.detail);
+    }, 300);
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────────────
+
   function boot(): void {
     const es = getStream();
     es.addEventListener('verdict:declared', (e: MessageEvent) => {
-      try { handleVerdict(JSON.parse(e.data) as VerdictPayload); } catch { /* ignore */ }
+      try {
+        _lastPayload = JSON.parse(e.data) as VerdictPayload;
+        handleVerdict(_lastPayload);
+      } catch { /* ignore */ }
     });
+    document.addEventListener('bah:unlock', e => handleUnlock(e as CustomEvent<VerdictPayload>));
   }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot, { once: true });
   } else { boot(); }
 
-  const shareBtn = document.querySelector<HTMLButtonElement>('.bah-share');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', () => {
+  // ── Share button ──────────────────────────────────────────────────────────────
+
+  function bindShareButton(): void {
+    const btn = document.querySelector<HTMLButtonElement>('.bah-share');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
       const url = window.location.href;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(url).then(() => {
-          shareBtn.textContent = 'copied ✓';
-          setTimeout(() => { shareBtn.textContent = 'share score ↗'; }, 2000);
+          btn.textContent = 'copied ✓';
+          setTimeout(() => { btn.textContent = 'share score ↗'; }, 2000);
         });
       } else { window.prompt('Copy this link:', url); }
     });
   }
+
+  bindShareButton();
 </script>
 
 <style>
@@ -275,6 +322,9 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     flex-direction: column;
     gap: var(--space-4);
   }
+
+  /* Unlock swap target — hidden until bah:unlock DOM swap */
+  .bah-live--hidden { display: none; }
 
   /* ── Score block ─────────────────────────────────────────────────────── */
   .bah-score {

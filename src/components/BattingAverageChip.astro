@@ -22,7 +22,7 @@
 import '../styles/batting-average.css';
 import '../styles/batting-average-chip.css';
 import { getCollection } from 'astro:content';
-import { getBattingAverageResult } from '../lib/batting-average';
+import { getBattingAverageResult, MIN_VERDICTS } from '../lib/batting-average';
 import type { TrophyTier } from '../lib/batting-average';
 
 interface Props {
@@ -96,6 +96,24 @@ const tooltip = isLocked
   {isProvisional && (
     <span class="bac__provisional">
       <span class="bac__pct">{pctInt}%</span>
+      {/* Mini progress dots — inline SVG; zero weight, no icon system needed (Mike napkin §5) */}
+      <svg
+        class="bac__mini-dots"
+        width={MIN_VERDICTS * 10}
+        height={8}
+        viewBox={`0 0 ${MIN_VERDICTS * 10} 8`}
+        aria-hidden="true"
+        focusable="false"
+      >
+        {Array.from({ length: MIN_VERDICTS }).map((_, i) => (
+          <circle
+            class:list={['bac__mini-dot', i < result.resolvedTotal ? 'bac__mini-dot--filled' : '']}
+            cx={i * 10 + 4}
+            cy={4}
+            r={3}
+          />
+        ))}
+      </svg>
       <span class="bac__label">provisional</span>
     </span>
   )}
@@ -165,6 +183,16 @@ const tooltip = isLocked
     align-items: center;
     gap: 4px;
   }
+
+  /* Mini progress dots — provisional state only (Mike napkin §5) */
+  .bac__mini-dots { flex-shrink: 0; overflow: visible; }
+
+  .bac__mini-dot {
+    fill: var(--ba-dot-empty);
+    transition: fill var(--motion-duration-fast) var(--motion-easing-standard);
+  }
+
+  .bac__mini-dot--filled { fill: var(--ba-dot-filled); }
 
   /* IBM Plex Mono for the number — communicates precision/data authority (Tanya §4.1) */
   .bac__pct {

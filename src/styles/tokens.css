@@ -287,6 +287,20 @@
   --ba-progress-dot-size:    8px;     /* verdict progress dot diameter */
   --ba-border-locked-style:  dashed;  /* dashed = incomplete — not earned yet */
 
+  /* ── BA Unlock Progress — cold state progress dots (Mike napkin spec) ─── */
+  --ba-dot-size:    var(--space-3);                                       /* 12px on 4pt grid */
+  --ba-dot-gap:     var(--space-2);                                       /* 8px between dots */
+  --ba-dot-radius:  var(--radius-pill);
+  --ba-dot-empty:   var(--surface-hover);
+  --ba-dot-pending: color-mix(in oklch, var(--gold) 30%, transparent);
+  --ba-dot-filled:  var(--gold);
+  --ba-dot-glow:    color-mix(in oklch, var(--gold) 45%, transparent);
+  /* Trophy Tier Ladder */
+  --tier-ladder-dim:    var(--text-ghost);
+  --tier-ladder-active: var(--gold-dim);
+  --tier-ladder-gap:    var(--space-4);
+  --tier-ladder-size:   var(--text-sm);
+
   /* ── Erosion Bar Tokens — Tanya §4 Zone A ─────────────────────────────── */
   --erosion-bar-height: 3px;
   --erosion-fresh:      var(--clr-gold-400);

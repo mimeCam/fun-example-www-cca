@@ -1,0 +1,49 @@
+---
+// src/components/TrophyTierLadder.astro
+// Trophy tier preview strip — shows all 4 tiers dimmed when locked.
+// Bronze softly glows as "next milestone" when currentTier === 'locked'.
+// No animation on SSR — spring fires only on bah:unlock CustomEvent (JS adds [data-unlocked]).
+//
+// TrophyTier is the polymorphism anchor: never add isUnlocking boolean —
+// derive all state from currentTier alone. (Mike: "Polymorphism is a killer.")
+//
+// Credits: Mike Koch (napkin spec §TrophyTierLadder), Tanya Donska (UX §4.4)
+
+import '../styles/ba-unlock-progress.css';
+import type { TrophyTier } from '../lib/batting-average';
+
+interface Props {
+  currentTier: TrophyTier;
+}
+
+const { currentTier } = Astro.props;
+
+const TIERS: Array<{ tier: TrophyTier; icon: string; label: string }> = [
+  { tier: 'bronze',  icon: '🏅', label: '50%+' },
+  { tier: 'silver',  icon: '🥈', label: '70%+' },
+  { tier: 'gold',    icon: '🏆', label: '85%+' },
+  { tier: 'diamond', icon: '💎', label: 'Elite' },
+];
+
+const isLocked = currentTier === 'locked';
+---
+
+<div
+  class="tier-ladder"
+  data-current-tier={currentTier}
+  aria-label="Trophy tier milestones"
+>
+  {TIERS.map(({ tier, icon, label }) => (
+    <div
+      class:list={[
+        'tier-ladder__rung',
+        isLocked && tier === 'bronze' && 'tier-ladder__rung--next',
+      ]}
+      data-tier={tier}
+      aria-label={`${tier} tier: ${label}`}
+    >
+      <span class="tier-ladder__icon" aria-hidden="true">{icon}</span>
+      <span class="tier-ladder__label">{label}</span>
+    </div>
+  ))}
+</div>

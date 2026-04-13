@@ -4,6 +4,52 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v109 — BattingAverage Unlock Progress + Trophy Tier Ladder (2026-04-13)
+#   Sprint: Cold-state batting-average UI elevated from a plain text lock message
+#     to a full unlock ceremony. Two new components replace the inline lock row;
+#     a client ceremony orchestrator wires SSE verdict:declared to real-time
+#     dot-fill animation; bah:unlock CustomEvent bridges the unlock moment back
+#     to BattingAverageHero for the live score count-up reveal.
+#   New files:
+#     src/components/BattingAverageUnlockProgress.astro — 5-dot progress track
+#       for cold state; SSR-stamped [data-ba-dot-track][data-resolved="N"] DOM
+#       contract; [data-dot-index] + [data-filled] on resolved dots; explainer
+#       line + mono "N more verdicts" counter (aria-live); ba-unlock-progress.css.
+#     src/components/TrophyTierLadder.astro — 4-rung (bronze/silver/gold/diamond)
+#       milestone strip rendered in cold state; bronze rung gets --next class when
+#       currentTier === 'locked' for soft-glow motivational hint; JS adds
+#       [data-unlocked] on bah:unlock for tier-rung-spring animation.
+#     src/lib/client/ba-unlock-progress.ts — MutationObserver-free ceremony
+#       orchestrator; boots on DOMContentLoaded; listens to /api/heartbeat SSE
+#       'verdict:declared'; fillNextDot() advances the track one dot per event;
+#       at MIN_VERDICTS crossing fires cascade bloom + dispatches bah:unlock
+#       CustomEvent; CASCADE_STAGGER=50ms, BLOOM_DELAY=300ms; reduced-motion
+#       guard; imports frame-scheduler singleton for LOW priority keep-warm.
+#     src/styles/ba-unlock-progress.css — token-disciplined styles for both new
+#       components; ba-dot-spring (@keyframes scale 0.4→1.2→1); ba-dot-fill-burst
+#       bloom burst; tier-rung-spring translateY(8px→-2px→0) + scale spring;
+#       reduced-motion guard cancels all animations; zero raw colors.
+#   Modified files:
+#     src/components/BattingAverageChip.astro — provisional state gains inline
+#       SVG mini-dot row (MIN_VERDICTS × 10px wide, 8px tall); bac__mini-dot
+#       filled/empty driven by result.resolvedTotal; imports MIN_VERDICTS from
+#       batting-average.ts; styles: .bac__mini-dots + .bac__mini-dot[--filled].
+#     src/components/BattingAverageHero.astro — cold state: BattingAverageUnlock
+#       Progress replaces old inline lock row; TrophyTierLadder replaces inline
+#       stats block; hidden .bah-live swap target injected for bah:unlock DOM
+#       reveal; imports ba-unlock-progress.ts client script; _lastPayload stash
+#       for bah:unlock handler count-up; VerdictPayload interface hoisted;
+#       animateCountUp() helper extracted from handleVerdict().
+#     src/styles/batting-average.css — .ba-locked--unlocked spring-in keyframe
+#       (ba-live-enter opacity 0→1 + translateY 6px→0); reduced-motion guard.
+#     src/styles/tokens.css — new tokens: --ba-dot-size/gap/radius/empty/pending/
+#       filled/glow; --tier-ladder-dim/active/gap/size.
+#     AGENTS.md — BattingAverage unlock ceremony sprint logged.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v108).
+#
 # Architecture v108 — SealReceipt Standalone Trophy Component (2026-04-13)
 #   Sprint: SealReceipt extracted from inlined SealCeremony HTML into a
 #     dedicated certificate-grade trophy component. Elevated visual language:

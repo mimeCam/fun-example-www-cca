@@ -126,6 +126,20 @@
   to { opacity: 0; transform: translateY(-4px); }
 }
 
+/* Unlock spring-in — JS removes .bah-live--hidden and adds this class on bah:unlock */
+.ba-locked--unlocked {
+  animation: ba-live-enter var(--motion-duration-base) var(--motion-easing-spring) both;
+}
+
+@keyframes ba-live-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ba-locked--unlocked { animation: none; }
+}
+
 /* ── Stat row — selectivity + verdicts count ─────────────────────────────── */
 
 .ba-stats {
