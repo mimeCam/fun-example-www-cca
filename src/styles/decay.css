@@ -140,6 +140,88 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+ * STAGE-CROSSING FLASH
+ * Triggered by decay:stage-change CustomEvent (bubbles from DecayClock).
+ * JS adds .decay-card--crossing-{stage} → CSS handles the animation.
+ * Tanya §3.5 (class state machine) · Mike §1 (event path is free).
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* CSS custom property bridge — one @keyframes, parameterized by stage */
+.decay-card--crossing-fading {
+  --flash-color:     var(--color-decay-fading);
+  --flash-ring-peak: var(--flash-ring-opacity-fading);
+  --flash-tint-peak: var(--flash-tint-opacity-fading);
+  --flash-dur:       var(--flash-duration-fading);
+}
+.decay-card--crossing-endangered {
+  --flash-color:     var(--color-decay-endangered);
+  --flash-ring-peak: var(--flash-ring-opacity-endangered);
+  --flash-tint-peak: var(--flash-tint-opacity-endangered);
+  --flash-dur:       var(--flash-duration-endangered);
+}
+.decay-card--crossing-ghost {
+  --flash-color:     var(--color-decay-ghost);
+  --flash-ring-peak: var(--flash-ring-opacity-ghost);
+  --flash-tint-peak: var(--flash-tint-opacity-ghost);
+  --flash-dur:       var(--flash-duration-ghost);
+}
+.decay-card--crossing-fossil {
+  --flash-color:     var(--color-decay-fossil);
+  --flash-ring-peak: var(--flash-ring-opacity-fossil);
+  --flash-tint-peak: var(--flash-tint-opacity-fossil);
+  --flash-dur:       var(--flash-duration-fossil);
+}
+
+/* Ring flash — box-shadow animation; 3-layer count matches .decay-card resting shadow */
+[class*="decay-card--crossing-"] {
+  animation: stage-ring-flash var(--flash-dur, 600ms) var(--motion-ceremony-easing) forwards;
+}
+
+/* Cover tint — ::after on .cover-wrap, clipped by overflow:hidden.
+   Tanya §3.1: tint covers image area only — title/footer stay untouched. */
+[class*="decay-card--crossing-"] .cover-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-card, 12px) var(--radius-card, 12px) 0 0;
+  background: var(--flash-color, transparent);
+  pointer-events: none;
+  animation: stage-cover-tint var(--flash-dur, 600ms) var(--motion-flow-easing) forwards;
+}
+
+/* Keyframe: ring — asymmetric timing: 20% attack / 80% decay (Tanya §3.3).
+   3-layer structure mirrors .decay-card box-shadow for smooth interpolation. */
+@keyframes stage-ring-flash {
+  0% {
+    box-shadow:
+      0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
+        color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) calc(var(--decay-shadow-alpha, 0.22) * 100%), transparent),
+      0 2px 8px oklch(0% 0 0 / 0.12),
+      inset 0 1px 0 oklch(100% 0 0 / calc(0.08 * var(--decay-opacity, 1)));
+  }
+  18% {
+    box-shadow:
+      0 0 0 2px color-mix(in oklch, var(--flash-color) calc(var(--flash-ring-peak, 0.28) * 100%), transparent),
+      0 0 20px  color-mix(in oklch, var(--flash-color) calc(var(--flash-ring-peak, 0.28) * 50%), transparent),
+      inset 0 1px 0 oklch(100% 0 0 / calc(0.08 * var(--decay-opacity, 1)));
+  }
+  100% {
+    box-shadow:
+      0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
+        color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) calc(var(--decay-shadow-alpha, 0.22) * 100%), transparent),
+      0 2px 8px oklch(0% 0 0 / 0.12),
+      inset 0 1px 0 oklch(100% 0 0 / calc(0.08 * var(--decay-opacity, 1)));
+  }
+}
+
+/* Keyframe: cover tint — opacity burst, no motion (Tanya §3.3 "color values should not spring") */
+@keyframes stage-cover-tint {
+  0%   { opacity: 0; }
+  20%  { opacity: var(--flash-tint-peak, 0.10); }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
  * REDUCED MOTION
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -159,5 +241,12 @@
   }
   .revival-stage::after {
     transition: none;
+  }
+  /* Stage-crossing: skip animation entirely under reduced motion.
+     State change is still communicated via data-atmosphere color shift + haptic.
+     Tanya §6.1: "disabled entirely — no opacity transition, no glow." */
+  [class*="decay-card--crossing-"],
+  [class*="decay-card--crossing-"] .cover-wrap::after {
+    animation: none;
   }
 }

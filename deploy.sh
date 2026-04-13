@@ -4,6 +4,46 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v113 — Stage-Crossing Flash: Decay Card Visual Flinch System (2026-04-13)
+#   Sprint: DecayCard gains a stage-crossing visual flinch fired the instant the
+#     decay:stage-change CustomEvent bubbles up from a DecayClock ring. A client
+#     module script (Astro-deduplicated across all card instances) attaches one
+#     listener per .decay-card article; on each stage-change it adds a transient
+#     .decay-card--crossing-{stage} class for the flash duration then removes it.
+#     CSS drives the entire animation: a 3-layer box-shadow ring burst (asymmetric
+#     18% attack / 82% decay) + a cover-image ::after tint overlay (opacity burst
+#     only — no motion per Tanya §3.3). Stage urgency is graded — endangered gets
+#     the longest flash (600ms) and highest ring peak (0.40), fossil is near-silent
+#     (300ms, 0.12). Reduced-motion guard cancels both animations entirely; stage
+#     transition is still communicated via data-atmosphere color shift + haptic.
+#   Modified files:
+#     src/components/DecayCard.astro — position:relative added to .cover-wrap
+#       (required: stage-crossing ::after tint is absolutely positioned within);
+#       <script> block wires decay:stage-change CustomEvent to class state machine;
+#       PREFIX='decay-card--crossing-'; FLASH_MS record (stage→ms) mirrors token
+#       values; handleStageChange() re-entry guard (class includes PREFIX check);
+#       attachListeners() idempotent via DOMContentLoaded guard; Astro deduplicates
+#       module script across all DecayCard instances on the page.
+#     src/styles/decay.css — Stage-crossing flash system added after decay card
+#       resting styles and before reduced-motion guard: four .decay-card--crossing-
+#       {fading|endangered|ghost|fossil} bridge classes set CSS var quartet
+#       (--flash-color from --color-decay-* ramp, --flash-ring-peak, --flash-tint-
+#       peak, --flash-dur); [class*="decay-card--crossing-"] applies stage-ring-flash
+#       @keyframes to card box-shadow (3-layer structure at 0%/100% mirrors resting
+#       shadow for smooth interpolation; 18% keyframe injects ring glow peak);
+#       .cover-wrap::after pseudo-element driven by stage-cover-tint @keyframes
+#       (opacity 0→peak→0, no translate/scale); reduced-motion guard adds
+#       animation:none to both [class*] and .cover-wrap::after selectors.
+#     src/styles/tokens.css — 12 flash tokens added to :root: --flash-ring-opacity-
+#       {fading|endangered|ghost|fossil} (0.28/0.40/0.20/0.12 — border glow peaks);
+#       --flash-tint-opacity-{fading|endangered|ghost|fossil} (0.10/0.16/0.08/0.05
+#       — cover tint peaks); --flash-duration-{fading|endangered|ghost|fossil}
+#       (480ms/600ms/400ms/300ms); endangered weighted highest for urgency.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v112).
+#
 # Architecture v112 — Living Decay Clock: Per-Clock Heartbeat Orchestrator (2026-04-13)
 #   Sprint: DecayClock ring elevated from a static SSR arc to a fully-live,
 #     per-clock decay engine. Each ring on the page now has its own 1Hz delta

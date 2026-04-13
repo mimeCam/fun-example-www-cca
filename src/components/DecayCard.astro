@@ -114,6 +114,7 @@ const atmosphere = cardAtmosphere(post.decay);
 
   /* ── Cover image: physics layer — decay filters applied from CSS vars ── */
   .cover-wrap {
+    position: relative;  /* needed: stage-crossing ::after is positioned within */
     width: 100%;
     aspect-ratio: 16 / 7;
     overflow: hidden;
@@ -234,3 +235,41 @@ const atmosphere = cardAtmosphere(post.decay);
     margin-left: auto;
   }
 </style>
+
+<script>
+  // Stage-crossing flash — wire decay:stage-change → card visual flinch.
+  // Event bubbles from DecayClock → DecayCard <article> via bubbles:true.
+  // Astro deduplicates this module script across all DecayCard instances.
+  // Tanya §3.5 (class state machine) · Mike §1 (event path is free).
+
+  const PREFIX = 'decay-card--crossing-';
+
+  /** Matches --flash-duration-* tokens in tokens.css */
+  const FLASH_MS: Record<string, number> = {
+    fading:     480,
+    endangered: 600,
+    ghost:      400,
+    fossil:     300,
+  };
+
+  function handleStageChange(e: Event): void {
+    const card   = e.currentTarget as HTMLElement;
+    const detail = (e as CustomEvent<{ stage: string }>).detail;
+    if (!detail?.stage) return;
+    if (card.className.includes(PREFIX)) return;  // re-entry: already crossing
+    card.classList.add(PREFIX + detail.stage);
+    setTimeout(() => card.classList.remove(PREFIX + detail.stage), FLASH_MS[detail.stage] ?? 600);
+  }
+
+  function attachListeners(): void {
+    document.querySelectorAll<HTMLElement>('.decay-card').forEach(card =>
+      card.addEventListener('decay:stage-change', handleStageChange)
+    );
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachListeners, { once: true });
+  } else {
+    attachListeners();
+  }
+</script>

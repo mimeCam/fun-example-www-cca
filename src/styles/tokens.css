@@ -627,6 +627,23 @@
   --hb-color-l: 64%;
   --hb-color-c: 0.190;
   --hb-color-h: 145;
+
+  /* ── Stage-Crossing Flash Tokens (Tanya §3 — decay:stage-change visual flinch) ── */
+  /* Flash color comes from --color-decay-* ramp — no new hex values.               */
+  /* Ring opacity = border glow peak; tint opacity = cover image overlay peak.       */
+  /* Each stage gets its own urgency weight — endangered is the emotionally critical. */
+  --flash-ring-opacity-fading:      0.28;   /* border glow peak — fresh→fading       */
+  --flash-ring-opacity-endangered:  0.40;   /* border glow peak — fading→endangered  */
+  --flash-ring-opacity-ghost:       0.20;   /* border glow peak — endangered→ghost   */
+  --flash-ring-opacity-fossil:      0.12;   /* border glow peak — ghost→fossil       */
+  --flash-tint-opacity-fading:      0.10;   /* cover tint peak  — fresh→fading       */
+  --flash-tint-opacity-endangered:  0.16;   /* cover tint peak  — fading→endangered  */
+  --flash-tint-opacity-ghost:       0.08;   /* cover tint peak  — endangered→ghost   */
+  --flash-tint-opacity-fossil:      0.05;   /* cover tint peak  — ghost→fossil       */
+  --flash-duration-fading:          480ms;  /* asymmetric: fast in, slow out         */
+  --flash-duration-endangered:      600ms;  /* longest — urgency deserves full weight */
+  --flash-duration-ghost:           400ms;
+  --flash-duration-fossil:          300ms;  /* near-silent — barely noticed           */
 }
 
 /* ── @property typed registrations ──────────────────────────────────────── */
