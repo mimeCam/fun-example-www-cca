@@ -70,7 +70,7 @@
   --color-decay-fading:     oklch(62% 0.155  95);   /* Tanya §2.1 — warm, still here */
   --color-decay-endangered: oklch(58% 0.195  35);   /* Tanya §2.1 — urgent amber-red */
   --color-decay-ghost:      oklch(52% 0.110  20);   /* Tanya §2.1 — muted red, fading */
-  --color-decay-fossil:     var(--clr-red-500);     /* oklch(55% 0.220  25) */
+  --color-decay-fossil:     oklch(42% 0.04 60deg);  /* Tanya §7: stone gray — "at rest", not alarm */
   --color-decay-revival:    oklch(72% 0.160  70);   /* one-shot bloom only — Tanya §2.1 */
   --color-revival:          var(--clr-amber-400);
 
@@ -621,10 +621,18 @@
   --hb-color-h: 145;
 }
 
-/* ── @property typed registrations for --hb-* ───────────────────────────── */
-/* Typed registration enables CSS transition: --hb-scale 120ms snap.        */
+/* ── @property typed registrations ──────────────────────────────────────── */
+/* Typed registration enables CSS transition on numeric custom properties.   */
 /* Must live at top level (not inside :root) — they are at-rules, not decls. */
 /* Mike §5 Typed Custom Properties spec.                                     */
+
+/* BA unlock ceremony fill bar — smooth CSS transition on countup progress   */
+/* Consumed by ba-unlock-ceremony.css .bauc-fill width interpolation.        */
+@property --ba-count-progress {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
 @property --hb-intensity {
   syntax: '<number>';
   inherits: true;

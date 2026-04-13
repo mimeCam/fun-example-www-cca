@@ -14,6 +14,10 @@
 //   CustomEvent('bah:unlock', { detail: { newBattingAvg, trophyTier } })
 //   — fired when resolvedTotal crosses MIN_VERDICTS; picked up by BattingAverageHero
 //
+// Programmatic hook (for ceremony orchestrator — Mike napkin spec §ba-unlock-progress.ts):
+//   onUnlockTriggered(cb) — cb fires BEFORE bah:unlock; use for ceremony overlay start.
+//   Returns an unsubscribe function.
+//
 // Credits: Mike Koch (napkin spec §ba-unlock-progress.ts)
 
 import scheduler, { FramePriority } from './frame-scheduler';
@@ -33,6 +37,24 @@ interface VerdictPayload {
   correct?:     number;
   wrong?:       number;
   pending?:     number;
+}
+
+// ── Unlock callback registry (Mike napkin spec: onUnlockTriggered hook) ───────
+
+type UnlockCallback = (ba: number | null, tier: string | undefined) => void;
+const _unlockCallbacks = new Set<UnlockCallback>();
+
+/**
+ * Register a callback that fires when the 5th dot fills, BEFORE bah:unlock.
+ * Designed for ceremony orchestrators. Returns an unsubscribe function.
+ */
+export function onUnlockTriggered(cb: UnlockCallback): () => void {
+  _unlockCallbacks.add(cb);
+  return (): void => { _unlockCallbacks.delete(cb); };
+}
+
+function notifyUnlockCallbacks(payload: VerdictPayload): void {
+  _unlockCallbacks.forEach(cb => cb(payload.newBattingAvg, payload.trophyTier));
 }
 
 // ── Reduced-motion guard ──────────────────────────────────────────────────────
@@ -100,6 +122,7 @@ function fireUnlockEvent(payload: VerdictPayload): void {
 
 function unlockCeremonyReduced(track: HTMLElement, payload: VerdictPayload): void {
   getDots(track).forEach(fillDot);
+  notifyUnlockCallbacks(payload); // ceremony hook fires first
   fireUnlockEvent(payload);
 }
 
@@ -107,6 +130,7 @@ function unlockCeremonyAnimated(track: HTMLElement, payload: VerdictPayload): vo
   const dots = getDots(track);
   dots.forEach((d, i) => setTimeout(() => fillDotAnimated(d), i * CASCADE_STAGGER));
   setTimeout(() => cascadeBloom(dots), dots.length * CASCADE_STAGGER);
+  notifyUnlockCallbacks(payload); // ceremony hook fires at dot cascade start
   setTimeout(() => fireUnlockEvent(payload), BLOOM_DELAY);
 }
 

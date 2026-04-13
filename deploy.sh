@@ -4,6 +4,57 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v110 — BattingAverage Unlock Ceremony Overlay (2026-04-13)
+#   Sprint: 4-phase full-screen ceremony overlay fires the instant the 5th
+#     verdict resolves. Triggered via the onUnlockTriggered() hook exported by
+#     ba-unlock-progress.ts; session-guarded against replay across page reloads.
+#     Phases: shattering (lock SVG gold-pulse + clip-path dissolve, 200ms) →
+#     counting (BA % counts 0 → real value via spring-easing countUp, 800ms) →
+#     dropping (tier badge springs in via linear() spring timing, 400ms) →
+#     settling (badge heartbeat; overlay fades softly, then hides at 1900ms).
+#   New files:
+#     src/components/BattingAverageUnlockCeremony.astro — ceremony overlay root;
+#       rendered in BattingAverageHero cold state; inert + display:none until JS
+#       activates; DOM contract: #ba-unlock-ceremony [data-phase=...], .bauc-lock-
+#       wrap, .bauc-count-wrap/.bauc-pct, .bauc-fill, .bauc-badge-wrap/
+#       .bauc-tier-icon/.bauc-tier-name; role="dialog" aria-modal="true" on reveal;
+#       aria-live="assertive" for screen-reader announcement; inert re-applied on
+#       cleanup; imports ba-unlock-ceremony.css.
+#     src/lib/client/ba-unlock-ceremony.ts — phase state machine; boots via
+#       onUnlockTriggered() from ba-unlock-progress.ts; sessionStorage key
+#       'ba-ceremony-fired' prevents replay; prefers-reduced-motion guard (instant
+#       swap, no animation); T_COUNTING=200ms, T_DROPPING=1000ms, T_SETTLING=
+#       1400ms, T_CLEANUP=1900ms; TIER_ICONS map (bronze/silver/gold/diamond
+#       emoji); uses spring-easing.ts countUp + frame-scheduler singleton.
+#     src/styles/ba-unlock-ceremony.css — token-disciplined overlay styles; zero
+#       raw hex/rgba; [data-phase=...] drives show/hide of .bauc-lock-wrap /
+#       .bauc-count-wrap / .bauc-badge-wrap; @keyframes bauc-lock-shatter,
+#       bauc-lock-pulse, bauc-badge-drop (linear() spring with cubic-bezier
+#       fallback via @supports), bauc-badge-heartbeat; CSS fill bar transition on
+#       --ba-count-progress @property; reduced-motion guard cancels all animations.
+#   Modified files:
+#     src/components/BattingAverageHero.astro — imports BattingAverageUnlock
+#       Ceremony; adds data-unlock-target to section root; renders
+#       <BattingAverageUnlockCeremony /> in cold state (inert until JS fires);
+#       cold-state container gains position:relative to contain absolute overlay;
+#       imports ba-unlock-ceremony.ts client script.
+#     src/lib/client/ba-unlock-progress.ts — exports onUnlockTriggered(cb) hook
+#       and _unlockCallbacks Set; notifyUnlockCallbacks() fires BEFORE bah:unlock
+#       CustomEvent in both reduced-motion and animated ceremony paths; designed
+#       for ceremony orchestrators per Mike napkin spec §ba-unlock-progress.ts.
+#     src/pages/index.astro — ConvictionStrip removed from homepage per Tanya §2
+#       (LandingHero owns above-fold story alone); component preserved; moves to
+#       OnboardingOverlay first-visit slot and bottom-of-feed option.
+#     src/styles/tokens.css — @property --ba-count-progress (syntax: '<number>',
+#       inherits: false, initial-value: 0) for smooth CSS fill-bar transition;
+#       --color-decay-fossil changed to oklch(42% 0.04 60deg) (stone gray per
+#       Tanya §7 — "at rest", not alarm).
+#     AGENTS.md — BattingAverage unlock ceremony overlay sprint logged.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v109).
+#
 # Architecture v109 — BattingAverage Unlock Progress + Trophy Tier Ladder (2026-04-13)
 #   Sprint: Cold-state batting-average UI elevated from a plain text lock message
 #     to a full unlock ceremony. Two new components replace the inline lock row;

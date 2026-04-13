@@ -1,0 +1,88 @@
+---
+// src/components/BattingAverageUnlockCeremony.astro
+// Ceremony overlay — rendered inside BattingAverageHero cold state.
+// Hidden by default (inert + display:none). ba-unlock-ceremony.ts reveals it
+// when the 5th verdict resolves, runs ~1.7s choreography, then fades out.
+//
+// DOM contract (consumed by ba-unlock-ceremony.ts):
+//   #ba-unlock-ceremony            — overlay root; data-phase drives CSS
+//   .bauc-lock-wrap                — Phase 0/1: lock SVG (shattering)
+//   .bauc-count-wrap / .bauc-pct   — Phase 2: count-up target
+//   .bauc-fill                     — Phase 2: CSS fill bar (--ba-count-progress)
+//   .bauc-badge-wrap               — Phase 3: tier badge (JS populates icon+label)
+//   .bauc-tier-icon                — receives emoji from TIER_ICONS map
+//   .bauc-tier-name                — receives capitalized tier name
+//
+// Accessibility:
+//   - inert on load → not in tab order until revealed
+//   - role="dialog" aria-modal="true" on reveal
+//   - aria-live="assertive" for screen reader announcement
+//   - inert re-applied + display:none after fade-out (cleanup)
+//
+// Out of scope: BA value, tier — populated by JS at unlock moment.
+//
+// Credits: Mike Koch (napkin spec §BattingAverageUnlockCeremony)
+//          Tanya Donska (UX §4.4 trophy spring, §8 motion system)
+
+import '../styles/ba-unlock-ceremony.css';
+---
+
+<div
+  id="ba-unlock-ceremony"
+  class="bauc"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Batting average unlocked"
+  aria-live="assertive"
+  inert
+>
+
+  {/* Phase 0–1: Lock icon — pulses gold on shattering, dissolves on counting */}
+  <div class="bauc-lock-wrap" aria-hidden="true">
+    <svg
+      class="bauc-lock-svg"
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="presentation"
+      aria-hidden="true"
+    >
+      {/* Lock body */}
+      <rect class="bauc-lock-body" x="8" y="22" width="32" height="22" rx="4" />
+      {/* Lock shackle (U-shape) */}
+      <path
+        class="bauc-lock-shackle"
+        d="M16 22v-6a8 8 0 0 1 16 0v6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      {/* Keyhole */}
+      <circle cx="24" cy="32" r="3" class="bauc-lock-keyhole" />
+      <rect x="22.5" y="32" width="3" height="5" rx="1" class="bauc-lock-keyhole" />
+    </svg>
+  </div>
+
+  {/* Phase 2: BA percentage count-up */}
+  <div class="bauc-count-wrap">
+    <span
+      class="bauc-pct"
+      data-cm-pct="0"
+      aria-label="Batting average percentage"
+    >0%</span>
+    <span class="bauc-count-label">Batting Average</span>
+    {/* Fill bar — CSS-driven via --ba-count-progress @property */}
+    <div class="bauc-fill-track" role="presentation" aria-hidden="true">
+      <div class="bauc-fill"></div>
+    </div>
+  </div>
+
+  {/* Phase 3: Tier badge — JS populates icon + tier name at unlock */}
+  <div class="bauc-badge-wrap" data-ba-tier="bronze">
+    <span class="bauc-tier-icon" aria-hidden="true">🏅</span>
+    <span class="bauc-tier-name">Bronze</span>
+  </div>
+
+  {/* Contextual caption — always visible after counting phase */}
+  <p class="bauc-caption">Your track record is now public.</p>
+
+</div>

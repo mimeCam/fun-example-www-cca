@@ -19,6 +19,7 @@ import '../styles/batting-average.css';
 import type { BattingAverageResult, TrophyTier } from '../lib/batting-average';
 import BattingAverageUnlockProgress from './BattingAverageUnlockProgress.astro';
 import TrophyTierLadder from './TrophyTierLadder.astro';
+import BattingAverageUnlockCeremony from './BattingAverageUnlockCeremony.astro';
 
 interface Props {
   result:     BattingAverageResult;
@@ -52,6 +53,7 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
 <section
   class="bah"
   data-ba-tier={result.trophyTier}
+  data-unlock-target
   aria-label="Conviction batting average"
 >
 
@@ -128,6 +130,10 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     </div>
   )}
 
+  <!-- BA Unlock Ceremony — revealed by ba-unlock-ceremony.ts on 5th verdict -->
+  <!-- Rendered only in cold state; inert until JS activates it.             -->
+  {!result.eligible && <BattingAverageUnlockCeremony />}
+
   <!-- Score block: locked path (< MIN_VERDICTS resolved) -->
   {!result.eligible && (
     <div class="bah-cold">
@@ -181,7 +187,8 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
   //          Elon (reduced-motion guard + bah:ceremony-done CustomEvent)
 
   import { countUp } from '../lib/spring-easing';
-  import '../lib/client/ba-unlock-progress'; // boots dot-fill ceremony on cold state
+  import '../lib/client/ba-unlock-progress';  // boots dot-fill ceremony on cold state
+  import '../lib/client/ba-unlock-ceremony';  // registers ceremony phase orchestrator
 
   declare global { interface Window { __heartbeat?: EventSource; } }
 
@@ -315,6 +322,7 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     padding: var(--space-12) var(--space-8);
     max-width: 40rem;
     margin: 0 auto;
+    position: relative; /* ceremony overlay (position:absolute) is contained here */
   }
 
   .bah-live, .bah-cold {

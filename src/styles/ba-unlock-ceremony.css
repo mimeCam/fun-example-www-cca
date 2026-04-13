@@ -1,0 +1,285 @@
+/* src/styles/ba-unlock-ceremony.css
+ * BA Unlock Ceremony — overlay, phase-driven visibility, spring animations.
+ * Token discipline: ZERO raw hex/rgba values — all via tokens.css.
+ *
+ * Phase data-attribute drives all show/hide logic:
+ *   [data-phase="shattering"] — lock visible; count + badge hidden
+ *   [data-phase="counting"]   — lock dissolves; count ticks up; badge hidden
+ *   [data-phase="dropping"]   — count stable; badge springs in
+ *   [data-phase="settling"]   — badge heartbeat; overlay fades softly
+ *
+ * Spring badge drop: linear() with cubic-bezier fallback (Mike napkin §spring-badge-drop).
+ * Josh Comeau pattern — @supports (animation-timing-function: linear(0, 1)).
+ *
+ * Architecture: Sid (session 2026-04-13)
+ * Credits: Mike Koch (napkin spec §ceremony-phases, §points-of-interest 4 & 7)
+ *          Tanya Donska (UX §4.4 trophy spring, §8 ceremony motion budget)
+ */
+
+/* ── Overlay root ────────────────────────────────────────────────────────── */
+
+.bauc {
+  position:       absolute;
+  inset:          0;
+  z-index:        var(--z-modal);   /* 100 — above StickyStanceBar (--z-drawer=50) */
+  display:        none;             /* JS reveals via .bauc--visible */
+  flex-direction: column;
+  align-items:    center;
+  justify-content: center;
+  gap:            var(--space-4);
+  background:     var(--surface-modal);
+  border-radius:  var(--radius-xl);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding:        var(--space-12) var(--space-8);
+  box-shadow:     var(--shadow-e4);
+  text-align:     center;
+}
+
+/* Reveal — JS adds this; sets display:flex then CSS transition fades in */
+.bauc--visible {
+  display:   flex;
+  animation: bauc-appear var(--motion-flow-duration) var(--motion-flow-easing) both;
+}
+
+/* Fade-out — JS adds .bauc--fading after settle phase */
+.bauc--fading {
+  animation: bauc-disappear var(--motion-drift-duration) var(--motion-drift-easing) both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes bauc-appear {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes bauc-disappear {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(1.02); }
+  }
+}
+
+/* ── Lock phase ──────────────────────────────────────────────────────────── */
+
+.bauc-lock-wrap {
+  opacity:    1;
+  transition: opacity var(--motion-duration-deliberate) var(--motion-easing-standard),
+              transform var(--motion-duration-deliberate) var(--motion-easing-standard);
+}
+
+.bauc-lock-svg {
+  width:  4rem;
+  height: 4rem;
+  overflow: visible;
+}
+
+.bauc-lock-body {
+  fill:   var(--gold-bg-strong);
+  stroke: var(--gold);
+  stroke-width: 2;
+}
+
+.bauc-lock-shackle {
+  stroke:       var(--gold);
+  stroke-width: 2.5;
+  fill:         none;
+}
+
+/* Shattering phase: lock pulses gold */
+@media (prefers-reduced-motion: no-preference) {
+  .bauc[data-phase="shattering"] .bauc-lock-wrap {
+    animation: bauc-lock-pulse var(--motion-duration-base) var(--motion-easing-spring) both;
+  }
+
+  @keyframes bauc-lock-pulse {
+    0%   { transform: scale(1);    filter: drop-shadow(0 0  0px var(--gold)); }
+    50%  { transform: scale(1.1);  filter: drop-shadow(0 0 16px var(--gold)); }
+    100% { transform: scale(1);    filter: drop-shadow(0 0  8px var(--gold)); }
+  }
+}
+
+/* Counting phase: lock dissolves upward */
+.bauc[data-phase="counting"] .bauc-lock-wrap,
+.bauc[data-phase="dropping"] .bauc-lock-wrap,
+.bauc[data-phase="settling"] .bauc-lock-wrap {
+  opacity:   0;
+  transform: translateY(-6px) scale(0.9);
+  pointer-events: none;
+}
+
+/* ── Count-up phase ──────────────────────────────────────────────────────── */
+
+.bauc-count-wrap {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-1);
+  opacity:        0;
+  transform:      translateY(8px);
+  transition:     opacity var(--motion-duration-deliberate) var(--motion-easing-standard),
+                  transform var(--motion-duration-deliberate) var(--motion-easing-standard);
+}
+
+.bauc[data-phase="counting"] .bauc-count-wrap,
+.bauc[data-phase="dropping"] .bauc-count-wrap,
+.bauc[data-phase="settling"] .bauc-count-wrap {
+  opacity:   1;
+  transform: translateY(0);
+}
+
+.bauc-pct {
+  display:        block;
+  font-size:      var(--text-hero);
+  font-weight:    var(--weight-bold);
+  font-family:    var(--font-mono);
+  line-height:    var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  color:          var(--gold);
+  text-shadow:    0 0 24px var(--gold-glow);
+}
+
+.bauc-count-label {
+  font-size:      var(--text-sm);
+  color:          var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Fill bar — CSS-animated via --ba-count-progress (typed @property in tokens.css) */
+.bauc-fill-track {
+  width:         100%;
+  max-width:     12rem;
+  height:        4px;
+  background:    var(--surface-hover);
+  border-radius: var(--radius-pill);
+  overflow:      hidden;
+  margin-top:    var(--space-2);
+}
+
+.bauc-fill {
+  height:        100%;
+  background:    var(--gold);
+  border-radius: var(--radius-pill);
+  width:         calc(var(--ba-count-progress) * 1%);
+  transition:    --ba-count-progress 800ms var(--motion-easing-spring);
+}
+
+/* ── Badge drop phase ────────────────────────────────────────────────────── */
+
+.bauc-badge-wrap {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-1);
+  opacity:        0;
+  transform:      translateY(24px) scale(0.5);
+  /* No transition here — animation keyframes take over in dropping phase */
+}
+
+/* Tier color cascade — mirrors batting-average.css [data-ba-tier] pattern */
+.bauc-badge-wrap[data-ba-tier="bronze"]  { --bauc-tier-color: var(--ba-tier-bronze);  }
+.bauc-badge-wrap[data-ba-tier="silver"]  { --bauc-tier-color: var(--ba-tier-silver);  }
+.bauc-badge-wrap[data-ba-tier="gold"]    { --bauc-tier-color: var(--ba-tier-gold);    }
+.bauc-badge-wrap[data-ba-tier="diamond"] { --bauc-tier-color: var(--ba-tier-diamond); }
+
+/* Badge springs in during dropping phase */
+@media (prefers-reduced-motion: no-preference) {
+  .bauc[data-phase="dropping"] .bauc-badge-wrap,
+  .bauc[data-phase="settling"] .bauc-badge-wrap {
+    animation: bauc-badge-spring 400ms ease-out both;
+  }
+
+  /* linear() spring — Josh Comeau pattern; cubic-bezier fallback below */
+  @supports (animation-timing-function: linear(0, 1)) {
+    .bauc[data-phase="dropping"] .bauc-badge-wrap,
+    .bauc[data-phase="settling"] .bauc-badge-wrap {
+      animation-timing-function: linear(
+        0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.2%, 0.938 16%,
+        1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.160, 1.150 32.3%,
+        1.096 37.5%, 1.013 44.2%, 0.991 48%, 0.983, 0.990, 1.001 59.5%,
+        1.006 63.7%, 1.005 70.5%, 1
+      );
+    }
+  }
+
+  @keyframes bauc-badge-spring {
+    0%   { opacity: 0; transform: translateY(24px) scale(0.5); }
+    100% { opacity: 1; transform: translateY(0)    scale(1);   }
+  }
+}
+
+/* Settling: badge heartbeat — steady 72bpm (fresh rhythm, Mike §3) */
+@media (prefers-reduced-motion: no-preference) {
+  .bauc[data-phase="settling"] .bauc-tier-icon {
+    animation: bauc-badge-heartbeat var(--motion-heartbeat-fresh-duration)
+               var(--motion-heartbeat-fresh-easing) infinite;
+  }
+
+  @keyframes bauc-badge-heartbeat {
+    0%, 100% { transform: scale(1);    }
+    30%      { transform: scale(1.08); }
+    50%      { transform: scale(0.97); }
+    70%      { transform: scale(1.04); }
+  }
+}
+
+.bauc-tier-icon {
+  font-size:   var(--text-3xl);  /* 2.5rem — prominent emoji; --text-hero would overflow */
+  line-height: 1;
+  filter:      drop-shadow(0 0 8px var(--bauc-tier-color, var(--gold)));
+}
+
+.bauc-tier-name {
+  font-size:      var(--text-xs);
+  font-family:    var(--font-mono);
+  letter-spacing: var(--tracking-widest);
+  color:          var(--bauc-tier-color, var(--gold));
+  text-transform: uppercase;
+}
+
+/* ── Keyhole fill ────────────────────────────────────────────────────────── */
+
+.bauc-lock-keyhole {
+  fill:   var(--surface-modal);
+  stroke: none;
+}
+
+/* ── Caption ─────────────────────────────────────────────────────────────── */
+
+.bauc-caption {
+  font-size:      var(--text-2xs);
+  color:          var(--text-ghost);
+  letter-spacing: var(--tracking-wide);
+  font-style:     italic;
+  margin:         0;
+  opacity:        0;
+  transition:     opacity var(--motion-drift-duration) var(--motion-drift-easing);
+}
+
+.bauc[data-phase="dropping"] .bauc-caption,
+.bauc[data-phase="settling"] .bauc-caption {
+  opacity: 1;
+}
+
+/* ── Reduced-motion overrides ────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .bauc--visible,
+  .bauc--fading,
+  .bauc-lock-wrap,
+  .bauc-count-wrap,
+  .bauc-badge-wrap {
+    animation:  none !important;
+    transition: none !important;
+  }
+
+  /* Instant reveal: all phases show content without motion */
+  .bauc[data-phase="settling"] .bauc-count-wrap,
+  .bauc[data-phase="settling"] .bauc-badge-wrap {
+    opacity:   1;
+    transform: none;
+  }
+
+  .bauc[data-phase="settling"] .bauc-lock-wrap {
+    display: none;
+  }
+}
