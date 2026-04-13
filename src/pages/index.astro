@@ -35,9 +35,8 @@ import { getStageCounts, filterByStage } from '../lib/river-data';
 import type { StageFilter } from '../lib/river-data';
 import { paginate, parsePage } from '../lib/pagination';
 import { decayFactor } from '../lib/decay-engine';
-import LandingHero from '../components/LandingHero.astro';
-// ConvictionStrip dormant — Tanya §2: BA chip in nav covers this; strip moved to
-// OnboardingOverlay first-visit slot. Component preserved; not rendered here.
+import LandingHero      from '../components/LandingHero.astro';
+import ConvictionStrip  from '../components/ConvictionStrip.astro';
 import '../styles/river-filter.css';
 
 // ─── Stage param ──────────────────────────────────────────────────────────────
@@ -137,8 +136,8 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
   {/* Visitor feels posts are alive before reading a single word (Paul Kim / Tanya §4) */}
   <LandingHero decayProgress={heroDecay} stage={heroStage} />
 
-  {/* ConvictionStrip removed — Tanya §2: LandingHero owns above-fold story alone.   */}
-  {/* Strip lives in OnboardingOverlay (first-visit) and as a bottom-of-feed option. */}
+  {/* ConvictionStrip — Zone 2B (bottom-of-feed) and OnboardingOverlay Step 3.       */}
+  {/* Above-fold removed per Tanya §2: LandingHero owns Zone 1 alone.               */}
 
   {/* Zone 2 — Unified River Feed */}
   <main class="feed" id="bets" data-stage={currentStage}>
@@ -189,6 +188,13 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
       <EndangeredBand posts={allEndangered} />
     )}
 
+    {/* Zone 2B — ConvictionStrip: batting average anchor at feed bottom  */}
+    {/* Reinforces killer feature after visitor has scrolled through posts. */}
+    {/* Paul Kim §1: comprehension reinforcement; Mike arch §Zone 2B.       */}
+    <div class="feed-strip-anchor">
+      <ConvictionStrip />
+    </div>
+
   </main>
 </BaseLayout>
 
@@ -220,6 +226,13 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
     padding: var(--space-8) 0;
     margin: 0;
     text-align: center;
+  }
+
+  /* ── ConvictionStrip anchor — Zone 2B separator ── */
+  .feed-strip-anchor {
+    margin-top: var(--space-10);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border-subtle);
   }
 
   @media (max-width: 640px) {

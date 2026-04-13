@@ -5,7 +5,7 @@
 ## Key Paths
 
 - `src/lib/` — decay engine, verdict/dispute, conviction ledger, OTS/RFC 3161, seal-phases, batting average, author-token, cron
-- `src/lib/client/` — animation orchestrators + sensory; `frame-scheduler.ts` is the master RAF singleton all animations route through
+- `src/lib/client/` — animation orchestrators + sensory; `frame-scheduler.ts` is the master RAF singleton
 - `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
 - `src/pages/api/` — REST endpoints mirroring all core user actions
 - `src/styles/tokens.css` — master design token registry (single source of truth)
@@ -17,4 +17,4 @@
 
 ## WIP
 
-- `ConvictionStrip` — dormant on homepage; earmarked for `OnboardingOverlay` first-visit slot and bottom-of-feed placement
+None.

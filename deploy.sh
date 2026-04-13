@@ -4,6 +4,36 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v111 — ConvictionStrip Zone 2B + OnboardingOverlay Step 3 (2026-04-13)
+#   Sprint: ConvictionStrip WIP resolved — the live batting-average strip is now
+#     wired in two placements: (A) OnboardingOverlay Step 3 (variant="overlay"),
+#     replacing the abstract text description with the real live component; and
+#     (B) Zone 2B at the bottom of the homepage feed as a comprehension anchor
+#     after the visitor has scrolled through posts. Above-fold Zone 1.5 placement
+#     remains removed per Tanya §2 (LandingHero owns Zone 1 alone).
+#   Modified files:
+#     src/components/ConvictionStrip.astro — variant prop added ('default'|
+#       'overlay'); cs-strip--overlay class constrains width + steps font-size
+#       down from 2xl → xl for panel context; variant prop threaded through
+#       class:list.
+#     src/components/OnboardingOverlay.astro — imports ConvictionStrip; adds
+#       .ov-strip-slot div wrapping <ConvictionStrip variant="overlay" />; CSS
+#       state machine shows slot only on [data-step="3"] and hides
+#       [data-conviction-demo] on step 3 (strip takes the demo role); z-index
+#       bug fixed: --z-modal → --z-onboarding on .ov root.
+#     src/components/ConvictionDemo.astro — data-conviction-demo attribute added
+#       to root div to allow OnboardingOverlay CSS to target and hide the demo
+#       on step 3 when ConvictionStrip is visible.
+#     src/pages/index.astro — ConvictionStrip re-imported; .feed-strip-anchor
+#       wrapper div added after EndangeredBand (Zone 2B); border-top separator
+#       with var(--space-10) top margin; import comment updated.
+#     AGENTS.md — WIP section cleared; ConvictionStrip marked shipped with
+#       placement details and z-index fix noted.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v110).
+#
 # Architecture v110 — BattingAverage Unlock Ceremony Overlay (2026-04-13)
 #   Sprint: 4-phase full-screen ceremony overlay fires the instant the 5th
 #     verdict resolves. Triggered via the onUnlockTriggered() hook exported by

@@ -18,7 +18,8 @@
 //
 // Credits: Mike Koch (arch spec 2026-04-11), Tanya Donska (design tokens)
 
-import ConvictionDemo from './ConvictionDemo.astro';
+import ConvictionDemo  from './ConvictionDemo.astro';
+import ConvictionStrip from './ConvictionStrip.astro';
 ---
 
 <div
@@ -89,6 +90,13 @@ import ConvictionDemo from './ConvictionDemo.astro';
     <!-- ── Demo: rendered once, CSS state machine controls state ── -->
     <ConvictionDemo />
 
+    <!-- ConvictionStrip: visible only on step 3 (CSS state machine) -->
+    <!-- Replaces abstract batting-average text with the live component. -->
+    <!-- Credits: Tanya §3 (placement A), Mike arch §Step 3 wiring     -->
+    <div class="ov-strip-slot">
+      <ConvictionStrip variant="overlay" />
+    </div>
+
     <!-- ── Navigation ─────────────────────────────────────────── -->
     <div class="ov-nav">
       <button class="ov-btn ov-btn--ghost" type="button" data-ov-prev aria-label="Previous step">
@@ -118,7 +126,7 @@ import ConvictionDemo from './ConvictionDemo.astro';
   .ov {
     position: fixed;
     inset: 0;
-    z-index: var(--z-modal);
+    z-index: var(--z-onboarding);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -273,6 +281,13 @@ import ConvictionDemo from './ConvictionDemo.astro';
     line-height: var(--leading-prose);
     margin: 0;
   }
+
+  /* ── ConvictionStrip slot — step 3 only ─────────────────────── */
+  /* Hidden on steps 1 & 2; revealed on step 3 (CSS state machine).  */
+  /* ConvictionDemo hides on step 3 — strip takes the demo role.     */
+  .ov-strip-slot { display: none; }
+  [data-step="3"] .ov-strip-slot { display: block; }
+  [data-step="3"] :global([data-conviction-demo]) { display: none; }
 
   /* ── Navigation row ──────────────────────────────────────────── */
   .ov-nav {
