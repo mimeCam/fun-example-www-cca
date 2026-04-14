@@ -110,7 +110,7 @@
 .bpr__center-text {
   fill:        var(--text-secondary);
   font-family: var(--font-mono);
-  font-size:   14px;
+  font-size:   var(--text-sm);
   font-weight: var(--weight-semibold);
 }
 
@@ -118,7 +118,7 @@
 .bpr__center-pct {
   fill:        var(--ring-unlocked-color);
   font-family: var(--font-mono);
-  font-size:   15px;
+  font-size:   var(--text-base);
   font-weight: var(--weight-bold);
   animation:   count-reveal 500ms var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) 700ms both;
 }

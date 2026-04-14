@@ -83,6 +83,12 @@
   --verdict-pending: var(--clr-slate-400);    /* oklch(67% 0.030 250) — neutral, cool slate        */
   --verdict-evolved: var(--clr-violet-400);   /* oklch(70% 0.180 300) — violet evolution signal    */
 
+  /* Verdict solid-alpha variants — inline verdict badges (VerdictResolutionPanel) */
+  --verdict-true-solid:    color-mix(in oklch, var(--verdict-true)    80%, transparent);
+  --verdict-wrong-solid:   color-mix(in oklch, var(--verdict-wrong)   80%, transparent);
+  --verdict-evolved-solid: color-mix(in oklch, var(--verdict-evolved) 75%, transparent);
+  --verdict-abandoned:     var(--text-tertiary);  /* semantic alias — abandoned verdict = faded text */
+
   /* Verdict bg/border tints — color-mix preserves P3 gamut expansion (Mike §1) */
   --verdict-true-bg:        color-mix(in oklch, var(--clr-green-400)   8%, transparent);
   --verdict-true-border:    color-mix(in oklch, var(--clr-green-400)  20%, transparent);
@@ -150,6 +156,7 @@
   --space-16: 4rem;      /* 64px */
 
   /* ── Border Radius — shape is identity; only glow/shadow signals age ── */
+  --radius-xs:        2px;      /* progress bars, thin indicators, focus outlines (Tanya §9) */
   --radius-sm:        6px;      /* chips, badges, tooltips, pills */
   --radius-md:        12px;     /* cards, nav elements */
   --radius-lg:        16px;     /* modal sheets, drawer overlays */

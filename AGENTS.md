@@ -1,20 +1,18 @@
 **Stack:** Astro 4 · TypeScript · @astrojs/node · better-sqlite3 · Docker
 
-**Core feature:** Posts decay on a clock — readers revive them. Authors seal conviction (HMAC + RFC 3161 + OTS); community disputes within 72 h → upheld/overturned; batting average unlocks at ≥5 resolved verdicts.
+**Core feature:** Posts decay on a clock — readers revive them. Authors seal conviction; community disputes → batting average.
 
-## Key Paths
+## Paths
 
-- `src/lib/` — decay engine, verdict/dispute, conviction ledger, OTS/RFC 3161, seal-phases, batting average, author-token, cron
-- `src/lib/client/` — client-side animation orchestrators and sensory utilities
-- `src/components/` — UI cards, drawers, ceremonies, badges, chips, filters
-- `src/pages/api/` — REST endpoints mirroring all core user actions
-- `src/styles/tokens.css` — master design token registry (single source of truth)
-- `scripts/` — dev tooling; `npm run lint:tokens` checks CSS token compliance
-
-## Env
-
-`ADMIN_SECRET` (req) · `HMAC_SECRET` (req) · `GITHUB_PAT` (opt) · `RFC3161_URL` (opt)
+- `src/lib/` — domain logic (decay, verdict, seals, batting average, OG image layouts)
+- `src/lib/design-tokens.ts` — server-side color mirror for Satori OG renderer
+- `src/components/` — UI layer
+- `src/pages/api/` — REST API
+- `src/styles/tokens.css` — design token registry (single source of truth)
+- `scripts/` — dev tooling (`npm run lint:tokens`)
 
 ## WIP
 
-None.
+- Token compliance sweep — 593 remaining rgba() violations across 40+ components
+- Sitemap restructure — merge /predictions→/verdict, /track-record→/author/[slug]
+- Blog detail surgery — consolidate bottom zones into single "Conviction Record" card

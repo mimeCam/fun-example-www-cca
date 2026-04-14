@@ -56,7 +56,7 @@
 .river-viewport::-webkit-scrollbar-track  { background: transparent; }
 .river-viewport::-webkit-scrollbar-thumb  {
   background: var(--gold-glow);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 /* ── Canvas — the full-width positioning surface ── */

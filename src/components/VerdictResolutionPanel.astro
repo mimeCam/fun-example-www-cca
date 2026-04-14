@@ -28,11 +28,14 @@ const VERDICT_LABELS: Record<VerdictOutcome, string> = {
   'abandoned':  '○ Abandoned',
 };
 
+/* Token-backed verdict colors — CSS custom properties applied via inline style.
+ * These use color-mix references that resolve at paint time via tokens.css.
+ * Kept as CSS strings because they're injected into style="" attributes. */
 const VERDICT_COLORS: Record<VerdictOutcome, string> = {
-  'still-true': 'rgba(100,210,120,0.8)',
-  'evolved':    'rgba(245,166,35,0.75)',
-  'wrong':      'rgba(230,100,100,0.8)',
-  'abandoned':  'rgba(255,255,255,0.35)',
+  'still-true': 'var(--verdict-true-solid)',
+  'evolved':    'var(--verdict-evolved-solid)',
+  'wrong':      'var(--verdict-wrong-solid)',
+  'abandoned':  'var(--verdict-abandoned)',
 };
 ---
 

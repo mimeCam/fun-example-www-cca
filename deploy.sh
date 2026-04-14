@@ -4,6 +4,67 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v117 — Design Token Consolidation + Compliance Expansion (2026-04-14)
+#   Sprint: Server-side color single-source-of-truth established; OG layout
+#     hardcoded hex eliminated; broad rgba()/hex → CSS token sweep across 10+
+#     components and pages; token compliance linter extended to scan .astro
+#     inline <style> blocks (593 remaining violations tracked in AGENTS.md WIP).
+#   New files:
+#     src/lib/design-tokens.ts — server-side mirror of tokens.css semantic
+#       colors. Satori (OG renderer) cannot resolve CSS custom properties and
+#       needs raw hex; this module is the single source for all TS-side color
+#       references. Exports COLORS record (surfaceBase, surfaceRaised, gold,
+#       text, dim, verdictTrue/Wrong/Evolved, tierBronze/Silver/Gold/Diamond)
+#       and ColorKey type. Rule: "if you need a color in TypeScript, import
+#       from design-tokens.ts — never hardcode hex in OG layouts."
+#   Modified files:
+#     src/lib/og/accountabilityLayout.ts — C color map rewritten: hardcoded
+#       hex (#0c0c0e, #1a1a1f, #F5A623, #e8e8ec, #6b6b80, #22c55e) replaced
+#       with COLORS.surfaceBase/surfaceRaised/gold/text/dim/verdictTrue imports.
+#     src/lib/og/auditLayout.ts — same treatment; additionally replaces #ef4444
+#       → COLORS.verdictWrong, #a78bfa → COLORS.verdictEvolved.
+#     src/lib/og/battingAverageLayout.ts — imports COLORS from design-tokens;
+#       local hex map replaced with shared source.
+#     src/lib/og/sealLayout.ts — same treatment as above OG layouts.
+#     src/components/AuditReceipt.astro — 12 raw hex/rgba values migrated to
+#       var(--gold), var(--gold-bg), var(--gold-border), var(--gold-mid),
+#       var(--verdict-true), var(--verdict-true-bg/border), var(--verdict-wrong),
+#       var(--verdict-wrong-bg/border) tokens.
+#     src/components/ConvictionMeter.astro — #F5A623 → var(--gold).
+#     src/components/GraveyardTeaser.astro — hsl() dot colors → var(--text-
+#       tertiary), var(--clr-amber-400).
+#     src/components/VerdictResolutionPanel.astro — inline rgba() verdict
+#       colors → var(--verdict-true-solid/evolved-solid/wrong-solid/abandoned)
+#       CSS custom properties with color-mix compositing via tokens.css.
+#     src/pages/admin.astro — background #0c0c0e → var(--surface-base).
+#     src/pages/author/index.astro — #F5A623 → var(--gold), #0c0c0e →
+#       var(--surface-base).
+#     src/pages/author/submit.astro — #F5A623 → var(--gold), hardcoded 2px
+#       radius → var(--radius-xs).
+#     src/pages/blog/[slug].astro — 6 rgba() values → var(--text-tertiary),
+#       var(--text-ghost), var(--text-secondary), var(--text-primary),
+#       var(--border-faint), var(--border-subtle).
+#     src/pages/index.astro — rgba() → var(--border-subtle), var(--text-ghost);
+#       0.65rem → var(--text-2xs).
+#     src/styles/tokens.css — New tokens: --verdict-true-solid, --verdict-wrong-
+#       solid, --verdict-evolved-solid (color-mix 80%/75% alpha), --verdict-
+#       abandoned (alias → --text-tertiary), --radius-xs (2px — progress bars,
+#       thin indicators).
+#     src/styles/batting-progress.css — minor token migration.
+#     src/styles/endangered.css — minor token migration.
+#     src/styles/river.css — minor token migration.
+#     src/styles/seal-ceremony.css — minor token migration.
+#     scripts/check-token-compliance.ts — linter now scans .astro inline
+#       <style> blocks (collectAstroFiles recursive + scanAstroFile with line-
+#       offset preservation); var(--token, #fallback) defensive CSS whitelisted
+#       via isInsideVarFallback(); code cleanup passes.
+#     AGENTS.md — WIP updated: token compliance sweep progress (593 rgba
+#       violations in 40+ components), sitemap restructure, blog detail surgery.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v116).
+#
 # Architecture v116 — Portability Kit + Design Token Polish (2026-04-13)
 #   Sprint: Batting average becomes a portable, embeddable credential. New
 #     /api/batting-average-embed endpoint serves three output formats (JSON,

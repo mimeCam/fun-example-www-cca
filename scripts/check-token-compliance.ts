@@ -1,7 +1,7 @@
 /**
  * scripts/check-token-compliance.ts
  *
- * Design token compliance linter for src/styles/*.css
+ * Design token compliance linter for src/styles/*.css AND .astro inline <style>.
  * Detects raw color/font-size literals that must live in tokens.css only.
  *
  * Rules (per Mike's architecture spec + Tanya §15 compliance checklist):
@@ -16,10 +16,12 @@
  *   - color-mix() — compositing from existing tokens; always allowed
  *   - rem in layout properties (padding, margin, gap, width, height, etc.)
  *   - calc() expressions — may contain rem for layout math
+ *   - var(--token, #fallback) — defensive CSS fallbacks inside var() are allowed
  *
  * Exit code: 0 = clean, 1 = violations found
  *
  * Architecture: Michael Koch · Compliance spec: Tanya Donska · 2026-04-12
+ * Extended to scan .astro <style> blocks: Sid · 2026-04-14
  */
 
 import * as fs from "fs";
@@ -45,6 +47,8 @@ interface RuleDefinition {
 // ── Config ─────────────────────────────────────────────────────────────────
 
 const STYLES_DIR = path.resolve(process.cwd(), "src/styles");
+const COMPONENTS_DIR = path.resolve(process.cwd(), "src/components");
+const PAGES_DIR = path.resolve(process.cwd(), "src/pages");
 const SKIP_FILES = new Set(["tokens.css"]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;
@@ -79,8 +83,8 @@ function isCommentLine(line: string): boolean {
 }
 
 function stripInlineComment(line: string): string {
-  const commentIdx = line.indexOf("/*");
-  return commentIdx >= 0 ? line.slice(0, commentIdx) : line;
+  const idx = line.indexOf("/*");
+  return idx >= 0 ? line.slice(0, idx) : line;
 }
 
 function isFontSizeLine(line: string): boolean {
@@ -88,39 +92,47 @@ function isFontSizeLine(line: string): boolean {
 }
 
 function isLayoutRemLine(line: string): boolean {
-  return /^\s*(padding|margin|gap|width|height|max-width|min-width|top|bottom|left|right|inset|border-radius|outline-offset)\s*:/i.test(line);
+  const layout = /^\s*(padding|margin|gap|width|height|max-width|min-width|top|bottom|left|right|inset|border-radius|outline-offset)\s*:/i;
+  return layout.test(line);
+}
+
+/** Defensive CSS: var(--token, #fallback) is allowed — skip hex/rgb inside var() */
+function isInsideVarFallback(line: string, matchIdx: number): boolean {
+  const before = line.slice(0, matchIdx);
+  const lastVar = before.lastIndexOf("var(");
+  if (lastVar < 0) return false;
+  const segment = before.slice(lastVar);
+  const hasComma = segment.includes(",");
+  const opens = (segment.match(/\(/g) ?? []).length;
+  const closes = (segment.match(/\)/g) ?? []).length;
+  return hasComma && opens > closes;
 }
 
 /** clamp() responsive font-size values are intentional — skip rem inside clamp() */
-function isClampRemValue(line: string, matchIndex: number): boolean {
-  const before = line.slice(0, matchIndex);
-  const lastClampIdx = before.lastIndexOf("clamp(");
-  if (lastClampIdx < 0) return false;
-  const afterClamp = before.slice(lastClampIdx + 6); // text after "clamp("
-  const opens  = (afterClamp.match(/\(/g) ?? []).length;
+function isClampRemValue(line: string, matchIdx: number): boolean {
+  const before = line.slice(0, matchIdx);
+  const last = before.lastIndexOf("clamp(");
+  if (last < 0) return false;
+  const afterClamp = before.slice(last + 6);
+  const opens = (afterClamp.match(/\(/g) ?? []).length;
   const closes = (afterClamp.match(/\)/g) ?? []).length;
-  return opens >= closes; // balanced or surplus = still inside clamp argument list
+  return opens >= closes;
 }
 
-// ── Core scan ──────────────────────────────────────────────────────────────
+// ── Core scan (pure function — works on any CSS string) ────────────────────
 
-function scanFile(filePath: string): Violation[] {
-  const content = fs.readFileSync(filePath, "utf-8");
-  const lines = content.split("\n");
+function scanCSS(lines: string[], fileName: string): Violation[] {
   const violations: Violation[] = [];
-  const fileName = path.relative(process.cwd(), filePath);
   let inBlockComment = false;
 
   lines.forEach((rawLine, idx) => {
-    // Track block comment boundaries
     if (!inBlockComment && rawLine.includes("/*")) {
       if (!rawLine.includes("*/")) inBlockComment = true;
-      // Inline /* ... */ on same line — strip it and continue
       const stripped = rawLine.replace(/\/\*.*?\*\//g, "");
       if (!inBlockComment && (isCommentLine(stripped) || stripped.trim() === "")) return;
     } else if (inBlockComment) {
       if (rawLine.includes("*/")) inBlockComment = false;
-      return; // skip entire continuation line
+      return;
     }
 
     if (isCommentLine(rawLine)) return;
@@ -129,21 +141,17 @@ function scanFile(filePath: string): Violation[] {
     const lineNumber = idx + 1;
 
     for (const rule of RULES) {
-      // font-size rem rule: only flag rem on font-size declarations
       if (rule.name === "no-raw-font-size-rem") {
         if (!isFontSizeLine(line)) continue;
         if (isLayoutRemLine(line)) continue;
       }
 
-      // reset lastIndex for global regexes between lines
       rule.pattern.lastIndex = 0;
       let match: RegExpExecArray | null;
 
       while ((match = rule.pattern.exec(line)) !== null) {
-        // Skip rem values inside clamp() — responsive font-size math is intentional
-        if (rule.name === "no-raw-font-size-rem" && isClampRemValue(line, match.index)) {
-          continue;
-        }
+        if (rule.name === "no-raw-font-size-rem" && isClampRemValue(line, match.index)) continue;
+        if (isInsideVarFallback(line, match.index)) continue;
         violations.push({
           file: fileName,
           line: lineNumber,
@@ -159,6 +167,44 @@ function scanFile(filePath: string): Violation[] {
   return violations;
 }
 
+// ── File scan wrappers ─────────────────────────────────────────────────────
+
+function scanCSSFile(filePath: string): Violation[] {
+  const content = fs.readFileSync(filePath, "utf-8");
+  const fileName = path.relative(process.cwd(), filePath);
+  return scanCSS(content.split("\n"), fileName);
+}
+
+/** Extract <style> blocks from .astro files, preserving original line offsets */
+function scanAstroFile(filePath: string): Violation[] {
+  const content = fs.readFileSync(filePath, "utf-8");
+  const fileName = path.relative(process.cwd(), filePath);
+  const allLines = content.split("\n");
+  const violations: Violation[] = [];
+  const styleRe = /<style[^>]*>/g;
+  let styleMatch: RegExpExecArray | null;
+
+  while ((styleMatch = styleRe.exec(content)) !== null) {
+    const startOffset = styleMatch.index + styleMatch[0].length;
+    const endTag = content.indexOf("</style>", startOffset);
+    if (endTag < 0) continue;
+
+    const beforeBlock = content.slice(0, startOffset);
+    const startLine = beforeBlock.split("\n").length;
+    const block = content.slice(startOffset, endTag);
+    const blockLines = block.split("\n");
+
+    const raw = scanCSS(blockLines, fileName);
+    for (const v of raw) {
+      violations.push({ ...v, line: v.line + startLine - 1 });
+    }
+  }
+
+  return violations;
+}
+
+// ── File collectors ────────────────────────────────────────────────────────
+
 function collectCssFiles(dir: string): string[] {
   return fs
     .readdirSync(dir)
@@ -166,34 +212,51 @@ function collectCssFiles(dir: string): string[] {
     .map((f) => path.join(dir, f));
 }
 
+function collectAstroFiles(dir: string): string[] {
+  const results: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) results.push(...collectAstroFiles(full));
+    else if (entry.name.endsWith(".astro")) results.push(full);
+  }
+  return results;
+}
+
 // ── Report ─────────────────────────────────────────────────────────────────
 
-function printReport(allViolations: Violation[]): void {
-  if (allViolations.length === 0) {
-    console.log("✅  Token compliance: all clear.");
-    return;
-  }
+function printSection(title: string, violations: Violation[]): void {
+  if (violations.length === 0) return;
 
   const byFile = new Map<string, Violation[]>();
-  for (const v of allViolations) {
+  for (const v of violations) {
     const group = byFile.get(v.file) ?? [];
     group.push(v);
     byFile.set(v.file, group);
   }
 
-  console.log(`\n❌  Token compliance: ${allViolations.length} violation(s) found.\n`);
-
-  for (const [file, violations] of byFile) {
-    console.log(`  ${file} (${violations.length})`);
-    for (const v of violations) {
+  console.log(`\n── ${title} (${violations.length}) ──\n`);
+  for (const [file, vList] of byFile) {
+    console.log(`  ${file} (${vList.length})`);
+    for (const v of vList) {
       console.log(`    ${v.line}:${v.column}  [${v.rule}]  ${v.match}`);
       console.log(`             ${v.context}`);
     }
     console.log();
   }
+}
 
+function printReport(css: Violation[], astro: Violation[]): void {
+  const total = css.length + astro.length;
+  if (total === 0) {
+    console.log("✅  Token compliance: all clear (CSS + Astro).");
+    return;
+  }
+
+  console.log(`\n❌  Token compliance: ${total} violation(s) found.\n`);
+  printSection("CSS files (src/styles/)", css);
+  printSection("Astro inline <style> blocks", astro);
   console.log("Fix: replace raw values with tokens from src/styles/tokens.css.");
-  console.log("     If no token matches, add the token first — never inline a new value.\n");
+  console.log("     var(--token, #fallback) is allowed — defensive CSS is OK.\n");
 }
 
 // ── Entry ──────────────────────────────────────────────────────────────────
@@ -204,16 +267,21 @@ function main(): void {
     process.exit(1);
   }
 
-  const files = collectCssFiles(STYLES_DIR);
-  const allViolations: Violation[] = [];
+  const cssFiles = collectCssFiles(STYLES_DIR);
+  const astroFiles = [
+    ...collectAstroFiles(COMPONENTS_DIR),
+    ...collectAstroFiles(PAGES_DIR),
+  ];
 
-  for (const file of files) {
-    allViolations.push(...scanFile(file));
-  }
+  const cssViolations: Violation[] = [];
+  const astroViolations: Violation[] = [];
 
-  printReport(allViolations);
+  for (const f of cssFiles) cssViolations.push(...scanCSSFile(f));
+  for (const f of astroFiles) astroViolations.push(...scanAstroFile(f));
 
-  if (allViolations.length > 0) {
+  printReport(cssViolations, astroViolations);
+
+  if (cssViolations.length + astroViolations.length > 0) {
     process.exit(1);
   }
 }

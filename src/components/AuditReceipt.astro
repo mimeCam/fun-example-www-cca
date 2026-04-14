@@ -257,9 +257,9 @@ function fmtDate(ts: number): string {
   }
 
   .receipt-stamp--sealed {
-    background: rgba(245, 166, 35, 0.10);
-    border: 1px solid rgba(245, 166, 35, 0.30);
-    color: #F5A623;
+    background: var(--gold-bg);
+    border: 1px solid var(--gold-border);
+    color: var(--gold);
   }
 
   .receipt-stamp--open {
@@ -309,7 +309,7 @@ function fmtDate(ts: number): string {
     font-family: ui-monospace, 'Cascadia Code', monospace;
     font-size: 1rem;
     font-weight: 700;
-    color: #F5A623;
+    color: var(--gold);
     letter-spacing: -0.01em;
   }
 
@@ -403,7 +403,7 @@ function fmtDate(ts: number): string {
   /* ── RFC 3161 TST row elements ── */
   .receipt-tst-verified {
     font-size:  0.8rem;
-    color:      #52C878;
+    color:      var(--verdict-true);
     font-weight: 500;
   }
 
@@ -423,10 +423,10 @@ function fmtDate(ts: number): string {
   }
 
   .verify-link {
-    color: rgba(245, 166, 35, 0.65);
+    color: var(--gold-mid);
     text-decoration: none;
   }
-  .verify-link:hover { color: #F5A623; }
+  .verify-link:hover { color: var(--gold); }
 
   /* ── Unsealed note ── */
   .receipt-unsealed-note {
@@ -452,7 +452,7 @@ function fmtDate(ts: number): string {
     transition: color 150ms ease;
   }
 
-  .receipt-anchor-link:hover { color: #F5A623; }
+  .receipt-anchor-link:hover { color: var(--gold); }
 
   .receipt-anchor-pending {
     font-size: 0.78rem;
@@ -472,15 +472,15 @@ function fmtDate(ts: number): string {
   }
 
   .anchor-badge--verified {
-    background: rgba(34, 197, 94, 0.10);
-    border: 1px solid rgba(34, 197, 94, 0.28);
-    color: #22c55e;
+    background: var(--verdict-true-bg);
+    border: 1px solid var(--verdict-true-border);
+    color: var(--verdict-true);
   }
 
   .anchor-badge--mismatch {
-    background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    color: #ef4444;
+    background: var(--verdict-wrong-bg);
+    border: 1px solid var(--verdict-wrong-border);
+    color: var(--verdict-wrong);
   }
 
   .anchor-badge--unreachable {
@@ -509,15 +509,15 @@ function fmtDate(ts: number): string {
   }
 
   .receipt-chain-status--ok {
-    background: rgba(34, 197, 94, 0.07);
-    border: 1px solid rgba(34, 197, 94, 0.20);
-    color: #52C878;
+    background: var(--verdict-true-bg);
+    border: 1px solid var(--verdict-true-border);
+    color: var(--verdict-true);
   }
 
   .receipt-chain-status--broken {
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.30);
-    color: #ef4444;
+    background: var(--verdict-wrong-bg);
+    border: 1px solid var(--verdict-wrong-border);
+    color: var(--verdict-wrong);
   }
 
   .chain-dot { font-size: 0.55rem; line-height: 1; }
@@ -590,7 +590,7 @@ function fmtDate(ts: number): string {
   .verify-copy-btn[data-copied="false"] .copy-label-default { opacity: 1; }
   .verify-copy-btn[data-copied="false"] .copy-label-done    { opacity: 0; position: absolute; }
   .verify-copy-btn[data-copied="true"]  .copy-label-default { opacity: 0; position: absolute; }
-  .verify-copy-btn[data-copied="true"]  .copy-label-done    { opacity: 1; color: #52C878; }
+  .verify-copy-btn[data-copied="true"]  .copy-label-done    { opacity: 1; color: var(--verdict-true); }
 
   /* ── Mobile ── */
   @media (max-width: 640px) {

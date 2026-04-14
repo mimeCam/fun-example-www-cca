@@ -6,21 +6,22 @@
 // Credits: Mike (napkin plan §api/og/audit/[slug].png), Tanya (UX §11)
 
 import type { VerdictDisplay } from '../verdict-display';
+import { COLORS } from '../design-tokens';
 
 // ---------------------------------------------------------------------------
-// Design tokens — mirror accountabilityLayout.ts exactly
+// Design tokens — derived from shared design-tokens.ts (single source)
 // ---------------------------------------------------------------------------
 
 const C = {
-  bg:      '#0c0c0e',
-  surface: '#1a1a1f',
-  amber:   '#F5A623',
-  text:    '#e8e8ec',
-  dim:     '#6b6b80',
-  dimFaint:'rgba(255,255,255,0.08)',
-  green:   '#22c55e',
-  red:     '#ef4444',
-  violet:  '#a78bfa',
+  bg:       COLORS.surfaceBase,
+  surface:  COLORS.surfaceRaised,
+  amber:    COLORS.gold,
+  text:     COLORS.text,
+  dim:      COLORS.dim,
+  dimFaint: 'rgba(255,255,255,0.08)',
+  green:    COLORS.verdictTrue,
+  red:      COLORS.verdictWrong,
+  violet:   COLORS.verdictEvolved,
 } as const;
 
 type El = Record<string, unknown>;

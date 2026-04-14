@@ -306,7 +306,7 @@ const jsonLd      = [
   .back-link,
   .audit-link {
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--text-tertiary);
     text-decoration: none;
     letter-spacing: 0.03em;
     transition: color 180ms ease;
@@ -325,18 +325,18 @@ const jsonLd      = [
     gap: 1rem;
     margin: 1.5rem 0 0.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-faint);
   }
 
   .audit-receipt-link {
     font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.25);
+    color: var(--text-ghost);
     text-decoration: none;
     letter-spacing: 0.03em;
     transition: color 150ms ease;
   }
 
-  .audit-receipt-link:hover { color: rgba(255, 255, 255, 0.55); }
+  .audit-receipt-link:hover { color: var(--text-secondary); }
 
   /* Post header: cover → date → title → badge (Tanya §9 — above-fold layout) */
   .post-header { margin-bottom: 2rem; }
@@ -411,7 +411,7 @@ const jsonLd      = [
   .post-body {
     font-size: 1.1rem;
     line-height: 1.75;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--text-primary);
   }
 
   .post-body :global(p)  { margin-bottom: 1.4em; }
@@ -479,7 +479,7 @@ const jsonLd      = [
     padding: 1.25rem;
     background: oklch(11% 0.008 270 / 0.6);
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid var(--border-faint);
   }
 
   .post-predictions__heading {
@@ -516,6 +516,6 @@ const jsonLd      = [
     align-items: center;
     margin: 3rem 0 2rem;
     padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
   }
 </style>

@@ -206,7 +206,7 @@
 .erosion-bar {
   height: var(--erosion-bar-height, 3px);
   background: var(--border-subtle);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   margin: var(--space-2) 0 0.25rem;
   overflow: hidden;
 }
@@ -215,7 +215,7 @@
   height: 100%;
   width: var(--erosion-pct, 50%);
   background: oklch(var(--erosion-lightness, 74%) var(--erosion-chroma, 0.17) var(--erosion-hue, 38deg));
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   animation: erosion-breathe var(--endangered-pulse-speed, 4s) ease-in-out infinite;
   transition: width 1s ease, background 1s ease;
 }

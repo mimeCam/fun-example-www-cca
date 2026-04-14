@@ -4,20 +4,22 @@
 // Design tokens mirrored from auditLayout.ts — no divergence (Tanya §9 gold discipline).
 // Credits: Mike (napkin plan §api/og/seal/[slug].png), Tanya (§5 shareable card spec)
 
+import { COLORS } from '../design-tokens';
+
 // ---------------------------------------------------------------------------
-// Design tokens — locked amber system
+// Design tokens — derived from shared design-tokens.ts (single source)
 // ---------------------------------------------------------------------------
 
 const C = {
-  bg:      '#0c0c0e',
-  surface: '#141418',
-  amber:   '#F5A623',
-  amberDim:'rgba(245,166,35,0.55)',
-  amberBg: 'rgba(245,166,35,0.08)',
-  text:    '#e8e8ec',
-  dim:     '#6b6b80',
-  faint:   'rgba(255,255,255,0.08)',
-  border:  'rgba(245,166,35,0.25)',
+  bg:       COLORS.surfaceBase,
+  surface:  COLORS.surfaceMid,
+  amber:    COLORS.gold,
+  amberDim: 'rgba(245,166,35,0.55)',
+  amberBg:  'rgba(245,166,35,0.08)',
+  text:     COLORS.text,
+  dim:      COLORS.dim,
+  faint:    'rgba(255,255,255,0.08)',
+  border:   'rgba(245,166,35,0.25)',
 } as const;
 
 type El = Record<string, unknown>;

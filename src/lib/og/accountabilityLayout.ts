@@ -9,19 +9,20 @@
 // Credits: Mike (arch spec §OG-Accountability-Card-v2), Tanya (UX §color-system)
 
 import type { AccountabilityOGData } from './accountabilityData';
+import { COLORS } from '../design-tokens';
 
 // ---------------------------------------------------------------------------
-// Design tokens — Tanya's locked set, never diverge
+// Design tokens — derived from shared design-tokens.ts (single source)
 // ---------------------------------------------------------------------------
 
 const C = {
-  bg:       '#0c0c0e',
-  surface:  '#1a1a1f',
-  amber:    '#F5A623',
-  text:     '#e8e8ec',
-  dim:      '#6b6b80',
+  bg:       COLORS.surfaceBase,
+  surface:  COLORS.surfaceRaised,
+  amber:    COLORS.gold,
+  text:     COLORS.text,
+  dim:      COLORS.dim,
   dimFaint: 'rgba(255,255,255,0.08)',
-  sealed:   '#22c55e',
+  sealed:   COLORS.verdictTrue,
 } as const;
 
 type El = Record<string, unknown>;

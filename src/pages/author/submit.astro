@@ -309,7 +309,7 @@ function escHtml(s: string): string {
     background: rgba(255, 255, 255, 0.15);
     transition: background 250ms ease, transform 250ms ease;
   }
-  .step-dot.active    { background: #F5A623; transform: scale(1.25); }
+  .step-dot.active    { background: var(--gold); transform: scale(1.25); }
   .step-dot.completed { background: rgba(245, 166, 35, 0.4); }
 
   /* Step sections */
@@ -385,15 +385,15 @@ function escHtml(s: string): string {
 
   .pow-progress-track {
     height: 4px;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     background: rgba(255, 255, 255, 0.08);
     overflow: hidden;
     margin-bottom: 1rem;
   }
   .pow-progress-fill {
     height: 100%;
-    background: #F5A623;
-    border-radius: 2px;
+    background: var(--gold);
+    border-radius: var(--radius-xs);
     width: 0%;
     transition: width 300ms ease;
   }
@@ -470,7 +470,7 @@ function escHtml(s: string): string {
   /* Receipt check */
   .receipt-check {
     font-size: 2rem;
-    color: #F5A623;
+    color: var(--gold);
     margin-bottom: 0.5rem;
   }
   .receipt-title { margin-bottom: 1.25rem; }
@@ -496,8 +496,8 @@ function escHtml(s: string): string {
     transition: opacity 150ms ease, box-shadow 150ms ease;
   }
   .btn--amber {
-    background: #F5A623;
-    color: #0c0c0e;
+    background: var(--gold);
+    color: var(--surface-base);
     font-weight: 600;
     box-shadow: 0 4px 16px rgba(245, 166, 35, 0.25);
   }

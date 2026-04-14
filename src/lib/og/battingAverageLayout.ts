@@ -7,6 +7,7 @@
 // Credits: Tanya (UX spec §20, §SS24), Mike (arch spec — Portability Kit)
 
 import type { BattingAverage, TrophyTier } from '../batting-average';
+import { COLORS } from '../design-tokens';
 
 // ---------------------------------------------------------------------------
 // Author identity — optional context for per-author OG cards
@@ -20,15 +21,15 @@ export interface OGAuthor {
 }
 
 // ---------------------------------------------------------------------------
-// Design tokens — mirrors tokens.css values (Satori has no CSS custom props)
-// Each value has a comment mapping it to its canonical token name.
+// Design tokens — derived from shared design-tokens.ts (single source)
+// Layout-specific alpha composites kept local (Satori needs raw rgba).
 // ---------------------------------------------------------------------------
 
 const C = {
-  bg:    '#0c0c0e',                   // --surface-base
-  amber: '#F5A623',                   // --clr-gold-400 (oklch(78% 0.14 68deg))
+  bg:    COLORS.surfaceBase,
+  amber: COLORS.gold,
   dim:   'rgba(255,255,255,0.55)',    // --text-secondary
-  faint: 'rgba(255,255,255,0.28)',    // ~--text-ghost (0.22) + slight lift
+  faint: 'rgba(255,255,255,0.28)',    // ~--text-ghost + slight lift
   quiet: 'rgba(255,255,255,0.08)',    // --surface-hover
   grey:  'rgba(255,255,255,0.45)',    // between --text-ghost and --text-secondary
   green: 'rgba(80,200,100,0.85)',     // semantic: verdict-correct
@@ -39,11 +40,11 @@ const C = {
 
 // Trophy tier color map — mirrors --ba-tier-* in tokens.css
 const TIER_COLOR: Record<TrophyTier, string> = {
-  locked:  'rgba(255,255,255,0.38)',  // --ba-tier-locked (neutral grey)
-  bronze:  '#C8874B',                 // --ba-tier-bronze (oklch(68% 0.13 55deg))
-  silver:  '#B0B8C8',                 // --ba-tier-silver (oklch(78% 0.03 250deg))
-  gold:    '#F5A623',                 // --ba-tier-gold   (--clr-gold-400)
-  diamond: '#D8E8F8',                 // --ba-tier-diamond (oklch(92% 0.06 250deg))
+  locked:  'rgba(255,255,255,0.38)',
+  bronze:  COLORS.tierBronze,
+  silver:  COLORS.tierSilver,
+  gold:    COLORS.tierGold,
+  diamond: COLORS.tierDiamond,
 };
 
 // Trophy tier symbols — simple chars that render in all Satori fonts
