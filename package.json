@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "astro dev",
+    "prebuild": "npx tsx scripts/check-token-compliance.ts --guard",
     "build": "astro build",
     "preview": "astro preview",
     "whisper": "node cli/whisper.mjs",

@@ -34,7 +34,8 @@ import { buildWebSiteSchema, serializeJsonLd } from '../lib/json-ld';
 import { getStageCounts, filterByStage } from '../lib/river-data';
 import type { StageFilter } from '../lib/river-data';
 import { paginate, parsePage } from '../lib/pagination';
-import { decayFactor } from '../lib/decay-engine';
+import { decayFactor, timeBand } from '../lib/decay-engine';
+import { daysSince } from '../lib/temporal';
 import LandingHero      from '../components/LandingHero.astro';
 import ConvictionStrip  from '../components/ConvictionStrip.astro';
 import '../styles/river-filter.css';
@@ -61,6 +62,18 @@ const stageCounts  = getStageCounts(displayPosts);
 const allLive       = displayPosts.filter(p => !p.endangered && !p.entombed);
 const allEndangered = displayPosts.filter(p => p.endangered);
 const allEntombed   = displayPosts.filter(p => p.entombed);  // ALL — for GraveyardLedger aggregate
+
+// ─── Temporal band grouping — scrolling through time (Mike §6) ──────────
+// Live posts partitioned by age into now/recent/archive bands.
+// Each band gets data-time-band for CSS spacing cascade in decay.css.
+
+function bandFor(p: { pubDateISO: string }): string {
+  return timeBand(daysSince(p.pubDateISO));
+}
+
+const liveNow     = allLive.filter(p => bandFor(p) === 'now');
+const liveRecent  = allLive.filter(p => bandFor(p) === 'recent');
+const liveArchive = allLive.filter(p => bandFor(p) === 'archive');
 
 // ─── Graveyard pagination (only graveyard stage is paginated — Mike §4 napkin) ──
 
@@ -146,11 +159,25 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
 
     <RiverFilter currentStage={currentStage} counts={stageCounts} />
 
-    {/* live: DecayCards */}
+    {/* live: DecayCards grouped by temporal band — scrolling through time (Mike §6) */}
     {currentStage === 'live' && stagePosts.length === 0 && (
       <p class="stage-empty">{EMPTY_MSG.live}</p>
     )}
-    {currentStage === 'live' && stagePosts.map(post => <DecayCard post={post} />)}
+    {currentStage === 'live' && liveNow.length > 0 && (
+      <section data-time-band="now" data-atmosphere="fresh">
+        {liveNow.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
+    {currentStage === 'live' && liveRecent.length > 0 && (
+      <section data-time-band="recent" data-atmosphere="fading">
+        {liveRecent.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
+    {currentStage === 'live' && liveArchive.length > 0 && (
+      <section data-time-band="archive" data-atmosphere="ghost">
+        {liveArchive.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
 
     {/* endangered: EndangeredCards */}
     {currentStage === 'endangered' && stagePosts.length === 0 && (
@@ -171,11 +198,25 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
       <Pagination meta={gravePagination} baseURL={Astro.url} />
     )}
 
-    {/* all: group by type — live first, endangered second, graveyard last (no pagination) */}
+    {/* all: temporal landscape — live bands → endangered → graveyard (no pagination) */}
     {currentStage === 'all' && stagePosts.length === 0 && (
       <p class="stage-empty">{EMPTY_MSG.all}</p>
     )}
-    {currentStage === 'all' && allLive.map(post => <DecayCard post={post} />)}
+    {currentStage === 'all' && liveNow.length > 0 && (
+      <section data-time-band="now" data-atmosphere="fresh">
+        {liveNow.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
+    {currentStage === 'all' && liveRecent.length > 0 && (
+      <section data-time-band="recent" data-atmosphere="fading">
+        {liveRecent.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
+    {currentStage === 'all' && liveArchive.length > 0 && (
+      <section data-time-band="archive" data-atmosphere="ghost">
+        {liveArchive.map(post => <DecayCard post={post} />)}
+      </section>
+    )}
     {currentStage === 'all' && allEndangered.map(post => <EndangeredCard post={post} />)}
     {currentStage === 'all' && allEntombed.length > 0 && (
       <section class="tombs" aria-label="Entombed posts">

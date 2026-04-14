@@ -82,16 +82,18 @@
  * ENDANGERED CARD — urgency-focused variant of decay card
  * ═══════════════════════════════════════════════════════════════════ */
 
+/* All endangered cards pulse together at one speed — urgency via intensity, not speed.
+   Mike §3: "The feed breathes as one organism." */
 .endangered-card {
   position: relative;
   overflow: hidden;
   padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
-  border: 1px solid color-mix(in oklch, var(--urgency-warning-color) calc(var(--endangered-glow-opacity, 0.15) * 100%), transparent);
+  border: 1px solid color-mix(in oklch, var(--urgency-warning-color) calc(var(--urgency-glow-opacity, 0.15) * 100%), transparent);
   margin-bottom: 0.75rem;
-  filter: saturate(0.15);
-  animation: endangered-pulse var(--endangered-pulse-speed, 4s) ease-in-out infinite;
+  filter: saturate(var(--stage-endangered-saturation, 0.3));
+  animation: endangered-pulse 2s var(--stage-endangered-pulse-ease, ease-in-out) infinite;
   transition:
     filter 0.5s ease,
     border-color 0.4s ease,
@@ -334,15 +336,21 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * URGENCY TIER OVERRIDES
+ * URGENCY TIER OVERRIDES — intensity, not speed (Mike §3)
+ * All cards pulse at 2s. Urgency expressed via glow opacity.
+ * Same rhythm, different brightness — the feed breathes as one.
  * ═══════════════════════════════════════════════════════════════════ */
 
+.endangered-card[data-urgency="warning"] {
+  --urgency-glow-opacity: var(--urgency-glow-intensity-warning, 0.15);
+}
+
 .endangered-card[data-urgency="critical"] {
-  --endangered-pulse-speed: 2s;
+  --urgency-glow-opacity: var(--urgency-glow-intensity-critical, 0.35);
 }
 
 .endangered-card[data-urgency="final"] {
-  --endangered-pulse-speed: 0.8s;
+  --urgency-glow-opacity: var(--urgency-glow-intensity-final, 0.60);
   border-color: color-mix(in oklch, var(--urgency-final-color) 25%, transparent);
 }
 

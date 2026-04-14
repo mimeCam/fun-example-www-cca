@@ -11,8 +11,9 @@ COPY package.json package-lock.json* ./
 
 RUN npm ci --prefer-offline 2>/dev/null || npm install
 
-# Copy source and config
+# Copy source, config, and dev scripts (prebuild token lint guard)
 COPY astro.config.mjs tsconfig.json ./
+COPY scripts/ ./scripts/
 COPY src/ ./src/
 
 # Static assets — public/ is copied to dist/client/ by astro build.

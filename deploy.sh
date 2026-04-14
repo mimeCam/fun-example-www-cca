@@ -4,6 +4,102 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v119 — Decay Perceptual Contrast System + Dockerfile Fix (2026-04-14)
+#   Sprint: Perceptual easeInQuad curve transforms the decay visual pipeline —
+#     front-loads freshness, makes aging dramatically visible. Stage material
+#     identity (ghost=dashed, fossil=dotted+letter-spacing) layers discrete
+#     structure cues on top of continuous filter interpolation. Temporal band
+#     grouping on homepage partitions live posts into now/recent/archive with
+#     spacing cascade. Endangered pulse synchronized at 2s for all cards, urgency
+#     via glow intensity not speed. Dockerfile bug fix: COPY scripts/ for prebuild
+#     token lint guard. DecayCard final token compliance pass.
+#   New exports (no new files):
+#     src/lib/decay-engine.ts — perceptualFactor(f): easeInQuad (f*f) that
+#       widens visual contrast between stages. stageFromFactor(f): classify raw
+#       decay factor into fresh/fading/endangered/ghost/fossil. timeBand(days):
+#       partition posts into now (<2d) / recent (<14d) / archive bands.
+#       DecayStage type exported.
+#   Modified files:
+#     Dockerfile — added COPY scripts/ ./scripts/ so prebuild token lint guard
+#       (npm run prebuild → check-token-compliance.ts --guard) runs during Docker
+#       build stage. Without this, the prebuild step would fail with ENOENT.
+#     src/lib/decay-engine.ts — perceptualFactor(), stageFromFactor(), timeBand()
+#       added. Visual mappings widened: opacity 1→0.25 (was 0.35), blur 0→2.5px
+#       (was 1.5px), saturation 1→0.15 (was 0.4), sepia 0→0.35 (was 0.15).
+#       borderRadius renamed to radiusPx (14→8px, was 20→4px).
+#     src/lib/live-decay.ts — client-side RAF loop aligned with perceptual curve:
+#       emits --decay-perceptual CSS var, syncs data-decay-stage attribute on each
+#       card per tick. Shadow/radius/opacity deltas driven by perceptualFactor.
+#     src/components/DecayCard.astro — 2 legacy rgba → token refs (100% compliant).
+#     src/pages/index.astro — temporal band grouping: imports timeBand + daysSince,
+#       partitions live posts into liveNow/liveRecent/liveArchive, renders <section
+#       data-time-band="..."> per band with data-atmosphere for CSS cascade.
+#     src/styles/tokens.css — stage visual profile tokens (--stage-{stage}-shadow-y,
+#       shadow-spread, border-style, letter-spacing); temporal band tokens
+#       (--band-gap-now/recent/archive); fresh shadow tuned (y:10px, spread:40px);
+#       hover shadow lifted (14px/48px). Continuous radius range narrowed 14→8px
+#       per Tanya §1 recommendation.
+#     src/styles/decay.css — stage material identity CSS: [data-decay-stage="ghost"]
+#       dashed border, [data-decay-stage="fossil"] dotted + letter-spacing. Card
+#       computed radius calc updated (14px - factor*6px). will-change adds filter.
+#       Temporal band spacing: [data-time-band] gap cascade with tokens.
+#     src/styles/endangered.css — synchronized pulse: all cards at 2s (was variable
+#       --endangered-pulse-speed 4s). Urgency via --urgency-glow-opacity intensity.
+#       Saturation uses --stage-endangered-saturation token.
+#     scripts/check-token-compliance.ts — GUARD_FILES expanded; DecayCard.astro
+#       now passes zero-violation check.
+#     AGENTS.md — WIP updated: Decay Perceptual Contrast System marked DONE;
+#       DecayCard 100% compliant; next: Tier 2 migration targets listed.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     Dockerfile fix is the only infra change (scripts/ directory copy).
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v118).
+#
+# Architecture v118 — Tier 1 Token Compliance Guard + Surfaces Module (2026-04-14)
+#   Sprint: First wave of token-compliant guard files locked down with a prebuild
+#     gatekeeper that fails the Docker build if any guarded file regresses. Eight
+#     files now pass zero-violation token compliance. New shared surfaces.css
+#     module eliminates per-component glass/backdrop-filter boilerplate. Duplicate
+#     motion tokens removed from tokens.css (single source: motion.css). New
+#     --text-prose token for long-form reading.
+#   New files:
+#     src/styles/surfaces.css — shared glass-morphism utility classes; 3 tiers:
+#       .surface-glass-subtle (4px blur), .surface-glass-medium (8px blur),
+#       .surface-glass-strong (12px blur); opaque surfaces: .surface-card,
+#       .surface-well, .surface-well-deep; .surface-panel (near-opaque + strong
+#       blur); prefers-reduced-motion guard disables backdrop-filter. Rule:
+#       "every glass/translucent surface must use one of these classes."
+#   Modified files:
+#     package.json — new "prebuild" script: `npx tsx scripts/check-token-
+#       compliance.ts --guard`; runs before every `npm run build` (including
+#       Docker build stage); exits non-zero if any guarded file has violations.
+#     scripts/check-token-compliance.ts — GUARD_FILES set (8 files: PactPanel,
+#       [slug].astro, EndangeredCard, EndangeredBand, TombstoneCard, LandingHero,
+#       RiverFilter, surfaces.css); --guard mode: checks only guarded files for
+#       build-breaking enforcement, reports unguarded as warnings; filterGuarded()
+#       + filterUnguarded() helpers.
+#     src/styles/global.css — added @import "./surfaces.css" between tokens.css
+#       and motion.css in the cascade.
+#     src/styles/tokens.css — removed duplicate motion tier tokens (snap/flow/
+#       drift/ceremony) that conflicted with motion.css values (Tanya §8 audit);
+#       new --text-prose: 1.1rem (17.6px) for post body / long-form reading.
+#     src/components/PactPanel.astro — full token compliance pass (28 rgba → 0);
+#       inline styles migrated to var(--surface-*), var(--text-*), var(--border-*)
+#       tokens.
+#     src/components/TombstoneCard.astro — font-size hardcoded px → var(--text-*)
+#       tokens; color cleanup.
+#     src/pages/blog/[slug].astro — 12 rgba/hex values → var(--text-tertiary),
+#       var(--text-ghost), var(--text-secondary), var(--text-primary),
+#       var(--border-faint), var(--border-subtle) tokens.
+#     AGENTS.md — WIP updated: Tier 1 complete (8 guard files clean, ~532
+#       remaining in Tier 2+); next targets: AuditReceipt (65), VerdictResolution-
+#       Panel (40), SealCeremony (40); nav simplification added.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v117).
+#
 # Architecture v117 — Design Token Consolidation + Compliance Expansion (2026-04-14)
 #   Sprint: Server-side color single-source-of-truth established; OG layout
 #     hardcoded hex eliminated; broad rgba()/hex → CSS token sweep across 10+

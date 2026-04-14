@@ -51,6 +51,19 @@ const COMPONENTS_DIR = path.resolve(process.cwd(), "src/components");
 const PAGES_DIR = path.resolve(process.cwd(), "src/pages");
 const SKIP_FILES = new Set(["tokens.css"]);
 
+/** Guard files: MUST be clean. Prebuild exits non-zero if these have violations.
+ *  Add files here once their token migration is complete. */
+const GUARD_FILES = new Set([
+  "src/components/PactPanel.astro",
+  "src/pages/blog/[slug].astro",
+  "src/components/EndangeredCard.astro",
+  "src/components/EndangeredBand.astro",
+  "src/components/TombstoneCard.astro",
+  "src/components/LandingHero.astro",
+  "src/components/RiverFilter.astro",
+  "src/styles/surfaces.css",
+]);
+
 const FONT_SIZE_PROP = /font-size\s*:/i;
 
 const RULES: RuleDefinition[] = [
@@ -259,9 +272,21 @@ function printReport(css: Violation[], astro: Violation[]): void {
   console.log("     var(--token, #fallback) is allowed — defensive CSS is OK.\n");
 }
 
+// ── Guard filter ──────────────────────────────────────────────────────────
+
+function filterGuarded(violations: Violation[]): Violation[] {
+  return violations.filter((v) => GUARD_FILES.has(v.file));
+}
+
+function filterUnguarded(violations: Violation[]): Violation[] {
+  return violations.filter((v) => !GUARD_FILES.has(v.file));
+}
+
 // ── Entry ──────────────────────────────────────────────────────────────────
 
 function main(): void {
+  const guardMode = process.argv.includes("--guard");
+
   if (!fs.existsSync(STYLES_DIR)) {
     console.error(`Error: styles directory not found at ${STYLES_DIR}`);
     process.exit(1);
@@ -278,6 +303,25 @@ function main(): void {
 
   for (const f of cssFiles) cssViolations.push(...scanCSSFile(f));
   for (const f of astroFiles) astroViolations.push(...scanAstroFile(f));
+
+  if (guardMode) {
+    const guardCss = filterGuarded(cssViolations);
+    const guardAstro = filterGuarded(astroViolations);
+    const guardTotal = guardCss.length + guardAstro.length;
+    const warnTotal = cssViolations.length + astroViolations.length - guardTotal;
+
+    if (guardTotal > 0) {
+      printReport(guardCss, guardAstro);
+      console.log(`  (${warnTotal} additional violations in unguarded files — fix in next sprint)\n`);
+      process.exit(1);
+    }
+
+    console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean.`);
+    if (warnTotal > 0) {
+      console.log(`   \u26a0\ufe0f  ${warnTotal} violations remain in unguarded files.\n`);
+    }
+    return;
+  }
 
   printReport(cssViolations, astroViolations);
 

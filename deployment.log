@@ -1,8 +1,4 @@
-==> [deploy] Starting deployment of persona-blog-a at Tue Apr 14 08:39:25 AM UTC 2026
-==> [deploy] Stopping existing container: persona-blog-a
-persona-blog-a
-==> [deploy] Removing existing container: persona-blog-a
-persona-blog-a
+==> [deploy] Starting deployment of persona-blog-a at Tue Apr 14 06:26:40 PM UTC 2026
 ==> [deploy] Ensuring data volume: persona-blog-a-data
 persona-blog-a-data
 ==> [deploy] Ensuring SQLite volume: persona-blog-a-sqlite
@@ -11,209 +7,217 @@ persona-blog-a-sqlite
 #0 building with "default" instance using docker driver
 
 #1 [internal] load build definition from Dockerfile
-#1 transferring dockerfile: 2.20kB done
+#1 transferring dockerfile: 2.27kB done
 #1 DONE 0.0s
 
 #2 [internal] load metadata for docker.io/library/node:20-alpine
-#2 DONE 0.1s
+#2 DONE 0.2s
 
 #3 [internal] load .dockerignore
 #3 transferring context: 120B done
 #3 DONE 0.0s
 
-#4 [builder 1/9] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
+#4 [builder  1/10] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
 #4 DONE 0.0s
 
-#5 [builder 2/9] WORKDIR /app
+#5 [builder  2/10] WORKDIR /app
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 246.83kB 0.3s done
-#6 DONE 0.4s
+#6 transferring context: 159.73kB 0.3s done
+#6 DONE 0.3s
 
-#7 [builder 3/9] RUN apk add --no-cache python3 make g++
-#7 0.792 ( 1/30) Upgrading musl (1.2.5-r21 -> 1.2.5-r23)
-#7 0.816 ( 2/30) Installing libstdc++-dev (15.2.0-r2)
-#7 1.032 ( 3/30) Installing jansson (2.14.1-r0)
-#7 1.041 ( 4/30) Installing zstd-libs (1.5.7-r2)
-#7 1.057 ( 5/30) Installing binutils (2.45.1-r0)
-#7 1.150 ( 6/30) Installing libgomp (15.2.0-r2)
-#7 1.162 ( 7/30) Installing libatomic (15.2.0-r2)
-#7 1.170 ( 8/30) Installing gmp (6.3.0-r4)
-#7 1.183 ( 9/30) Installing isl26 (0.26-r1)
-#7 1.208 (10/30) Installing mpfr4 (4.2.2-r0)
-#7 1.222 (11/30) Installing mpc1 (1.3.1-r1)
-#7 1.231 (12/30) Installing gcc (15.2.0-r2)
-#7 ...
+#7 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
+#7 0.795 ( 1/10) Installing libexpat (2.7.5-r0)
+#7 0.809 ( 2/10) Installing brotli-libs (1.2.0-r0)
+#7 0.831 ( 3/10) Installing libbz2 (1.0.8-r6)
+#7 0.839 ( 4/10) Installing libpng (1.6.57-r0)
+#7 0.848 ( 5/10) Installing freetype (2.14.1-r0)
+#7 0.864 ( 6/10) Installing fontconfig (2.17.1-r0)
+#7 0.892 ( 7/10) Installing encodings (1.1.0-r0)
+#7 0.921 ( 8/10) Installing libfontenc (1.1.8-r0)
+#7 0.929 ( 9/10) Installing mkfontscale (1.2.3-r1)
+#7 0.936 (10/10) Installing font-dejavu (2.37-r6)
+#7 1.057 Executing busybox-1.37.0-r30.trigger
+#7 1.065 Executing fontconfig-2.17.1-r0.trigger
+#7 1.103 Executing mkfontscale-1.2.3-r1.trigger
+#7 1.144 OK: 23.8 MiB in 28 packages
+#7 DONE 1.3s
 
-#8 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
-#8 1.048 ( 1/10) Installing libexpat (2.7.5-r0)
-#8 1.071 ( 2/10) Installing brotli-libs (1.2.0-r0)
-#8 1.097 ( 3/10) Installing libbz2 (1.0.8-r6)
-#8 1.115 ( 4/10) Installing libpng (1.6.57-r0)
-#8 1.136 ( 5/10) Installing freetype (2.14.1-r0)
-#8 1.164 ( 6/10) Installing fontconfig (2.17.1-r0)
-#8 1.205 ( 7/10) Installing encodings (1.1.0-r0)
-#8 1.237 ( 8/10) Installing libfontenc (1.1.8-r0)
-#8 1.256 ( 9/10) Installing mkfontscale (1.2.3-r1)
-#8 1.275 (10/10) Installing font-dejavu (2.37-r6)
-#8 1.372 Executing busybox-1.37.0-r30.trigger
-#8 1.379 Executing fontconfig-2.17.1-r0.trigger
-#8 1.420 Executing mkfontscale-1.2.3-r1.trigger
-#8 1.464 OK: 23.8 MiB in 28 packages
-#8 DONE 1.6s
+#8 [builder  3/10] RUN apk add --no-cache python3 make g++
+#8 0.746 ( 1/30) Upgrading musl (1.2.5-r21 -> 1.2.5-r23)
+#8 0.762 ( 2/30) Installing libstdc++-dev (15.2.0-r2)
+#8 0.960 ( 3/30) Installing jansson (2.14.1-r0)
+#8 0.971 ( 4/30) Installing zstd-libs (1.5.7-r2)
+#8 0.986 ( 5/30) Installing binutils (2.45.1-r0)
+#8 1.074 ( 6/30) Installing libgomp (15.2.0-r2)
+#8 1.084 ( 7/30) Installing libatomic (15.2.0-r2)
+#8 1.092 ( 8/30) Installing gmp (6.3.0-r4)
+#8 1.104 ( 9/30) Installing isl26 (0.26-r1)
+#8 1.126 (10/30) Installing mpfr4 (4.2.2-r0)
+#8 1.139 (11/30) Installing mpc1 (1.3.1-r1)
+#8 1.149 (12/30) Installing gcc (15.2.0-r2)
+#8 2.218 (13/30) Installing musl-dev (1.2.5-r23)
+#8 2.290 (14/30) Installing g++ (15.2.0-r2)
+#8 2.562 (15/30) Installing make (4.4.1-r3)
+#8 2.572 (16/30) Installing libbz2 (1.0.8-r6)
+#8 2.581 (17/30) Installing libexpat (2.7.5-r0)
+#8 2.591 (18/30) Installing libffi (3.5.2-r0)
+#8 2.599 (19/30) Installing gdbm (1.26-r0)
+#8 2.608 (20/30) Installing xz-libs (5.8.2-r0)
+#8 2.619 (21/30) Installing mpdecimal (4.0.1-r0)
+#8 2.629 (22/30) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+#8 2.647 (23/30) Installing libncursesw (6.5_p20251123-r0)
+#8 2.660 (24/30) Installing libpanelw (6.5_p20251123-r0)
+#8 2.668 (25/30) Installing readline (8.3.1-r0)
+#8 2.681 (26/30) Installing sqlite-libs (3.51.2-r0)
+#8 2.712 (27/30) Installing python3 (3.12.13-r0)
+#8 2.917 (28/30) Installing python3-pycache-pyc0 (3.12.13-r0)
+#8 3.060 (29/30) Installing pyc (3.12.13-r0)
+#8 3.060 (30/30) Installing python3-pyc (3.12.13-r0)
+#8 3.061 Executing busybox-1.37.0-r30.trigger
+#8 3.074 OK: 301.2 MiB in 47 packages
+#8 DONE 3.3s
 
-#7 [builder 3/9] RUN apk add --no-cache python3 make g++
-#7 2.320 (13/30) Installing musl-dev (1.2.5-r23)
-#7 2.397 (14/30) Installing g++ (15.2.0-r2)
-#7 2.671 (15/30) Installing make (4.4.1-r3)
-#7 2.681 (16/30) Installing libbz2 (1.0.8-r6)
-#7 2.689 (17/30) Installing libexpat (2.7.5-r0)
-#7 2.698 (18/30) Installing libffi (3.5.2-r0)
-#7 2.707 (19/30) Installing gdbm (1.26-r0)
-#7 2.716 (20/30) Installing xz-libs (5.8.2-r0)
-#7 2.725 (21/30) Installing mpdecimal (4.0.1-r0)
-#7 2.735 (22/30) Installing ncurses-terminfo-base (6.5_p20251123-r0)
-#7 2.747 (23/30) Installing libncursesw (6.5_p20251123-r0)
-#7 2.759 (24/30) Installing libpanelw (6.5_p20251123-r0)
-#7 2.767 (25/30) Installing readline (8.3.1-r0)
-#7 2.777 (26/30) Installing sqlite-libs (3.51.2-r0)
-#7 2.796 (27/30) Installing python3 (3.12.13-r0)
-#7 3.001 (28/30) Installing python3-pycache-pyc0 (3.12.13-r0)
-#7 3.143 (29/30) Installing pyc (3.12.13-r0)
-#7 3.143 (30/30) Installing python3-pyc (3.12.13-r0)
-#7 3.143 Executing busybox-1.37.0-r30.trigger
-#7 3.158 OK: 301.2 MiB in 47 packages
-#7 DONE 3.4s
-
-#9 [builder 4/9] COPY package.json package-lock.json* ./
+#9 [builder  4/10] COPY package.json package-lock.json* ./
 #9 DONE 0.0s
 
-#10 [builder 5/9] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#10 9.271 
-#10 9.271 added 447 packages, and audited 448 packages in 9s
-#10 9.271 
-#10 9.271 173 packages are looking for funding
-#10 9.271   run `npm fund` for details
-#10 9.313 
-#10 9.313 4 vulnerabilities (2 moderate, 2 high)
-#10 9.313 
-#10 9.313 To address all issues (including breaking changes), run:
-#10 9.313   npm audit fix --force
-#10 9.313 
-#10 9.313 Run `npm audit` for details.
-#10 DONE 9.8s
+#10 [builder  5/10] RUN npm ci --prefer-offline 2>/dev/null || npm install
+#10 9.054 
+#10 9.054 added 447 packages, and audited 448 packages in 9s
+#10 9.054 
+#10 9.054 173 packages are looking for funding
+#10 9.054   run `npm fund` for details
+#10 9.104 
+#10 9.104 4 vulnerabilities (2 moderate, 2 high)
+#10 9.104 
+#10 9.104 To address all issues (including breaking changes), run:
+#10 9.104   npm audit fix --force
+#10 9.104 
+#10 9.104 Run `npm audit` for details.
+#10 DONE 9.5s
 
-#11 [builder 6/9] COPY astro.config.mjs tsconfig.json ./
+#11 [builder  6/10] COPY astro.config.mjs tsconfig.json ./
 #11 DONE 0.0s
 
-#12 [builder 7/9] COPY src/ ./src/
-#12 DONE 0.2s
+#12 [builder  7/10] COPY scripts/ ./scripts/
+#12 DONE 0.0s
 
-#13 [builder 8/9] COPY public/ ./public/
-#13 DONE 0.0s
+#13 [builder  8/10] COPY src/ ./src/
+#13 DONE 0.1s
 
-#14 [builder 9/9] RUN npm run build
-#14 0.400 
-#14 0.400 > persona-blog@0.1.0 build
-#14 0.400 > astro build
-#14 0.400 
-#14 1.135 ▶ Astro collects anonymous usage data.
-#14 1.135   This information helps us improve Astro.
-#14 1.135   Run "astro telemetry disable" to opt-out.
-#14 1.135   https://astro.build/telemetry
-#14 1.135 
-#14 2.584 08:39:42 [types] Generated 531ms
-#14 2.584 08:39:42 [build] output: "hybrid"
-#14 2.584 08:39:42 [build] directory: /app/dist/
-#14 2.584 08:39:42 [build] adapter: @astrojs/node
-#14 2.585 08:39:42 [build] Collecting build info...
-#14 2.585 08:39:42 [build] ✓ Completed in 565ms.
-#14 2.589 08:39:42 [build] Building hybrid entrypoints...
-#14 7.697 08:39:47 [vite] ✓ built in 5.05s
-#14 7.697 08:39:47 [build] ✓ Completed in 5.11s.
-#14 7.698 
-#14 7.698  building client (vite) 
-#14 7.712 08:39:47 [vite] transforming...
-#14 8.030 08:39:47 [vite] ✓ 66 modules transformed.
-#14 8.070 08:39:47 [vite] rendering chunks...
-#14 8.098 08:39:47 [vite] computing gzip size...
-#14 8.109 08:39:47 [vite] dist/client/_astro/hoisted.Di2ZKEWr.js                                                0.13 kB │ gzip: 0.13 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/hoisted.ZF2bM7yI.js                                                0.14 kB │ gzip: 0.13 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/haptics.siE5Iely.js                                                0.23 kB │ gzip: 0.19 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                          0.41 kB │ gzip: 0.26 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/hoisted.BzPYy-fR.js                                                0.41 kB │ gzip: 0.30 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                             0.59 kB │ gzip: 0.35 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js      0.94 kB │ gzip: 0.53 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/hoisted.DCQJC--y.js                                                1.22 kB │ gzip: 0.68 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/hoisted.C2FhDGqx.js                                                1.70 kB │ gzip: 0.82 kB
-#14 8.109 08:39:47 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                   1.92 kB │ gzip: 0.90 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/hoisted.syJ5ANZg.js                                                2.04 kB │ gzip: 1.06 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js        2.48 kB │ gzip: 1.18 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/hoisted.BivwjAgI.js                                                3.09 kB │ gzip: 1.47 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/hoisted.MgHblfag.js                                                3.39 kB │ gzip: 1.56 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/DisputeTally.astro_astro_type_script_index_0_lang.BTw36jQa.js      3.68 kB │ gzip: 1.53 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/hoisted.38xf3N-G.js                                                3.88 kB │ gzip: 1.71 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/hoisted.fUAQ-PLq.js                                                5.33 kB │ gzip: 1.98 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/hoisted.B8sPXQbJ.js                                                5.68 kB │ gzip: 2.31 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/hoisted.DKZjFjMW.js                                                9.28 kB │ gzip: 3.15 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.DyU_bffZ.js         9.94 kB │ gzip: 3.51 kB
-#14 8.110 08:39:47 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang._j2wlGoz.js  15.22 kB │ gzip: 5.26 kB
-#14 8.110 08:39:47 [vite] ✓ built in 405ms
-#14 8.138 
-#14 8.138  prerendering static routes 
-#14 8.171 08:39:47 λ src/pages/api/graveyard-stats.ts
-#14 8.172 08:39:47   └─ /api/graveyard-stats (+33ms)
-#14 8.207 08:39:48 λ src/pages/api/reading-pulse.ts
-#14 8.207 08:39:48   └─ /api/reading-pulse (+1ms)
-#14 8.216 08:39:48 ▶ src/pages/author/index.astro
-#14 8.216 08:39:48   └─ /author/index.html08:39:48 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
-#14 8.227  (+10ms)
-#14 8.372 08:39:48 ▶ src/pages/blog/[slug].astro
-#14 8.374 08:39:48   ├─ /blog/building-in-public/index.html08:39:48 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
-#14 8.406  (+32ms)
-#14 8.406 08:39:48   ├─ /blog/focus-as-a-mood/index.html08:39:48 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
-#14 8.422  (+16ms)
-#14 8.422 08:39:48   ├─ /blog/hello-world/index.html08:39:48 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
-#14 8.439  (+17ms)
-#14 8.439 08:39:48   ├─ /blog/lo-fi-loop/index.html08:39:48 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
-#14 8.448  (+9ms)
-#14 8.448 08:39:48   ├─ /blog/now-page/index.html08:39:48 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
-#14 8.467  (+18ms)
-#14 8.467 08:39:48   └─ /blog/the-decay-theory/index.html08:39:48 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
-#14 8.480  (+14ms)
-#14 8.483 08:39:48 λ src/pages/feed.xml.ts
-#14 8.483 08:39:48   └─ /feed.xml (+2ms)
-#14 8.485 08:39:48 ✓ Completed in 364ms.
-#14 8.485 
-#14 8.486 08:39:48 [build] Rearranging server assets...
-#14 8.488 08:39:48 [build] Server built in 6.47s
-#14 8.488 08:39:48 [build] Complete!
-#14 DONE 8.6s
+#14 [builder  9/10] COPY public/ ./public/
+#14 DONE 0.0s
 
-#15 [server 4/8] COPY --from=builder /app/dist ./dist
-#15 DONE 0.1s
+#15 [builder 10/10] RUN npm run build
+#15 0.347 
+#15 0.347 > persona-blog@0.1.0 prebuild
+#15 0.347 > npx tsx scripts/check-token-compliance.ts --guard
+#15 0.347 
+#15 1.445 npm warn exec The following package was not found and will be installed: tsx@4.21.0
+#15 3.178 ✅  Guard check: 8 guarded files clean.
+#15 3.178    ⚠️  530 violations remain in unguarded files.
+#15 3.178 
+#15 3.207 
+#15 3.207 > persona-blog@0.1.0 build
+#15 3.207 > astro build
+#15 3.207 
+#15 3.908 ▶ Astro collects anonymous usage data.
+#15 3.908   This information helps us improve Astro.
+#15 3.908   Run "astro telemetry disable" to opt-out.
+#15 3.908   https://astro.build/telemetry
+#15 3.908 
+#15 5.287 18:26:59 [types] Generated 498ms
+#15 5.287 18:26:59 [build] output: "hybrid"
+#15 5.287 18:26:59 [build] directory: /app/dist/
+#15 5.288 18:26:59 [build] adapter: @astrojs/node
+#15 5.288 18:26:59 [build] Collecting build info...
+#15 5.289 18:26:59 [build] ✓ Completed in 541ms.
+#15 5.292 18:26:59 [build] Building hybrid entrypoints...
+#15 10.28 18:27:04 [vite] ✓ built in 4.94s
+#15 10.28 18:27:04 [build] ✓ Completed in 4.99s.
+#15 10.28 
+#15 10.28  building client (vite) 
+#15 10.29 18:27:04 [vite] transforming...
+#15 10.57 18:27:04 [vite] ✓ 66 modules transformed.
+#15 10.61 18:27:04 [vite] rendering chunks...
+#15 10.64 18:27:04 [vite] computing gzip size...
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.Di2ZKEWr.js                                                0.13 kB │ gzip: 0.13 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.ZF2bM7yI.js                                                0.14 kB │ gzip: 0.13 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/haptics.siE5Iely.js                                                0.23 kB │ gzip: 0.19 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                          0.41 kB │ gzip: 0.26 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.BzPYy-fR.js                                                0.41 kB │ gzip: 0.30 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                             0.59 kB │ gzip: 0.35 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js      0.94 kB │ gzip: 0.53 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.DCQJC--y.js                                                1.22 kB │ gzip: 0.68 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.C2FhDGqx.js                                                1.70 kB │ gzip: 0.82 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                   1.92 kB │ gzip: 0.90 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.syJ5ANZg.js                                                2.04 kB │ gzip: 1.06 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js        2.48 kB │ gzip: 1.18 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.BivwjAgI.js                                                3.09 kB │ gzip: 1.47 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.BQCFmrks.js                                                3.39 kB │ gzip: 1.56 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/DisputeTally.astro_astro_type_script_index_0_lang.BTw36jQa.js      3.68 kB │ gzip: 1.53 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.38xf3N-G.js                                                3.88 kB │ gzip: 1.71 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.fUAQ-PLq.js                                                5.33 kB │ gzip: 1.98 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.B8sPXQbJ.js                                                5.68 kB │ gzip: 2.31 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/hoisted.13yL9k2D.js                                                9.28 kB │ gzip: 3.15 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.DyU_bffZ.js         9.94 kB │ gzip: 3.51 kB
+#15 10.65 18:27:04 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang._j2wlGoz.js  15.22 kB │ gzip: 5.26 kB
+#15 10.65 18:27:04 [vite] ✓ built in 360ms
+#15 10.68 
+#15 10.68  prerendering static routes 
+#15 10.71 18:27:04 λ src/pages/api/graveyard-stats.ts
+#15 10.71 18:27:04   └─ /api/graveyard-stats (+23ms)
+#15 10.75 18:27:04 λ src/pages/api/reading-pulse.ts
+#15 10.75 18:27:04   └─ /api/reading-pulse (+1ms)
+#15 10.76 18:27:04 ▶ src/pages/author/index.astro
+#15 10.76 18:27:04   └─ /author/index.html18:27:04 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
+#15 10.77  (+11ms)
+#15 10.90 18:27:04 ▶ src/pages/blog/[slug].astro
+#15 10.91 18:27:04   ├─ /blog/building-in-public/index.html18:27:04 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
+#15 10.94  (+28ms)
+#15 10.94 18:27:04   ├─ /blog/focus-as-a-mood/index.html18:27:04 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
+#15 10.95  (+18ms)
+#15 10.95 18:27:05   ├─ /blog/hello-world/index.html18:27:05 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
+#15 10.97  (+14ms)
+#15 10.97 18:27:05   ├─ /blog/lo-fi-loop/index.html18:27:05 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
+#15 10.98  (+15ms)
+#15 10.98 18:27:05   ├─ /blog/now-page/index.html18:27:05 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
+#15 11.00  (+17ms)
+#15 11.00 18:27:05   └─ /blog/the-decay-theory/index.html18:27:05 [WARN] `Astro.request.headers` is unavailable in "static" output mode, and in prerendered pages within "hybrid" and "server" output modes. If you need access to request headers, make sure that `output` is configured as either `"server"` or `output: "hybrid"` in your config file, and that the page accessing the headers is rendered on-demand.
+#15 11.01  (+14ms)
+#15 11.02 18:27:05 λ src/pages/feed.xml.ts
+#15 11.02 18:27:05   └─ /feed.xml (+2ms)
+#15 11.02 18:27:05 ✓ Completed in 361ms.
+#15 11.02 
+#15 11.02 18:27:05 [build] Rearranging server assets...
+#15 11.02 18:27:05 [build] Server built in 6.27s
+#15 11.02 18:27:05 [build] Complete!
+#15 DONE 11.1s
 
-#16 [server 5/8] COPY --from=builder /app/node_modules ./node_modules
-#16 DONE 2.3s
+#16 [server 4/8] COPY --from=builder /app/dist ./dist
+#16 DONE 0.1s
 
-#17 [server 6/8] COPY --from=builder /app/src/content/blog/ ./src/content/blog/
-#17 DONE 0.0s
+#17 [server 5/8] COPY --from=builder /app/node_modules ./node_modules
+#17 DONE 2.3s
 
-#18 [server 7/8] COPY --from=builder /app/src/assets/ ./src/assets/
+#18 [server 6/8] COPY --from=builder /app/src/content/blog/ ./src/content/blog/
 #18 DONE 0.0s
 
-#19 [server 8/8] RUN mkdir -p /app/dist/server/data  && mkdir -p /app/data
-#19 DONE 0.2s
+#19 [server 7/8] COPY --from=builder /app/src/assets/ ./src/assets/
+#19 DONE 0.0s
 
-#20 exporting to image
-#20 exporting layers
-#20 exporting layers 1.4s done
-#20 writing image sha256:2168d4a418f11b252d727f33995cd97ba56000eb4d4b8e8d3cda347790ab6c80 done
-#20 naming to docker.io/library/persona-blog-a done
-#20 DONE 1.4s
+#20 [server 8/8] RUN mkdir -p /app/dist/server/data  && mkdir -p /app/data
+#20 DONE 0.2s
+
+#21 exporting to image
+#21 exporting layers
+#21 exporting layers 1.4s done
+#21 writing image sha256:a5468e9cc52c46f5050475ed63e982fa9ad924920d8a0ccdcd5cdefe99ed3fb3 done
+#21 naming to docker.io/library/persona-blog-a done
+#21 DONE 1.4s
 ==> [deploy] Starting container: persona-blog-a on port 7100
-6db5ad5811ca37acbe6795a703a01ff89a70944edcce1089fd5a74dfc8a56fac
+4f1d4e91429b8a435398fd790b4b6bb71895174b68908ca5056edb61e24ef4ff
 ==> [deploy] Waiting for container to become healthy…
 ==> [deploy] ✓ Container is running
 ==> [deploy] Running deadline sweep…
@@ -222,7 +226,10 @@ persona-blog-a-sqlite
 ==> [deploy] OTS upgrade response: {"upgraded":0,"stillPending":0,"failed":0,"errors":[]}
 ==> [deploy] Pruning dangling images…
 Deleted Images:
-deleted: sha256:2b4f01ba7645267ab109b40051f0f7dae240a110886b87e1a865b6dc9240271a
+deleted: sha256:2168d4a418f11b252d727f33995cd97ba56000eb4d4b8e8d3cda347790ab6c80
+deleted: sha256:dec81ad38ee2113a6cab66ceaa4f38f56d11159f271aeed4e97c027175157d5c
+deleted: sha256:ee02922712d69eb069387d09e991b472d18148c9614ac0a83bf36c479f851cd1
+deleted: sha256:dc14a73fbaeef04188e53918037b517bcf0d2cd8aca008431cc0ec15e1bf199a
 
 Total reclaimed space: 0B
-==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Tue Apr 14 08:40:01 AM UTC 2026
+==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Tue Apr 14 06:27:15 PM UTC 2026

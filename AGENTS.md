@@ -4,15 +4,16 @@
 
 ## Paths
 
-- `src/lib/` — domain logic (decay, verdict, seals, batting average, OG image layouts)
-- `src/lib/design-tokens.ts` — server-side color mirror for Satori OG renderer
+- `src/lib/` — domain logic (decay engine, verdict, seals, batting average, OG images)
 - `src/components/` — UI layer
 - `src/pages/api/` — REST API
-- `src/styles/tokens.css` — design token registry (single source of truth)
-- `scripts/` — dev tooling (`npm run lint:tokens`)
+- `src/styles/` — design system (`tokens.css` is single source of truth)
+- `scripts/` — dev tooling (token lint guard: `npm run lint:tokens`)
+- `cli/` — CLI tools
 
 ## WIP
 
-- Token compliance sweep — 593 remaining rgba() violations across 40+ components
+- Token compliance sweep — Tier 1 guard locked (8 files); ~530 violations in Tier 2+ (next: AuditReceipt, VerdictResolutionPanel, SealCeremony)
 - Sitemap restructure — merge /predictions→/verdict, /track-record→/author/[slug]
 - Blog detail surgery — consolidate bottom zones into single "Conviction Record" card
+- Nav simplification — reduce to 2 primary links (posts, verdict)

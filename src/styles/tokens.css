@@ -110,6 +110,7 @@
   --text-xs:   0.72rem;   /* 11.5px — nav links, badges, meta */
   --text-sm:   0.82rem;   /* 13.1px — card excerpts, secondary body */
   --text-base: 1rem;      /* 16px   — primary body copy */
+  --text-prose: 1.1rem;   /* 17.6px — long-form reading: post body, articles */
   --text-lg:   1.25rem;   /* 20px   — card titles */
   --text-xl:   1.5rem;    /* 24px   — section headings */
   --text-2xl:  2rem;      /* 32px   — hero batting % */
@@ -176,7 +177,7 @@
 
   /* Hover — card invited upward, warmth intensifies */
   --shadow-card-hover:
-    0 12px 40px color-mix(in oklch, var(--clr-amber-400) 28%, transparent),
+    0 14px 48px color-mix(in oklch, var(--clr-amber-400) 28%, transparent),
     0 2px  8px  rgba(0, 0, 0, 0.4);
 
   /* Fading — glow retreating; still warm but dimming (Tanya §3.1 — missing token filled) */
@@ -250,8 +251,8 @@
     0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* ── Shadow Primitive Tokens (consumed by fresh shadow + revival ring) ── */
-  --shadow-fresh-y:      8px;
-  --shadow-fresh-spread: 32px;
+  --shadow-fresh-y:      10px;
+  --shadow-fresh-spread: 40px;
   --shadow-fresh-alpha:  0.22;
 
   /* ── Motion Tokens (seal ceremony + microinteractions) ─────────────── */
@@ -548,6 +549,12 @@
   --atm-glow-color:    transparent;           /* risen revival bloom              */
   --atm-bloom-color:   var(--keep-accent);    /* bloom particle color per stage   */
 
+  /* ── Temporal Band Tokens — feed spacing as information (Mike §4) ──── */
+  /* Fresh posts get room to breathe. Archival posts compress like old columns. */
+  --band-gap-now:      var(--space-8);        /* 32px — fresh, generous           */
+  --band-gap-recent:   var(--space-4);        /* 16px — tightening, aging         */
+  --band-gap-archive:  var(--space-2);        /* 8px  — dense archival column     */
+
   /* ── Batting Average Trophy Tier Tokens ─────────────────────────────────── */
   /* Single source for all trophy-tier colors — chip, hero, and API all branch  */
   /* on TrophyTier; each tier maps to exactly one token. Zero hardcoding.        */
@@ -604,18 +611,10 @@
   --gold-hover:        color-mix(in oklch, var(--gold) 14%, transparent);
   --gold-deep:         color-mix(in oklch, var(--gold) 75%, oklch(30% 0.10 55));
 
-  /* ── Motion Tier Tokens (Tanya §MotionChoreography — token audit) ────────── */
-  /* snap=micro, flow=ambient, drift=slow mood, ceremony=one-shot active.       */
-  /* Referenced throughout seal-ceremony.css + SealCeremony.astro but          */
-  /* previously undefined — CSS was silently falling back to no transition.     */
-  --motion-snap-duration:     120ms;           /* micro snap: dot hover, button state */
-  --motion-snap-easing:       ease-in-out;
-  --motion-flow-duration:     300ms;           /* phase transitions, panel changes    */
-  --motion-flow-easing:       ease;
-  --motion-drift-duration:    600ms;           /* slow ambient: atmosphere tints      */
-  --motion-drift-easing:      ease-in-out;
-  --motion-ceremony-duration: 600ms;           /* one-shot active: stamp, receipt     */
-  --motion-ceremony-easing:   cubic-bezier(0.34, 1.56, 0.64, 1);  /* spring */
+  /* ── Motion Tier Tokens — SINGLE SOURCE: motion.css ──────────────────────── */
+  /* snap / flow / drift / ceremony / spring profiles all live in motion.css.  */
+  /* Removed duplicate declarations that conflicted with motion.css values.    */
+  /* Fix: Tanya §8 motion token conflict audit · Sid 2026-04-14               */
 
   /* ── Score Dot Click Timing (Tanya §10.1 — spring fill on click) ──────────── */
   --motion-duration-dot-click: 200ms;          /* spring fill; upgrades fast(150ms) */
@@ -677,9 +676,39 @@
   --stage-ghost-title-weight:          400;
   --stage-fossil-title-weight:         400;
 
+  /* ── Stage Visual Profiles — each stage is a "material", not a slider position ── */
+  /* Mike §2: "Tokens follow --stage-{stage}-{property}."                           */
+  /* Fresh = glass-like, elevated. Fossil = flat paper.                              */
+
+  /* Shadow elevation per stage — fresh floats; fossil lies flat */
+  --stage-fresh-shadow-y:              10px;
+  --stage-fresh-shadow-spread:         4px;
+  --stage-fading-shadow-y:             6px;
+  --stage-fading-shadow-spread:        2px;
+  --stage-endangered-shadow-y:         3px;
+  --stage-endangered-shadow-spread:    1px;
+  --stage-ghost-shadow-y:              1px;
+  --stage-ghost-shadow-spread:         0px;
+  --stage-fossil-shadow-y:             0px;
+  --stage-fossil-shadow-spread:        0px;
+
+  /* Stage border width (fresh = defined; fossil = barely held together) */
+  --stage-fresh-border-width:          1px;
+  --stage-ghost-border-style:          dashed;     /* structural decay */
+  --stage-fossil-border-style:         dotted;     /* barely held together */
+  --stage-fossil-letter-spacing:       0.02em;     /* slight spread = archival typesetting */
+
+  /* Endangered saturation override — token replaces hardcoded filter value */
+  --stage-endangered-saturation:       0.3;
+
   /* Endangered pulse timing — 0.5 Hz (2s period): visible urgency, not alarm */
   --stage-endangered-pulse-dur:        2s;
   --stage-endangered-pulse-ease:       ease-in-out;
+
+  /* Urgency glow intensity — urgency via brightness, not speed (Mike §3) */
+  --urgency-glow-intensity-warning:    0.15;
+  --urgency-glow-intensity-critical:   0.35;
+  --urgency-glow-intensity-final:      0.60;
 
   /* Stage-aware border radius — life = roundness; death = angular stone. Tanya §3.2.
      "As a post loses life, it loses its roundness. It becomes a tombstone."

@@ -117,7 +117,7 @@ const decayStage = stageAttr(post.decay);
     overflow: hidden;
     padding: 0;                         /* cover image bleeds edge-to-edge */
     border-radius: var(--radius-card, var(--radius, 12px));
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--surface-raised);
     border: 1px solid color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 6%, transparent);
     max-width: 40rem;
     margin: 0 auto 1.25rem;
@@ -166,7 +166,7 @@ const decayStage = stageAttr(post.decay);
         var(--atm-bloom-color, var(--keep-accent))
         max(2%, calc((0.12 - var(--decay-factor, 0) * 0.08) * 100%)),
         transparent),
-      rgba(0, 0, 0, 0.15)
+      oklch(0% 0 0 / 0.15)
     );
     /* Concentric with card top corners — same token as .cover-wrap */
     border-radius: var(--radius-card, 12px) var(--radius-card, 12px) 0 0;

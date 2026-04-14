@@ -1,0 +1,71 @@
+/* src/styles/surfaces.css
+ * Shared glass-morphism & surface utility classes.
+ * Replaces per-component backdrop-filter + rgba() boilerplate.
+ *
+ * Rule: every glass/translucent surface must use one of these classes.
+ *       Component <style> adds border, shadow, radius — not the glass itself.
+ *
+ * Three tiers: subtle (4px blur), medium (8px), strong (12px).
+ * Token source: tokens.css --surface-* primitives.
+ *
+ * Architecture: Michael Koch · UX: Tanya Donska · Impl: Sid 2026-04-14
+ */
+
+/* ── Glass Tiers ───────────────────────────────────────────── */
+/* Subtle: raised cards, filter bars, light overlays           */
+.surface-glass-subtle {
+  background: var(--surface-raised);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Medium: nav bar, drawer backdrops, overlay panels           */
+.surface-glass-medium {
+  background: var(--surface-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Strong: modals, ceremony panels, pact panel                 */
+.surface-glass-strong {
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Opaque Surfaces (no blur — data clarity) ──────────────── */
+/* Raised: feed cards, chips, badges — slight white lift        */
+.surface-card {
+  background: var(--surface-raised);
+}
+
+/* Inset: textareas, confirm blocks — recessed well            */
+.surface-well {
+  background: var(--surface-inset);
+}
+
+/* Deep inset: code blocks, hash display — deeply recessed     */
+.surface-well-deep {
+  background: var(--surface-inset-deep);
+}
+
+/* ── Panel Surface (near-opaque + strong blur) ─────────────── */
+/* Pact panels, popover dialogs — high opacity, not pure glass */
+.surface-panel {
+  background: var(--surface-modal);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Reduced Motion ────────────────────────────────────────── */
+/* backdrop-filter triggers compositing layers — disable for   */
+/* users who prefer reduced motion (performance benefit).      */
+@media (prefers-reduced-motion: reduce) {
+  .surface-glass-subtle,
+  .surface-glass-medium,
+  .surface-glass-strong,
+  .surface-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

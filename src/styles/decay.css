@@ -16,13 +16,15 @@
 
 .decay-card {
   opacity: var(--decay-opacity, 1);
+  /* Continuous aging via perceptual curve: --decay-perceptual drives all visual deltas.
+     Mike §1: perceptual easeInQuad front-loads freshness, makes aging dramatic. */
   filter:
     blur(var(--decay-blur, 0px))
     saturate(var(--decay-saturation, 1))
-    sepia(var(--decay-sepia, 0));  /* 0 → 0.15 at full fossil; Tanya §4.5 */
+    sepia(var(--decay-sepia, 0));  /* 0 → 0.35 at full fossil; widened from 0.15 */
   /* Shadow uses atmosphere bloom color — joins the cascade (Mike §2, Tanya §1.2) */
   box-shadow:
-    0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
+    0 var(--decay-shadow-y, 10px) var(--decay-shadow-spread, 40px)
     color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent, oklch(80% 0.22 80))) calc(var(--decay-shadow-alpha, 0.22) * 100%), transparent),
     0 2px 8px oklch(0% 0 0 / 0.12),
     inset 0 1px 0 oklch(100% 0 0 / calc(0.08 * var(--decay-opacity, 1)));
@@ -34,12 +36,26 @@
     border-radius var(--motion-duration-deliberate) var(--motion-easing-standard),
     transform     var(--motion-spring-duration)   var(--motion-spring-easing);
   transform: translateY(0);
-  /* Calcification: fresh=20px organic → fossil=4px stone. Tanya §1.3 expanded range.
-     --decay-factor is 0 (fresh) → 1 (fossil), set by decay-engine JS per card.
-     calc(20px − factor × 16px): 0→20px, 0.5→12px, 0.875→6px, 1→4px.          */
-  --card-computed-radius: calc(20px - var(--decay-factor, 0) * 16px);
+  /* Tanya §1: continuous radius interpolation: 14px→8px, smooth per-tick.
+     --decay-factor is 0 (fresh) → 1 (fossil), set by decay-engine JS per card. */
+  --card-computed-radius: calc(14px - var(--decay-factor, 0) * 6px);
   border-radius: var(--card-computed-radius);
-  will-change: transform, box-shadow;
+  will-change: transform, box-shadow, filter;
+}
+
+/* ── Discrete stage material overrides (border style communicates structure) ── */
+/* Layered on continuous filters — two systems, not one (Mike §2). */
+.decay-card[data-decay-stage="ghost"] {
+  --card-title-weight: var(--stage-ghost-title-weight);
+  border-style: var(--stage-ghost-border-style, dashed);
+  border-color: color-mix(in oklch, var(--color-decay-ghost) 8%, transparent);
+}
+
+.decay-card[data-decay-stage="fossil"] {
+  --card-title-weight: var(--stage-fossil-title-weight);
+  letter-spacing: var(--stage-fossil-letter-spacing);
+  border-style: var(--stage-fossil-border-style, dotted);
+  border-color: color-mix(in oklch, var(--color-decay-fossil) 5%, transparent);
 }
 
 /* Aging grain overlay — noise texture via SVG.
@@ -194,7 +210,7 @@
 @keyframes stage-ring-flash {
   0% {
     box-shadow:
-      0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
+      0 var(--decay-shadow-y, 10px) var(--decay-shadow-spread, 40px)
         color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) calc(var(--decay-shadow-alpha, 0.22) * 100%), transparent),
       0 2px 8px oklch(0% 0 0 / 0.12),
       inset 0 1px 0 oklch(100% 0 0 / calc(0.08 * var(--decay-opacity, 1)));
@@ -207,7 +223,7 @@
   }
   100% {
     box-shadow:
-      0 var(--decay-shadow-y, 8px) var(--decay-shadow-spread, 32px)
+      0 var(--decay-shadow-y, 10px) var(--decay-shadow-spread, 40px)
         color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) calc(var(--decay-shadow-alpha, 0.22) * 100%), transparent),
       0 2px 8px oklch(0% 0 0 / 0.12),
       inset 0 1px 0 oklch(100% 0 0 / calc(0.08 * var(--decay-opacity, 1)));
@@ -219,6 +235,29 @@
   0%   { opacity: 0; }
   20%  { opacity: var(--flash-tint-peak, 0.10); }
   100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * TEMPORAL BAND SPACING — feed as temporal landscape (Mike §6)
+ * Fresh posts get room to breathe. Archival posts compress.
+ * "The user physically scrolls faster through old content" — Mike §4.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+[data-time-band="now"]     { --band-gap: var(--band-gap-now, var(--space-8));  }
+[data-time-band="recent"]  { --band-gap: var(--band-gap-recent, var(--space-4)); }
+[data-time-band="archive"] { --band-gap: var(--band-gap-archive, var(--space-2)); }
+
+[data-time-band] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--band-gap, var(--space-4));
+}
+
+/* Subtle separator between temporal bands — border marks the passage of time */
+[data-time-band] + [data-time-band] {
+  border-top: 1px solid var(--border-faint);
+  padding-top: var(--space-8);
+  margin-top: var(--space-8);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

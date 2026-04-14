@@ -144,55 +144,86 @@ export function decayFactorWithCount(
 }
 
 // ---------------------------------------------------------------------------
-// Visual mappings — continuous, not bucketed
+// Perceptual curve — the single most impactful change (Mike §1)
 // ---------------------------------------------------------------------------
 
-/** Opacity: 1.0 (fresh) → 0.35 (ancient). Never invisible. */
-export function opacityFromDecay(f: number): number {
-  return Math.max(0.35, 1 - f * 0.65);
-}
+/** All valid decay stage identifiers. */
+export type DecayStage =
+  | 'fresh' | 'fading' | 'endangered' | 'ghost' | 'fossil';
 
-/** Blur in px: 0 (fresh) → 1.5 (ancient). */
-export function blurFromDecay(f: number): number {
-  return +(f * 1.5).toFixed(2);
-}
-
-/** Saturation multiplier: 1.0 (fresh) → 0.6 (ancient). */
-export function saturationFromDecay(f: number): number {
-  return +(1 - f * 0.4).toFixed(2);
-}
-
-/** Shadow Y-offset: 8px (fresh) → 0 (ancient). */
-export function shadowYFromDecay(f: number): number {
-  return +((1 - f) * 8).toFixed(1);
-}
-
-/** Shadow spread: 32px (fresh) → 0 (ancient). */
-export function shadowSpreadFromDecay(f: number): number {
-  return +((1 - f) * 32).toFixed(1);
-}
-
-/** Shadow opacity: 0.18 (fresh) → 0 (ancient). */
-export function shadowAlphaFromDecay(f: number): number {
-  return +((1 - f) * 0.18).toFixed(3);
-}
-
-/** Sepia tint: 0 (fresh) → 0.15 (ancient). Vintage age tone — Tanya §4.5. */
-export function sepiaFromDecay(f: number): number {
-  return +(f * 0.15).toFixed(3);
+/**
+ * easeInQuad: front-loads visual freshness, accelerates aging.
+ * At f=0.3 → 0.09 (still 91% fresh). At f=0.7 → 0.49 (dramatic).
+ * Layered on top of logarithmic time compression → double front-loading.
+ */
+export function perceptualFactor(f: number): number {
+  return f * f;
 }
 
 /**
- * Grain overlay opacity per Tanya §3 staged spec.
- * Staged — not continuous — to give each band a clearly distinct visual identity.
- * Stage 1 (0–0.2): invisible. Stage 2 (0.2–0.4): faint. … Stage 5 (0.8–1.0): dense.
+ * Classify raw decay factor into a discrete stage.
+ * Thresholds match DecayCard.astro stageAttr() and heartbeat orchestrator.
+ */
+export function stageFromFactor(f: number): DecayStage {
+  if (f >= 0.97) return 'fossil';
+  if (f >= 0.75) return 'ghost';
+  if (f >= 0.50) return 'endangered';
+  if (f >= 0.25) return 'fading';
+  return 'fresh';
+}
+
+// ---------------------------------------------------------------------------
+// Visual mappings — perceptual curve widens contrast between stages
+// All visual functions accept RAW factor; they apply perceptual internally.
+// Mike §1: "the mapping function should use easeInQuad curve (not linear)"
+// ---------------------------------------------------------------------------
+
+/** Opacity: 1.0 (fresh) → 0.25 (fossil). Never invisible. */
+export function opacityFromDecay(f: number): number {
+  return Math.max(0.25, 1 - perceptualFactor(f) * 0.75);
+}
+
+/** Blur in px: 0 (fresh) → 2.5 (fossil). */
+export function blurFromDecay(f: number): number {
+  return +(perceptualFactor(f) * 2.5).toFixed(2);
+}
+
+/** Saturation multiplier: 1.0 (fresh) → 0.15 (fossil). */
+export function saturationFromDecay(f: number): number {
+  return +(1 - perceptualFactor(f) * 0.85).toFixed(2);
+}
+
+/** Shadow Y-offset: 10px (fresh) → 0 (fossil). */
+export function shadowYFromDecay(f: number): number {
+  return +((1 - perceptualFactor(f)) * 10).toFixed(1);
+}
+
+/** Shadow spread: 40px (fresh) → 0 (fossil). */
+export function shadowSpreadFromDecay(f: number): number {
+  return +((1 - perceptualFactor(f)) * 40).toFixed(1);
+}
+
+/** Shadow opacity: 0.22 (fresh) → 0 (fossil). */
+export function shadowAlphaFromDecay(f: number): number {
+  return +((1 - perceptualFactor(f)) * 0.22).toFixed(3);
+}
+
+/** Sepia tint: 0 (fresh) → 0.35 (fossil). Bold aging signal. */
+export function sepiaFromDecay(f: number): number {
+  return +(perceptualFactor(f) * 0.35).toFixed(3);
+}
+
+/**
+ * Grain overlay opacity — staged with steeper curve for drama.
+ * Mike §1: "fossils should look textured."
+ * Grain is staged (not continuous) — each band is a distinct material.
  */
 export function grainFromDecay(f: number): number {
   if (f < 0.2) return 0;
-  if (f < 0.4) return 0.04;
-  if (f < 0.6) return 0.09;
-  if (f < 0.8) return 0.14;
-  return 0.18;
+  if (f < 0.4) return 0.02;
+  if (f < 0.6) return 0.08;
+  if (f < 0.8) return 0.16;
+  return 0.25;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +270,7 @@ export interface DecayCSSVars {
   '--decay-sepia': string;
   '--decay-grain': string;
   '--decay-factor': string;
+  '--decay-perceptual': string;
   '--decay-shadow-y': string;
   '--decay-shadow-spread': string;
   '--decay-shadow-alpha': string;
@@ -253,6 +285,7 @@ export function decayCSSVars(factor: number): DecayCSSVars {
     '--decay-sepia':         String(sepiaFromDecay(factor)),
     '--decay-grain':         String(grainFromDecay(factor)),
     '--decay-factor':        factor.toFixed(4),
+    '--decay-perceptual':    perceptualFactor(factor).toFixed(4),
     '--decay-shadow-y':      `${shadowYFromDecay(factor)}px`,
     '--decay-shadow-spread': `${shadowSpreadFromDecay(factor)}px`,
     '--decay-shadow-alpha':  String(shadowAlphaFromDecay(factor)),
@@ -344,21 +377,27 @@ export function decayEngineClientScript(): string {
   function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
   function rdg(s){return Math.min(.15,Math.log(s/30+1)*.04)}
   function df(p,n,r,s,cv){var m=CM[cv]||1;return Math.max(0,Math.min(1,(n-p)/DAY/M)*m-rb(r)-rdg(s))}
+  function pf(f){return f*f}
+  function stg(f){return f>=.97?'fossil':f>=.75?'ghost':f>=.5?'endangered':f>=.25?'fading':'fresh'}
+  function grn(f){return f<.2?'0':f<.4?'.02':f<.6?'.08':f<.8?'.16':'.25'}
   function patch(el,n){
     if(el.hasAttribute('data-bloom-lock'))return;
     var r=+(el.dataset.revivalCount||'0');
     var s=+(el.dataset.readingSeconds||'0');
     var cv=el.dataset.conviction||'unaudited';
     var f=df(new Date(el.dataset.pubDate).getTime(),n,r,s,cv);
-    el.style.setProperty('--decay-opacity',Math.max(.35,1-f*.65));
-    el.style.setProperty('--decay-blur',(f*1.5).toFixed(2)+'px');
-    el.style.setProperty('--decay-saturation',(1-f*.4).toFixed(2));
-    el.style.setProperty('--decay-sepia',(f*.15).toFixed(3));
-    el.style.setProperty('--decay-grain',f<.2?'0':f<.4?'.04':f<.6?'.09':f<.8?'.14':'.18');
+    var p=pf(f);
+    el.style.setProperty('--decay-opacity',Math.max(.25,1-p*.75));
+    el.style.setProperty('--decay-blur',(p*2.5).toFixed(2)+'px');
+    el.style.setProperty('--decay-saturation',(1-p*.85).toFixed(2));
+    el.style.setProperty('--decay-sepia',(p*.35).toFixed(3));
+    el.style.setProperty('--decay-grain',grn(f));
     el.style.setProperty('--decay-factor',f.toFixed(4));
-    el.style.setProperty('--decay-shadow-y',((1-f)*8).toFixed(1)+'px');
-    el.style.setProperty('--decay-shadow-spread',((1-f)*32).toFixed(1)+'px');
-    el.style.setProperty('--decay-shadow-alpha',((1-f)*.18).toFixed(3));
+    el.style.setProperty('--decay-perceptual',p.toFixed(4));
+    el.style.setProperty('--decay-shadow-y',((1-p)*10).toFixed(1)+'px');
+    el.style.setProperty('--decay-shadow-spread',((1-p)*40).toFixed(1)+'px');
+    el.style.setProperty('--decay-shadow-alpha',((1-p)*.22).toFixed(3));
+    var ns=stg(f);if(el.dataset.decayStage!==ns){el.dataset.decayStage=ns}
   }
   function tick(){
     if(!paused){var n=Date.now();if(n-lastTick>=TICK){lastTick=n;
@@ -426,11 +465,23 @@ export function _testDecayEngine(): void {
   const f1 = decayFactor('2025-04-05', 365, new Date('2026-04-05'));
   console.assert(f1 === 1, `1-year: expected 1, got ${f1}`);
 
-  // Visual mappings
+  // Perceptual curve
+  console.assert(perceptualFactor(0) === 0, 'perceptual 0');
+  console.assert(perceptualFactor(1) === 1, 'perceptual 1');
+  console.assert(perceptualFactor(0.5) === 0.25, 'perceptual 0.5');
+
+  // Stage classification
+  console.assert(stageFromFactor(0) === 'fresh', 'stage 0');
+  console.assert(stageFromFactor(0.3) === 'fading', 'stage 0.3');
+  console.assert(stageFromFactor(0.6) === 'endangered', 'stage 0.6');
+  console.assert(stageFromFactor(0.8) === 'ghost', 'stage 0.8');
+  console.assert(stageFromFactor(0.98) === 'fossil', 'stage 0.98');
+
+  // Visual mappings (perceptual curve applied internally)
   console.assert(opacityFromDecay(0) === 1, 'fresh opacity');
-  console.assert(opacityFromDecay(1) === 0.35, 'fossil opacity');
+  console.assert(opacityFromDecay(1) === 0.25, 'fossil opacity');
   console.assert(blurFromDecay(0) === 0, 'fresh blur');
-  console.assert(shadowYFromDecay(0) === 8, 'fresh shadow y');
+  console.assert(shadowYFromDecay(0) === 10, 'fresh shadow y');
   console.assert(shadowSpreadFromDecay(1) === 0, 'fossil spread');
 
   // Time bands
@@ -457,14 +508,14 @@ export function _testDecayEngine(): void {
   console.assert(readingBonus(30) > 0, 'one interval has bonus');
   console.assert(readingBonus(30) < 0.08, 'one interval below cap');
 
-  // Sepia + grain + factor
+  // Sepia + grain + factor (widened ranges)
   console.assert(sepiaFromDecay(0) === 0, 'fresh sepia');
-  console.assert(sepiaFromDecay(1) === 0.15, 'fossil sepia');
+  console.assert(sepiaFromDecay(1) === 0.35, 'fossil sepia');
   console.assert(grainFromDecay(0.1) === 0, 'stage1 grain=0');
-  console.assert(grainFromDecay(0.3) === 0.04, 'stage2 grain');
-  console.assert(grainFromDecay(0.5) === 0.09, 'stage3 grain');
-  console.assert(grainFromDecay(0.7) === 0.14, 'stage4 grain');
-  console.assert(grainFromDecay(0.9) === 0.18, 'stage5 grain');
+  console.assert(grainFromDecay(0.3) === 0.02, 'stage2 grain');
+  console.assert(grainFromDecay(0.5) === 0.08, 'stage3 grain');
+  console.assert(grainFromDecay(0.7) === 0.16, 'stage4 grain');
+  console.assert(grainFromDecay(0.9) === 0.25, 'stage5 grain');
 
   // CSS vars
   const css = decayCSSVars(0.5);
@@ -472,6 +523,7 @@ export function _testDecayEngine(): void {
   console.assert(css['--decay-grain'] === String(grainFromDecay(0.5)), 'css grain');
   console.assert(css['--decay-sepia'] === String(sepiaFromDecay(0.5)), 'css sepia');
   console.assert(css['--decay-factor'] === (0.5).toFixed(4), 'css factor');
+  console.assert(css['--decay-perceptual'] === perceptualFactor(0.5).toFixed(4), 'css perceptual');
 
   // Style string
   const style = decayStyleString(0);
@@ -498,8 +550,10 @@ export function _testDecayEngine(): void {
   const script = decayEngineClientScript();
   console.assert(script.includes('choreo-pending'), 'has choreography');
   console.assert(script.includes('requestAnimationFrame'), 'has RAF loop');
-  console.assert(script.includes('data-conviction'), 'IIFE reads data-conviction');
+  console.assert(script.includes('dataset.conviction'), 'IIFE reads dataset.conviction');
   console.assert(script.includes("'still-true':.7"), 'IIFE has conviction map');
+  console.assert(script.includes('decay-perceptual'), 'IIFE emits perceptual');
+  console.assert(script.includes('decayStage'), 'IIFE updates stage attr');
 
   // Conviction multiplier
   console.assert(convictionMultiplier(null) === 1.0, 'null → baseline 1.0');
