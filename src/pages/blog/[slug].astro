@@ -17,7 +17,6 @@ import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
 import GhostEchoes from '../../components/GhostEchoes.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import KeepButton from '../../components/KeepButton.astro';
-import StanceDrawer from '../../components/StanceDrawer.astro';
 import StickyStanceBar from '../../components/StickyStanceBar.astro';
 import DecayClock from '../../components/DecayClock.astro';
 import PredictionCard from '../../components/PredictionCard.astro';
@@ -258,11 +257,8 @@ const jsonLd      = [
 
   <PostNav nav={nav} />
 
-  <!-- StanceDrawer: slides up 800ms after revival to capture reader stance (Mike's arch spec) -->
-  <StanceDrawer slug={post.slug} />
-
   <!-- StickyStanceBar: fixed bottom bar, surfaces at 50% read depth.
-       Shows live stance distribution; lets readers vote inline or via StanceDrawer. -->
+       Shows live stance distribution; lets readers vote inline (desktop + mobile). -->
   <StickyStanceBar
     slug={post.slug}
     dist={stanceDist ?? { agree: 0, torn: 0, disagree: 0, total: 0 }}

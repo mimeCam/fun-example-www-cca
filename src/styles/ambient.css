@@ -1,14 +1,14 @@
 /* src/styles/ambient.css
- * Consolidated ambient visual system — presence breathing + first-visit UX.
- * Merged: presence.css + first-visit.css (Tanya §12 CSS consolidation)
+ * Consolidated ambient visual system — presence breathing.
+ * First-visit UX removed (Tanya §2: self-teaching homepage replaces it).
  *
- * Token compliance: --mood-accent token restored in tokens.css (oklch 72% 0.09 55).
+ * Token compliance: --mood-accent token in tokens.css (oklch 72% 0.09 55).
  * All rgba(var(--mood-accent-rgb, ...)) patterns replaced with color-mix().
  *
  * 3 files. 3 concerns. Clean:
  *   decay.css   → all decay-related visual rules
  *   revival.css → all revival + bloom visual rules
- *   ambient.css → presence breathing, first-visit choreography
+ *   ambient.css → presence breathing, reading pulse
  */
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -55,61 +55,6 @@
   100% {
     box-shadow: 0 0 0 16px color-mix(in oklch, var(--mood-accent) 0%, transparent);
   }
-}
-
-/* ═══════════════════════════════════════════════════════════════════
- * FIRST-VISIT CLARITY — visual overrides for new visitors
- * ═══════════════════════════════════════════════════════════════════ */
-
-/* Quiet mode — wider opacity range (0.3–1.0 vs 0.5–1.0) */
-.fvh-quiet .decay-card {
-  --decay-opacity: max(0.30, calc(1 - var(--decay-factor, 0) * 0.70));
-  filter:
-    blur(calc(var(--decay-factor, 0) * 2px))
-    saturate(calc(1 - var(--decay-factor, 0) * 0.55));
-}
-
-/* Suppress shimmer for new visitors */
-.fvh-quiet .shimmer-overlay {
-  display: none;
-}
-
-/* Sharpen shadow steps — flat cards look truly flat */
-.fvh-quiet .decay-card {
-  box-shadow:
-    0 calc((1 - var(--decay-factor, 0)) * 8px)
-      calc((1 - var(--decay-factor, 0)) * 24px)
-    color-mix(in oklch, var(--mood-accent) calc((1 - var(--decay-factor, 0)) * 22%), transparent),
-    0 1px 4px oklch(0 0 0 / 0.10);
-}
-
-/* Demo glow — CSS-only visual hint on most-decayed card. Not a real revival. */
-.fvh-demo-glow {
-  animation: demo-glow 2s ease-in-out forwards;
-}
-
-@keyframes demo-glow {
-  0% {
-    box-shadow:
-      0 2px 8px  color-mix(in oklch, var(--mood-accent) 6%, transparent),
-      0 1px 3px oklch(0 0 0 / 0.10);
-  }
-  40% {
-    box-shadow:
-      0 6px 20px color-mix(in oklch, var(--mood-accent) 20%, transparent),
-      0 3px 10px oklch(0 0 0 / 0.12);
-    opacity: 0.85;
-    filter: blur(0.3px) saturate(0.85);
-  }
-  100% {
-    box-shadow:
-      0 2px 8px  color-mix(in oklch, var(--mood-accent) 6%, transparent),
-      0 1px 3px oklch(0 0 0 / 0.10);
-  }
-}
-
-.fvh-demo-done {
-  animation: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -167,14 +112,4 @@
   /* Reading pulse */
   .pulse-dot { animation: none; opacity: 0.3; }
   #reading-pulse { transition: none; }
-
-  .fvh-demo-glow {
-    animation: demo-glow-reduced 1.5s ease-in-out forwards;
-  }
-
-  @keyframes demo-glow-reduced {
-    0%   { opacity: var(--decay-opacity, 0.4); }
-    40%  { opacity: 0.8; }
-    100% { opacity: var(--decay-opacity, 0.4); }
-  }
 }

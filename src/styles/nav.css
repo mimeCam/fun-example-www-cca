@@ -1,12 +1,12 @@
 /* src/styles/nav.css
  * Navigation — single source of truth for all nav styles.
- * Migrated from SiteNav.astro inline <style> block (was a design-system violation).
- * Overflow pill added: community · leaderboard · now collapse at ≤ 768 px.
+ * Two primary links: posts + verdict. Overflow pill removed.
+ * Leaderboard, community, now accessible from footer only.
  *
  * Token compliance: zero raw values — all colours, spacing, radius, motion
  * reference tokens.css + motion.css. Run `npm run lint:tokens` before ship.
  *
- * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-12
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-16 nav simplification
  */
 
 /* ── Nav container ─────────────────────────────────────────────────────── */
@@ -23,8 +23,6 @@
   background: var(--surface-overlay);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
-  /* Tanya §12: nav needs depth separation from the page.
-     Hairline gives crisp edge; soft drop gives ~2px perceived lift. */
   box-shadow:
     0 1px 0 var(--border-subtle),
     var(--shadow-nav);
@@ -59,20 +57,31 @@
   transition: color var(--motion-snap-duration) var(--motion-snap-easing);
   padding-bottom: 2px;
   border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 .nav-link:hover { color: var(--text-secondary); }
 
-/* Active page: amber underline — conviction gold is the active signal */
+/* Active page: secondary text underline — gold reserved for conviction (Tanya §3) */
 .nav-link--active,
 .site-name.nav-link--active {
   color: var(--text-secondary);
-  border-bottom-color: var(--gold);
+  border-bottom-color: var(--text-secondary);
 }
 
-/* Contested signal: 4 px amber underline on verdict link (Tanya §2) */
+/* Contested signal: amber dot next to verdict text (Tanya §6) */
 .nav-link--contested {
-  border-bottom: 4px solid var(--gold-dim);
-  padding-bottom: 0;
+  border-bottom-color: transparent;
+}
+
+.nav-contested-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-decay-endangered);
+  flex-shrink: 0;
+  animation: nav-breathe var(--presence-pulse-dur) ease-in-out infinite;
 }
 
 /* ── Right cluster: batting chip + presence ───────────────────────────── */
@@ -135,7 +144,7 @@
 .batting-chip--weak .batting-pct,
 .batting-chip--weak .batting-check                { color: var(--text-tertiary); }
 
-/* Gold atmosphere pulse — seal ceremony (Tanya §17) */
+/* Gold atmosphere pulse — seal ceremony */
 [data-atmosphere="gold"] .batting-chip {
   animation: gold-breathe 3s ease-in-out infinite;
   border-color: var(--gold-border-strong);
@@ -168,7 +177,6 @@
   transform: translateY(0);
   transition-delay: 300ms;
 }
-/* Hide instantly on mouse-leave — no delay (Tanya §17 fix 1) */
 .batting-chip:not(:hover) .batting-tooltip { transition-delay: 0ms; }
 
 /* ── Presence indicator ────────────────────────────────────────────────── */
@@ -187,11 +195,10 @@
   height: var(--presence-dot-size);
   border-radius: 50%;
   background: var(--mood-accent);
-  /* Keyframe lives in motion.css — nav-breathe */
   animation: nav-breathe var(--presence-pulse-dur) ease-in-out infinite;
 }
 
-/* Ghost chip — cold state (Tanya §17 fix 4) */
+/* Ghost chip — cold state */
 .batting-chip--ghost {
   font-size: var(--text-xs);
   font-family: var(--font-mono);
@@ -203,92 +210,6 @@
   letter-spacing: 0.06em;
   user-select: none;
   opacity: 0.45;
-}
-
-/* ── Overflow pill trigger ─────────────────────────────────────────────── */
-/* Hidden above 768 px — visible only when overflow links are folded.      */
-/* Shape mirrors batting chip: same radius, same padding, same border.     */
-
-.nav-overflow-trigger {
-  display: none;    /* shown via media query below */
-  align-items: center;
-  justify-content: center;
-  padding: 4px var(--space-3);
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--gold-border);
-  background: var(--gold-bg);
-  color: var(--text-tertiary);
-  font-size: var(--text-base);
-  letter-spacing: 0.08em;
-  line-height: 1;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background  var(--motion-snap-duration) var(--motion-snap-easing),
-    border-color var(--motion-snap-duration) var(--motion-snap-easing),
-    color        var(--motion-snap-duration) var(--motion-snap-easing);
-}
-.nav-overflow-trigger:hover {
-  background: var(--surface-hover);
-  color: var(--text-secondary);
-}
-
-/* Active: current page lives in overflow set — gold underline on pill */
-.nav-overflow-trigger--active {
-  border-bottom: 2px solid var(--gold);
-  color: var(--text-secondary);
-}
-
-/* Open state: warm surface signals "open menu" */
-.nav-overflow-trigger[aria-expanded="true"] {
-  background: var(--surface-hover);
-  border-color: var(--gold-border-strong);
-  color: var(--text-secondary);
-}
-
-/* ── Overflow dropdown panel ───────────────────────────────────────────── */
-/* [hidden] = SSR default / JS-closed state. JS removes attribute to open. */
-/* Animation targets :not([hidden]) — triggers immediately after display.  */
-
-.nav-overflow-dropdown {
-  position: absolute;
-  top: calc(100% + var(--space-2));
-  right: var(--space-6);
-  min-width: 160px;
-  background: var(--surface-overlay);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-e3);
-  z-index: var(--z-tooltip);
-  overflow: hidden;
-}
-.nav-overflow-dropdown[hidden] { display: none; }
-.nav-overflow-dropdown:not([hidden]) {
-  animation: dropdown-enter var(--motion-flow-duration) var(--motion-flow-easing) forwards;
-}
-
-/* Dropdown nav links — block layout, full width */
-.nav-overflow-dropdown .nav-link {
-  display: block;
-  width: 100%;
-  padding: var(--space-2) var(--space-4);
-  border-bottom: none;
-  border-radius: 0;
-  color: var(--text-secondary);
-  box-sizing: border-box;
-}
-.nav-overflow-dropdown .nav-link:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-}
-.nav-overflow-dropdown .nav-link--active {
-  color: var(--gold);
-  background: var(--gold-bg);
-  border-bottom: none;
-  border-left: 2px solid var(--gold);
 }
 
 /* ── Erosion bar (blog post pages only) ───────────────────────────────── */
@@ -328,35 +249,15 @@
   50%       { box-shadow: var(--shadow-chip), 0 0 16px var(--gold-glow); }
 }
 
-/* Dropdown slide-in — FLOW profile (200 ms) */
-@keyframes dropdown-enter {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
-/* Collapse overflow links into pill at 768 px (was 640 — P0 fix, Mike §4) */
-@media (max-width: 768px) {
-  .nav-link--community,
-  .nav-link--overflow { display: none; }
-
-  .nav-overflow-trigger { display: flex; }
-
-  /* Site nav needs relative positioning for dropdown absolute offset */
-  .site-nav { position: sticky; }
-}
-
-/* Compact padding at 640 px — pill remains visible, no items hidden here */
+/* Compact padding at 640 px */
 @media (max-width: 640px) {
   .site-nav { padding: 0 var(--space-4); gap: var(--space-3); }
   .nav-link { font-size: var(--text-2xs); }
   .batting-check   { display: none; }
   .batting-tooltip { display: none; }
   .batting-chip    { padding: 4px var(--space-2); }
-
-  /* Dropdown aligns to right edge with tighter gutter */
-  .nav-overflow-dropdown { right: var(--space-4); }
 }
 
 /* Accessibility: honour reduce-motion by killing all animations */
@@ -364,6 +265,5 @@
   .presence-dot            { animation: none; opacity: 0.6; }
   .presence-indicator      { transition: none; }
   .erosion-bar             { transition: none; }
-  .nav-overflow-trigger    { transition: none; }
-  .nav-overflow-dropdown:not([hidden]) { animation: none; opacity: 1; }
+  .nav-contested-dot       { animation: none; opacity: 0.85; }
 }

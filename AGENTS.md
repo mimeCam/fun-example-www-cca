@@ -12,7 +12,7 @@
 
 ## WIP
 
-- Token compliance sweep — Tier 1 guard locked (8 files); ~531 violations remain (next: AuditReceipt, VerdictResolutionPanel, SealCeremony)
-- Sitemap restructure — merge /predictions→/verdict, /track-record→/author/[slug]
+- Token compliance sweep — Tier 1 guard locked (7 files clean); ~516 violations remain (next: SiteNav, BattingAverageHero, SealCeremony, DecayCard)
+- Homepage hero — BattingAverageHero as Zone 1 above the feed (warm/cold states)
 - Blog detail surgery — consolidate bottom zones into single "Conviction Record" card
-- Nav simplification — reduce to 2 primary links (posts, verdict)
+- EndangeredFeed refactor — reuse EndangeredCard component instead of inline markup

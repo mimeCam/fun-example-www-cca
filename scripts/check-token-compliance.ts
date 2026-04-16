@@ -59,7 +59,6 @@ const GUARD_FILES = new Set([
   "src/components/EndangeredCard.astro",
   "src/components/EndangeredBand.astro",
   "src/components/TombstoneCard.astro",
-  "src/components/LandingHero.astro",
   "src/components/RiverFilter.astro",
   "src/styles/surfaces.css",
 ]);

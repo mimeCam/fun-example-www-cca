@@ -1,16 +1,15 @@
 ---
 // src/components/SiteNav.astro
-// Sticky nav — logo · posts · verdict (always) + overflow pill at ≤768 px.
-// Overflow pill collapses: community · leaderboard · now into ··· button.
+// Sticky nav — logo · posts · verdict (two primary links).
 // Batting chip right-aligned; ghost text "0 bets sealed" when cold.
 // Presence dot only — text/count removed (dot alone is the signal).
 // Erosion bar retained on blog post detail pages only.
 //
-// Overflow pill (P0 fix): nav.css + nav-overflow.ts — Mike §P0, Tanya §2.
-// Presence elements use same IDs as old PresenceBand — presence-unified.ts
-// hydrates them automatically.
+// Nav simplification (Tanya §6, AGENTS.md WIP): leaderboard, community, now
+// are accessible from footer. Two primary links: posts + verdict.
+// Overflow pill removed — no secondary links in nav.
 //
-// Credits: Tanya (UX spec §17, §2), Michael Koch (architect), Elon (P0 nav fix)
+// Credits: Tanya (UX spec §6 nav simplification), Michael Koch (architect)
 
 import '../styles/nav.css';
 import { getActivePage, type PageId } from '../lib/nav';
@@ -22,7 +21,7 @@ const path       = Astro.url.pathname;
 const pageId     = getActivePage(path);
 const isBlogPost = pageId === 'blog';
 
-// Verdict link gets amber underline when any living post is contested (Tanya §2).
+// Verdict link gets amber dot when any living post is contested (Tanya §6).
 let hasContested = false;
 try {
   const allDists = getAllStanceDistributions();
@@ -35,12 +34,6 @@ const presenceScope = isBlogPost ? 'slug' : 'global';
 // Batting chip — hide entirely when cold (no resolved verdicts yet).
 const avgRaw  = computeBattingAverage();
 const avgLive = avgRaw.status === 'live' && avgRaw.total > 0 ? avgRaw : null;
-
-// Overflow pill — active when current page is one of the collapsed links.
-// Primary nav: posts · verdict · leaderboard (Tanya §2 — 3 links, no exceptions).
-// Demoted: community (→ river filter pill + footer), now (→ footer).
-const OVERFLOW_PAGES: PageId[] = ['community', 'now'];
-const isOverflowActive = OVERFLOW_PAGES.includes(pageId);
 
 function chipMod(pct: number): string {
   if (pct >= 80) return 'batting-chip--strong';
@@ -70,61 +63,13 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
       ]}
     >
       verdict
+      {hasContested && pageId !== 'verdict' && (
+        <span class="nav-contested-dot" aria-label="Contested verdicts" />
+      )}
     </a>
-    <a href="/leaderboard" class:list={['nav-link', pageId === 'leaderboard' && 'nav-link--active']}>
-      leaderboard
-    </a>
-    <!-- community + now demoted to overflow only (Tanya §2: 3 primary links) -->
-    <a href="/community" class:list={['nav-link nav-link--overflow', pageId === 'community' && 'nav-link--active']}>
-      community
-    </a>
-    <a href="/now" class:list={['nav-link nav-link--overflow', pageId === 'now' && 'nav-link--active']}>
-      now
-    </a>
-  </div>
-
-  <!-- Overflow pill — left of right cluster, right of primary links.     -->
-  <!-- Visible only at ≤768 px via CSS. Double-presence pattern:          -->
-  <!-- community/leaderboard/now live in both the primary strip (CSS-     -->
-  <!-- hidden) AND here (JS-controlled). SSR renders both; CSS + JS       -->
-  <!-- decide visibility. Active state computed server-side. (Mike §2)    -->
-  <button
-    class:list={[
-      'nav-overflow-trigger',
-      isOverflowActive && 'nav-overflow-trigger--active',
-    ]}
-    aria-expanded="false"
-    aria-haspopup="menu"
-    aria-label="More pages"
-    data-nav-overflow-trigger
-  >···</button>
-
-  <div
-    class="nav-overflow-dropdown"
-    role="menu"
-    aria-label="More pages"
-    hidden
-    data-nav-overflow-dropdown
-  >
-    <a
-      href="/community"
-      role="menuitem"
-      class:list={['nav-link', pageId === 'community' && 'nav-link--active']}
-    >community</a>
-    <a
-      href="/leaderboard"
-      role="menuitem"
-      class:list={['nav-link', pageId === 'leaderboard' && 'nav-link--active']}
-    >leaderboard</a>
-    <a
-      href="/now"
-      role="menuitem"
-      class:list={['nav-link', pageId === 'now' && 'nav-link--active']}
-    >now</a>
   </div>
 
   <!-- Right cluster: batting chip + presence dot — always right-aligned -->
-  <!-- Cold state: ghost chip hints the mechanism exists (Tanya §9.1) -->
   <div class="nav-right">
     {!avgLive && (
       <span
@@ -155,11 +100,3 @@ const chipLabel = avgLive ? `${avgLive.pct}% of sealed bets held true` : '';
 
   {isBlogPost && <div class="erosion-bar" aria-hidden="true" />}
 </nav>
-
-<script>
-  // Initialise overflow pill controller + re-init after Astro view transitions.
-  // Controller lives in nav-overflow.ts — thin orchestration only here.
-  import { initNavOverflow } from '../lib/client/nav-overflow';
-  initNavOverflow();
-  document.addEventListener('astro:after-swap', initNavOverflow);
-</script>

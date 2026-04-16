@@ -1,52 +1,32 @@
-# Commit Report — v120 · 2026-04-16
+# Commit Report — 2026-04-16
 
-**Committed by:** history-keeper agent
+## What landed
 
-## What shipped
+Layer cleanup sprint: six heavyweight overlay components deleted, nav condensed,
+homepage opens directly with the river feed. Build verified clean via deploy.sh.
 
-LandingHero completely reworked into a live mortality demo. Instead of rendering
-a static ~68% decayed post, the hero now starts fresh and runs the full 0→100-day
-lifecycle in ~10 real seconds, then loops — a visceral first impression of the
-core decay mechanic.
+### Deleted surface area
+- `src/components/LandingHero.astro` + `src/styles/landing-hero.css` + `src/lib/client/landing-hero.ts`
+- `src/components/OnboardingOverlay.astro` + `src/lib/client/onboarding.ts` + `src/pages/api/onboarding-dismiss.ts`
+- `src/components/StanceDrawer.astro`
+- `src/components/ConvictionDemo.astro`
+- `src/components/BattingUnlockCeremony.astro` (merged into BattingAverageUnlockCeremony)
+- `src/components/FirstVisitHint.astro` + `src/lib/firstVisitHint.ts`
 
-Key additions (no new dependencies, all token-compliant):
-- **Accelerated timeline** — `TIME_SCALE` constant compresses 100 demo-days into
-  10 real seconds; auto-resets after a 3 s fossil pause
-- **Stage transition flash** — edge-triggered `.hero--threshold-cross` class fires
-  a brief background burst at each stage boundary
-- **Hold progress ring** — conic-gradient arc around the KEEP button, driven by
-  `--hold-progress` via RAF in `startHoldRing()`
-- **Day counter** — live "Day X / 100" → "Day 100 — entombed" text below the bar
-- **Hero tagline** — two-line staggered fade-in ("Everywhere else… / Here, they
-  have to earn it.")
-- **Fossil gravity** — card sinks to scale(0.96) + inset shadow; title bars fade
-  to disabled opacity
-- Reduced-motion guards expanded; static snapshot locked at endangered stage
+### What changed
+- **SiteNav** — two primary links (posts + verdict); amber contested dot replaces underline; overflow pill gone; leaderboard/community/now in footer only
+- **StickyStanceBar** — absorbed StanceDrawer mobile flow; "Weigh in →" expands vote group inline; listens for `stance:prompt` event post-revival
+- **Homepage** — river feed is Zone 1; no hero demo, no ConvictionStrip noise
+- **ambient.css** — fvh-* first-visit rules purged
+- **nav.css** — overflow pill styles removed; contested dot styles added
+- **revival-counter.ts** — comment updated: StickyStanceBar is now the `stance:prompt` listener
+- **check-token-compliance.ts** — LandingHero removed from guard list (file deleted)
+- **deploy.sh** — v121 changelog entry added
 
-## Files changed
-
-| File | Role |
-|------|------|
-| `src/components/LandingHero.astro` | SSR always-fresh; new HTML elements |
-| `src/lib/client/landing-hero.ts` | TIME_SCALE, ring RAF, resetCycle, day counter |
-| `src/pages/index.astro` | hero constants simplified to 0 / 'fresh' |
-| `src/styles/landing-hero.css` | tagline, ring, day counter, fossil, flash keyframes |
-| `deploy.sh` | v120 architecture notes appended |
-| `deployment.log` | fresh deploy log (container live at :7100) |
-| `AGENTS.md` | trimmed to tech stack + paths + WIP only |
-
-## House-keeping
-
-- `AGENTS.md` Done section removed — not relevant for future coders, WIP items
-  are what matters
-- No stray artifact files found (no test scripts, screenshots, or debug HTML)
-- `_reports/from-odwell-runner-shell-executor-42.md` — deployment log from
-  teammate Odwell's runner (shell executor #42); content mirrored in
-  `deployment.log`, folder is gitignored
+### Metrics
+- Client JS modules: 26 → 21
+- Token violations: 531 → 516
 
 ## Credits
-
-Thanks to **Odwell** (runner shell executor #42) for the deployment log that
-confirmed the build, guard check, and container health. Architecture notes in
-`deploy.sh` credited Mike Koch (arch) and Tanya Donska (UX §4) per existing
-source attributions.
+Teammate deployment log: `_reports/from-odwell-runner-shell-executor-17.md` — confirmed clean build & live container.
+UX spec refs throughout: Tanya (§1–§6 simplification mandate), Michael Koch (architecture).

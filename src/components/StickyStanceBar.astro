@@ -3,11 +3,11 @@
 // Sticky stance bar — position:fixed bottom overlay.
 // Surfaces at 50% article read depth via a single IntersectionObserver on a sentinel.
 // Shows live agree/torn/disagree distribution; lets readers vote inline (desktop)
-// or via StanceDrawer dispatch (mobile ≤639px).
+// or via expand-to-vote (mobile ≤639px) — StanceDrawer absorbed into this component.
 // Observer fires exactly once — no battery drain, no repeated triggers.
 // Reuses window.__heartbeatES SSE connection (same pattern as TensionBadge).
 //
-// Credits: Mike (napkin plan §StickyStanceBar), Tanya (UX spec §StickyStanceBar)
+// Credits: Mike (napkin plan §StickyStanceBar), Tanya (UX spec §StickyStanceBar §2 merge)
 
 import type { StanceDistribution } from '../lib/stance-ledger';
 
@@ -88,7 +88,7 @@ const hasVotes    = dist.total > 0;
       <button class="ssb-vote-btn ssb-vote-btn--disagree" data-vote="disagree" type="button" aria-label="Disagree with this post"><span class="ssb-glyph" aria-hidden="true">◇</span><span>Dis</span></button>
     </div>
 
-    <!-- Mobile: single CTA dispatches stance:prompt to open StanceDrawer -->
+    <!-- Mobile: single CTA expands inline vote buttons (StanceDrawer absorbed) -->
     <button class="ssb-weigh-in" id="ssb-weigh-in" type="button">Weigh in →</button>
 
     <!-- Voted chip: replaces vote group after cast; hidden until vote recorded -->
@@ -120,7 +120,7 @@ const hasVotes    = dist.total > 0;
   if (!bar) return;
 
   const slug        = bar.dataset.slug ?? '';
-  const SESS_KEY    = `stance:${slug}`;       // shared with StanceDrawer guard
+  const SESS_KEY    = `stance:${slug}`;       // session guard — prevents re-vote
   const LOC_KEY     = `stance-${slug}`;       // shared with DisputeChallenge guard
   const DISMISS_KEY = `ssb-dismissed:${slug}`;
 
@@ -274,7 +274,7 @@ const hasVotes    = dist.total > 0;
   }
 
   function persistVote(stance: string): void {
-    setSession(SESS_KEY, '1');  // tells StanceDrawer: already voted this session
+    setSession(SESS_KEY, '1');  // already voted this session
     setLocal(LOC_KEY, stance);  // tells DisputeChallenge: stance is recorded
   }
 
@@ -380,21 +380,33 @@ const hasVotes    = dist.total > 0;
 
   document.getElementById('ssb-dismiss')?.addEventListener('click', dismiss);
 
-  document.getElementById('ssb-weigh-in')?.addEventListener('click', () =>
-    document.dispatchEvent(new CustomEvent('stance:prompt', { detail: { slug } }))
-  );
+  // Mobile "Weigh in →" expands the vote group inline (StanceDrawer absorbed)
+  document.getElementById('ssb-weigh-in')?.addEventListener('click', () => {
+    const group   = document.getElementById('ssb-vote-group');
+    const weighIn = document.getElementById('ssb-weigh-in');
+    if (group)   { group.classList.add('ssb-vote-group--mobile'); group.hidden = false; }
+    if (weighIn) weighIn.hidden = true;
+  });
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
   placeSentinel();
   watchSentinel();
   subscribeSSE();
+
+  // Auto-show on stance:prompt (fired 800ms after revival by revival-counter.ts).
+  // Replaces StanceDrawer trigger — bar surfaces immediately after KeepButton click.
+  document.addEventListener('stance:prompt', (e: Event) => {
+    const detail = (e as CustomEvent<{ slug: string }>).detail;
+    if (detail.slug !== slug) return;
+    showBar();
+  });
 })();
 </script>
 
 <style>
   /* ── Shell: position:fixed bottom overlay ─────────────────────────────── */
-  /* z-sticky (40) keeps it below StanceDrawer (z-drawer: 50) and nav (z-nav: 10) */
+  /* z-sticky (40) — below nav (z-nav: 10) — sole bottom overlay after StanceDrawer removal */
   .ssb {
     position: fixed;
     bottom: 0;
@@ -703,7 +715,7 @@ const hasVotes    = dist.total > 0;
     background: var(--surface-hover);
   }
 
-  /* ── Mobile (≤639px): 44px height, hide desktop buttons ──────────────── */
+  /* ── Mobile (≤639px): 44px height, CTA expands vote group ───────────── */
   @media (max-width: 639px) {
     .ssb {
       height: 44px;
@@ -711,7 +723,8 @@ const hasVotes    = dist.total > 0;
       padding: 0 var(--space-4);
     }
 
-    .ssb-vote-group  { display: none; }
+    .ssb-vote-group  { display: none; }  /* hidden until "Weigh in →" clicked */
+    .ssb-vote-group--mobile { display: flex; }  /* expanded state */
     .ssb-weigh-in    { display: flex; }
     .ssb-live-label  { display: none; } /* keep dot, drop "LIVE" label */
     .ssb-counts      { display: none; } /* bar is the data; counts crowd mobile */

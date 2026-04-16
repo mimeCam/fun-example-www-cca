@@ -4,6 +4,53 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v121 — Layer Cleanup & UI Simplification (2026-04-16)
+#   Sprint: Major surface-area reduction — deleted six heavyweight overlay
+#     components (LandingHero, OnboardingOverlay, StanceDrawer, ConvictionDemo,
+#     BattingUnlockCeremony, FirstVisitHint) and their associated CSS/TS modules.
+#     Homepage now starts directly with the river feed. Blog detail reduced from
+#     4 overlay surfaces to 2 (nav + StickyStanceBar). BattingUnlockCeremony
+#     deduplicated into BattingAverageUnlockCeremony on author pages. SiteNav
+#     condensed to 2 primary links; leaderboard/community/now moved to footer.
+#     StickyStanceBar absorbs the former StanceDrawer mobile flow inline.
+#     Client bundle shrunk: 26 → 21 JS modules. Token violations: 531 → 516
+#     (removed components carried ~15 violations apiece).
+#   Deleted files:
+#     src/components/LandingHero.astro
+#     src/components/OnboardingOverlay.astro
+#     src/components/StanceDrawer.astro
+#     src/components/ConvictionDemo.astro
+#     src/components/BattingUnlockCeremony.astro
+#     src/components/FirstVisitHint.astro
+#     src/lib/client/landing-hero.ts
+#     src/lib/client/onboarding.ts
+#     src/lib/firstVisitHint.ts
+#     src/styles/landing-hero.css
+#     src/pages/api/onboarding-dismiss.ts
+#   Modified files:
+#     src/components/SiteNav.astro — condensed to Posts + Verdict links; amber
+#       dot signals contested signal; overflow nav pills removed.
+#     src/components/StickyStanceBar.astro — absorbs StanceDrawer mobile flow;
+#       "Weigh in →" expands inline vote buttons.
+#     src/components/BattingProgressRing.astro — minor cleanup.
+#     src/layouts/BaseLayout.astro — OnboardingOverlay + FirstVisitHint imports
+#       and usages removed.
+#     src/pages/index.astro — LandingHero + ConvictionStrip sections removed;
+#       river feed now Zone 1.
+#     src/pages/blog/[slug].astro — StanceDrawer integration replaced by
+#       expanded StickyStanceBar inline flow.
+#     src/pages/author/[slug].astro — minor cleanup.
+#     src/styles/ambient.css — first-visit hint styles (fvh-*) purged.
+#     src/styles/nav.css — overflow pill styles removed; nav condensed.
+#     src/lib/revival-counter.ts — minor cleanup.
+#     scripts/check-token-compliance.ts — LandingHero removed from guard list.
+#     AGENTS.md — WIP updated: cleanup sprint marked Done; BattingAverageHero
+#       and EndangeredFeed refactor listed as next targets.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v120).
+#
 # Architecture v120 — LandingHero "5-Second Mortality" Demo (2026-04-16)
 #   Sprint: LandingHero completely reworked into an animated demo lifecycle that
 #     shows an entire post lifespan (0 → 100 days) in ~10 real seconds, then

@@ -228,7 +228,7 @@ function dispatchRevivalConfirmed(data: RevivalResult): void {
 
 /**
  * Invite the reader to record their stance 800ms after revival confirms.
- * StanceDrawer listens for 'stance:prompt' — keeps the two concerns decoupled.
+ * StickyStanceBar listens for 'stance:prompt' — auto-shows if not yet visible.
  */
 function scheduleStancePrompt(slug: string): void {
   setTimeout(() => {

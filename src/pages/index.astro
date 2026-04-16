@@ -3,8 +3,7 @@
 // Unified Conviction River — one feed, three lifecycle stages.
 // Stage driven by ?stage= URL param (default: 'live'). Zero client state.
 //
-// Zone 1: BattingAverageHero — conviction score above the fold.
-// Zone 2: RiverFilter pills + stage-appropriate cards below the fold.
+// Zone 1: RiverFilter pills + stage-appropriate cards.
 //
 // Stage routing (card polymorphism at the template layer — Mike §Key Design):
 //   live       → DecayCards  (living posts)
@@ -16,7 +15,7 @@
 // GraveyardLedger always receives ALL entombed posts (aggregate, not sliced).
 // API: GET /api/graveyard-page?page=N&pageSize=20
 //
-// Credits: Mike (arch §Unified Feed, §4.1–4.4 napkin plan), Tanya (UX §1 sitemap + §2–3 river)
+// Credits: Mike (arch §Unified Feed), Tanya (UX §1–3 river, §4 layer cleanup)
 
 export const prerender = false;
 
@@ -36,8 +35,6 @@ import type { StageFilter } from '../lib/river-data';
 import { paginate, parsePage } from '../lib/pagination';
 import { decayFactor, timeBand } from '../lib/decay-engine';
 import { daysSince } from '../lib/temporal';
-import LandingHero      from '../components/LandingHero.astro';
-import ConvictionStrip  from '../components/ConvictionStrip.astro';
 import '../styles/river-filter.css';
 
 // ─── Stage param ──────────────────────────────────────────────────────────────
@@ -102,11 +99,6 @@ const STAGE_LABEL: Record<StageFilter, string> = {
   all:        'all posts',
 };
 
-// ─── Hero demo post — LandingHero now starts fresh, accelerates via RAF ──────
-// SSR passes 0 / 'fresh'; client runs the 10-second compressed lifecycle.
-const heroDecay = 0;
-const heroStage = 'fresh';
-
 // ─── JSON-LD ──────────────────────────────────────────────────────────────────
 
 const jsonLd = [serializeJsonLd(buildWebSiteSchema())];
@@ -131,14 +123,7 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
 >
   <script set:html={endangeredClientScript()} />
 
-  {/* Zone 1 — Living Landing Hero: demo post breathes + decays in the first viewport */}
-  {/* Visitor feels posts are alive before reading a single word (Paul Kim / Tanya §4) */}
-  <LandingHero decayProgress={heroDecay} stage={heroStage} />
-
-  {/* ConvictionStrip — Zone 2B (bottom-of-feed) and OnboardingOverlay Step 3.       */}
-  {/* Above-fold removed per Tanya §2: LandingHero owns Zone 1 alone.               */}
-
-  {/* Zone 2 — Unified River Feed */}
+  {/* Unified River Feed — no hero demo, no overlay noise. The feed IS the content. */}
   <main class="feed" id="bets" data-stage={currentStage}>
 
     <h2 class="feed-label">{STAGE_LABEL[currentStage]}</h2>
@@ -215,24 +200,15 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
       <EndangeredBand posts={allEndangered} />
     )}
 
-    {/* Zone 2B — ConvictionStrip: batting average anchor at feed bottom  */}
-    {/* Reinforces killer feature after visitor has scrolled through posts. */}
-    {/* Paul Kim §1: comprehension reinforcement; Mike arch §Zone 2B.       */}
-    <div class="feed-strip-anchor">
-      <ConvictionStrip />
-    </div>
-
   </main>
 </BaseLayout>
 
 <style>
-  /* ── Feed section — Zone 2, below the hero ── */
+  /* ── Feed section ── */
   .feed {
-    padding: 0 1.5rem 4rem;
+    padding: 2.5rem 1.5rem 4rem;
     max-width: 40rem;
     margin: 0 auto;
-    border-top: 1px solid var(--border-subtle);
-    padding-top: 2.5rem;
   }
 
   /* "living bets" — whispered label (Tanya §2) */
@@ -253,13 +229,6 @@ const atmosphere = STAGE_TO_ATMOSPHERE[currentStage];
     padding: var(--space-8) 0;
     margin: 0;
     text-align: center;
-  }
-
-  /* ── ConvictionStrip anchor — Zone 2B separator ── */
-  .feed-strip-anchor {
-    margin-top: var(--space-10);
-    padding-top: var(--space-6);
-    border-top: 1px solid var(--border-subtle);
   }
 
   @media (max-width: 640px) {

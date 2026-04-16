@@ -13,7 +13,6 @@ import moodConfig from '../data/mood.config.json';
 import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import SiteNav from '../components/SiteNav.astro';
-import OnboardingOverlay from '../components/OnboardingOverlay.astro';
 import FrameSchedulerProvider from '../components/FrameSchedulerProvider.astro';
 // Design system: tokens → motion → atmosphere → feature CSS layers
 import '../styles/global.css';
@@ -66,13 +65,6 @@ const {
   disputed = false,
 } = Astro.props;
 const pageUrl = canonicalUrl(Astro.url.pathname);
-
-// Onboarding overlay gate — SSR cookie check.
-// SSR pages: zero HTML emitted for return visitors (cookie set).
-// Prerendered pages: overlay always rendered; onboarding.ts JS handles dismiss via localStorage.
-const onboardingSeen = Astro.cookies.has('onboarding_seen');
-const onboardingForced = Astro.url.searchParams.get('onboarding') === '1';
-const showOnboarding = onboardingForced || !onboardingSeen;
 ---
 
 <!doctype html>
@@ -149,7 +141,6 @@ const showOnboarding = onboardingForced || !onboardingSeen;
     data-verdict-outcome={verdictOutcome}
   >
     <SiteNav />
-    {showOnboarding && <OnboardingOverlay />}
     <slot />
     <footer class="site-footer">
       <nav class="site-footer__links" aria-label="Footer navigation">
