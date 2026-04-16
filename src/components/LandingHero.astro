@@ -9,9 +9,11 @@
 //   stage         — initial stage string, drives data-stage atmosphere + label
 //
 // Client module (landing-hero.ts) takes over after hydration:
-//   · RAF loop updates --decay-progress, --hero-pulse-period, data-stage each tick
-//   · Hold-to-keep: pointer hold 1.2s → triggerBloom → state.createdAt reset
-//   · prefers-reduced-motion: RAF skipped, static snapshot rendered from SSR value
+//   · Accelerated timeline: 0→100 days in ~10s real-time, auto-loops
+//   · Stage transition flash: edge-triggered threshold crossing
+//   · Hold progress ring: conic-gradient fill during pointer hold
+//   · Day counter: live "Day X / 100" below decay bar
+//   · prefers-reduced-motion: static snapshot at endangered stage
 //
 // Credits: Mike Koch (arch §LandingHero), Tanya Donska (UX §4)
 
@@ -25,41 +27,40 @@ interface Props {
 
 const { decayProgress, stage } = Astro.props;
 
-// BPM for initial SSR render — matches bpmFor() in landing-hero.ts
-function ssrBpm(f: number): number {
-  if (f >= 0.97) return 0;
-  if (f >= 0.75) return 22;
-  if (f >= 0.50) return 38;
-  if (f >= 0.25) return 55;
-  return 72;
-}
+// SSR renders a fresh snapshot; client RAF takes over immediately
+const ssrFactor = 0;  // start from fresh
+const ssrStage  = 'fresh';
+const ssrBpm    = 72; // fresh heartbeat
+const pulsePeriod = `${Math.round(60_000 / ssrBpm)}ms`;
 
-const bpm         = ssrBpm(decayProgress);
-const pulsePeriod = bpm > 0 ? `${Math.round(60_000 / bpm)}ms` : '0ms';
-const decayPct    = Math.round(decayProgress * 100);
-
-// Inline critical vars for first paint — RAF will update on next tick
+// Inline critical vars for first paint — RAF updates on next tick
 const inlineVars = [
-  `--decay-progress:${decayProgress.toFixed(3)}`,
+  `--decay-progress:${ssrFactor.toFixed(3)}`,
   `--hero-pulse-period:${pulsePeriod}`,
-  `--stage-index:${['fresh','fading','endangered','ghost','fossil'].indexOf(stage)}`,
+  `--stage-index:0`,
 ].join(';');
 ---
 
 <section
   id="landing-hero"
   class="landing-hero"
-  data-stage={stage}
-  data-decay-progress={decayProgress.toFixed(3)}
+  data-stage={ssrStage}
+  data-decay-progress={ssrFactor.toFixed(3)}
   style={inlineVars}
-  aria-label={`Demo post: ${stage}, ${decayPct}% decayed`}
+  aria-label={`Demo post: ${ssrStage}, 0% decayed`}
 >
+  <!-- Hero tagline: 2-line staggered fade-in -->
+  <p class="hero-tagline" aria-hidden="true">
+    <span class="hero-tagline-line hero-tagline-line--1">Everywhere else, your words haunt the internet forever.</span>
+    <span class="hero-tagline-line hero-tagline-line--2">Here, they have to earn it.</span>
+  </p>
+
   <article class="hero-card" aria-hidden="true">
 
     <!-- Header: pulse dot + stage label -->
     <header class="hero-card-header">
       <span class="hero-card-dot" aria-hidden="true"></span>
-      <span class="hero-card-stage-label">{stage}</span>
+      <span class="hero-card-stage-label">{ssrStage}</span>
     </header>
 
     <!-- Faux title lines — motion IS the explanation (Tanya §4) -->
@@ -75,13 +76,16 @@ const inlineVars = [
         role="progressbar"
         aria-valuemin="0"
         aria-valuemax="100"
-        aria-valuenow={decayPct}
+        aria-valuenow="0"
         aria-label="Decay level"
       ></div>
       <div class="hero-decay-glow" aria-hidden="true"></div>
     </div>
 
-    <!-- Hold-to-keep: landing-hero.ts intercepts via capture listener -->
+    <!-- Day counter: updated every RAF tick -->
+    <span class="hero-day-counter" aria-hidden="true">Day 0 / 100</span>
+
+    <!-- Hold-to-keep with progress ring -->
     <div class="hero-keep-wrap">
       <BloomParticles variant="revival" />
       <button
@@ -90,8 +94,9 @@ const inlineVars = [
         type="button"
         aria-label="Hold to save this post"
       >
+        <span class="hero-hold-ring" aria-hidden="true"></span>
         <span class="hero-keep-icon" aria-hidden="true">&#9829;</span>
-        <span class="hero-keep-label">KEEP</span>
+        <span class="hero-keep-label">hold to keep alive</span>
       </button>
     </div>
 

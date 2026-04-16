@@ -7,13 +7,12 @@
 - `src/lib/` — domain logic (decay engine, verdict, seals, batting average, OG images)
 - `src/components/` — UI layer
 - `src/pages/api/` — REST API
-- `src/styles/` — design system (`tokens.css` is single source of truth)
-- `scripts/` — dev tooling (token lint guard: `npm run lint:tokens`)
+- `src/styles/tokens.css` — design token source of truth (`npm run lint:tokens` guards compliance)
 - `cli/` — CLI tools
 
 ## WIP
 
-- Token compliance sweep — Tier 1 guard locked (8 files); ~530 violations in Tier 2+ (next: AuditReceipt, VerdictResolutionPanel, SealCeremony)
+- Token compliance sweep — Tier 1 guard locked (8 files); ~531 violations remain (next: AuditReceipt, VerdictResolutionPanel, SealCeremony)
 - Sitemap restructure — merge /predictions→/verdict, /track-record→/author/[slug]
 - Blog detail surgery — consolidate bottom zones into single "Conviction Record" card
 - Nav simplification — reduce to 2 primary links (posts, verdict)

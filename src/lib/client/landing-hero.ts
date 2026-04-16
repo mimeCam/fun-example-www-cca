@@ -5,15 +5,23 @@
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const DEMO_MAX_DAYS = 100;   // maxDays that yields ~68% at 45 days (logarithmic formula)
-const DEMO_AGE_DAYS = 45;    // starting demo post age in days
-const HOLD_MS       = 1200;  // hold-to-keep threshold in ms
-const LOG_K         = 0.065; // logarithmic decay curvature (mirrors decay-engine.ts)
-const FOSSIL_THRESH = 0.97;  // above this → fossil (no pulse)
+const DEMO_MAX_DAYS  = 100;   // maxDays for the logarithmic formula
+const DEMO_REAL_SECS = 10;    // 10 real seconds = 100 demo days
+const FOSSIL_PAUSE   = 3000;  // 3s fossil pause before loop reset
+const HOLD_MS        = 1200;  // hold-to-keep threshold in ms
+const LOG_K          = 0.065; // logarithmic decay curvature (mirrors decay-engine.ts)
+const FOSSIL_THRESH  = 0.97;  // above this → fossil (no pulse)
+
+// Time compression: how many demo-ms pass per real-ms
+const TIME_SCALE = (DEMO_MAX_DAYS * 86_400_000) / (DEMO_REAL_SECS * 1000);
 
 const STAGE_NAMES = ['fresh', 'fading', 'endangered', 'ghost', 'fossil'] as const;
 type Stage     = typeof STAGE_NAMES[number];
-type DemoState = { createdAt: Date; maxDays: number };
+type DemoState = {
+  startMs: number;    // real-time when current cycle began
+  maxDays: number;
+  fossilAt: number;   // real-time when fossil was reached (0 = not yet)
+};
 
 // ── Pure math (mirrors decay-engine.ts logarithmicDecay — inlined to avoid server bundle) ──
 
@@ -21,9 +29,10 @@ function logDecay(t: number, max: number): number {
   return Math.log(1 + t * LOG_K) / Math.log(1 + max * LOG_K);
 }
 
-function computeDecay(createdAt: Date, maxDays: number): number {
-  const days = (Date.now() - createdAt.getTime()) / 86_400_000;
-  return Math.min(1, Math.max(0, logDecay(days, maxDays)));
+function computeDecay(state: DemoState): number {
+  const realElapsed = Date.now() - state.startMs;
+  const demoDays = (realElapsed * TIME_SCALE) / 86_400_000;
+  return Math.min(1, Math.max(0, logDecay(demoDays, state.maxDays)));
 }
 
 function stageFor(f: number): Stage {
@@ -50,6 +59,8 @@ function writeHeroVars(el: HTMLElement, f: number, bpm: number, stage: Stage): v
   el.style.setProperty('--hero-pulse-period', period);
   el.style.setProperty('--stage-index',       String(STAGE_NAMES.indexOf(stage)));
   el.dataset.stage = stage;
+  const counter = el.querySelector<HTMLElement>('.hero-day-counter');
+  if (counter) counter.textContent = f >= FOSSIL_THRESH ? 'Day 100 — entombed' : `Day ${Math.round(f * 100)} / 100`;
 }
 
 function updateAriaLabel(el: HTMLElement, f: number, stage: Stage): void {
@@ -67,12 +78,34 @@ function triggerBloom(heroEl: HTMLElement): void {
   setTimeout(() => heroEl.classList.remove('hero--blooming'), 1400);
 }
 
+function resetCycle(state: DemoState): void {
+  state.startMs = Date.now();
+  state.fossilAt = 0;
+}
+
+function startHoldRing(btn: HTMLElement, onDone: () => void): () => void {
+  const t0 = Date.now();
+  const ringEl = btn.querySelector<HTMLElement>('.hero-hold-ring');
+  const tick = () => {
+    const progress = Math.min(1, (Date.now() - t0) / HOLD_MS);
+    if (ringEl) ringEl.style.setProperty('--hold-progress', progress.toFixed(3));
+    if (progress >= 1) { onDone(); return; }
+    btn.dataset.holdRaf = String(requestAnimationFrame(tick));
+  };
+  btn.dataset.holdRaf = String(requestAnimationFrame(tick));
+  return () => {
+    const raf = btn.dataset.holdRaf;
+    if (raf) cancelAnimationFrame(Number(raf));
+    if (ringEl) ringEl.style.setProperty('--hold-progress', '0');
+  };
+}
+
 function buildHoldHandlers(heroEl: HTMLElement, state: DemoState) {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
-  const fire   = () => { state.createdAt = new Date(); triggerBloom(heroEl); timer = null; };
+  let stopRing: (() => void) | null = null;
+  const cancel = () => { stopRing?.(); stopRing = null; };
+  const fire   = () => { cancel(); resetCycle(state); triggerBloom(heroEl); };
   return {
-    onDown:  () => { cancel(); timer = setTimeout(fire, HOLD_MS); },
+    onDown:  () => { cancel(); stopRing = startHoldRing(heroEl, fire); },
     onUp:    cancel,
     onLeave: cancel,
   };
@@ -89,17 +122,34 @@ function wireKeepButton(heroEl: HTMLElement, state: DemoState): void {
 
 // ── RAF loop ──────────────────────────────────────────────────────────────
 
-function rafTick(heroEl: HTMLElement, state: DemoState, loop: { id: number | null }): void {
-  const f     = computeDecay(state.createdAt, state.maxDays);
+function flashStageCross(heroEl: HTMLElement): void {
+  heroEl.classList.add('hero--threshold-cross');
+  setTimeout(() => heroEl.classList.remove('hero--threshold-cross'), 400);
+}
+
+function scheduleFossilReset(state: DemoState): void {
+  if (state.fossilAt) return;
+  state.fossilAt = Date.now();
+  setTimeout(() => resetCycle(state), FOSSIL_PAUSE);
+}
+
+function rafTick(
+  heroEl: HTMLElement, state: DemoState,
+  loop: { id: number | null }, prev: { stage: Stage },
+): void {
+  const f     = computeDecay(state);
   const stage = stageFor(f);
+  if (stage !== prev.stage) { flashStageCross(heroEl); prev.stage = stage; }
+  if (f >= FOSSIL_THRESH && !state.fossilAt) scheduleFossilReset(state);
   writeHeroVars(heroEl, f, bpmFor(f), stage);
   updateAriaLabel(heroEl, f, stage);
-  loop.id = requestAnimationFrame(() => rafTick(heroEl, state, loop));
+  loop.id = requestAnimationFrame(() => rafTick(heroEl, state, loop, prev));
 }
 
 function startLoop(heroEl: HTMLElement, state: DemoState): () => void {
   const loop: { id: number | null } = { id: null };
-  const go   = () => { loop.id = requestAnimationFrame(() => rafTick(heroEl, state, loop)); };
+  const prev: { stage: Stage } = { stage: stageFor(computeDecay(state)) };
+  const go   = () => { loop.id = requestAnimationFrame(() => rafTick(heroEl, state, loop, prev)); };
   const stop = () => { if (loop.id !== null) { cancelAnimationFrame(loop.id); loop.id = null; } };
   document.addEventListener('visibilitychange', () => document.hidden ? stop() : go());
   window.addEventListener('pagehide', stop);
@@ -110,12 +160,11 @@ function startLoop(heroEl: HTMLElement, state: DemoState): () => void {
 // ── Entry point ───────────────────────────────────────────────────────────
 
 function buildDemoState(): DemoState {
-  const offset = Math.round(DEMO_AGE_DAYS * 86_400_000);
-  return { createdAt: new Date(Date.now() - offset), maxDays: DEMO_MAX_DAYS };
+  return { startMs: Date.now(), maxDays: DEMO_MAX_DAYS, fossilAt: 0 };
 }
 
 function runStaticSnapshot(heroEl: HTMLElement): void {
-  const f  = parseFloat(heroEl.dataset.decayProgress ?? '0.68');
+  const f  = 0.68; // static endangered snapshot for no-JS / reduced-motion
   const st = stageFor(f);
   writeHeroVars(heroEl, f, bpmFor(f), st);
   updateAriaLabel(heroEl, f, st);

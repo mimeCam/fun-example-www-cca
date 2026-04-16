@@ -4,6 +4,55 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v120 — LandingHero "5-Second Mortality" Demo (2026-04-16)
+#   Sprint: LandingHero completely reworked into an animated demo lifecycle that
+#     shows an entire post lifespan (0 → 100 days) in ~10 real seconds, then
+#     loops. SSR always renders a fresh snapshot (decay=0, stage="fresh"); the
+#     client RAF loop takes over immediately with TIME_SCALE compression. Key
+#     additions and changes:
+#     Accelerated timeline — DEMO_MAX_DAYS (100) compressed into DEMO_REAL_SECS
+#       (10); TIME_SCALE constant drives all RAF maths. Cycle auto-resets after a
+#       FOSSIL_PAUSE (3 s) at the entombed end.
+#     Stage transition flash — edge-triggered: .hero--threshold-cross class added
+#       on each stage boundary crossing; background-color burst then fades out via
+#       @keyframes hero-threshold-cross.
+#     Hold progress ring — .hero-hold-ring absolutely-positioned conic-gradient
+#       ring around the KEEP button; --hold-progress CSS var animated each RAF
+#       tick via startHoldRing(); mask: radial-gradient reveals only a 3 px arc.
+#     Day counter — .hero-day-counter text element updated every RAF tick; shows
+#       "Day X / 100" live, then "Day 100 — entombed" at fossil threshold.
+#     Hero tagline — two-line .hero-tagline-line stagger fade-in (opacity 0→1,
+#       translateY var(--space-1)→0); line-2 delayed by --motion-flow-duration.
+#     Fossil gravity — [data-stage="fossil"] .hero-card: scale(0.96) + inset deep
+#       shadow; .hero-title-bar fades to --text-disabled opacity.
+#     KEEP button label updated to "hold to keep alive" (Tanya §4 tone parity).
+#     Pulse default period tuned: 833ms (fresh, 72 BPM) replacing old 1578ms.
+#     prefers-reduced-motion: RAF skipped; static snapshot at endangered stage
+#       (fog-of-war effect without any motion).
+#     Token compliance: all new CSS uses design-token vars (zero raw hex/rgba).
+#   Modified files (no new files):
+#     src/components/LandingHero.astro — SSR simplified to always-fresh snapshot;
+#       ssrBpm() + live decay calc removed; hero-tagline block, hero-day-counter
+#       span, hero-hold-ring span, updated KEEP label added.
+#     src/lib/client/landing-hero.ts — DemoState shape replaced (startMs,
+#       fossilAt); TIME_SCALE constant; computeDecay() now operates on real-time
+#       elapsed; writeHeroVars() updates .hero-day-counter text; resetCycle() for
+#       loop; startHoldRing() RAF-driven ring progress replaces setTimeout; hold
+#       handlers updated to use ring instead of plain timer.
+#     src/pages/index.astro — heroDecay/heroStage constants simplified to 0 /
+#       'fresh' (SSR always fresh; client animates).
+#     src/styles/landing-hero.css — hero-tagline + @keyframes hero-tagline-in;
+#       .hero-day-counter; .hero-hold-ring (conic-gradient + mask ring); fossil
+#       gravity (.hero-card scale + title opacity); stage-transition flash
+#       @keyframes hero-threshold-cross; decay-fill default width corrected to 0;
+#       pulse period default corrected to 833ms; reduced-motion guards expanded.
+#     AGENTS.md — WIP updated: LandingHero sprint marked Done; token violation
+#       count corrected to ~531.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v119).
+#
 # Architecture v119 — Decay Perceptual Contrast System + Dockerfile Fix (2026-04-14)
 #   Sprint: Perceptual easeInQuad curve transforms the decay visual pipeline —
 #     front-loads freshness, makes aging dramatically visible. Stage material

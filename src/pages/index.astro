@@ -102,24 +102,10 @@ const STAGE_LABEL: Record<StageFilter, string> = {
   all:        'all posts',
 };
 
-// ─── Hero demo post — synthetic decay state for LandingHero (no DB) ─────────
-// maxDays=100, age=45 days → logarithmic formula yields ~0.68 (endangered).
-// Client module (landing-hero.ts) continues the decay live via RAF.
-
-const HERO_MAX_DAYS = 100;
-const HERO_AGE_DAYS = 45;
-
-function heroStageFor(f: number): string {
-  if (f < 0.25) return 'fresh';
-  if (f < 0.50) return 'fading';
-  if (f < 0.75) return 'endangered';
-  if (f < 0.97) return 'ghost';
-  return 'fossil';
-}
-
-const heroPubDate = new Date(Date.now() - HERO_AGE_DAYS * 86_400_000).toISOString();
-const heroDecay   = decayFactor(heroPubDate, HERO_MAX_DAYS);
-const heroStage   = heroStageFor(heroDecay);
+// ─── Hero demo post — LandingHero now starts fresh, accelerates via RAF ──────
+// SSR passes 0 / 'fresh'; client runs the 10-second compressed lifecycle.
+const heroDecay = 0;
+const heroStage = 'fresh';
 
 // ─── JSON-LD ──────────────────────────────────────────────────────────────────
 
