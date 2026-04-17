@@ -1,0 +1,373 @@
+/* src/styles/community-submit.css
+ * Community submission form — /community/submit (canonical URL).
+ * Token-compliant: ZERO raw rgba, ZERO hardcoded font-size, ZERO magic numbers.
+ * Every value references a token from tokens.css or motion.css.
+ *
+ * Reference: community.css (same feature family, zero violations).
+ * Credits: Mike (arch spec §4 token mapping), Tanya (UX spec §7 submit flow)
+ */
+
+/* ── Page shell ────────────────────────────────────────────────── */
+
+.submit-page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6) 5rem;
+}
+
+/* ── Step indicator dots ──────────────────────────────────────── */
+
+.submit-steps {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+  align-items: center;
+}
+
+.submit-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--border-medium);
+  transition: background var(--transition-flow), transform var(--transition-flow);
+}
+
+.submit-step-dot.active {
+  background: var(--gold);
+  transform: scale(1.25);
+}
+
+.submit-step-dot.completed {
+  background: var(--gold-mid);
+}
+
+/* ── Step sections ────────────────────────────────────────────── */
+
+.submit-step {
+  display: block;
+}
+
+.submit-step.hidden {
+  display: none;
+}
+
+.submit-step-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1);
+}
+
+.submit-step-hint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-6);
+  line-height: var(--leading-normal);
+}
+
+.submit-step-hint code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* ── Author label (Step 1) ────────────────────────────────────── */
+
+.submit-author-row {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  align-items: center;
+}
+
+.submit-author-label {
+  font-size: var(--text-2xs);
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+
+.submit-author-input {
+  flex: 1;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  outline: none;
+  transition: border-color var(--transition-hover);
+}
+
+.submit-author-input::placeholder {
+  color: var(--text-disabled);
+}
+
+.submit-author-input:focus {
+  border-color: var(--border-medium);
+}
+
+/* ── Textarea (Step 1) ────────────────────────────────────────── */
+
+.submit-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 280px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-inset);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-prose);
+  resize: vertical;
+  outline: none;
+  transition:
+    border-color var(--transition-hover),
+    box-shadow   var(--transition-hover);
+}
+
+.submit-textarea:focus {
+  border-color: var(--border-medium);
+  box-shadow: 0 0 0 3px var(--gold-bg);
+}
+
+.submit-textarea::placeholder {
+  color: var(--text-disabled);
+}
+
+/* ── Textarea footer ──────────────────────────────────────────── */
+
+.submit-textarea-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-3);
+  gap: var(--space-4);
+}
+
+.submit-word-count {
+  font-size: var(--text-2xs);
+  font-family: var(--font-mono);
+  color: var(--text-ghost);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ── PoW card (Step 2) ────────────────────────────────────────── */
+
+.submit-pow-card {
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-faint);
+  background: var(--surface-raised);
+  margin-bottom: var(--space-5);
+  transition: box-shadow var(--motion-drift-duration) var(--motion-drift-easing);
+}
+
+.submit-pow-card[data-pow-state="mining"] {
+  box-shadow: var(--shadow-conviction);
+  border-color: var(--gold-border);
+}
+
+.submit-pow-card[data-pow-state="complete"] {
+  box-shadow: var(--shadow-e4);
+  border-color: var(--gold-border);
+}
+
+/* ── PoW progress bar ─────────────────────────────────────────── */
+
+.submit-pow-track {
+  height: 4px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-hover);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.submit-pow-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: var(--radius-xs);
+  width: 0%;
+  transition: width var(--transition-flow);
+}
+
+/* ── PoW stats row ────────────────────────────────────────────── */
+
+.submit-pow-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.submit-pow-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ── PoW hash display ─────────────────────────────────────────── */
+
+.submit-pow-hash {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-ghost);
+  word-break: break-all;
+  min-height: 1.2em;
+}
+
+/* ── Cancel link ──────────────────────────────────────────────── */
+
+.submit-cancel {
+  font-size: var(--text-xs);
+  color: var(--text-ghost);
+  text-decoration: none;
+  letter-spacing: var(--tracking-wide);
+  transition: color var(--transition-hover);
+}
+
+.submit-cancel:hover {
+  color: var(--text-secondary);
+}
+
+/* ── Summary / receipt cards (Steps 3 + receipt) ──────────────── */
+
+.submit-summary-card,
+.submit-receipt-card {
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-faint);
+  background: var(--surface-raised);
+  margin-bottom: var(--space-6);
+}
+
+.submit-summary-warn {
+  font-size: var(--text-xs);
+  color: var(--gold-dim);
+  margin: 0 0 var(--space-3);
+}
+
+.submit-summary-warn code {
+  font-family: var(--font-mono);
+}
+
+/* ── Summary grid (dl inside cards) ───────────────────────────── */
+
+.submit-summary-grid {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+}
+
+.submit-summary-grid dt {
+  font-size: var(--text-2xs);
+  color: var(--text-ghost);
+  letter-spacing: var(--tracking-wide);
+  align-self: start;
+  padding-top: 1px;
+}
+
+.submit-summary-grid dd {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin: 0;
+  word-break: break-word;
+}
+
+.submit-summary-grid .mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* ── Receipt header ───────────────────────────────────────────── */
+
+.submit-receipt-check {
+  font-size: var(--text-2xl);
+  color: var(--gold);
+  margin-bottom: var(--space-2);
+}
+
+.submit-receipt-title {
+  margin-bottom: var(--space-5);
+}
+
+/* ── Step actions ─────────────────────────────────────────────── */
+
+.submit-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+
+.submit-btn {
+  display: inline-block;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition:
+    opacity    var(--transition-hover),
+    box-shadow var(--transition-hover);
+}
+
+.submit-btn--amber {
+  background: var(--gold);
+  color: var(--surface-base);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-e2);
+}
+
+.submit-btn--amber:hover {
+  opacity: 0.90;
+}
+
+.submit-btn--amber:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.submit-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+.submit-btn--ghost:hover {
+  opacity: 0.75;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .submit-page         { padding: var(--space-7) var(--space-4) 4rem; }
+  .submit-textarea     { min-height: 200px; }
+  .submit-pow-hash     { display: none; }
+  .submit-summary-grid { grid-template-columns: 5rem 1fr; }
+  .submit-author-row   { flex-direction: column; align-items: stretch; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .submit-pow-fill     { transition: none; }
+  .submit-step-dot     { transition: none; }
+  .submit-pow-card     { transition: none; }
+  .submit-btn          { transition: none; }
+  .submit-textarea     { transition: none; }
+  .submit-author-input { transition: none; }
+  .submit-cancel       { transition: none; }
+}

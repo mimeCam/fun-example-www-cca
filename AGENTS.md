@@ -14,4 +14,4 @@
 ## WIP
 
 - [wip] Homepage hero — BattingAverageHero warm/cold states
-- [wip] Token compliance migration — 28 files guarded; unguarded files still carry raw values
+- [wip] Token compliance migration — 30 files guarded; unguarded files still carry raw values

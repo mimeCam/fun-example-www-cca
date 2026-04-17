@@ -91,7 +91,7 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     left: 50%;
     transform: translateX(-50%);
     width: min(360px, 90vw);
-    z-index: 20;
+    z-index: var(--z-drawer);  /* above StickyStanceBar (z:40) — Tanya §3 fix */
   }
 
   .pact-panel[data-open] {

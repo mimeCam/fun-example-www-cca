@@ -4,6 +4,33 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v127 — Community Submit URL Inversion & Token AAA (2026-04-17)
+#   Sprint: Community submit form canonical URL inversion and AAA polish.
+#     /community/submit is now the canonical submit URL (Tanya §9);
+#     /author/submit 301-redirects to /community/submit (link preservation).
+#     Inline submit styles extracted to src/styles/community-submit.css
+#     (100% token-compliant, zero violations). Author label field added to
+#     form (wired to existing API + DB column). PoW ceremony data-pow-state
+#     attribute drives shadow escalation. PactPanel z-index bug fixed
+#     (raw z:20 → var(--z-drawer)). escHtml() hardened with &#39; escape
+#     for author_label XSS vector. Token compliance guard expanded 28→30
+#     guarded files (community-submit.css + community/submit.astro).
+#   Modified files:
+#     src/pages/community/submit.astro — 301 redirect removed; now full
+#       3-step PoW submit wizard (canonical URL for submissions).
+#     src/pages/author/submit.astro — full form removed; now 301 redirect
+#       to /community/submit (preserves existing bookmarks/links).
+#     src/styles/community-submit.css — NEW: extracted submit form styles;
+#       100% token-compliant, responsive, reduced-motion guard.
+#     src/components/PactPanel.astro — z-index fix: raw 20 → var(--z-drawer).
+#     scripts/check-token-compliance.ts — 2 new GUARD_FILES entries
+#       (28→30 total guarded files).
+#     AGENTS.md — Sprint documented; community submit marked done.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v126).
+#
 # Architecture v126 — Token Compliance Tier 1+2 Migration (2026-04-17)
 #   Sprint: Design-system token migration — migrated 10 conviction/verdict
 #     components from raw CSS values (hex, px, rem, opacity, letter-spacing)

@@ -91,6 +91,9 @@ const GUARD_FILES = new Set([
   "src/components/VerdictCeremony.astro",
   "src/components/AuditReceipt.astro",
   "src/components/TrackRecord.astro",
+  // Community submit form — token migration complete (Sid 2026-04-17, Mike §4 guard ratchet)
+  "src/styles/community-submit.css",
+  "src/pages/community/submit.astro",
 ]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;

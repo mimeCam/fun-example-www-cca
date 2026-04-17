@@ -1,9 +1,364 @@
 ---
 // src/pages/community/submit.astro
-// 301 redirect to /author/submit — the form lives there until the full rename
-// is completed in a follow-on sprint. Tanya §9: /community/submit is the
-// canonical URL; /author/submit will eventually 301 here, not the other way.
-// TODO: move /author/submit.astro content here and have /author/submit redirect to this page.
+// GET /community/submit — canonical URL (Tanya §9).
+// 3-step browser PoW wizard: paste Markdown → mine hash → confirm + receipt.
+// All heavy lifting is client-side; Web Worker at /pow-worker.js runs off main thread.
+//
+// Token-compliant: styles in community-submit.css (guarded).
+// Credits: Michael Koch (arch spec), Tanya Donska (UX spec §7 submit flow)
 export const prerender = false;
-return Astro.redirect('/author/submit', 301);
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/community-submit.css';
 ---
+
+<BaseLayout title="Submit an Article — Octopoid">
+  <main class="submit-page">
+
+    <!-- Step indicator -->
+    <div class="submit-steps" id="steps" aria-label="Progress" role="list">
+      <span class="submit-step-dot active" data-step="1" role="listitem" aria-current="step"></span>
+      <span class="submit-step-dot"        data-step="2" role="listitem"></span>
+      <span class="submit-step-dot"        data-step="3" role="listitem"></span>
+    </div>
+
+    <!-- ── Step 1: Paste ── -->
+    <section class="submit-step" id="step-1" aria-label="Step 1: Paste your article">
+      <h1 class="submit-step-title">Paste your article</h1>
+      <p class="submit-step-hint">Write in Markdown. Start with <code># Title</code> on the first line.</p>
+
+      <div class="submit-author-row">
+        <label class="submit-author-label" for="author-label">Author</label>
+        <input
+          id="author-label"
+          class="submit-author-input"
+          type="text"
+          maxlength="60"
+          placeholder="anonymous (optional)"
+          aria-label="Author display name"
+        />
+      </div>
+
+      <textarea
+        id="article-input"
+        class="submit-textarea"
+        placeholder="# Your Article Title&#10;&#10;Paste your Markdown here…"
+        rows="18"
+        aria-label="Article content"
+        spellcheck="true"
+      ></textarea>
+
+      <div class="submit-textarea-footer">
+        <span class="submit-word-count" id="word-count" aria-live="polite"></span>
+        <button id="btn-next" class="submit-btn submit-btn--amber" disabled>Next →</button>
+      </div>
+    </section>
+
+    <!-- ── Step 2: Proof of Work ── -->
+    <section class="submit-step hidden" id="step-2" aria-label="Step 2: Computing proof of work">
+      <h1 class="submit-step-title">Computing proof of work</h1>
+      <p class="submit-step-hint">SHA-256 · difficulty 4 · running in background thread</p>
+
+      <div class="submit-pow-card" id="pow-card" data-pow-state="idle">
+        <div class="submit-pow-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pow-progress-role">
+          <div class="submit-pow-fill" id="pow-fill"></div>
+        </div>
+
+        <div class="submit-pow-stats">
+          <span class="submit-pow-stat" id="pow-attempts">0 attempts</span>
+          <span class="submit-pow-stat" id="pow-eta">estimating…</span>
+        </div>
+
+        <div class="submit-pow-hash" id="pow-hash-display" aria-live="off">—</div>
+      </div>
+
+      <a href="#" id="cancel-pow" class="submit-cancel">× Cancel</a>
+    </section>
+
+    <!-- ── Step 3: Confirm ── -->
+    <section class="submit-step hidden" id="step-3" aria-label="Step 3: Confirm and publish">
+      <h1 class="submit-step-title">Ready to publish</h1>
+      <p class="submit-step-hint">Review and confirm. Once published, posts are live immediately.</p>
+
+      <div class="submit-summary-card" id="post-summary" aria-live="polite"></div>
+
+      <div class="submit-actions">
+        <a href="#" id="btn-back" class="submit-btn submit-btn--ghost">← Back</a>
+        <button id="btn-publish" class="submit-btn submit-btn--amber">Publish article</button>
+      </div>
+    </section>
+
+    <!-- ── Receipt ── -->
+    <section class="submit-step hidden" id="step-receipt" aria-label="Published">
+      <div class="submit-receipt-check" aria-hidden="true">✓</div>
+      <h1 class="submit-step-title submit-receipt-title">Published</h1>
+
+      <div class="submit-receipt-card" id="receipt-card" aria-live="polite"></div>
+
+      <div class="submit-actions">
+        <button id="btn-copy-receipt" class="submit-btn submit-btn--ghost">Copy receipt</button>
+        <a href="/community" class="submit-btn submit-btn--amber">View posts →</a>
+      </div>
+    </section>
+
+  </main>
+</BaseLayout>
+
+<script>
+// ── State ─��──────────────────────────────��─────────────────────────────────
+
+interface PoWResult { nonce: number; hash: string; }
+
+let _articleText  = '';
+let _authorLabel  = '';
+let _powResult: PoWResult | null = null;
+let _worker: Worker | null = null;
+
+// ── DOM helpers ────���───────────────────────────────��───────────────────────
+
+function el<T extends HTMLElement>(id: string): T {
+  return document.getElementById(id) as T;
+}
+
+function showStep(stepId: string): void {
+  document.querySelectorAll('.submit-step').forEach(s =>
+    s.classList.add('hidden')
+  );
+  el(stepId).classList.remove('hidden');
+  updateDots(stepId);
+}
+
+function updateDots(stepId: string): void {
+  const num = parseInt(stepId.replace('step-', ''), 10) || 0;
+  document.querySelectorAll('.submit-step-dot').forEach((dot, i) => {
+    dot.classList.toggle('active',    i + 1 === num);
+    dot.classList.toggle('completed', i + 1 < num);
+    const current = i + 1 === num ? 'step' : 'false';
+    dot.setAttribute('aria-current', current);
+  });
+}
+
+// ── Word counter ──────��────────────────────────────────────────────────────
+
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function readTime(words: number): string {
+  const mins = Math.max(1, Math.round(words / 200));
+  return `${mins} min read`;
+}
+
+function refreshWordCount(text: string): void {
+  const wc  = countWords(text);
+  const wEl = el('word-count');
+  wEl.textContent = wc > 0
+    ? `${wc} words · ${readTime(wc)}`
+    : '';
+  (el('btn-next') as HTMLButtonElement).disabled = wc < 50;
+}
+
+// ── Step 1 ───���─────────────────────────────────────────────────────────────
+
+el<HTMLTextAreaElement>('article-input').addEventListener('input', (e) => {
+  refreshWordCount((e.target as HTMLTextAreaElement).value);
+});
+
+el('btn-next').addEventListener('click', () => {
+  _articleText = el<HTMLTextAreaElement>('article-input').value;
+  _authorLabel = el<HTMLInputElement>('author-label').value.trim();
+  startPoW(_articleText);
+  showStep('step-2');
+});
+
+// ─��� Step 2 — PoW ───────────��───────────────────────���───────────────────────
+
+function extractTitle(md: string): string {
+  const m = md.match(/^#\s+(.+)/m);
+  return m ? m[1].trim() : '(untitled)';
+}
+
+function startPoW(text: string): void {
+  stopWorker();
+  const card = el('pow-card');
+  card.setAttribute('data-pow-state', 'mining');
+  _worker = new Worker('/pow-worker.js');
+  _worker.onmessage = handleWorkerMsg;
+  _worker.onerror = (e) => console.error('[pow]', e.message);
+  _worker.postMessage({
+    type: 'start',
+    title: extractTitle(text),
+    body: text,
+  });
+  resetPowDisplay();
+}
+
+function resetPowDisplay(): void {
+  el('pow-fill').style.width = '0%';
+  el('pow-attempts').textContent = '0 attempts';
+  el('pow-eta').textContent = 'estimating…';
+  el('pow-hash-display').textContent = '—';
+}
+
+function handleWorkerMsg(e: MessageEvent): void {
+  const { type, nonce, hash, rate } = e.data;
+  if (type === 'progress') onProgress(nonce, hash, rate);
+  if (type === 'done')     onDone(nonce, hash);
+}
+
+function onProgress(n: number, h: string, rate: number): void {
+  const expected = 65536;
+  const pct = Math.min(98, Math.round((n / expected) * 100));
+  const eta = rate > 0
+    ? `~${Math.ceil((expected - n) / rate)}s remaining`
+    : 'estimating…';
+  el('pow-fill').style.width = `${pct}%`;
+  el('pow-progress-role').setAttribute('aria-valuenow', String(pct));
+  el('pow-attempts').textContent = `${n.toLocaleString()} attempts`;
+  el('pow-eta').textContent = eta;
+  el('pow-hash-display').textContent = h.slice(0, 32) + '…';
+}
+
+function onDone(nonce: number, hash: string): void {
+  _powResult = { nonce, hash };
+  el('pow-fill').style.width = '100%';
+  el('pow-attempts').textContent =
+    `${nonce.toLocaleString()} attempts`;
+  el('pow-eta').textContent = 'complete';
+  el('pow-hash-display').textContent = hash;
+  el('pow-card').setAttribute('data-pow-state', 'complete');
+  stopWorker();
+  setTimeout(() => showConfirm(), 600);
+}
+
+function stopWorker(): void {
+  if (_worker) { _worker.terminate(); _worker = null; }
+}
+
+el('cancel-pow').addEventListener('click', (e) => {
+  e.preventDefault();
+  stopWorker();
+  _powResult = null;
+  el('pow-card').setAttribute('data-pow-state', 'idle');
+  showStep('step-1');
+});
+
+// ── Step 3 — Confirm ────────��──────────────────────────────────────────────
+
+function showConfirm(): void {
+  if (!_powResult) return;
+  const title = extractTitle(_articleText);
+  const words = countWords(_articleText);
+  const noH1  = !_articleText.match(/^#\s+/m);
+
+  el('post-summary').innerHTML = buildSummary(
+    title, words, noH1, _powResult.hash, _authorLabel,
+  );
+  showStep('step-3');
+}
+
+function buildSummary(
+  title: string, words: number, noH1: boolean,
+  hash: string, author: string,
+): string {
+  const warn = noH1
+    ? `<p class="submit-summary-warn">⚠ No <code># Title</code> heading — title will show as "(untitled)".</p>`
+    : '';
+  const authorRow = author
+    ? `<dt>Author</dt><dd>${escHtml(author)}</dd>`
+    : '';
+  return `${warn}
+    <dl class="submit-summary-grid">
+      <dt>Title</dt><dd>${escHtml(title)}</dd>
+      ${authorRow}
+      <dt>Words</dt><dd>${words} · ${readTime(words)}</dd>
+      <dt>PoW hash</dt><dd class="mono">${hash.slice(0, 20)}…</dd>
+    </dl>`;
+}
+
+el('btn-back').addEventListener('click', (e) => {
+  e.preventDefault();
+  showStep('step-1');
+});
+
+el('btn-publish').addEventListener('click', () => publish());
+
+// ── Publish ────────────────────────────────────────────────────────────────
+
+async function publish(): Promise<void> {
+  if (!_powResult) return;
+  const btn = el<HTMLButtonElement>('btn-publish');
+  btn.textContent = 'Publishing…';
+  btn.disabled = true;
+
+  const title = extractTitle(_articleText);
+  const body  = JSON.stringify({
+    title,
+    body: _articleText,
+    author_label: _authorLabel || undefined,
+    pow_nonce: _powResult.nonce,
+    pow_hash:  _powResult.hash,
+  });
+
+  const res = await fetch('/api/submit-post', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    btn.textContent = 'Publish article';
+    btn.disabled = false;
+    alert(`Submission failed: ${data.error ?? 'unknown error'}`);
+    return;
+  }
+  showReceipt(data);
+}
+
+// ── Receipt ────��───────────────────────────────────────────────────────────
+
+interface Receipt {
+  postId: string;
+  title: string;
+  proofHash: string;
+  publishedAt: string;
+}
+
+function showReceipt(data: Receipt): void {
+  const receipt = {
+    postId: data.postId,
+    proofHash: data.proofHash,
+    publishedAt: data.publishedAt,
+  };
+
+  el('receipt-card').innerHTML = buildReceipt(data);
+
+  el('btn-copy-receipt').addEventListener('click', () => {
+    navigator.clipboard?.writeText(
+      JSON.stringify(receipt, null, 2),
+    );
+    el('btn-copy-receipt').textContent = 'Copied ✓';
+  });
+  showStep('step-receipt');
+}
+
+function buildReceipt(d: Receipt): string {
+  return `<dl class="submit-summary-grid">
+    <dt>Title</dt><dd>${escHtml(d.title)}</dd>
+    <dt>Post ID</dt><dd class="mono">${escHtml(d.postId)}</dd>
+    <dt>Proof hash</dt><dd class="mono">${d.proofHash.slice(0, 20)}…</dd>
+    <dt>Published</dt><dd>${new Date(d.publishedAt).toLocaleString()}</dd>
+  </dl>`;
+}
+
+// ── Sanitization ───────────────────────────────────────────────────────────
+
+function escHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+</script>
