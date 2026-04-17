@@ -14,5 +14,4 @@
 ## WIP
 
 - [wip] Homepage hero — BattingAverageHero warm/cold states
-- [wip] EndangeredFeed — reuse EndangeredCard component
-- [wip] Typography migration — 256 warnings in unguarded files
+- [wip] Typography migration — 255 warnings in unguarded files

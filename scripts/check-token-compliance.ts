@@ -62,6 +62,8 @@ const GUARD_FILES = new Set([
   "src/pages/blog/[slug].astro",
   "src/components/EndangeredCard.astro",
   "src/components/EndangeredBand.astro",
+  // EndangeredFeed rewrite — Sid 2026-04-17 (Mike §5 guard ratchet)
+  "src/components/EndangeredFeed.astro",
   "src/components/TombstoneCard.astro",
   "src/components/RiverFilter.astro",
   "src/styles/surfaces.css",

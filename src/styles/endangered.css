@@ -381,6 +381,70 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+ * ENDANGERED FEED — /endangered page layout (composition over duplication)
+ * Feed is a layout shell: header + flex-column cards + empty state.
+ * ALL card rendering delegated to EndangeredCard.astro — zero card CSS here.
+ * Credits: Mike (napkin plan §1 — feed as layout shell)
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.endangered-feed {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
+
+.endangered-feed .feed-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.endangered-feed .feed-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.12em;
+  color: var(--urgency-warning-color);
+  text-transform: uppercase;
+}
+
+.endangered-feed .feed-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-secondary);
+}
+
+.endangered-feed .feed-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.endangered-feed .feed-card-wrap {
+  transition: opacity var(--motion-flow, 200ms) ease;
+}
+
+.endangered-feed .feed-empty {
+  text-align: center;
+  padding: var(--space-16) var(--space-4);
+  color: var(--text-secondary);
+}
+
+.endangered-feed .feed-empty-headline {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-3);
+  color: var(--text-primary);
+}
+
+.endangered-feed .feed-empty-sub {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
  * RESPONSIVE
  * ═══════════════════════════════════════════════════════════════════ */
 

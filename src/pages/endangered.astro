@@ -1,10 +1,37 @@
 ---
 // src/pages/endangered.astro
-// 301 redirect → /?stage=endangered (unified feed).
-// Preserved as a shell so external links and social shares never 404.
-// Credits: Mike (arch §Redirects), Tanya (UX §1 — sitemap surgery)
+// Dedicated endangered triage page — live SSE-powered feed.
+// Distinct from /?stage=endangered (static SSR filter within unified river).
+// This page is the "emergency room" — live updates, 2-phase dismiss, a11y.
+//
+// Credits: Mike (architecture §4 — restore as real page),
+//          Tanya (UX spec §6 — endangered pulse is the brand moment)
 
 export const prerender = false;
 
-return Astro.redirect('/?stage=endangered', 301);
+import { getCollection }      from 'astro:content';
+import BaseLayout             from '../layouts/BaseLayout.astro';
+import EndangeredFeed         from '../components/EndangeredFeed.astro';
+import { allPostDisplayData } from '../lib/postMeta';
+
+const posts        = await getCollection('blog');
+const displayPosts = allPostDisplayData(posts);
+const endangered   = displayPosts.filter(p => p.endangered);
 ---
+
+<BaseLayout
+  title="Endangered Posts — Persona Blog"
+  description="Posts fading from memory. Hold to revive before they die."
+  atmosphere="endangered"
+>
+  <main class="endangered-page">
+    <EndangeredFeed posts={endangered} />
+  </main>
+</BaseLayout>
+
+<style>
+  .endangered-page {
+    padding: var(--space-4) 0;
+    min-height: 60vh;
+  }
+</style>

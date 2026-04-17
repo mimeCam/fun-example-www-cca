@@ -323,6 +323,143 @@ export function endangeredClientScript(): string {
 
 
 // ---------------------------------------------------------------------------
+// Feed client script — SSE consumer for /endangered page
+// Targets canonical EndangeredCard data-* attributes. Zero custom markup.
+// ---------------------------------------------------------------------------
+
+/**
+ * Client IIFE for EndangeredFeed: SSE consumer + live re-sort.
+ * Reuses animateCollapseSnippet() from same module.
+ * Targets .endangered-card[data-slug] (canonical card, not custom markup).
+ */
+export function endangeredFeedScript(): string {
+  return `(function(){
+  var ENDAN=${ENDANGERED_THRESHOLD};
+  var BLOOM_MS=200,COLLAPSE_MS=300;
+  var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var feed=document.getElementById('feed-cards');
+  var countEl=document.getElementById('feed-count');
+  if(!feed)return;
+
+  ${animateCollapseSnippet()}
+
+  function tierSpeed(decay){
+    if(decay>=0.92)return '0.8s';
+    if(decay>=0.85)return '2s';
+    return '4s';
+  }
+  function tierUrgency(decay){
+    if(decay>=0.92)return 'final';
+    if(decay>=0.85)return 'critical';
+    return 'warning';
+  }
+  function erosionPct(decay){
+    var c=Math.min(Math.max(decay,0.80),0.95);
+    return Math.round((1-(c-0.80)/0.15)*100)+'%';
+  }
+  function erosionHue(decay){
+    return (decay>=0.92?0:decay>=0.85?18:38)+'deg';
+  }
+
+  /* Screen-reader announcement */
+  function announce(text){
+    var el=document.createElement('div');
+    el.setAttribute('role','status');
+    el.setAttribute('aria-live','assertive');
+    el.className='sr-only';
+    el.textContent=text;
+    document.body.appendChild(el);
+    setTimeout(function(){el.remove()},3000);
+  }
+
+  /* Phase 1: bloom flash */
+  function bloomCard(card,onDone){
+    card.classList.add('revived-bloom');
+    setTimeout(function(){
+      card.classList.remove('revived-bloom');
+      onDone();
+    },BLOOM_MS);
+  }
+
+  /* Remove wrap from DOM + announce */
+  function removeWrap(wrap,title){
+    if(wrap.parentNode)wrap.parentNode.removeChild(wrap);
+    announce(title+' has been revived');
+    updateCount();
+  }
+
+  /* 2-phase dismiss: bloom → collapse */
+  function dismissWrap(wrap){
+    if(wrap.dataset.dismissing)return;
+    wrap.dataset.dismissing='1';
+    var card=wrap.querySelector('.endangered-card');
+    var title=card?(card.querySelector('.post-title')||{}).textContent||'Post':'Post';
+    if(!card){removeWrap(wrap,title);return;}
+    if(rm){removeWrap(wrap,title);return;}
+    bloomCard(card,function(){
+      animateCollapse(wrap,COLLAPSE_MS,'ease-out',function(){
+        removeWrap(wrap,title);
+      });
+    });
+  }
+
+  /* Update count label from remaining wraps */
+  function updateCount(){
+    if(!countEl)return;
+    var n=feed.querySelectorAll('.feed-card-wrap:not([data-dismissing])').length;
+    countEl.textContent=n+' '+(n===1?'post':'posts')+' at risk';
+    if(n===0){
+      var empty=document.getElementById('feed-empty');
+      if(empty)empty.removeAttribute('hidden');
+    }
+  }
+
+  /* Update card data attrs from SSE payload */
+  function patchCard(wrap,post,order){
+    wrap.style.order=order;
+    var card=wrap.querySelector('.endangered-card');
+    if(!card)return;
+    card.dataset.decayFactor=post.decay.toFixed(4);
+    card.dataset.revivalCount=String(post.revivalCount);
+    card.dataset.urgency=post.urgency;
+    card.style.setProperty('--endangered-pulse-speed',tierSpeed(post.decay));
+    card.style.setProperty('--erosion-pct',erosionPct(post.decay));
+    card.style.setProperty('--erosion-hue',erosionHue(post.decay));
+  }
+
+  /* Process full SSE snapshot */
+  function updateFeed(posts){
+    var seen={};
+    posts.forEach(function(post,i){
+      seen[post.slug]=true;
+      var wrap=feed.querySelector('.feed-card-wrap[data-slug="'+post.slug+'"]');
+      if(!wrap)return;
+      patchCard(wrap,post,i);
+    });
+    /* Dismiss cards no longer in snapshot */
+    var wraps=feed.querySelectorAll('.feed-card-wrap:not([data-dismissing])');
+    for(var j=0;j<wraps.length;j++){
+      if(!seen[wraps[j].dataset.slug])dismissWrap(wraps[j]);
+    }
+    updateCount();
+  }
+
+  /* SSE connection */
+  var es=new EventSource('/api/endangered-sse');
+  es.onmessage=function(e){
+    try{
+      var posts=JSON.parse(e.data);
+      if(!Array.isArray(posts))return;
+      updateFeed(posts);
+    }catch(ex){}
+  };
+  es.onerror=function(){};
+  window.addEventListener('unload',function(){es.close()});
+})();`;
+}
+
+
+// ---------------------------------------------------------------------------
 // Sanity checks
 // ---------------------------------------------------------------------------
 
@@ -399,6 +536,20 @@ export function _testEndangered(): void {
   const collapse = animateCollapseSnippet();
   console.assert(collapse.includes('maxHeight'), 'collapses height');
   console.assert(collapse.includes('transitionend'), 'waits for transition');
+
+  // Feed client script — SSE consumer for /endangered page
+  const feedScript = endangeredFeedScript();
+  console.assert(feedScript.includes('endangered-card'), 'feed targets cards');
+  console.assert(feedScript.includes('feed-cards'), 'feed targets container');
+  console.assert(feedScript.includes('endangered-sse'), 'feed opens SSE');
+  console.assert(feedScript.includes('animateCollapse'), 'feed has collapse');
+  console.assert(feedScript.includes('revived-bloom'), 'feed has bloom phase');
+  console.assert(feedScript.includes('prefers-reduced-motion'), 'feed a11y');
+  console.assert(feedScript.includes('announce'), 'feed announces removals');
+  console.assert(feedScript.includes('erosionPct'), 'feed updates erosion');
+  console.assert(feedScript.includes('data-slug'), 'feed targets by slug');
+  console.assert(!feedScript.includes('feed-card-urgency-bar'), 'no legacy markup');
+  console.assert(!feedScript.includes('urgency-chip'), 'no legacy chips');
 
   console.log('[endangered] OK — all checks passed');
 }

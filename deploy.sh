@@ -4,6 +4,39 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v125 — EndangeredFeed Composition Rewrite (2026-04-17)
+#   Sprint: EndangeredFeed refactor — rewrote EndangeredFeed.astro from
+#     monolithic 296-line component to slim composition shell (~24 lines)
+#     that delegates card rendering entirely to EndangeredCard.astro.
+#     /endangered page restored from 301 redirect to dedicated live
+#     SSE-powered triage page with real-time updates, 2-phase dismiss,
+#     and a11y announcements. endangeredFeedScript() SSE consumer added
+#     to src/lib/endangered.ts (live re-sort, bloom/collapse animations,
+#     screen-reader announcements). Feed layout CSS added to
+#     endangered.css (composition shell — zero card CSS duplication).
+#     Token compliance guard expanded 17→18 files (EndangeredFeed.astro).
+#     Typography migration warnings: 256→255 in unguarded files.
+#   Modified files:
+#     src/components/EndangeredFeed.astro — rewritten: monolith → composition
+#       shell importing EndangeredCard; 296→~24 lines; zero card CSS.
+#     src/lib/endangered.ts — endangeredFeedScript() added: SSE consumer IIFE,
+#       live re-sort by decay factor, bloom/collapse animations, a11y announce,
+#       reduced-motion guard, tier-speed/urgency/erosion helpers.
+#     src/pages/endangered.astro — 301 redirect removed; now real page with
+#       BaseLayout, EndangeredFeed component, SSR-filtered endangered posts,
+#       atmosphere="endangered" for global theming.
+#     src/styles/endangered.css — feed layout: .endangered-feed max-width,
+#       .feed-header, .feed-label, .feed-count, .feed-cards flex-column,
+#       .feed-card-wrap transition, .feed-empty state. 100% token-compliant.
+#     scripts/check-token-compliance.ts — EndangeredFeed.astro added to
+#       GUARD_FILES (17→18 total guarded files).
+#     AGENTS.md — EndangeredFeed marked done; typography count 256→255.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. SSE is native to Astro SSR —
+#     no additional infrastructure required. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v124).
+#
 # Architecture v124 — River Feed Decay Contrast Polish (2026-04-17)
 #   Sprint: Design-system micro-polish — River feed stage contrast
 #     amplification, token migration, and entry animations. 30 new
