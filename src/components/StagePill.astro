@@ -51,7 +51,7 @@ const pulseRing = id === 'endangered' && count > 0 && !active;
   }
 
   .sp:hover {
-    color: rgba(255, 255, 255, 0.65);
+    color: var(--text-secondary);
     border-color: var(--border-interactive-hover);
   }
 
@@ -69,6 +69,21 @@ const pulseRing = id === 'endangered' && count > 0 && !active;
     transition: opacity var(--motion-snap-duration) var(--motion-snap-easing);
   }
 
+  /* ── Active pill indicator — bottom border mirrors card stage color ── */
+  .sp--active {
+    position: relative;
+  }
+  .sp--active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 25%;
+    right: 25%;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+  }
+
   /* ── Active: live (conviction gold) ─────────────────── */
   .sp--live.sp--active {
     background: var(--gold-bg);
@@ -79,7 +94,7 @@ const pulseRing = id === 'endangered' && count > 0 && !active;
 
   /* ── Active: endangered (amber urgency) ─────────────── */
   .sp--endangered.sp--active {
-    background: rgba(245, 166, 35, 0.06);
+    background: var(--gold-bg);
     border-color: var(--urgency-warning-color);
     color: var(--urgency-warning-color);
   }
@@ -92,7 +107,7 @@ const pulseRing = id === 'endangered' && count > 0 && !active;
 
   @keyframes pill-breathe {
     0%, 100% { border-color: var(--border-interactive); }
-    50%       { border-color: rgba(245, 166, 35, 0.30); }
+    50%       { border-color: var(--gold-border-strong); }
   }
 
   /* ── Active: graveyard (warm charcoal) ──────────────── */
@@ -109,3 +124,13 @@ const pulseRing = id === 'endangered' && count > 0 && !active;
     .sp--endangered[data-pulse="true"] { animation: none; }
   }
 </style>
+
+<!-- Adobe safety rule: stop endangered pill pulse after 15s (Tanya §3.5) -->
+<script>
+  function stopPulseAfterTimeout(): void {
+    const pill = document.querySelector<HTMLElement>('.sp--endangered[data-pulse="true"]');
+    if (!pill) return;
+    setTimeout(() => { pill.style.animation = 'none'; }, 15000);
+  }
+  stopPulseAfterTimeout();
+</script>

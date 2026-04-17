@@ -23,25 +23,24 @@
  * ═══════════════════════════════════════════════════════════════════════ */
 
 [data-decay-stage="fresh"].decay-card {
-  /* Override calcification radius — fresh posts are fully rounded (alive = organic) */
   --card-computed-radius: var(--radius-stage-alive, 14px);
-  /* Stage-specific shadow: warm lifted green — the post floats off the page */
+  background: var(--stage-fresh-card-bg);
   box-shadow:
     0 2px 8px  oklch(0% 0 0 / 0.20),
     0 8px 32px color-mix(in oklch, var(--color-decay-fresh) 16%, transparent);
-  /* Stage border: high-chroma green at 12% opacity */
   border-color: color-mix(in oklch,
     var(--si-border-color, var(--color-decay-fresh))
     calc(var(--si-border-opacity, 0.12) * 100%), transparent);
+  transform: scale(var(--stage-fresh-card-scale, 1));
 }
 
 [data-decay-stage="fresh"] .post-title {
   font-weight: var(--si-title-weight, 700);
-  opacity:     var(--si-title-opacity, 1.0);
+  opacity:     var(--stage-fresh-text-primary, 0.95);
 }
 
 [data-decay-stage="fresh"] .post-excerpt {
-  opacity: var(--si-excerpt-opacity, 0.70);
+  opacity: var(--stage-fresh-text-secondary, 0.70);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -51,22 +50,23 @@
 
 [data-decay-stage="fading"].decay-card {
   --card-computed-radius: var(--radius-stage-alive, 14px);
-  /* Shadow: warmth retreating — still elevated, glow pulling back */
+  background: var(--stage-fading-card-bg);
   box-shadow:
     0 2px 6px  oklch(0% 0 0 / 0.18),
     0 6px 20px color-mix(in oklch, var(--color-decay-fading) 10%, transparent);
   border-color: color-mix(in oklch,
     var(--si-border-color, var(--color-decay-fading))
     calc(var(--si-border-opacity, 0.08) * 100%), transparent);
+  transform: scale(var(--stage-fading-card-scale, 1));
 }
 
 [data-decay-stage="fading"] .post-title {
   font-weight: var(--si-title-weight, 600);
-  opacity:     var(--si-title-opacity, 0.92);
+  opacity:     var(--stage-fading-text-primary, 0.85);
 }
 
 [data-decay-stage="fading"] .post-excerpt {
-  opacity: var(--si-excerpt-opacity, 0.65);
+  opacity: var(--stage-fading-text-secondary, 0.60);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -79,28 +79,27 @@
 
 [data-decay-stage="endangered"].decay-card {
   --card-computed-radius: var(--radius-stage-alive, 14px);
-  /* Shadow ring: pulsing border effect — card feels under pressure */
+  background: var(--stage-endangered-card-bg);
   box-shadow:
     0 2px 8px oklch(0% 0 0 / 0.25),
     0 0 0 2px color-mix(in oklch, var(--color-decay-endangered) 20%, transparent);
-  /* Border pulses via animation — stage-crossing flash already handles the ring */
   border-color: color-mix(in oklch,
     var(--si-border-color, var(--color-decay-endangered))
     calc(var(--si-border-opacity, 0.15) * 100%), transparent);
-  /* Pulsing border animation — 0.5 Hz (2s period), visible urgency not alarm */
-  animation: border-pulse var(--si-pulse-duration, 2s)
-    var(--stage-endangered-pulse-ease, ease-in-out) infinite;
+  /* Two animations: border pulse (SNAP initial) + sustained glow (CEREMONY) */
+  animation:
+    border-pulse var(--si-pulse-duration, 2s) var(--stage-endangered-pulse-ease, ease-in-out) infinite,
+    endangered-glow 3s ease-in-out infinite;
 }
 
 [data-decay-stage="endangered"] .post-title {
   font-weight: var(--si-title-weight, 600);
-  opacity:     var(--si-title-opacity, 1.0);
-  /* Stage color: endangered title signals urgency directly */
+  opacity:     var(--stage-endangered-text-primary, 1.0);
   color: var(--color-decay-endangered);
 }
 
 [data-decay-stage="endangered"] .post-excerpt {
-  opacity: var(--si-excerpt-opacity, 0.70);
+  opacity: var(--stage-endangered-text-secondary, 0.65);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -112,25 +111,25 @@
  * ═══════════════════════════════════════════════════════════════════════ */
 
 [data-decay-stage="ghost"].decay-card {
-  /* Radius contracts: alive=14px, ghost=10px — the shape stiffens */
   --card-computed-radius: var(--radius-stage-ghost, 10px);
-  /* Shadow: almost nothing — the card barely exists above the surface */
+  background: var(--stage-ghost-card-bg);
   box-shadow:
     0 1px 4px  oklch(0% 0 0 / 0.15),
     0 2px 8px  color-mix(in oklch, var(--color-decay-ghost) 4%, transparent);
   border-color: color-mix(in oklch,
     var(--si-border-color, var(--color-decay-ghost))
     calc(var(--si-border-opacity, 0.04) * 100%), transparent);
+  transform: scale(var(--stage-ghost-card-scale, 0.985));
 }
 
 [data-decay-stage="ghost"] .post-title {
   font-weight:    var(--si-title-weight, 400);
-  opacity:        var(--si-title-opacity, 0.65);
-  letter-spacing: 0.02em;  /* text recedes; users lean in to read */
+  opacity:        var(--stage-ghost-text-primary, 0.55);
+  letter-spacing: var(--stage-fossil-letter-spacing, 0.02em);
 }
 
 [data-decay-stage="ghost"] .post-excerpt {
-  opacity: var(--si-excerpt-opacity, 0.45);
+  opacity: var(--stage-ghost-text-secondary, 0.40);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -143,21 +142,21 @@
  * ═══════════════════════════════════════════════════════════════════════ */
 
 [data-decay-stage="fossil"].decay-card {
-  /* Radius: sharpest corners — stone slab. The shape is now a tombstone. */
   --card-computed-radius: var(--radius-stage-fossil, 8px);
-  /* Flat. Dead. The tombstone has no elevation. */
+  background: var(--stage-fossil-card-bg);
   box-shadow: none;
-  /* Muted stone border — barely perceptible */
   border-color: color-mix(in oklch, var(--color-decay-fossil) 5%, transparent);
+  transform: scale(var(--stage-fossil-card-scale, 0.97));
 }
 
 [data-decay-stage="fossil"] .post-title {
   font-weight: var(--si-title-weight, 400);
-  opacity:     var(--si-title-opacity, 0.40);
+  opacity:     var(--stage-fossil-text-primary, 0.45);
+  letter-spacing: var(--stage-fossil-letter-spacing, 0.02em);
 }
 
 [data-decay-stage="fossil"] .post-excerpt {
-  opacity: var(--si-excerpt-opacity, 0.30);
+  opacity: var(--stage-fossil-text-secondary, 0.30);
 }
 
 /* Fossil hover override: fossil cards do not lift — stone is heavy.
@@ -216,6 +215,21 @@
   }
 }
 
+/* Endangered sustained glow — subtle box-shadow pulse (CEREMONY profile) */
+@keyframes endangered-glow {
+  0%, 100% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.25),
+      0 0 0 2px color-mix(in oklch, var(--color-decay-endangered) 20%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.25),
+      0 0 0 3px color-mix(in oklch, var(--color-decay-endangered) 35%, transparent),
+      0 0 12px  color-mix(in oklch, var(--color-decay-endangered) 10%, transparent);
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
  * REDUCED MOTION
  * prefers-reduced-motion: suppress border-pulse; all other identity
@@ -227,5 +241,9 @@
 @media (prefers-reduced-motion: reduce) {
   [data-decay-stage="endangered"].decay-card {
     animation: none;
+  }
+  /* Entry animations suppressed — cards appear instantly */
+  .decay-card {
+    animation: none !important;
   }
 }

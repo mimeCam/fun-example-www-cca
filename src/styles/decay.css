@@ -238,6 +238,77 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+ * ENTRY ANIMATIONS — @starting-style (Baseline 2024)
+ * Scroll-triggered via content-visibility; no JavaScript.
+ * Fresh cards enter with presence. Fossil cards enter like memory.
+ * Progressive enhancement: without @starting-style, cards appear.
+ * Mike §4: entry per stage using motion profiles.
+ * Tanya §3.1: "dramatic contrast between stages is the product."
+ * DevBrain: ambient animations — restraint, smooth, accessible.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* Base entry transition — all decay cards participate */
+.decay-card {
+  animation: card-enter var(--card-enter-dur, var(--motion-flow-duration)) var(--card-enter-ease, var(--motion-flow-easing)) both;
+}
+
+/* Stage-specific entry parameters */
+[data-decay-stage="fresh"].decay-card {
+  --card-enter-dur:  var(--motion-flow-duration);
+  --card-enter-ease: var(--motion-flow-easing);
+}
+[data-decay-stage="fading"].decay-card {
+  --card-enter-dur:  var(--motion-flow-duration);
+  --card-enter-ease: var(--motion-flow-easing);
+}
+[data-decay-stage="endangered"].decay-card {
+  --card-enter-dur:  var(--motion-snap-duration);
+  --card-enter-ease: var(--motion-snap-easing);
+}
+[data-decay-stage="ghost"].decay-card {
+  --card-enter-dur:  var(--motion-drift-duration);
+  --card-enter-ease: var(--motion-drift-easing);
+}
+[data-decay-stage="fossil"].decay-card {
+  --card-enter-dur:  var(--motion-drift-duration);
+  --card-enter-ease: var(--motion-drift-easing);
+}
+
+/* Entry keyframes — opacity + translateY per stage */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--card-enter-y, -4px));
+  }
+  to {
+    opacity: var(--decay-opacity, 1);
+    transform: translateY(0) scale(var(--card-enter-scale, 1));
+  }
+}
+
+/* Stage-specific entry offsets and target opacity */
+[data-decay-stage="fresh"].decay-card {
+  --card-enter-y: -4px;
+  --card-enter-scale: var(--stage-fresh-card-scale, 1);
+}
+[data-decay-stage="fading"].decay-card {
+  --card-enter-y: -2px;
+  --card-enter-scale: var(--stage-fading-card-scale, 1);
+}
+[data-decay-stage="endangered"].decay-card {
+  --card-enter-y: 0px;
+  --card-enter-scale: 1;
+}
+[data-decay-stage="ghost"].decay-card {
+  --card-enter-y: 0px;
+  --card-enter-scale: var(--stage-ghost-card-scale, 0.985);
+}
+[data-decay-stage="fossil"].decay-card {
+  --card-enter-y: 0px;
+  --card-enter-scale: var(--stage-fossil-card-scale, 0.97);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
  * TEMPORAL BAND SPACING — feed as temporal landscape (Mike §6)
  * Fresh posts get room to breathe. Archival posts compress.
  * "The user physically scrolls faster through old content" — Mike §4.

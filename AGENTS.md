@@ -7,12 +7,12 @@
 - `src/lib/` — domain logic
 - `src/components/` — UI components
 - `src/pages/api/` — REST API
-- `src/styles/` — design system
-- `scripts/` — build tooling
+- `src/styles/` — design system (tokens, decay stages, river)
+- `scripts/` — build tooling (token compliance guard)
 - `cli/` — CLI tools
 
 ## WIP
 
-- Homepage hero — BattingAverageHero warm/cold states
-- EndangeredFeed — reuse EndangeredCard component
-- Typography migration — 257 warnings in unguarded files
+- [wip] Homepage hero — BattingAverageHero warm/cold states
+- [wip] EndangeredFeed — reuse EndangeredCard component
+- [wip] Typography migration — 256 warnings in unguarded files

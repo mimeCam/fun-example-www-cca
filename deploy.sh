@@ -4,6 +4,46 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v124 — River Feed Decay Contrast Polish (2026-04-17)
+#   Sprint: Design-system micro-polish — River feed stage contrast
+#     amplification, token migration, and entry animations. 30 new
+#     design tokens (--river-node-*, --stage-*-card-*, --river-pip-*,
+#     --river-border-*, --river-axis-*) added to tokens.css. river.css
+#     migrated to 100% token-compliant — zero inline OKLCH remaining.
+#     Stage-specific entry animations added to decay.css via @keyframes
+#     card-enter with per-stage duration/easing/translateY/scale profiles.
+#     Endangered glow: dual animation (border-pulse + sustained glow) in
+#     decay-stage-identity.css. StagePill: token-compliant, active
+#     bottom-indicator via ::after pseudo-element, 15s pulse timeout
+#     (Tanya §3.5). KeepButton: two-phase bloom (300ms CEREMONY peak
+#     + 800ms SPRING settle via cubic-bezier spring), reduced-motion
+#     guard. Token compliance guard list expanded 15→17 files
+#     (river.css + StagePill.astro). Unguarded violations: 514→511
+#     errors, 257→256 typography warnings.
+#   Modified files:
+#     src/styles/tokens.css — 30 new river-node, stage-card, pip, border,
+#       and axis tokens replacing inline OKLCH in downstream sheets.
+#     src/styles/river.css — full token migration; all OKLCH → var(--river-*).
+#     src/styles/decay.css — card-enter @keyframes; stage-specific entry
+#       duration, easing, translateY, scale; motion-token-driven.
+#     src/styles/decay-stage-identity.css — stage contrast amplification;
+#       card-bg surface tints, text opacity ramps, endangered dual glow.
+#     src/components/StagePill.astro — hover color → var(--text-secondary);
+#       active ::after indicator; endangered bg → var(--gold-bg); pill-breathe
+#       50% → var(--gold-border-strong); 15s pulse timeout script.
+#     src/components/KeepButton.astro — breath-bloom: 600ms→1100ms two-phase
+#       (27% CEREMONY peak, 100% SPRING settle); spring easing; reduced-motion
+#       guard (animation: none, static box-shadow fallback).
+#     src/components/RiverFilter.astro — minor token alignment additions.
+#     scripts/check-token-compliance.ts — 2 new GUARD_FILES entries:
+#       src/styles/river.css, src/components/StagePill.astro (15→17 total).
+#     AGENTS.md — Completed section updated with River Feed Decay Contrast
+#       Polish; WIP typography migration count corrected.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v123).
+#
 # Architecture v123 — ConvictionRecord Card Consolidation (2026-04-17)
 #   Sprint: Blog detail accountability UX — consolidated 5 scattered
 #     post-accountability zones (KeepButton, DisputeChallenge, GhostEchoes,

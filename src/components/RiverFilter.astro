@@ -82,6 +82,8 @@ function stageCount(id: StageFilter): number {
     background: var(--surface-overlay);   /* rgba(12,12,14,0.75) — glass dark */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    /* Top separator prevents visual merge with nav (Tanya §3.5) */
+    border-top: 1px solid var(--border-faint);
     border-bottom: 1px solid var(--border-faint);
     padding: var(--space-2) 0 var(--space-2);
     margin-bottom: var(--space-4);

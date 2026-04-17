@@ -239,16 +239,29 @@ const hasPact     = decayFactor !== undefined;
     100% { box-shadow: 0 0 0   color-mix(in oklch, var(--keep-accent) 0%,  transparent); }
   }
 
-  /* ── Breath-bloom — one pulse of light on click (Mike §4, Tanya §6) ── */
-  /* Triggered by .keep-activated class; JS removes it after animationend. */
+  /* ── Breath-bloom — two-phase: CEREMONY initial (300ms) + SPRING settle (800ms).
+       Mike §7: "300ms CEREMONY for initial bloom, 800ms SPRING for settle."
+       Tanya §3.4: "Saving a life should feel instant."
+       Stage-contextual: uses --atm-bloom-color which shifts per atmosphere. ── */
   @keyframes breath-bloom {
     0%   { box-shadow: 0 0 0 0   var(--atm-bloom-color, var(--keep-accent)); }
-    40%  { box-shadow: 0 0 24px 12px color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 40%, transparent); }
+    /* Fast peak at 27% (~300ms of 1100ms total) — CEREMONY phase */
+    27%  { box-shadow: 0 0 24px 12px color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 40%, transparent); }
+    /* SPRING settle back to rest */
     100% { box-shadow: 0 0 0 0   transparent; }
   }
 
   .keep-btn.keep-activated {
-    animation: breath-bloom 600ms var(--motion-easing-standard, ease-in-out) forwards;
+    animation: breath-bloom 1100ms var(--motion-spring-easing, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+  }
+
+  /* ── prefers-reduced-motion: instant color change, no motion ── */
+  /* Tanya §3.4 / DevBrain: "animation that fails safely" — Adobe. */
+  @media (prefers-reduced-motion: reduce) {
+    .keep-btn.keep-activated {
+      animation: none;
+      box-shadow: 0 0 12px color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 25%, transparent);
+    }
   }
 </style>
 

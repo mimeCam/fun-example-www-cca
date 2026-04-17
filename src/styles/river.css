@@ -3,7 +3,8 @@
  * Per-node decay state lives in CSS custom properties set by river.ts.
  * Background: near-black, space-like. Predictions as stars on a timeline.
  *
- * Token compliance: all hex/rgba/rem violations replaced with design tokens.
+ * Token compliance: 100% — zero inline OKLCH. All colors reference --river-* tokens.
+ * Migration: Sid 2026-04-17 (Mike §1 river token namespace, Tanya §4.3 hardcoded audit)
  * Credits: Mike (design notes §Visual Design), Tanya (§4 color tokens, §6 corner radius)
  */
 
@@ -83,11 +84,11 @@
   text-decoration: none;
   white-space: nowrap;
 
-  background: oklch(22% 0.012 68);
-  border: 1px solid oklch(30% 0.015 68);
+  background: var(--river-node-bg);
+  border: 1px solid var(--river-node-border);
   box-shadow:
     0 2px 8px  color-mix(in oklch, var(--gold-glow) 35%, transparent),
-    0 8px 24px oklch(0 0 0 / 0.35);
+    0 8px 24px var(--river-node-shadow);
 
   opacity:    var(--decay-opacity, 1);
   filter:     blur(var(--decay-blur, 0px)) saturate(var(--decay-sat, 1));
@@ -103,7 +104,7 @@
   transform: translateY(-3px);
   box-shadow:
     0 4px 16px var(--gold-glow),
-    0 12px 32px oklch(0 0 0 / 0.50);
+    0 12px 32px var(--river-node-shadow-hover);
   opacity:    1 !important;
   filter:     blur(0px) saturate(1) !important;
 }
@@ -114,14 +115,14 @@
 }
 
 /* Verdict border tints */
-.river-node--still-true { border-color: oklch(72% 0.15 160 / 0.35); }
-.river-node--wrong      { border-color: oklch(60% 0.18 25  / 0.35); }
-.river-node--abandoned  { border-color: oklch(45% 0.03 50  / 0.35); }
+.river-node--still-true { border-color: var(--river-border-still-true); }
+.river-node--wrong      { border-color: var(--river-border-wrong); }
+.river-node--abandoned  { border-color: var(--river-border-abandoned); }
 
 /* Overdue: red-tinted background, slightly warmer border */
 .river-node--overdue {
-  background: oklch(18% 0.014 25);
-  border-color: oklch(60% 0.18 25 / 0.3);
+  background: var(--river-node-overdue-bg);
+  border-color: var(--river-border-overdue);
 }
 
 /* Post title — truncated, let CSS var opacity do the decay */
@@ -140,13 +141,13 @@
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: oklch(40% 0.006 50);  /* default: unresolved grey */
+  background: var(--river-pip-default);
 }
 
-.river-node__pip--still-true { background: oklch(72% 0.15 160); }
-.river-node__pip--wrong      { background: oklch(60% 0.18 25); }
-.river-node__pip--abandoned  { background: oklch(45% 0.03 50); }
-.river-node__pip--unaudited  { background: oklch(52% 0.008 50); }
+.river-node__pip--still-true { background: var(--river-pip-still-true); }
+.river-node__pip--wrong      { background: var(--river-pip-wrong); }
+.river-node__pip--abandoned  { background: var(--river-pip-abandoned); }
+.river-node__pip--unaudited  { background: var(--river-pip-unaudited); }
 
 /* ── "Now" hairline — amber vertical rule ── */
 
@@ -179,7 +180,7 @@
   bottom: 20px;
   width: 1px;
   height: 6px;
-  background: oklch(35% 0.006 50);
+  background: var(--river-axis-mark);
 }
 
 .river-axis-mark__label {
@@ -189,7 +190,7 @@
   transform: translateX(-50%);
   font-size: var(--text-3xs);
   letter-spacing: 0.08em;
-  color: oklch(38% 0.006 50);
+  color: var(--river-axis-label);
   white-space: nowrap;
 }
 
@@ -208,7 +209,7 @@
   font-size: var(--text-3xs);
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: oklch(42% 0.006 50);
+  color: var(--river-key-label);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -223,17 +224,17 @@
   flex-shrink: 0;
 }
 
-.river-key__item--still-true::before { background: oklch(72% 0.15 160); }
-.river-key__item--wrong::before      { background: oklch(60% 0.18 25); }
-.river-key__item--abandoned::before  { background: oklch(45% 0.03 50); }
-.river-key__item--unaudited::before  { background: oklch(52% 0.008 50); }
+.river-key__item--still-true::before { background: var(--river-pip-still-true); }
+.river-key__item--wrong::before      { background: var(--river-pip-wrong); }
+.river-key__item--abandoned::before  { background: var(--river-pip-abandoned); }
+.river-key__item--unaudited::before  { background: var(--river-pip-unaudited); }
 
 /* ── Empty state ── */
 
 .river-empty {
   text-align: center;
   padding: 6rem var(--space-8);
-  color: oklch(38% 0.006 50);
+  color: var(--river-axis-label);
   font-size: var(--text-sm);
 }
 

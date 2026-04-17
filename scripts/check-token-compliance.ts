@@ -75,6 +75,9 @@ const GUARD_FILES = new Set([
   // Conviction Record card — ships clean from day one (Sid 2026-04-17)
   "src/components/ConvictionRecord.astro",
   "src/styles/conviction-record.css",
+  // River feed token migration — Sid 2026-04-17 (Mike §1 river tokens)
+  "src/styles/river.css",
+  "src/components/StagePill.astro",
 ]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;

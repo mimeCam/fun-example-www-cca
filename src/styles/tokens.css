@@ -66,6 +66,67 @@
   --river-filter-border: var(--border-subtle);
   --river-meta-color:    var(--text-tertiary);
 
+  /* ── River Map Node Tokens (replaces 16 inline OKLCH in river.css) ── */
+  /* Mike §1: "if a value appears in >1 place, it belongs here."        */
+  /* Tanya §4.3: "every hardcoded color in river.css → token reference" */
+
+  /* Node capsule palette — warm-charcoal base matching grave theme */
+  --river-node-bg:            oklch(22% 0.012 68);
+  --river-node-border:        oklch(30% 0.015 68);
+  --river-node-shadow:        oklch(0% 0 0 / 0.35);
+  --river-node-shadow-hover:  oklch(0% 0 0 / 0.50);
+  --river-node-overdue-bg:    oklch(18% 0.014 25);
+
+  /* Verdict pip colors — status dots inside capsules */
+  --river-pip-default:        oklch(40% 0.006 50);
+  --river-pip-still-true:     oklch(72% 0.15 160);
+  --river-pip-wrong:          oklch(60% 0.18 25);
+  --river-pip-abandoned:      oklch(45% 0.03 50);
+  --river-pip-unaudited:      oklch(52% 0.008 50);
+
+  /* Verdict border tints (alpha overlays on pip colors) */
+  --river-border-still-true:  oklch(72% 0.15 160 / 0.35);
+  --river-border-wrong:       oklch(60% 0.18 25 / 0.35);
+  --river-border-abandoned:   oklch(45% 0.03 50 / 0.35);
+  --river-border-overdue:     oklch(60% 0.18 25 / 0.30);
+
+  /* Axis and legend — grave-ghost tones at varying luminance */
+  --river-axis-mark:          oklch(35% 0.006 50);
+  --river-axis-label:         oklch(38% 0.006 50);
+  --river-key-label:          oklch(42% 0.006 50);
+
+  /* ── Stage Contrast Amplification (Mike §3, Tanya §3.1) ─────────── */
+  /* "A fresh card next to an endangered card must look like life       */
+  /*  next to death." — Paul Kim. Surfaces, text ramps, subtle scale.  */
+
+  /* Card background surface per stage — not just border, surface too */
+  --stage-fresh-card-bg:       color-mix(in oklch, var(--color-decay-fresh) 5%, transparent);
+  --stage-fading-card-bg:      color-mix(in oklch, var(--color-decay-fading) 3%, transparent);
+  --stage-endangered-card-bg:  color-mix(in oklch, var(--color-decay-endangered) 4%, transparent);
+  --stage-ghost-card-bg:       color-mix(in oklch, var(--color-decay-ghost) 2%, transparent);
+  --stage-fossil-card-bg:      color-mix(in oklch, var(--color-decay-fossil) 2%, transparent);
+
+  /* Text primary opacity ramp: 0.92 (fresh) → 0.45 (fossil) */
+  --stage-fresh-text-primary:       0.95;
+  --stage-fading-text-primary:      0.85;
+  --stage-endangered-text-primary:  1.0;
+  --stage-ghost-text-primary:       0.55;
+  --stage-fossil-text-primary:      0.45;
+
+  /* Text secondary opacity ramp */
+  --stage-fresh-text-secondary:       0.70;
+  --stage-fading-text-secondary:      0.60;
+  --stage-endangered-text-secondary:  0.65;
+  --stage-ghost-text-secondary:       0.40;
+  --stage-fossil-text-secondary:      0.30;
+
+  /* Subtle card scale per stage — fresh is full, fossil shrinks */
+  --stage-fresh-card-scale:       1.0;
+  --stage-fading-card-scale:      1.0;
+  --stage-endangered-card-scale:  1.0;
+  --stage-ghost-card-scale:       0.985;
+  --stage-fossil-card-scale:      0.97;
+
   /* ── Semantic Decay Colors ──────────────────────────────────────────── */
   /* Ramp revised Tanya §2.1: each stage must feel like a different WORLD,  */
   /* not just a different shade. Perceptual distance increased at all stops. */
