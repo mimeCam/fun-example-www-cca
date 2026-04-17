@@ -4,6 +4,47 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v129 — Decay Stage Transition Orchestrator (2026-04-17)
+#   Sprint: Stage boundary crossing choreography — visual transitions
+#     when cards cross decay stage boundaries (fresh→fading→endangered→
+#     ghost→fossil) and revival bloom burst (ANY→fresh). New orchestrator
+#     module (stage-transitions.ts, 246 LOC) detects stage-change events,
+#     applies entering CSS classes (.stage-entering-*) with cleanup, and
+#     schedules urgency-mapped ambient pulse for endangered cards. Period
+#     ramps 8s→0.8s as days-remaining decrease. New stage-transitions.css
+#     (212 LOC): 6 @keyframes (stage-enter-fading warm glow retreat,
+#     stage-enter-endangered shadow ignition, stage-enter-ghost chroma
+#     drain, stage-enter-fossil grain settle, revival-bloom-burst shadow
+#     overshoot+settle, endangered-shadow-pulse ambient loop). Battery
+#     saver: skips ambient when <20%. prefers-reduced-motion: animation:
+#     none on all crossing classes. Frame-scheduler integrated. Revival
+#     bloom wired in RevivalMoment.astro (bloomBurstShadow). 21 new design
+#     tokens in tokens.css (motion durations, easing, pulse bounds, ghost
+#     chroma targets, radius alive/fossil). DecayCard boots orchestrator.
+#     BaseLayout imports stage-transitions.css. Token compliance guard
+#     expanded 30→31 (stage-transitions.css ships zero-violation).
+#   Modified files:
+#     src/lib/client/stage-transitions.ts — NEW: orchestrator module;
+#       initStageTransitions() entry; handleStageChange/handleRevival
+#       listeners; ambient pulse scheduler; battery saver; reduced-motion.
+#     src/styles/stage-transitions.css — NEW: 6 keyframes; 7 utility
+#       classes (.stage-entering-*, .stage-ambient-endangered);
+#       reduced-motion media query guard.
+#     src/components/DecayCard.astro — data-prev-stage attr; imports and
+#       boots initStageTransitions() on DOMContentLoaded.
+#     src/components/RevivalMoment.astro — bloomBurstShadow() adds
+#       .stage-entering-fresh class with animationend cleanup + timeout.
+#     src/layouts/BaseLayout.astro — imports stage-transitions.css.
+#     src/styles/tokens.css — 21 new tokens: --motion-stage-transition*,
+#       --motion-easing-stage, --endangered-pulse-*, --ghost-chroma-*,
+#       --radius-alive/fossil.
+#     scripts/check-token-compliance.ts — 1 new GUARD_FILES entry (30→31).
+#     AGENTS.md — orchestrator marked done; P1 polish WIP.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v128).
+#
 # Architecture v128 — BattingAverageHero Thermal State System (2026-04-17)
 #   Sprint: Conviction maturity visual language — cold/warming/hot thermal
 #     states derived from resolved verdict count. Pure derivation — zero new

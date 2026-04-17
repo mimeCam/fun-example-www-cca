@@ -818,6 +818,27 @@
   --surface-receipt:                   oklch(14% 0.015 68deg);
   --border-receipt:                    var(--gold-border);
 
+  /* ── Stage Transition Motion Tokens (Mike §Orchestrator, Tanya §3) ───────── */
+  /* Base duration for stage boundary crossing choreography.                   */
+  /* Consumed by stage-transitions.css keyframes — zero raw durations there.   */
+  --motion-stage-transition:       800ms;   /* base: fresh→fading warm glow retreat */
+  --motion-stage-transition-fast:  600ms;   /* revival bloom, endangered ignition   */
+  --motion-stage-transition-slow: 1200ms;   /* ghost chroma drain — deliberate      */
+  --motion-easing-stage: cubic-bezier(0.22, 1, 0.36, 1);  /* ease-out-quint   */
+
+  /* Endangered Ambient Pulse — urgency-mapped oscillation period              */
+  --endangered-pulse-min-period:   0.8s;    /* critical: pulse fast             */
+  --endangered-pulse-max-period:   8s;      /* early endangered: pulse slow     */
+  --endangered-pulse-shadow-scale: 1.15;    /* shadow grows 15% on pulse peak   */
+
+  /* Ghost Chroma Targets (OKLCH perceptual interpolation)                     */
+  --ghost-chroma-start:  0.13;     /* entering ghost: still some color         */
+  --ghost-chroma-end:    0.085;    /* settled ghost: nearly desaturated        */
+
+  /* Radius Calcification (life→stone)                                         */
+  --radius-alive:  var(--radius-stage-alive);  /* 14px — soft = alive          */
+  --radius-fossil: var(--radius-stage-fossil); /*  8px — sharp = calcified     */
+
   /* ── Stage-Crossing Flash Tokens (Tanya §3 — decay:stage-change visual flinch) ── */
   /* Flash color comes from --color-decay-* ramp — no new hex values.               */
   /* Ring opacity = border glow peak; tint opacity = cover image overlay peak.       */

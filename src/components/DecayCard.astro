@@ -68,6 +68,7 @@ const decayStage = stageAttr(post.decay);
   style={post.decayStyle}
   data-atmosphere={atmosphere}
   data-decay-stage={decayStage}
+  data-prev-stage={decayStage}
   data-slug={post.slug}
   data-pub-date={post.pubDateISO}
   data-decay-factor={post.decay.toFixed(4)}
@@ -251,10 +252,13 @@ const decayStage = stageAttr(post.decay);
 </style>
 
 <script>
-  // Stage-crossing flash — wire decay:stage-change → card visual flinch.
+  // Stage-crossing flash + transition orchestrator.
   // Event bubbles from DecayClock → DecayCard <article> via bubbles:true.
   // Astro deduplicates this module script across all DecayCard instances.
   // Tanya §3.5 (class state machine) · Mike §1 (event path is free).
+  // Stage Transition Orchestrator: Mike §Orchestrator · Impl: Sid.
+
+  import { initStageTransitions } from '../lib/client/stage-transitions';
 
   const PREFIX = 'decay-card--crossing-';
 
@@ -298,9 +302,14 @@ const decayStage = stageAttr(post.decay);
     );
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachListeners, { once: true });
-  } else {
+  function boot(): void {
     attachListeners();
+    initStageTransitions();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
   }
 </script>

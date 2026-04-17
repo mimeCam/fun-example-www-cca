@@ -147,6 +147,15 @@ const stageStyle = stageStyleString(factor);
     }).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); });
   }
 
+  /* ── Revival bloom burst — shadow overshoot + settle (Tanya §3.2, Mike §Orchestrator) */
+  function bloomBurstShadow() {
+    if (rm) return;
+    wrapper.classList.add('stage-entering-fresh');
+    function cleanup() { wrapper.classList.remove('stage-entering-fresh'); }
+    wrapper.addEventListener('animationend', cleanup, { once: true });
+    setTimeout(cleanup, 800);  // safety: remove if animationend misses
+  }
+
   /* ── Phase 3: success path ──────────────────────────────────────────── */
   function onSuccess(d, pc) {
     if (!d.ok) { rollback(pc); return; }
@@ -154,6 +163,7 @@ const stageStyle = stageStyleString(factor);
     tickCounter(d.count);
     announce(d.count);
     showBadge(d);
+    bloomBurstShadow();
     if (d.atmosphereHint) document.body.dataset.atmosphere = d.atmosphereHint;
     document.dispatchEvent(new CustomEvent('revival:confirmed', { detail: d }));
     setTimeout(function () { setPhase('complete'); markKept(); btn.removeAttribute('aria-busy'); }, TICK_MS);

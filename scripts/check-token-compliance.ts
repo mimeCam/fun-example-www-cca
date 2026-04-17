@@ -94,6 +94,8 @@ const GUARD_FILES = new Set([
   // Community submit form — token migration complete (Sid 2026-04-17, Mike §4 guard ratchet)
   "src/styles/community-submit.css",
   "src/pages/community/submit.astro",
+  // Stage Transition Orchestrator — ships clean from day one (Sid 2026-04-17, Mike §Orchestrator)
+  "src/styles/stage-transitions.css",
 ]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;

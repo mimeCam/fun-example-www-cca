@@ -13,5 +13,6 @@
 
 ## WIP
 
-- [wip] Token compliance migration — 30 files guarded; unguarded files still carry raw values
-- [wip] P1 polish: ghost chroma smoothing, endangered shadow pulse, radius calcification, KeepButton bloom, blog above-fold simplification, resurrection bloom
+- [wip] Token compliance — 31/~60 files guarded; unguarded files still carry raw values
+- [wip] P1 polish — blog above-fold simplification, resurrection bloom ceremony
+- [wip] Design audit — accent consolidation, surface tier lightness delta, concentric radius cascade, tabular-nums, receipt link relocation

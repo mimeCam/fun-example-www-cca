@@ -1,0 +1,211 @@
+/* src/styles/stage-transitions.css
+ * Decay Stage Transition Orchestrator — keyframes + utility classes.
+ * Consumed by stage-transitions.ts via class toggling on .decay-card.
+ *
+ * Each stage boundary crossing has a distinct visual keyframe:
+ *   fresh→fading:      warm glow retreats, shadow softens
+ *   fading→endangered:  shadow pulse ignites, border flickers amber
+ *   endangered→ghost:   chroma drains (OKLCH lightness/chroma lerp)
+ *   ghost→fossil:       grain accumulates, radius sharpens
+ *   ANY→fresh (revival): bloom burst, shadow lifts, chroma floods back
+ *
+ * Rule: zero raw hex — all values reference tokens.css primitives.
+ * Rule: prefers-reduced-motion disables all keyframes.
+ * Rule: each card is isolated — class + keyframe scoped to .decay-card.
+ *
+ * Architecture: Mike Koch §Orchestrator · UX: Tanya Donska §3 · Impl: Sid
+ * Credits: Mike Koch (arch), Tanya Donska (UX spec), DevBrain (ambient anim)
+ */
+
+/* ===================================================================
+ * CROSSING: fresh → fading
+ * Warm glow retreats; shadow softens over 800ms.
+ * Metaphor: the first sign of age — warmth pulling away.
+ * =================================================================== */
+
+@keyframes stage-enter-fading {
+  0% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.20),
+      0 8px 32px color-mix(in oklch, var(--color-decay-fresh) 16%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 2px 6px oklch(0% 0 0 / 0.18),
+      0 6px 20px color-mix(in oklch, var(--color-decay-fading) 10%, transparent);
+  }
+}
+
+/* ===================================================================
+ * CROSSING: fading → endangered
+ * Shadow pulse ignites; border flickers amber.
+ * Metaphor: urgency ignites — the card wakes up to danger.
+ * =================================================================== */
+
+@keyframes stage-enter-endangered {
+  0% {
+    box-shadow:
+      0 2px 6px oklch(0% 0 0 / 0.18),
+      0 6px 20px color-mix(in oklch, var(--color-decay-fading) 10%, transparent);
+    border-color: color-mix(in oklch, var(--color-decay-fading) 8%, transparent);
+  }
+  40% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.25),
+      0 0 0 3px color-mix(in oklch, var(--color-decay-endangered) 35%, transparent),
+      0 0 16px  color-mix(in oklch, var(--color-decay-endangered) 14%, transparent);
+    border-color: color-mix(in oklch, var(--color-decay-endangered) 28%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.25),
+      0 0 0 2px color-mix(in oklch, var(--color-decay-endangered) 20%, transparent);
+    border-color: color-mix(in oklch, var(--color-decay-endangered) 15%, transparent);
+  }
+}
+
+/* ===================================================================
+ * CROSSING: endangered → ghost
+ * Chroma drains smoothly via OKLCH lightness/chroma interpolation.
+ * Metaphor: the fire goes out — color and warmth leave the card.
+ * Duration: 1200ms (deliberately slow — this is an emotional beat).
+ * =================================================================== */
+
+@keyframes stage-enter-ghost {
+  0% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.25),
+      0 0 0 2px color-mix(in oklch, var(--color-decay-endangered) 20%, transparent);
+    filter: saturate(1) brightness(1);
+  }
+  50% {
+    filter: saturate(0.5) brightness(0.95);
+  }
+  100% {
+    box-shadow:
+      0 1px 4px oklch(0% 0 0 / 0.15),
+      0 2px 8px color-mix(in oklch, var(--color-decay-ghost) 4%, transparent);
+    filter: saturate(1) brightness(1);
+  }
+}
+
+/* ===================================================================
+ * CROSSING: ghost → fossil
+ * Grain accumulates like dust settling; card becomes stone.
+ * Metaphor: the idea is archived — no more life, just memory.
+ * =================================================================== */
+
+@keyframes stage-enter-fossil {
+  0% {
+    box-shadow:
+      0 1px 4px oklch(0% 0 0 / 0.15),
+      0 2px 8px color-mix(in oklch, var(--color-decay-ghost) 4%, transparent);
+    opacity: 1;
+  }
+  60% {
+    box-shadow:
+      0 0 2px oklch(0% 0 0 / 0.08);
+    opacity: 0.92;
+  }
+  100% {
+    box-shadow: none;
+    opacity: 1;
+  }
+}
+
+/* ===================================================================
+ * CROSSING: ANY → fresh (revival bloom burst)
+ * Bloom burst; shadow lifts; chroma floods back.
+ * Metaphor: the reader breathed life back into the idea.
+ * =================================================================== */
+
+@keyframes revival-bloom-burst {
+  0% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.20),
+      0 4px 16px color-mix(in oklch, var(--clr-amber-400) 10%, transparent);
+    transform: scale(1);
+  }
+  35% {
+    box-shadow:
+      0 4px 16px oklch(0% 0 0 / 0.20),
+      0 14px 52px color-mix(in oklch, var(--clr-amber-400) 32%, transparent);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.20),
+      0 8px 32px color-mix(in oklch, var(--color-decay-fresh) 16%, transparent);
+    transform: scale(1);
+  }
+}
+
+/* ===================================================================
+ * AMBIENT: Endangered Shadow Pulse (urgency-mapped period)
+ * Period controlled by --st-pulse-period CSS var (set by JS).
+ * 14 days left = 8s (slow breathe). <1 hour = 0.8s (frantic).
+ * =================================================================== */
+
+@keyframes endangered-shadow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.25),
+      0 0 0 2px color-mix(in oklch, var(--color-decay-endangered) 20%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 2px 8px oklch(0% 0 0 / 0.25),
+      0 0 0 3px color-mix(in oklch, var(--color-decay-endangered) 35%, transparent),
+      0 0 14px color-mix(in oklch, var(--color-decay-endangered) 12%, transparent);
+  }
+}
+
+/* ===================================================================
+ * TRANSITION UTILITY CLASSES — applied by stage-transitions.ts
+ * Naming: .stage-entering-{target} during transition
+ *         .stage-ambient-endangered for persistent pulse loop
+ * =================================================================== */
+
+.stage-entering-fading {
+  animation: stage-enter-fading var(--motion-stage-transition) var(--motion-easing-stage) forwards;
+}
+
+.stage-entering-endangered {
+  animation: stage-enter-endangered var(--motion-stage-transition-fast) var(--motion-easing-stage) forwards;
+}
+
+.stage-entering-ghost {
+  animation: stage-enter-ghost var(--motion-stage-transition-slow) var(--motion-easing-stage) forwards;
+}
+
+.stage-entering-fossil {
+  animation: stage-enter-fossil var(--motion-stage-transition) var(--motion-easing-stage) forwards;
+}
+
+.stage-entering-fresh {
+  animation: revival-bloom-burst var(--motion-stage-transition-fast) var(--motion-easing-stage) forwards;
+}
+
+/* Persistent endangered pulse — period set by JS via --st-pulse-period */
+.stage-ambient-endangered {
+  animation: endangered-shadow-pulse var(--st-pulse-period, 4s) ease-in-out infinite;
+}
+
+/* ===================================================================
+ * REDUCED MOTION — suppress all stage transition animations.
+ * Static stage identity (weight, opacity, shadow) still applies via
+ * decay-stage-identity.css — only the choreography is removed.
+ * Tanya §12 Rule 5: "reduced-motion users still get all feedback,
+ * just without the choreography."
+ * =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-entering-fading,
+  .stage-entering-endangered,
+  .stage-entering-ghost,
+  .stage-entering-fossil,
+  .stage-entering-fresh,
+  .stage-ambient-endangered {
+    animation: none !important;
+  }
+}
