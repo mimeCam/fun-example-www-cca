@@ -14,4 +14,4 @@
 ## WIP
 
 - [wip] Homepage hero — BattingAverageHero warm/cold states
-- [wip] Typography migration — 255 warnings in unguarded files
+- [wip] Token compliance migration — 28 files guarded; unguarded files still carry raw values

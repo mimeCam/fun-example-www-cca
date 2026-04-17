@@ -69,7 +69,7 @@ const LABELS: Record<Conviction['verdict'], string> = {
 <style>
   .conviction-panel {
     margin: 2rem 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
     padding-top: 1rem;
   }
 
@@ -82,23 +82,23 @@ const LABELS: Record<Conviction['verdict'], string> = {
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.35);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-tertiary);
     user-select: none;
     transition: color 200ms ease;
     width: fit-content;
   }
 
-  .conviction-toggle:hover { color: rgba(255, 255, 255, 0.6); }
+  .conviction-toggle:hover { color: var(--text-secondary); }
 
-  .toggle-icon { font-size: 0.85rem; }
+  .toggle-icon { font-size: var(--text-sm); }
   .toggle-label { text-transform: uppercase; }
   .toggle-count {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-subtle);
     border-radius: 3px;
     padding: 0 0.3em;
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     opacity: 0.7;
   }
 
@@ -121,39 +121,39 @@ const LABELS: Record<Conviction['verdict'], string> = {
     display: grid;
     grid-template-columns: 1.5rem 1fr;
     gap: 0.5rem 0.5rem;
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     line-height: 1.5;
   }
 
   .conviction-token {
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
     padding-top: 0.1em;
     text-align: center;
   }
 
   /* Verdict-specific token colours */
-  .conviction--still-true .conviction-token { color: rgba(100, 200, 120, 0.8); }
-  .conviction--wrong      .conviction-token { color: rgba(220, 90,  90,  0.8); }
-  .conviction--evolved    .conviction-token { color: var(--mood-accent, #D4956A); }
-  .conviction--unaudited  .conviction-token { color: rgba(255, 255, 255, 0.3); }
+  .conviction--still-true .conviction-token { color: color-mix(in oklch, var(--verdict-true) 80%, transparent); }
+  .conviction--wrong      .conviction-token { color: color-mix(in oklch, var(--verdict-wrong) 80%, transparent); }
+  .conviction--evolved    .conviction-token { color: var(--mood-accent); }
+  .conviction--unaudited  .conviction-token { color: var(--text-dim); }
 
   .conviction-belief {
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--text-primary);
   }
 
   /* Wrong beliefs: strike-through */
   .conviction--wrong .conviction-belief {
     text-decoration: line-through;
-    text-decoration-color: rgba(220, 90, 90, 0.5);
+    text-decoration-color: color-mix(in oklch, var(--verdict-wrong) 50%, transparent);
     opacity: 0.6;
   }
 
   /* Note: muted follow-up on second grid row */
   .conviction-note {
     grid-column: 2;
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.4);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
     font-style: italic;
     margin-top: -0.25rem;
   }

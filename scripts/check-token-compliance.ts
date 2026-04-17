@@ -80,6 +80,17 @@ const GUARD_FILES = new Set([
   // River feed token migration — Sid 2026-04-17 (Mike §1 river tokens)
   "src/styles/river.css",
   "src/components/StagePill.astro",
+  // Tier 1+2 token compliance migration — Sid 2026-04-17 (Mike §napkin-plan)
+  "src/components/DecayBar.astro",
+  "src/components/DecayClock.astro",
+  "src/components/VerdictResolutionPanel.astro",
+  "src/components/ConvictionAuditTrail.astro",
+  "src/components/ConvictionTimeline.astro",
+  "src/components/ConvictionPanel.astro",
+  "src/components/ConvictionMeter.astro",
+  "src/components/VerdictCeremony.astro",
+  "src/components/AuditReceipt.astro",
+  "src/components/TrackRecord.astro",
 ]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;

@@ -4,6 +4,45 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v126 — Token Compliance Tier 1+2 Migration (2026-04-17)
+#   Sprint: Design-system token migration — migrated 10 conviction/verdict
+#     components from raw CSS values (hex, px, rem, opacity, letter-spacing)
+#     to design-token variables. Tier 1 core-loop components (DecayClock,
+#     DecayBar, TombstoneCard, ConvictionPanel, ConvictionMeter,
+#     ConvictionTimeline, ConvictionAuditTrail, VerdictCeremony,
+#     VerdictResolutionPanel) all pass zero-violation guard. Tier 2 partial
+#     (AuditReceipt, TrackRecord done). Token compliance guard file list
+#     expanded 18→28 guarded files. Overall violation counts reduced:
+#     errors + typography warnings both decreased across the codebase.
+#   Modified files:
+#     src/components/AuditReceipt.astro — raw CSS values replaced with
+#       --space-*, --text-*, --radius-*, --weight-* design tokens.
+#     src/components/ConvictionAuditTrail.astro — raw values migrated to
+#       design-token variables; zero-violation guard compliant.
+#     src/components/ConvictionMeter.astro — raw colors, sizes, spacing
+#       replaced with token references; guard-compliant.
+#     src/components/ConvictionPanel.astro — raw CSS → token migration;
+#       zero violations under guard mode.
+#     src/components/ConvictionTimeline.astro — timeline visual styles
+#       migrated from raw values to design tokens.
+#     src/components/DecayBar.astro — minor token alignment fixes.
+#     src/components/DecayClock.astro — raw values → design tokens.
+#     src/components/TombstoneCard.astro — minor token fix.
+#     src/components/TrackRecord.astro — raw CSS migrated to tokens;
+#       guard-compliant.
+#     src/components/VerdictCeremony.astro — ceremony visual styles
+#       migrated from raw values to design tokens.
+#     src/components/VerdictResolutionPanel.astro — resolution panel
+#       styles fully token-compliant.
+#     scripts/check-token-compliance.ts — 10 new GUARD_FILES entries
+#       (18→28 total guarded files).
+#     AGENTS.md — Token compliance tiers tracked; Tier 1 DONE, Tier 2
+#       partial (AuditReceipt + TrackRecord done), Tier 3 pending.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v125).
+#
 # Architecture v125 — EndangeredFeed Composition Rewrite (2026-04-17)
 #   Sprint: EndangeredFeed refactor — rewrote EndangeredFeed.astro from
 #     monolithic 296-line component to slim composition shell (~24 lines)

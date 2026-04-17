@@ -90,7 +90,7 @@ function fmtMinutes(seconds: number): string {
 <style>
   .audit-trail {
     margin: 2rem 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
     padding-top: 1rem;
   }
 
@@ -103,24 +103,24 @@ function fmtMinutes(seconds: number): string {
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.28);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-dim);
     user-select: none;
     transition: color 200ms ease;
     width: fit-content;
   }
 
-  .audit-toggle:hover { color: rgba(255, 255, 255, 0.55); }
+  .audit-toggle:hover { color: var(--text-secondary); }
 
-  .audit-icon  { font-size: 0.85rem; }
+  .audit-icon  { font-size: var(--text-sm); }
   .audit-label { text-transform: uppercase; }
 
   .audit-count {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-subtle);
     border-radius: 3px;
     padding: 0.05em 0.35em;
-    font-size: 0.68rem;
+    font-size: var(--text-2xs);
     opacity: 0.7;
   }
 
@@ -129,15 +129,15 @@ function fmtMinutes(seconds: number): string {
     list-style: none;
     margin: 1.25rem 0 0;
     padding: 0 0 0 1rem;
-    border-left: 1px solid rgba(255, 255, 255, 0.07);
+    border-left: 1px solid var(--border-light);
     display: flex;
     flex-direction: column;
   }
 
   .audit-entry {
     padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    font-size: 0.82rem;
+    border-bottom: 1px solid var(--border-faint);
+    font-size: var(--text-sm);
   }
 
   .audit-entry:last-child { border-bottom: none; }
@@ -152,36 +152,36 @@ function fmtMinutes(seconds: number): string {
 
   /* Event type badge */
   .entry-badge {
-    font-size: 0.67rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     padding: 0.15em 0.55em;
     border-radius: 3px;
   }
 
   /* Palette — matches Tanya's decay spectrum semantics */
-  .entry--seal         .entry-badge { background: rgba(212, 175, 55, 0.14); color: hsl(44, 60%, 65%); }
-  .entry--revival      .entry-badge { background: rgba(100, 200, 120, 0.11); color: rgba(100, 210, 130, 0.85); }
-  .entry--death        .entry-badge { background: rgba(220, 90, 90, 0.11); color: rgba(220, 100, 100, 0.85); }
-  .entry--resurrection .entry-badge { background: rgba(150, 100, 220, 0.11); color: rgba(180, 145, 240, 0.85); }
+  .entry--seal         .entry-badge { background: color-mix(in oklch, var(--gold) 14%, transparent); color: var(--gold-mid); }
+  .entry--revival      .entry-badge { background: color-mix(in oklch, var(--verdict-true) 11%, transparent); color: color-mix(in oklch, var(--verdict-true) 85%, transparent); }
+  .entry--death        .entry-badge { background: color-mix(in oklch, var(--verdict-wrong) 11%, transparent); color: color-mix(in oklch, var(--verdict-wrong) 85%, transparent); }
+  .entry--resurrection .entry-badge { background: color-mix(in oklch, var(--verdict-evolved) 11%, transparent); color: color-mix(in oklch, var(--verdict-evolved) 85%, transparent); }
 
   .entry-time {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.32);
+    font-size: var(--text-xs);
+    color: var(--text-dim);
     margin-left: auto;
   }
 
   .entry-score {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.48);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
   }
 
   /* Author wager note */
   .entry-note {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.45);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
     font-style: italic;
     margin: 0.2rem 0 0.35rem;
     line-height: 1.45;
@@ -191,16 +191,16 @@ function fmtMinutes(seconds: number): string {
   .entry-stats {
     display: flex;
     gap: 0.75rem;
-    font-size: 0.67rem;
-    color: rgba(255, 255, 255, 0.28);
+    font-size: var(--text-2xs);
+    color: var(--text-dim);
     margin-bottom: 0.35rem;
   }
 
   .hash-prefix {
-    font-family: monospace;
-    font-size: 0.61rem;
-    color: rgba(255, 255, 255, 0.17);
-    letter-spacing: 0.02em;
+    font-family: var(--font-mono);
+    font-size: var(--text-3xs);
+    color: var(--text-faint);
+    letter-spacing: var(--tracking-wide);
     background: none;
     padding: 0;
     cursor: default;

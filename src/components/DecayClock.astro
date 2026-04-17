@@ -276,7 +276,7 @@ const deadlineFmt = deadline
   }
   .decay-clock__track {
     fill: none;
-    stroke: rgba(255,255,255,0.07);
+    stroke: var(--border-light);
     stroke-width: 3;
   }
   .decay-clock__ring {
@@ -334,21 +334,21 @@ const deadlineFmt = deadline
     pointer-events: none;
   }
   .decay-clock__days {
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: var(--weight-bold);
     font-family: var(--font-mono);
-    color: hsl(var(--clock-urgency-hue, 220) 65% 72%);
+    color: var(--decay-ring-color, oklch(72% 0.08 220));
     line-height: 1;
   }
   .decay-clock__unit {
-    font-size: 0.44rem;
+    font-size: var(--text-3xs);
     text-transform: uppercase;
     letter-spacing: var(--tracking-wide);
     opacity: 0.55;
-    color: hsl(var(--clock-urgency-hue, 220) 40% 65%);
+    color: var(--decay-ring-color, oklch(65% 0.05 220));
   }
-  .decay-clock--compact .decay-clock__days { font-size: 0.7rem;  }
-  .decay-clock--compact .decay-clock__unit { font-size: 0.38rem; }
+  .decay-clock--compact .decay-clock__days { font-size: var(--text-xs);  }
+  .decay-clock--compact .decay-clock__unit { font-size: var(--text-3xs); }
 
   /* ═══════════════════════════════════════════════
      variant="bar"
@@ -444,7 +444,7 @@ const deadlineFmt = deadline
   }
   .dc-banner__track {
     fill: none;
-    stroke: rgba(255,255,255,0.1);
+    stroke: var(--border-medium);
     stroke-width: 2;
   }
   .dc-banner__arc {

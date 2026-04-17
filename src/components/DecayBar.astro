@@ -133,7 +133,7 @@ const glyph  = GLYPH[stage];
   }
 
   /* ── mode="glyph" ───────────────────────────────────────────────────── */
-  .decay-glyph        { font-size: 0.85rem; line-height: 1; cursor: default; }
+  .decay-glyph        { font-size: var(--text-sm); line-height: 1; cursor: default; }
   .decay-glyph--fresh { color: var(--color-decay-fresh);  opacity: 0.50; }
   .decay-glyph--aging { color: var(--color-revival);      opacity: 0.70; }
   .decay-glyph--stale { color: var(--color-decay-fossil); opacity: 0.95; }
@@ -142,7 +142,7 @@ const glyph  = GLYPH[stage];
   .decay-nav {
     height: 2px;
     width: var(--db-progress, 0%);
-    background: rgba(var(--db-accent, 245,166,35), 0.55);
+    background: color-mix(in oklch, var(--gold) 55%, transparent);
     border-radius: var(--radius-full);
     transition: width 200ms ease;
   }
