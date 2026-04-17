@@ -140,6 +140,130 @@
   .ba-locked--unlocked { animation: none; }
 }
 
+/* ── Thermal state — data-attribute polymorphism (Mike §napkin) ───────────── */
+/* [data-ba-thermal] mirrors [data-ba-tier] pattern: one attribute, one truth. */
+/* Three states: cold (dormant) → warming (kindling) → hot (earned authority). */
+
+[data-ba-thermal="cold"] {
+  --ba-thermal-surface: var(--ba-thermal-cold-surface);
+  --ba-thermal-text:    var(--ba-thermal-cold-text);
+  --ba-thermal-ring:    var(--ba-thermal-cold-ring-speed);
+}
+
+[data-ba-thermal="warming"] {
+  --ba-thermal-surface: var(--ba-thermal-warming-surface);
+  --ba-thermal-text:    var(--ba-thermal-warming-text);
+  --ba-thermal-ring:    var(--ba-thermal-warming-ring-speed);
+}
+
+[data-ba-thermal="hot"] {
+  --ba-thermal-surface: var(--ba-thermal-hot-surface);
+  --ba-thermal-text:    var(--text-primary);
+  --ba-thermal-ring:    var(--ba-thermal-hot-ring-speed);
+}
+
+/* ── Thermal surface tint — subtle background shift per state ────────────── */
+
+[data-ba-thermal] .bah-score--cold {
+  background: var(--ba-thermal-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  transition: background var(--motion-duration-base) var(--motion-easing-standard);
+}
+
+[data-ba-thermal="warming"] .bah-subtitle--cold {
+  color: var(--ba-thermal-warming-text);
+  font-style: normal;
+}
+
+/* ── Ghost ring speed — tokenized per thermal state ──────────────────────── */
+/* 10s (cold) → 6s (warming) → 3s (hot). Ring warms up with verdicts.        */
+
+[data-ba-thermal] .bah-ghost-ring {
+  animation-duration: var(--ba-thermal-ring, 10s);
+}
+
+/* Diamond tier at hot: earned serenity — ring pauses */
+[data-ba-thermal="hot"][data-ba-tier="diamond"] .bah-ghost-ring {
+  animation-play-state: paused;
+}
+
+/* ── Ember dots — 4 pips, one per resolved verdict (1–4) ─────────────────── */
+/* Arranged below the ghost ring. Unlit = disabled; lit = amber + breathe.    */
+/* "Each dot = 1 resolved verdict. Tangible progress." — Mike §POI #4        */
+
+.bah-embers {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.bah-ember-dot {
+  width: var(--ba-ember-size);
+  height: var(--ba-ember-size);
+  border-radius: var(--radius-full);
+  background: var(--ba-ember-unlit);
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard),
+              opacity var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+/* Lit ember dots — one per resolved verdict */
+.bah-ember-dot[data-ember-lit="true"] {
+  background: var(--ba-ember-lit);
+}
+
+/* Staggered opacity ramp: first lit = brightest, fourth = dimmest */
+.bah-ember-dot[data-ember-lit="true"][data-ember-index="1"] { opacity: var(--ba-ember-1); }
+.bah-ember-dot[data-ember-lit="true"][data-ember-index="2"] { opacity: var(--ba-ember-2); }
+.bah-ember-dot[data-ember-lit="true"][data-ember-index="3"] { opacity: var(--ba-ember-3); }
+.bah-ember-dot[data-ember-lit="true"][data-ember-index="4"] { opacity: var(--ba-ember-4); }
+
+/* Breathe animation — lit dots glow gently (4s cycle) */
+@media (prefers-reduced-motion: no-preference) {
+  .bah-ember-dot[data-ember-lit="true"] {
+    animation: bah-ember-breathe 4s ease-in-out infinite;
+  }
+
+  /* Staggered entry — 150ms offset per dot */
+  .bah-ember-dot[data-ember-index="2"] { animation-delay: 150ms; }
+  .bah-ember-dot[data-ember-index="3"] { animation-delay: 300ms; }
+  .bah-ember-dot[data-ember-index="4"] { animation-delay: 450ms; }
+}
+
+@keyframes bah-ember-breathe {
+  0%, 100% { opacity: var(--ba-ember-4); }
+  50%      { opacity: 1; }
+}
+
+/* Ember pulse — JS fires on verdict:declared during warming (200ms scale-in) */
+.bah-ember-dot--pulse {
+  animation: bah-ember-pulse 200ms var(--motion-easing-spring) both;
+}
+
+@keyframes bah-ember-pulse {
+  0%   { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+/* ── Thermal cross-fade — 400ms transition on state change ──────────────── */
+/* Triggered by JS updating data-ba-thermal on SSE verdict event.            */
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-ba-thermal] .bah-cold {
+    transition: opacity var(--motion-duration-base) var(--motion-easing-standard),
+                transform var(--motion-duration-base) var(--motion-easing-standard);
+  }
+}
+
+/* ── Reduced motion — all thermal animations degrade to static ────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .bah-ember-dot[data-ember-lit="true"] { animation: none; }
+  .bah-ember-dot--pulse { animation: none; }
+  [data-ba-thermal] .bah-ghost-ring { animation-play-state: paused; }
+}
+
 /* ── Stat row — selectivity + verdicts count ─────────────────────────────── */
 
 .ba-stats {

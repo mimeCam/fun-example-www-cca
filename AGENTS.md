@@ -7,11 +7,11 @@
 - `src/lib/` — domain logic
 - `src/components/` — UI components
 - `src/pages/api/` — REST API
-- `src/styles/` — design system (tokens, decay stages, river)
-- `scripts/` — build tooling (token compliance guard)
+- `src/styles/` — design system (tokens, stages)
+- `scripts/` — build tooling
 - `cli/` — CLI tools
 
 ## WIP
 
-- [wip] Homepage hero — BattingAverageHero warm/cold states
 - [wip] Token compliance migration — 30 files guarded; unguarded files still carry raw values
+- [wip] P1 polish: ghost chroma smoothing, endangered shadow pulse, radius calcification, KeepButton bloom, blog above-fold simplification, resurrection bloom

@@ -44,6 +44,20 @@ export const MIN_VERDICTS = 5; // minimum resolved verdicts before badge is show
 
 export type TrophyTier = 'locked' | 'bronze' | 'silver' | 'gold' | 'diamond';
 
+// ── Thermal State — conviction maturity visual language ──────────────────────
+// Mike §napkin: cold (untested) → warming (building track record) → hot (earned).
+// Pure derivation from resolvedTotal — no new DB column, no new cache.
+// CSS branches on [data-ba-thermal]; JS sets it; SSR renders the initial value.
+
+export type ThermalState = 'cold' | 'warming' | 'hot';
+
+/** Derive thermal state from resolved verdict count. Zero state management. */
+export function getThermalState(resolvedTotal: number): ThermalState {
+  if (resolvedTotal === 0) return 'cold';
+  if (resolvedTotal < MIN_VERDICTS) return 'warming';
+  return 'hot';
+}
+
 export interface BattingAverageResult {
   authorSlug:      string;
   resolvedCorrect: number;
@@ -54,6 +68,7 @@ export interface BattingAverageResult {
   selectivityRate: number | null; // totalSealed / totalPublished (null if 0 posts)
   eligible:        boolean;       // resolvedTotal >= MIN_VERDICTS
   trophyTier:      TrophyTier;
+  thermalState:    ThermalState;  // cold | warming | hot — conviction maturity
 }
 
 /**
@@ -214,6 +229,7 @@ function buildResult(
     totalPublished,  totalSealed: totalSeals,
     selectivityRate: getSelectivityRate(totalSeals, totalPublished),
     eligible,        trophyTier: getTrophyTier(eligible, pctInt),
+    thermalState:    getThermalState(resolvedTotal),
   };
 }
 

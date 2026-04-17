@@ -16,7 +16,8 @@
 //          Elon (selection-bias — selectivityRate visible alongside BA, always)
 
 import '../styles/batting-average.css';
-import type { BattingAverageResult, TrophyTier } from '../lib/batting-average';
+import type { BattingAverageResult, TrophyTier, ThermalState } from '../lib/batting-average';
+import { MIN_VERDICTS } from '../lib/batting-average';
 import BattingAverageUnlockProgress from './BattingAverageUnlockProgress.astro';
 import TrophyTierLadder from './TrophyTierLadder.astro';
 import BattingAverageUnlockCeremony from './BattingAverageUnlockCeremony.astro';
@@ -46,13 +47,33 @@ const tierIcons: Record<TrophyTier, string> = {
 const icon        = tierIcons[result.trophyTier];
 const pctDisplay  = result.eligible ? `${pctInt}%` : '—';
 const selDisplay  = result.selectivityRate !== null ? `${selPctInt}%` : '—';
-const needsMore   = 5 - result.resolvedTotal;
+const needsMore   = MIN_VERDICTS - result.resolvedTotal;
 const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
+
+// Thermal state — pure derivation (Mike §napkin: cold / warming / hot)
+const thermal = result.thermalState;
+const thermalSubtitle = thermalLabel(thermal, result.resolvedTotal);
+const emberDots = buildEmberDots(result.resolvedTotal);
+
+function thermalLabel(state: ThermalState, resolved: number): string {
+  if (state === 'cold') return 'Awaiting first verdict';
+  if (state === 'warming') return `${resolved} of ${MIN_VERDICTS} verdicts resolved`;
+  return 'Batting Average';
+}
+
+function buildEmberDots(resolved: number): Array<{ index: number; lit: boolean }> {
+  const cap = MIN_VERDICTS - 1; // 4 dots for verdicts 1–4
+  return Array.from({ length: cap }, (_, i) => ({
+    index: i + 1,
+    lit:   i < resolved,
+  }));
+}
 ---
 
 <section
   class="bah"
   data-ba-tier={result.trophyTier}
+  data-ba-thermal={thermal}
   data-unlock-target
   aria-label="Conviction batting average"
 >
@@ -135,6 +156,7 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
   {!result.eligible && <BattingAverageUnlockCeremony />}
 
   <!-- Score block: locked path (< MIN_VERDICTS resolved) -->
+  <!-- Thermal states cold/warming share layout; CSS differentiates via [data-ba-thermal] -->
   {!result.eligible && (
     <div class="bah-cold">
       <div class="bah-score bah-score--cold">
@@ -145,7 +167,19 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
           </svg>
         </div>
         <span class="bah-pct bah-pct--cold" aria-label="Batting average locked">—</span>
-        <span class="bah-subtitle bah-subtitle--cold">Batting Average</span>
+        <span class="bah-subtitle bah-subtitle--cold">{thermalSubtitle}</span>
+      </div>
+
+      <!-- Ember dots — 4 pips, one per resolved verdict (Mike §napkin §POI #4) -->
+      <div class="bah-embers" aria-label={`${result.resolvedTotal} of ${MIN_VERDICTS - 1} progress dots lit`}>
+        {emberDots.map(dot => (
+          <span
+            class="bah-ember-dot"
+            data-ember-index={dot.index}
+            data-ember-lit={String(dot.lit)}
+            aria-hidden="true"
+          />
+        ))}
       </div>
 
       <BattingAverageUnlockProgress
@@ -198,6 +232,8 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     wrong?:        number;
     pending?:      number;
     trophyTier?:   string;
+    thermalState?: string;
+    resolvedTotal?: number;
   }
 
   // Stash last verdict payload so bah:unlock handler can animate count-up
@@ -241,7 +277,34 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     });
   }
 
+  // ── Thermal state — live update on SSE verdict event ────────────────────
+
+  function getHeroEl(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('.bah[data-ba-thermal]');
+  }
+
+  function updateThermalState(state: string): void {
+    const hero = getHeroEl();
+    if (!hero || hero.dataset.baThermal === state) return;
+    hero.dataset.baThermal = state;
+  }
+
+  function lightEmberDot(resolved: number): void {
+    const dot = document.querySelector<HTMLElement>(
+      `.bah-ember-dot[data-ember-index="${resolved}"]`,
+    );
+    if (!dot || dot.dataset.emberLit === 'true') return;
+    dot.dataset.emberLit = 'true';
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      dot.classList.add('bah-ember-dot--pulse');
+    }
+  }
+
   function handleVerdict(payload: VerdictPayload): void {
+    // Update thermal state (always — even if BA didn't change)
+    if (payload.thermalState) updateThermalState(payload.thermalState);
+    if (typeof payload.resolvedTotal === 'number') lightEmberDot(payload.resolvedTotal);
+
     if (payload.newBattingAvg === null) return;
     const el = getPctEl();
     if (!el) return;
@@ -270,6 +333,8 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
   }
 
   function handleUnlock(e: CustomEvent<VerdictPayload>): void {
+    // Thermal transition: warming → hot (300ms surface cross-fade first)
+    updateThermalState('hot');
     fadeColdSection();
     setTimeout(() => {
       revealLiveSection();
@@ -439,7 +504,7 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
     color: var(--gold-dim);
     font-size: var(--text-xs);
     font-family: var(--font-mono);
-    padding: 4px var(--space-3);
+    padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-badge);
     cursor: pointer;
     letter-spacing: var(--tracking-wide);

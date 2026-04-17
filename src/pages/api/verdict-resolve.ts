@@ -17,7 +17,7 @@ import { getCollection } from 'astro:content';
 import { broadcastNamed } from '../../lib/heartbeat';
 import { resolveVerdict, VerdictAlreadySealedError } from '../../lib/verdict-resolver';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
-import { computeBattingAverage, getUnlockProgress, MIN_VERDICTS } from '../../lib/batting-average';
+import { computeBattingAverage, getUnlockProgress, getThermalState, MIN_VERDICTS } from '../../lib/batting-average';
 import { getAnchorGistId, getSealEntry } from '../../lib/conviction-ledger';
 import { anchorVerdict }          from '../../lib/conviction-anchor';
 import { stamp, hashContent }     from '../../lib/rfc3161-client';
@@ -118,10 +118,16 @@ export const POST: APIRoute = async ({ request }) => {
     const batting = computeBattingAverage();
     const newBattingAverage = batting.status === 'live' ? batting.pct : null;
     try {
-      const correct  = batting.status === 'live' ? batting.correct  : 0;
-      const wrong    = batting.status === 'live' ? batting.wrong    : 0;
-      const pending  = batting.status === 'live' ? batting.pending  : 0;
-      broadcastNamed('verdict:declared', { slug, verdict, newBattingAvg: newBattingAverage, correct, wrong, pending, sealedAt: record.sealedAt });
+      const correct       = batting.status === 'live' ? batting.correct  : 0;
+      const wrong         = batting.status === 'live' ? batting.wrong    : 0;
+      const pending       = batting.status === 'live' ? batting.pending  : 0;
+      const resolvedTotal = correct + wrong;
+      const thermalState  = getThermalState(resolvedTotal);
+      broadcastNamed('verdict:declared', {
+        slug, verdict, newBattingAvg: newBattingAverage,
+        correct, wrong, pending, resolvedTotal, thermalState,
+        sealedAt: record.sealedAt,
+      });
     } catch { /* broadcast failure must never reject the POST */ }
 
     // Broadcast batting-unlock if this verdict just crossed the unlock threshold.

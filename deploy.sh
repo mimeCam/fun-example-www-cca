@@ -4,6 +4,42 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v128 — BattingAverageHero Thermal State System (2026-04-17)
+#   Sprint: Conviction maturity visual language — cold/warming/hot thermal
+#     states derived from resolved verdict count. Pure derivation — zero new
+#     DB columns, zero new caches. ThermalState type + getThermalState() in
+#     batting-average.ts. BattingAverageHero.astro renders data-ba-thermal
+#     attribute with thermal-aware subtitle ("Awaiting first verdict" / "X of
+#     5 verdicts resolved" / "Batting Average"), ember dots (4 pips, one per
+#     pre-unlock verdict, staggered breathe animation), and live SSE update
+#     via verdict:declared broadcast. Ghost ring speed tokenized per thermal
+#     state (10s cold → 6s warming → 3s hot). 27 new tokens in tokens.css
+#     (surface tints, ring speeds, ember sizing/opacity). 130 LOC new CSS in
+#     batting-average.css (thermal polymorphism, ember breathe/pulse keyframes,
+#     thermal cross-fade, reduced-motion guards). verdict-resolve.ts now
+#     broadcasts resolvedTotal + thermalState in SSE verdict:declared payload.
+#   Modified files:
+#     src/lib/batting-average.ts — ThermalState type, getThermalState() pure
+#       function (0 verdicts → cold, <5 → warming, ≥5 → hot); thermalState
+#       field added to BattingAverageResult interface.
+#     src/components/BattingAverageHero.astro — data-ba-thermal attribute;
+#       thermalLabel() subtitle; buildEmberDots() array; .bah-embers markup;
+#       client-side updateThermalState() + updateEmberDots() on SSE event.
+#     src/styles/batting-average.css — [data-ba-thermal] polymorphism (cold/
+#       warming/hot surface/text/ring); .bah-embers flex row; .bah-ember-dot
+#       lit/unlit; staggered breathe animation; ember-pulse keyframe; thermal
+#       cross-fade transition; reduced-motion guards.
+#     src/styles/tokens.css — 27 new tokens: --ba-thermal-{cold,warming,hot}-
+#       surface/text/ring-speed; --ba-ember-{1,2,3,4} opacity ramp;
+#       --ba-ember-size/lit/unlit.
+#     src/pages/api/verdict-resolve.ts — resolvedTotal + thermalState added
+#       to verdict:declared SSE broadcast payload.
+#     AGENTS.md — thermal states marked done; Tanya P1 polish WIP added.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v127).
+#
 # Architecture v127 — Community Submit URL Inversion & Token AAA (2026-04-17)
 #   Sprint: Community submit form canonical URL inversion and AAA polish.
 #     /community/submit is now the canonical submit URL (Tanya §9);

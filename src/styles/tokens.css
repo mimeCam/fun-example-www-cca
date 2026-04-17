@@ -369,6 +369,33 @@
   --ba-progress-dot-size:    8px;     /* verdict progress dot diameter */
   --ba-border-locked-style:  dashed;  /* dashed = incomplete — not earned yet */
 
+  /* ── BA Thermal State Tokens (Mike §napkin — cold / warming / hot) ─────── */
+  /* Visual temperature driven by [data-ba-thermal] data-attribute.          */
+  /* cold = frostbite dormancy; warming = ember kindling; hot = earned glow. */
+
+  /* Surface tints per thermal state */
+  --ba-thermal-cold-surface:    color-mix(in oklch, var(--clr-slate-400) 4%, transparent);
+  --ba-thermal-cold-text:       var(--text-disabled);
+  --ba-thermal-cold-ring-speed: 10s;
+
+  --ba-thermal-warming-surface:  color-mix(in oklch, var(--clr-amber-400) 5%, transparent);
+  --ba-thermal-warming-text:     var(--text-tertiary);
+  --ba-thermal-warming-ring-speed: 6s;
+
+  --ba-thermal-hot-surface:     color-mix(in oklch, var(--ba-tier-color, var(--gold)) 6%, transparent);
+  --ba-thermal-hot-ring-speed:   3s;
+
+  /* Ember dot opacity ramp — 1 dot per resolved verdict (1–4) */
+  --ba-ember-1: 0.90;
+  --ba-ember-2: 0.75;
+  --ba-ember-3: 0.60;
+  --ba-ember-4: 0.45;
+
+  /* Ember dot sizing */
+  --ba-ember-size:  6px;
+  --ba-ember-lit:   var(--clr-amber-400);
+  --ba-ember-unlit: var(--text-disabled);
+
   /* ── Batting Progress Ring tokens (BattingProgressRing.astro) ────────── */
   /* Semantic aliases — keeps component CSS free of primitive references.   */
   --color-batting-green:   var(--clr-green-400);   /* ring fill when unlocked */
