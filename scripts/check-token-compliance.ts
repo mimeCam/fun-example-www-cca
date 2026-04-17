@@ -196,6 +196,12 @@ const GUARD_FILES = new Set([
   "src/pages/verdict/[slug].astro",
 ]);
 
+/** Files exempt from duration enforcement (they DEFINE duration tokens) */
+const DURATION_EXEMPT = new Set(["motion.css"]);
+
+/** Canonical breakpoint values — @media using these is noted, not warned */
+const CANONICAL_BREAKPOINTS = new Set([480, 640, 768, 1024]);
+
 const FONT_SIZE_PROP = /font-size\s*:/i;
 const FONT_WEIGHT_PROP = /font-weight\s*:/i;
 const LINE_HEIGHT_PROP = /line-height\s*:/i;
@@ -307,6 +313,57 @@ function isClampRemValue(line: string, matchIdx: number): boolean {
   return opens >= closes;
 }
 
+// ── Enforcement Helpers (Mike §napkin — duration/z-index/breakpoint/radius) ──
+
+/** True when line declares a transition or animation timing property */
+function isTimingPropLine(line: string): boolean {
+  return /^\s*(transition|animation)(-duration|-delay)?\s*:/i.test(line);
+}
+
+/** True when line is a shorthand transition or animation (inline colon) */
+function isTimingShorthand(line: string): boolean {
+  return /\b(transition|animation)\s*:/i.test(line);
+}
+
+/** True when line is a CSS custom property definition (--*:) */
+function isCustomPropDef(line: string): boolean {
+  return /^\s*--[\w-]+\s*:/.test(line);
+}
+
+/** True when line contains z-index property */
+function isZIndexProp(line: string): boolean {
+  return /z-index\s*:/i.test(line);
+}
+
+/** True when z-index value is via var(--z-*) token */
+function hasTokenizedZIndex(line: string): boolean {
+  return /var\(--z-/.test(line);
+}
+
+/** True when line is a border-radius declaration */
+function isBorderRadiusProp(line: string): boolean {
+  return /border-radius\s*:/i.test(line);
+}
+
+/** True when line is an @media query */
+function isMediaQuery(line: string): boolean {
+  return /^\s*@media\b/.test(line);
+}
+
+/** True when file is exempt from duration enforcement */
+function isDurationExempt(fileName: string): boolean {
+  return DURATION_EXEMPT.has(path.basename(fileName));
+}
+
+/** True when the match at matchIdx is the VALUE part of a var(--token) ref */
+function isWrappedByVar(line: string, matchIdx: number): boolean {
+  const before = line.slice(0, matchIdx);
+  const lastVar = before.lastIndexOf("var(");
+  if (lastVar < 0) return false;
+  const segment = line.slice(lastVar, matchIdx + 10);
+  return /var\(--[\w-]+/.test(segment);
+}
+
 // ── Core scan (pure function — works on any CSS string) ────────────────────
 
 function scanCSS(lines: string[], fileName: string): Violation[] {
@@ -368,6 +425,99 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
           column: match.index + 1,
           rule: rule.name,
           match: match[0],
+          context: rawLine.trim(),
+          severity: "warn",
+        });
+      }
+    }
+
+    // ── Duration enforcement (Mike §napkin — ERROR) ──────────────────────
+    // Raw ms/s in transition/animation lines → must use motion token.
+    // Exempt: motion.css (defines tokens), custom prop defs, var() ctx.
+    if (!isDurationExempt(fileName) && !isCustomPropDef(line)) {
+      if (isTimingPropLine(line) || isTimingShorthand(line)) {
+        const durRe = /\b(\d+)(ms)\b/g;
+        durRe.lastIndex = 0;
+        let dm: RegExpExecArray | null;
+        while ((dm = durRe.exec(line)) !== null) {
+          if (isInsideVarFallback(line, dm.index)) continue;
+          if (isVarReference(line) && isWrappedByVar(line, dm.index)) continue;
+          violations.push({
+            file: fileName, line: lineNumber, column: dm.index + 1,
+            rule: "no-raw-duration",
+            match: dm[0],
+            context: rawLine.trim(),
+            severity: "warn",
+          });
+        }
+        // Catch seconds (0.3s, 1.2s) — separate pattern
+        const secRe = /\b(\d+\.?\d*)(s)\b/g;
+        secRe.lastIndex = 0;
+        let sm: RegExpExecArray | null;
+        while ((sm = secRe.exec(line)) !== null) {
+          if (sm[0].endsWith("ms")) continue;
+          if (isInsideVarFallback(line, sm.index)) continue;
+          if (isVarReference(line) && isWrappedByVar(line, sm.index)) continue;
+          violations.push({
+            file: fileName, line: lineNumber, column: sm.index + 1,
+            rule: "no-raw-duration",
+            match: sm[0],
+            context: rawLine.trim(),
+            severity: "warn",
+          });
+        }
+      }
+    }
+
+    // ── Z-index enforcement (Mike §napkin — ERROR) ───────────────────────
+    // Raw z-index integer → must use var(--z-*) token.
+    // Exempt: z-index: -1 (structural, below stacking context parent).
+    if (isZIndexProp(line) && !hasTokenizedZIndex(line) && !isCustomPropDef(line)) {
+      const zRe = /z-index\s*:\s*(-?\d+)/i;
+      const zm = zRe.exec(line);
+      if (zm && zm[1] !== "-1" && !isInsideVarFallback(line, zm.index)) {
+        violations.push({
+          file: fileName, line: lineNumber, column: zm.index + 1,
+          rule: "no-raw-zindex",
+          match: `z-index: ${zm[1]}`,
+          context: rawLine.trim(),
+          severity: "warn",
+        });
+      }
+    }
+
+    // ── Breakpoint advisory (Mike §napkin — WARN) ────────────────────────
+    // @media with non-canonical px values gets flagged.
+    if (isMediaQuery(line)) {
+      const bpRe = /\b(\d+)px\b/g;
+      bpRe.lastIndex = 0;
+      let bm: RegExpExecArray | null;
+      while ((bm = bpRe.exec(line)) !== null) {
+        const px = parseInt(bm[1], 10);
+        if (!CANONICAL_BREAKPOINTS.has(px)) {
+          violations.push({
+            file: fileName, line: lineNumber, column: bm.index + 1,
+            rule: "breakpoint-advisory",
+            match: `${px}px`,
+            context: rawLine.trim(),
+            severity: "warn",
+          });
+        }
+      }
+    }
+
+    // ── Border-radius advisory (Tanya §10 — WARN) ───────────────────────
+    // Hardcoded border-radius values → should use --radius-* token.
+    if (isBorderRadiusProp(line) && !isVarReference(line) && !isCustomPropDef(line)) {
+      const brRe = /\b(\d+px|50%|9999px|inherit)\b/g;
+      brRe.lastIndex = 0;
+      let br: RegExpExecArray | null;
+      while ((br = brRe.exec(line)) !== null) {
+        if (isInsideVarFallback(line, br.index)) continue;
+        violations.push({
+          file: fileName, line: lineNumber, column: br.index + 1,
+          rule: "border-radius-advisory",
+          match: br[0],
           context: rawLine.trim(),
           severity: "warn",
         });

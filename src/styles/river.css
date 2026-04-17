@@ -158,7 +158,7 @@
   width: 1px;
   background: var(--gold-mid);
   pointer-events: none;
-  z-index: 2;
+  z-index: var(--z-shimmer);
 }
 
 .river-now__label {
@@ -241,7 +241,7 @@
 .river-empty a {
   color: var(--gold-mid);
   text-decoration: none;
-  transition: color 150ms ease;
+  transition: color var(--duration-fast) ease;
 }
 
 .river-empty a:hover { color: var(--gold); }

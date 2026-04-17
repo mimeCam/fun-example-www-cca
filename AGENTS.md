@@ -13,6 +13,9 @@
 
 ## WIP
 
+- [wip] Duration migration — ~150 raw ms/s warnings remain across 30+ files
+- [wip] Border-radius migration — 48 advisory warnings (tokenize hardcoded values)
+- [wip] Breakpoint standardization — 10 non-canonical @media values flagged
+- [wip] Design audit — accent consolidation, surface tier lightness delta, radius cascade
+- [wip] UIX spec — 20 deliverables remain (sticky stance, card hover revival, tension badge icons, sepia cap tuning)
 - [wip] P1 polish — blog above-fold simplification, KeepButton promotion, DecayClock overlay
-- [wip] Design audit — accent consolidation, surface tier lightness delta, radius cascade, tabular-nums
-- [wip] UIX spec — 20 deliverables remain (sticky stance mutual exclusion, card hover revival, tension badge icons, sepia cap tuning)

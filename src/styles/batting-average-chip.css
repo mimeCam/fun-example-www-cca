@@ -14,7 +14,7 @@
 .bac {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-faint);
   background: var(--surface-raised);
@@ -44,6 +44,7 @@
 .bac__count {
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
   opacity: 0.6;
   line-height: 1;
 }
@@ -74,7 +75,7 @@
 .bac--hero {
   font-size: var(--text-sm);
   padding: var(--space-1) var(--space-3);
-  min-height: 32px;
+  min-height: var(--space-8);
 }
 
 /* ── State: cold — no verdicts yet; dimmed but present ───────────────────── */

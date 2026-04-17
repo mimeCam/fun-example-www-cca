@@ -818,7 +818,7 @@ const riskText = variant === 'conviction'
   .sc-arc-track { fill: none; stroke: var(--border-subtle); stroke-width: 3; }
   .sc-arc-fill  { fill: none; stroke: var(--gold); stroke-width: 3; stroke-dasharray: 176; stroke-dashoffset: 176; stroke-linecap: round; transform-origin: center; transform: rotate(-90deg); transition: stroke-dashoffset 1800ms linear; }
   .sc-arc-fill.is-filling, .seal-ceremony[data-phase="anchor"] .sc-arc-fill { stroke-dashoffset: 0; }
-  .sc-anchor-lock  { color: var(--gold-dim); z-index: 1; }
+  .sc-anchor-lock  { color: var(--gold-dim); z-index: var(--z-card); }
   .sc-anchor-label { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text-primary); letter-spacing: var(--tracking-wide); margin: 0; }
   .sc-anchor-sub   { font-size: var(--text-xs); color: var(--text-tertiary); margin: 0; max-width: 30ch; text-align: center; }
 

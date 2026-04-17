@@ -120,6 +120,7 @@
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 .batting-check {
@@ -169,13 +170,13 @@
   transition:
     opacity   var(--motion-snap-duration) var(--motion-snap-easing),
     transform var(--motion-snap-duration) var(--motion-snap-easing);
-  transition-delay: 300ms;
+  transition-delay: var(--motion-duration-base);
   z-index: var(--z-tooltip);
 }
 .batting-chip:hover .batting-tooltip {
   opacity: 1;
   transform: translateY(0);
-  transition-delay: 300ms;
+  transition-delay: var(--motion-duration-base);
 }
 .batting-chip:not(:hover) .batting-tooltip { transition-delay: 0ms; }
 

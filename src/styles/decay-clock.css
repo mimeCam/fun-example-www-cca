@@ -52,7 +52,7 @@
 .decay-clock[data-stage="fossil"]     { --decay-ring-color: var(--color-decay-fossil); }
 
 /* Smooth OKLCH stage transition — no grey mudpoint, no binary flip */
-.decay-clock__ring { transition: --decay-ring-color 800ms ease; }
+.decay-clock__ring { transition: --decay-ring-color var(--motion-duration-grand) ease; }
 
 /* ── Live decay arc (outer ring) ─────────────────────────────────────────── */
 /* r=28 → circumference = 2π×28 = 175.929…  Decay 0=full ring, 1=empty.     */
@@ -115,9 +115,9 @@
   border-radius: var(--radius-full);
   background: radial-gradient(circle, var(--decay-ring-color) 0%, transparent 65%);
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-base);
   opacity: 0;
-  transition: opacity 800ms ease;
+  transition: opacity var(--motion-duration-grand) ease;
 }
 
 .decay-clock[data-stage] .decay-clock__glow {

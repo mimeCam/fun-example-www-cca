@@ -91,7 +91,7 @@
   border: 1px solid var(--border-subtle);
   background: var(--surface-raised);
   text-decoration: none;
-  transition: background 150ms ease, box-shadow 150ms ease, transform 200ms ease-out;
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease, transform var(--motion-duration-swift) ease-out;
 }
 
 .lb-card:hover {
@@ -211,7 +211,7 @@
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-6);
-  transition: color 150ms ease;
+  transition: color var(--duration-fast) ease;
 }
 .ap-back:hover { color: var(--text-secondary); }
 
@@ -321,7 +321,7 @@
 }
 
 .lb-list li {
-  animation: lb-enter 400ms ease-out both;
+  animation: lb-enter var(--motion-duration-measured) ease-out both;
 }
 
 /* Stagger via nth-child — works for up to 20 items */

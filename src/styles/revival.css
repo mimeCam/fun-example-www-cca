@@ -18,7 +18,7 @@
   --revival-badge-delay:       var(--motion-flow-duration);       /* 200ms */
   --revival-badge-duration:    var(--motion-flow-duration);       /* 200ms */
   --bloom-ring-duration:       var(--motion-spring-duration);     /* 800ms */
-  --bloom-flash-duration:      400ms;
+  --bloom-flash-duration:      var(--motion-duration-measured);
   --bloom-burst-duration:      700ms;
   --bloom-settle-duration:     var(--duration-bloom);             /* 1200ms */
   --revival-ring-duration:     var(--motion-spring-duration);     /* 800ms */
@@ -80,7 +80,7 @@
 
 .decay-card.blooming {
   pointer-events: none;
-  z-index: 2;
+  z-index: var(--z-shimmer);
 }
 
 /* Bloom ring */
@@ -125,7 +125,7 @@
     color-mix(in oklch, var(--mood-accent) 8%, transparent) 0%,
     transparent 70%
   );
-  z-index: 1;
+  z-index: var(--z-card);
 }
 
 .decay-card.blooming .bloom-flash {
@@ -144,7 +144,7 @@
   inset: 0;
   pointer-events: none;
   overflow: visible;
-  z-index: 3;
+  z-index: calc(var(--z-shimmer) + 1);
 }
 
 .bloom-particle {
@@ -189,7 +189,7 @@
 /* Bloom lift */
 .decay-card.bloom-lift {
   transform: translateY(-4px);
-  transition: transform 120ms ease-out;
+  transition: transform var(--motion-snap-duration) ease-out;
 }
 
 /* Bloom afterglow — 900ms emotional anchor */
@@ -197,7 +197,7 @@
   box-shadow:
     0 4px 20px color-mix(in oklch, var(--mood-accent) 18%, transparent),
     0 0 0 1px  color-mix(in oklch, var(--mood-accent) 10%, transparent);
-  transition: box-shadow 300ms ease-out;
+  transition: box-shadow var(--motion-duration-base) ease-out;
 }
 
 /* Bloom settle — spring physics (references motion.css --motion-spring-easing) */
@@ -354,7 +354,7 @@
 
 /* Sympathetic glow: co-presence signal on article */
 .revival-stage.sympathetic {
-  animation: sympathetic-article-glow 1200ms ease-out;
+  animation: sympathetic-article-glow var(--motion-duration-breath) ease-out;
 }
 
 @keyframes sympathetic-article-glow {
@@ -386,7 +386,7 @@
   height: 48px;
   transform: translate(-50%, -50%) rotate(-90deg);
   pointer-events: none;
-  z-index: 10;
+  z-index: var(--z-nav);
   opacity: 0.7;
 }
 
@@ -420,7 +420,7 @@
 }
 
 .revival-stage h1.chroma-flash {
-  animation: chroma-flash 600ms ease-out forwards;
+  animation: chroma-flash var(--motion-duration-dramatic) ease-out forwards;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -454,7 +454,7 @@
   }
   .decay-card.sympathetic {
     border-color: color-mix(in oklch, var(--mood-accent) 20%, transparent);
-    transition: border-color 400ms ease;
+    transition: border-color var(--motion-duration-measured) ease;
   }
   .decay-card.sympathetic .bloom-ring {
     animation: none;
@@ -465,7 +465,7 @@
   .revival-stage:hover { filter: none; }
   .revival-stage.reviving {
     animation: none;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--motion-duration-base) ease;
   }
   .revival-stage.reviving .revival-ring {
     animation: none;
@@ -476,7 +476,7 @@
     border-color: color-mix(in oklch, var(--mood-accent) 15%, transparent);
   }
   .revival-badge {
-    transition: opacity 0.2s ease;
+    transition: opacity var(--motion-duration-swift) ease;
     transform: translateX(-50%) translateY(0);
   }
 
@@ -499,7 +499,7 @@
 }
 
 .graveyard {
-  animation: graveyard-arrive 500ms ease-out both;
+  animation: graveyard-arrive var(--motion-drift-duration) ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -511,7 +511,7 @@
   border-color: color-mix(in oklch, var(--mood-accent) 18%, transparent);
   opacity: 0.7;
   filter: saturate(0.35);
-  transition: border-color 600ms ease, opacity 600ms ease, filter 600ms ease;
+  transition: border-color var(--motion-duration-dramatic) ease, opacity var(--motion-duration-dramatic) ease, filter var(--motion-duration-dramatic) ease;
 }
 
 /* Tombstone corner radius per Tanya design system (§7 — colder = 8px) */
@@ -521,7 +521,7 @@
 
 /* Graveyard stats entry animation — staggers in after header */
 .graveyard-stats {
-  animation: graveyard-arrive 600ms ease-out 180ms both;
+  animation: graveyard-arrive var(--motion-duration-dramatic) ease-out 180ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -576,6 +576,6 @@
   .decay-card[data-bloom="active"] {
     animation: none;
     border-color: color-mix(in oklch, var(--mood-accent) 18%, transparent);
-    transition: border-color 300ms ease;
+    transition: border-color var(--motion-duration-base) ease;
   }
 }

@@ -4,31 +4,35 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v130 — Token Compliance 100% Ratchet & UIX Polish (2026-04-17)
-#   Sprint: Token compliance ratchet to 100% + component UIX polish pass.
-#     check-token-compliance.ts GUARD_FILES expanded from 31 to 132 — every
-#     scannable file (40 CSS + 73 components + 19 pages) is now guarded by
-#     the prebuild token lint guard. Zero errors; 134 typography warns
-#     (advisory only). Comprehensive UIX polish across 27 components and
-#     pages: AnchorStrip, DisputeChallenge, DisputeQuorum, GraveyardEmptyState,
-#     GraveyardLedger, GraveyardTeaser, Murmurs, NowLine, OpenLoopCard,
-#     PostBadge, PostNav, PredictionCard, PredictionVault, PresenceBand,
-#     RevivalBadge, RisenBadge, ShareSealButton, ShareSheet, StickyStanceBar,
-#     TrustBadge, admin, audit/[slug], author/index, leaderboard, now,
-#     predictions, verdict/[slug]. All changes are CSS token migrations and
-#     design system standardization — raw hex/px values replaced with design
-#     tokens throughout.
+# Architecture v131 — Design Token Deep Migration & Compliance Hardening (2026-04-17)
+#   Sprint: Motion/duration/z-index/breakpoint/radius token migration across
+#     25 files. Token compliance checker expanded with 4 new enforcement rules
+#     (no-raw-duration, no-raw-zindex, breakpoint-advisory, border-radius-advisory).
+#     Motion token vocabulary expanded: 5 named durations (swift 200ms through
+#     breath 1200ms), stagger utility tokens, 3 transition composites.
+#     Shadow system: --shadow-e4 split into neutral E4 + --shadow-e4-ceremony
+#     (gold glow) so non-ceremony panels don't inherit glow. Breakpoint
+#     reference tokens (--bp-sm/md/lg/xl) added as canonical source-of-truth.
+#     tabular-nums applied to all numeric mono-spaced displays (7 classes).
+#     z-index values migrated from raw integers to --z-* tokens. All
+#     prefers-reduced-motion guards updated for new duration tokens.
 #   Modified files:
-#     scripts/check-token-compliance.ts — GUARD_FILES ratcheted 31→132;
-#       all scannable CSS, component, and page files now enforced.
-#     src/components/*.astro — 21 components: token compliance fixes,
-#       raw values → design tokens, micro-layout polish.
-#     src/pages/*.astro — 7 pages: token compliance, design consistency.
-#     AGENTS.md — token compliance marked done (132/132); WIP updated.
+#     scripts/check-token-compliance.ts — 4 new enforcement rules; exempt
+#       sets for motion.css; canonical breakpoint validation.
+#     src/styles/tokens.css — breakpoint refs, shadow-e4 split, card-footer-height.
+#     src/styles/motion.css — 5 duration tokens, stagger tokens, 3 composites,
+#       reduced-motion overrides for all new tokens.
+#     src/styles/*.css (14 files) — raw duration/z-index → token migration.
+#     src/components/*.astro (5 files) — tabular-nums, z-index tokenization.
+#     AGENTS.md — WIP updated (duration/z-index/radius/breakpoint status).
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
 #     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
 #     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
 #     unchanged (steps 1–8 identical to v129).
+#
+# Architecture v130 — Token Compliance 100% Ratchet & UIX Polish (2026-04-17)
+#   Sprint: Token compliance ratchet to 100% + component UIX polish pass.
+#   Infrastructure: no changes. (see git log for full details)
 #
 # Architecture v129 — Decay Stage Transition Orchestrator (2026-04-17)
 #   Sprint: Stage boundary crossing choreography — visual transitions

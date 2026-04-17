@@ -10,6 +10,16 @@
 
 :root {
 
+  /* ── Breakpoint Reference Tokens (Mike §napkin) ─────────────────────── */
+  /* CSS var() can't be used in @media — these serve as:                   */
+  /*   1. Single source of truth for canonical breakpoint values           */
+  /*   2. Compliance checker validates @media px against this set          */
+  /*   3. Container query migration path (cq supports custom properties)   */
+  --bp-sm:  480px;    /* mobile-small  */
+  --bp-md:  640px;    /* mobile-large  */
+  --bp-lg:  768px;    /* tablet        */
+  --bp-xl:  1024px;   /* desktop       */
+
   /* ── Color Primitives (OKLCH — Baseline 2024, perceptually uniform) ──── */
   /* Migration from HSL: Tanya §7, Mike §Token-System-Discipline.           */
   /* Surface/border tokens stay RGBA — glass compositing needs transparency. */
@@ -283,8 +293,14 @@
     0 8px 24px oklch(0.10 0.02 45 / 0.22),
     0 2px 8px  oklch(0.10 0.02 45 / 0.12);
 
-  /* E4 — ceremony: seal confirm phase, receipt display, verdict reveal moment */
+  /* E4 — top-level overlay: panels, modals at highest elevation (no color) */
   --shadow-e4:
+    0 12px 40px oklch(0.10 0.02 45 / 0.30),
+    0 4px  12px oklch(0.10 0.02 45 / 0.15);
+
+  /* E4 ceremony — seal confirm, receipt, verdict reveal (gold ring glow) */
+  /* Tanya §9.1: split from E4 so non-ceremony panels don't inherit glow  */
+  --shadow-e4-ceremony:
     0 0   0   1px  oklch(0.78 0.15 85 / 0.28),
     0 12px 40px    oklch(0.10 0.02 45 / 0.30),
     0 0   24px     oklch(0.78 0.15 85 / 0.12);
@@ -334,6 +350,9 @@
   --z-modal:      100;
   --z-onboarding: 150;  /* full-screen teach modal — above modal, below toast */
   --z-toast:      200;
+
+  /* ── Card Footer Height (Tanya §3.1) ────────────────────────────────── */
+  --card-footer-height: 52px;   /* min-height for card footer; prevents clip on mobile */
 
   /* ── Decay Card Defaults (overridden by JS decay-engine at runtime) ──── */
   --decay-bg-fresh:       var(--surface-raised);

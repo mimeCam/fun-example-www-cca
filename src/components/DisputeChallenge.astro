@@ -373,7 +373,7 @@ const { slug, verdictSealed, disputeState } = Astro.props;
   /* Button label stays above the fill */
   .dispute-challenge__btn-label {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-card);
   }
 
   /* Committed state */

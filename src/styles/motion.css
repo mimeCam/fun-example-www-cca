@@ -52,6 +52,18 @@
   --motion-drift-duration: 500ms;
   --motion-drift-easing:   cubic-bezier(0.4, 0, 1, 1);
 
+  /* ── Duration Gap-Fills (Mike §napkin — vocabulary expansion) ────────── */
+  /* Fills missing steps between named profiles for token migration.       */
+  --motion-duration-swift:     200ms;  /* leaderboard row stagger, filter pill     */
+  --motion-duration-measured:  400ms;  /* verdict badge entry, card lift            */
+  --motion-duration-dramatic:  600ms;  /* ceremony phases, stage transitions        */
+  --motion-duration-grand:     800ms;  /* ambient pulse, verdict ceremony           */
+  --motion-duration-breath:   1200ms;  /* bloom settle, crystallized sweep          */
+
+  /* ── Stagger Utility Tokens (leaderboard rows, tombstone grid) ──────── */
+  --stagger-base: 60ms;
+  --stagger-unit: 60ms;   /* multiply by child index */
+
   /* DECAY-THUMP — biological heartbeat brightness pulse on bar fill.     */
   /* Duration is overridden per-element by --hb-bar-duration (orchestrator). */
   /* Easing matches the spring thump shape: fast peak, slow release.      */
@@ -62,6 +74,11 @@
   --transition-flow:    var(--motion-flow-duration)  var(--motion-flow-easing);
   --transition-revival: var(--duration-bloom)        var(--ease-spring);
   --transition-decay:   var(--motion-drift-duration) var(--motion-drift-easing);
+
+  /* ── Extended Composites (Mike §napkin — transition presets) ──────────── */
+  --transition-measured: var(--motion-duration-measured) var(--ease-in-out);
+  --transition-dramatic: var(--motion-duration-dramatic) var(--ease-out);
+  --transition-grand:    var(--motion-duration-grand)    var(--ease-spring);
 }
 
 /* ── Accessibility Override ─────────────────────────────────────────────── */
@@ -79,6 +96,13 @@
     --duration-dramatic:        0ms;
     --duration-bloom:           0ms;
     --duration-museum:          0ms;
+    --motion-duration-swift:    0ms;
+    --motion-duration-measured: 0ms;
+    --motion-duration-dramatic: 0ms;
+    --motion-duration-grand:    0ms;
+    --motion-duration-breath:   0ms;
+    --stagger-base:             0ms;
+    --stagger-unit:             0ms;
   }
 }
 

@@ -138,6 +138,7 @@
   line-height: 1.0;
   letter-spacing: -0.02em;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Modifiers (apply alongside base preset) ──────────────────── */

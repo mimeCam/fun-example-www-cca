@@ -29,7 +29,7 @@
 }
 
 .conviction-meter--updating [data-cm-pct] {
-  animation: cm-digit-pop 600ms linear(
+  animation: cm-digit-pop var(--motion-duration-dramatic) linear(
     0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%,
     1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%,
     1.129 32.8%, 1.051 39%, 1.017 41.4%, 0.991 45.7%, 0.984, 0.980,
@@ -43,7 +43,7 @@
 [data-cm-correct],
 [data-cm-wrong],
 [data-cm-pending] {
-  transition: color 300ms ease;
+  transition: color var(--motion-duration-base) ease;
 }
 
 /* ── Correct pill: highlight on fresh correct verdict ────────────────────── */
@@ -55,7 +55,7 @@
 }
 
 .conviction-meter--verdict-correct [data-cm-correct] {
-  animation: cm-correct-pop 800ms ease both;
+  animation: cm-correct-pop var(--motion-duration-grand) ease both;
 }
 
 /* ── prefers-reduced-motion: suppress all animations ─────────────────────── */
