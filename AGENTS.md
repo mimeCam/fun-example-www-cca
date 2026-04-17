@@ -4,15 +4,16 @@
 
 ## Paths
 
-- `src/lib/` — domain logic (decay engine, verdict, seals, batting average, OG images)
-- `src/components/` — UI layer
+- `src/lib/` — domain logic (decay, verdict, seals, batting average, OG images)
+- `src/components/` — UI components
 - `src/pages/api/` — REST API
-- `src/styles/tokens.css` — design token source of truth (`npm run lint:tokens` guards compliance)
+- `src/styles/` — design system (tokens, surfaces, typography, motion)
+- `scripts/` — build tooling (token compliance guard)
 - `cli/` — CLI tools
 
 ## WIP
 
-- Token compliance sweep — Tier 1 guard locked (7 files clean); ~516 violations remain (next: SiteNav, BattingAverageHero, SealCeremony, DecayCard)
-- Homepage hero — BattingAverageHero as Zone 1 above the feed (warm/cold states)
-- Blog detail surgery — consolidate bottom zones into single "Conviction Record" card
-- EndangeredFeed refactor — reuse EndangeredCard component instead of inline markup
+- Homepage hero — BattingAverageHero Zone 1 (warm/cold states)
+- Blog detail — consolidate bottom zones into single "Conviction Record" card
+- EndangeredFeed — reuse EndangeredCard component
+- Typography migration — 258 WARN-level issues in unguarded files

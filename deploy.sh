@@ -4,6 +4,40 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v122 — Typography Composition System & Token Migration (2026-04-17)
+#   Sprint: Design-system polish — added typography.css composition layer
+#     (13 presets, 5 modifiers, responsive overrides) as the missing abstraction
+#     between raw --text-* tokens and component styles. Migrated 4 components
+#     (DecayCard, SealCeremony, BattingAverageHero, SiteNav/nav.css) from raw
+#     magic-number CSS values to design-token variables. Token compliance checker
+#     expanded from 7 to 13 guarded files; severity system added (error vs warn)
+#     so typography warnings don't block builds. global.css now imports
+#     typography.css alongside existing token layers.
+#   New files:
+#     src/styles/typography.css — 13 type presets (.type-hero through .type-stat),
+#       5 modifiers (.type-muted, .type-accent, .type-decay, .type-truncate,
+#       .type-balance), responsive overrides at 640px breakpoint.
+#   Modified files:
+#     src/styles/global.css — @import "./typography.css" added between surfaces
+#       and motion layers.
+#     src/styles/nav.css — raw gap (3px), padding (4px 10px, 6px 12px), and
+#       letter-spacing (0.06em) replaced with --space-* and --tracking-* tokens.
+#     src/components/DecayCard.astro — 5 raw rem/px values replaced with --text-*,
+#       --space-*, --weight-*, --leading-* tokens; footer height 48→52px per
+#       Tanya §4 spec.
+#     src/components/SealCeremony.astro — 6 raw letter-spacing values replaced
+#       with --tracking-wide/--tracking-widest tokens.
+#     src/components/BattingAverageHero.astro — raw gap (3px) and padding (3px)
+#       replaced with --space-1 tokens.
+#     scripts/check-token-compliance.ts — ViolationSeverity type added; 6 new
+#       guard files; typography WARN rules (raw font-weight, letter-spacing,
+#       font-family); partitionSeverity(); warns don't block guard mode.
+#     AGENTS.md — Done section added with typography migration items; WIP updated.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v121).
+#
 # Architecture v121 — Layer Cleanup & UI Simplification (2026-04-16)
 #   Sprint: Major surface-area reduction — deleted six heavyweight overlay
 #     components (LandingHero, OnboardingOverlay, StanceDrawer, ConvictionDemo,

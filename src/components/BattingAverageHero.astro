@@ -367,7 +367,7 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
   .bah-subtitle--cold { font-style: italic; color: var(--text-ghost); }
 
   /* ── Stat row groups ─────────────────────────────────────────────────── */
-  .ba-stats__group { display: flex; flex-direction: column; gap: 3px; }
+  .ba-stats__group { display: flex; flex-direction: column; gap: var(--space-1); }
   .ba-stats__group--right { text-align: right; }
 
   /* ── Ghost ring (cold state) ─────────────────────────────────────────── */
@@ -405,7 +405,7 @@ const wrongCount  = result.resolvedTotal - result.resolvedCorrect;
   .bah-pill {
     font-size: var(--text-xs);
     font-family: var(--font-mono);
-    padding: 3px var(--space-2);
+    padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-badge);
     white-space: nowrap;
   }

@@ -29,6 +29,8 @@ import * as path from "path";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
+type ViolationSeverity = "error" | "warn";
+
 interface Violation {
   file: string;
   line: number;
@@ -36,12 +38,14 @@ interface Violation {
   rule: string;
   match: string;
   context: string;
+  severity: ViolationSeverity;
 }
 
 interface RuleDefinition {
   name: string;
   pattern: RegExp;
   description: string;
+  severity?: ViolationSeverity;
 }
 
 // ── Config ─────────────────────────────────────────────────────────────────
@@ -49,7 +53,7 @@ interface RuleDefinition {
 const STYLES_DIR = path.resolve(process.cwd(), "src/styles");
 const COMPONENTS_DIR = path.resolve(process.cwd(), "src/components");
 const PAGES_DIR = path.resolve(process.cwd(), "src/pages");
-const SKIP_FILES = new Set(["tokens.css"]);
+const SKIP_FILES = new Set(["tokens.css", "typography.css"]);
 
 /** Guard files: MUST be clean. Prebuild exits non-zero if these have violations.
  *  Add files here once their token migration is complete. */
@@ -61,9 +65,20 @@ const GUARD_FILES = new Set([
   "src/components/TombstoneCard.astro",
   "src/components/RiverFilter.astro",
   "src/styles/surfaces.css",
+  // Typography migration — Sid 2026-04-17 (Mike §4 guard ratchet)
+  "src/styles/typography.css",
+  "src/components/DecayCard.astro",
+  "src/components/SiteNav.astro",
+  "src/components/SealCeremony.astro",
+  "src/components/BattingAverageHero.astro",
+  "src/styles/nav.css",
 ]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;
+const FONT_WEIGHT_PROP = /font-weight\s*:/i;
+const LINE_HEIGHT_PROP = /line-height\s*:/i;
+const LETTER_SPACING_PROP = /letter-spacing\s*:/i;
+const FONT_FAMILY_PROP = /font-family\s*:/i;
 
 const RULES: RuleDefinition[] = [
   {
@@ -87,6 +102,45 @@ const RULES: RuleDefinition[] = [
     description: "Raw rem in font-size — use a --text-* token",
   },
 ];
+
+/* ── Typography composition rules (WARN — not guard violations) ──────────
+ * Detect raw typography patterns that suggest a missing .type-* class.
+ * These are warnings for the migration backlog, not build blockers.
+ * Architecture: Michael Koch · Impl: Sid 2026-04-17                      */
+
+const TYPO_WARN_RULES: RuleDefinition[] = [
+  {
+    name: "typo-raw-letter-spacing",
+    pattern: /\b\d+\.?\d*em\b/g,
+    description: "Raw letter-spacing — use --tracking-* token or .type-* class",
+    severity: "warn",
+  },
+  {
+    name: "typo-raw-font-weight",
+    pattern: /\b[1-9]00\b/g,
+    description: "Raw font-weight — use --weight-* token or .type-* class",
+    severity: "warn",
+  },
+  {
+    name: "typo-raw-font-family",
+    pattern: /\bsystem-ui\b|\bsans-serif\b|\bmonospace\b/g,
+    description: "Raw font stack — use var(--font-sans) or var(--font-mono)",
+    severity: "warn",
+  },
+];
+
+/** Check if a line declares a typography property (not layout) */
+function isTypographyPropLine(rule: RuleDefinition, line: string): boolean {
+  if (rule.name === "typo-raw-letter-spacing") return LETTER_SPACING_PROP.test(line);
+  if (rule.name === "typo-raw-font-weight") return FONT_WEIGHT_PROP.test(line);
+  if (rule.name === "typo-raw-font-family") return FONT_FAMILY_PROP.test(line);
+  return false;
+}
+
+/** Font-weight values inside var() fallbacks are allowed */
+function isVarReference(line: string): boolean {
+  return /var\(--/.test(line);
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -171,6 +225,29 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
           rule: rule.name,
           match: match[0],
           context: rawLine.trim(),
+          severity: "error",
+        });
+      }
+    }
+
+    // Typography warn rules — only fire on matching property lines
+    for (const rule of TYPO_WARN_RULES) {
+      if (!isTypographyPropLine(rule, line)) continue;
+      if (isVarReference(line)) continue;
+
+      rule.pattern.lastIndex = 0;
+      let match: RegExpExecArray | null;
+
+      while ((match = rule.pattern.exec(line)) !== null) {
+        if (isInsideVarFallback(line, match.index)) continue;
+        violations.push({
+          file: fileName,
+          line: lineNumber,
+          column: match.index + 1,
+          rule: rule.name,
+          match: match[0],
+          context: rawLine.trim(),
+          severity: "warn",
         });
       }
     }
@@ -250,31 +327,60 @@ function printSection(title: string, violations: Violation[]): void {
   for (const [file, vList] of byFile) {
     console.log(`  ${file} (${vList.length})`);
     for (const v of vList) {
-      console.log(`    ${v.line}:${v.column}  [${v.rule}]  ${v.match}`);
-      console.log(`             ${v.context}`);
+      const tag = v.severity === "warn" ? "WARN" : "ERR ";
+      console.log(`    ${tag} ${v.line}:${v.column}  [${v.rule}]  ${v.match}`);
+      console.log(`              ${v.context}`);
     }
     console.log();
   }
 }
 
+/** Split violations by severity */
+function partitionSeverity(violations: Violation[]): { errors: Violation[]; warns: Violation[] } {
+  const errors: Violation[] = [];
+  const warns: Violation[] = [];
+  for (const v of violations) {
+    if (v.severity === "warn") warns.push(v);
+    else errors.push(v);
+  }
+  return { errors, warns };
+}
+
 function printReport(css: Violation[], astro: Violation[]): void {
-  const total = css.length + astro.length;
+  const all = [...css, ...astro];
+  const { errors, warns } = partitionSeverity(all);
+  const total = all.length;
+
   if (total === 0) {
     console.log("✅  Token compliance: all clear (CSS + Astro).");
     return;
   }
 
-  console.log(`\n❌  Token compliance: ${total} violation(s) found.\n`);
-  printSection("CSS files (src/styles/)", css);
-  printSection("Astro inline <style> blocks", astro);
-  console.log("Fix: replace raw values with tokens from src/styles/tokens.css.");
-  console.log("     var(--token, #fallback) is allowed — defensive CSS is OK.\n");
+  if (errors.length > 0) {
+    console.log(`\n❌  Token compliance: ${errors.length} error(s) found.\n`);
+    const cssErrors = css.filter(v => v.severity !== "warn");
+    const astroErrors = astro.filter(v => v.severity !== "warn");
+    printSection("CSS files (src/styles/)", cssErrors);
+    printSection("Astro inline <style> blocks", astroErrors);
+    console.log("Fix: replace raw values with tokens from src/styles/tokens.css.");
+    console.log("     var(--token, #fallback) is allowed — defensive CSS is OK.\n");
+  }
+
+  if (warns.length > 0) {
+    const cssWarns = css.filter(v => v.severity === "warn");
+    const astroWarns = astro.filter(v => v.severity === "warn");
+    console.log(`\n⚠️   Typography: ${warns.length} composition warning(s).`);
+    console.log(`     Consider using .type-* classes from typography.css.\n`);
+    printSection("Typography warnings — CSS", cssWarns);
+    printSection("Typography warnings — Astro", astroWarns);
+  }
 }
 
 // ── Guard filter ──────────────────────────────────────────────────────────
 
+/** Guard mode only fails on errors in guarded files — warns never block */
 function filterGuarded(violations: Violation[]): Violation[] {
-  return violations.filter((v) => GUARD_FILES.has(v.file));
+  return violations.filter((v) => GUARD_FILES.has(v.file) && v.severity !== "warn");
 }
 
 function filterUnguarded(violations: Violation[]): Violation[] {
@@ -303,28 +409,33 @@ function main(): void {
   for (const f of cssFiles) cssViolations.push(...scanCSSFile(f));
   for (const f of astroFiles) astroViolations.push(...scanAstroFile(f));
 
+  const allViolations = [...cssViolations, ...astroViolations];
+  const { errors: allErrors, warns: allWarns } = partitionSeverity(allViolations);
+
   if (guardMode) {
     const guardCss = filterGuarded(cssViolations);
     const guardAstro = filterGuarded(astroViolations);
     const guardTotal = guardCss.length + guardAstro.length;
-    const warnTotal = cssViolations.length + astroViolations.length - guardTotal;
+    const errorTotal = allErrors.length - guardTotal;
+    const warnTotal = allWarns.length;
 
     if (guardTotal > 0) {
       printReport(guardCss, guardAstro);
-      console.log(`  (${warnTotal} additional violations in unguarded files — fix in next sprint)\n`);
+      console.log(`  (${errorTotal} errors + ${warnTotal} warns in unguarded files)\n`);
       process.exit(1);
     }
 
     console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean.`);
-    if (warnTotal > 0) {
-      console.log(`   \u26a0\ufe0f  ${warnTotal} violations remain in unguarded files.\n`);
+    if (errorTotal > 0 || warnTotal > 0) {
+      console.log(`   \u26a0\ufe0f  ${errorTotal} errors + ${warnTotal} typography warnings remain in unguarded files.\n`);
     }
     return;
   }
 
   printReport(cssViolations, astroViolations);
 
-  if (cssViolations.length + astroViolations.length > 0) {
+  // Only exit non-zero for errors — warns are advisory
+  if (allErrors.length > 0) {
     process.exit(1);
   }
 }

@@ -120,7 +120,7 @@ const decayStage = stageAttr(post.decay);
     background: var(--surface-raised);
     border: 1px solid color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 6%, transparent);
     max-width: 40rem;
-    margin: 0 auto 1.25rem;
+    margin: 0 auto var(--space-5);
     display: flex;
     flex-direction: column;
   }
@@ -176,11 +176,11 @@ const decayStage = stageAttr(post.decay);
   .post-link,
   .post-excerpt,
   .card-footer {
-    padding-left: 1.75rem;
-    padding-right: 1.75rem;
+    padding-left: var(--space-7);
+    padding-right: var(--space-7);
   }
 
-  .post-link { padding-top: 1.25rem; }
+  .post-link { padding-top: var(--space-5); }
 
   .post-link {
     text-decoration: none;
@@ -190,18 +190,18 @@ const decayStage = stageAttr(post.decay);
 
   .post-date {
     display: block;
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     opacity: 0.5;
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--space-1);
   }
 
   .post-title {
-    margin: 0 0 0.5rem;
-    font-size: 1.25rem;
-    font-weight: 600;
-    line-height: 1.3;
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-snug);
     color: var(--mood-accent, currentColor);
   }
 
@@ -212,9 +212,9 @@ const decayStage = stageAttr(post.decay);
   }
 
   .post-excerpt {
-    margin:      0.4rem 0 0;
-    font-size:   var(--text-sm);   /* was 0.88rem — all values via token system (Tanya §11) */
-    line-height: 1.55;
+    margin:      var(--space-1) 0 0;
+    font-size:   var(--text-sm);
+    line-height: var(--leading-normal);
     opacity:     0.7;
   }
 
@@ -222,8 +222,8 @@ const decayStage = stageAttr(post.decay);
   .card-footer {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
-    height: 48px;
+    gap: var(--space-3);
+    height: 52px;
     margin-top: auto;          /* push to bottom of flex column card */
     padding-top: 0;
     padding-bottom: 0;
