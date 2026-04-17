@@ -13,15 +13,11 @@ import PostBadge from '../../components/PostBadge.astro';
 import BattingAverageChip from '../../components/BattingAverageChip.astro';
 import PostNav from '../../components/PostNav.astro';
 import SealCeremony from '../../components/SealCeremony.astro';
-import ConvictionAuditTrail from '../../components/ConvictionAuditTrail.astro';
-import GhostEchoes from '../../components/GhostEchoes.astro';
+import ConvictionRecord from '../../components/ConvictionRecord.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
-import KeepButton from '../../components/KeepButton.astro';
 import StickyStanceBar from '../../components/StickyStanceBar.astro';
 import DecayClock from '../../components/DecayClock.astro';
 import PredictionCard from '../../components/PredictionCard.astro';
-import DisputeChallenge from '../../components/DisputeChallenge.astro';
-import DisputeTally from '../../components/DisputeTally.astro';
 import { flattenPredictions } from '../../lib/prediction-engine';
 // TensionBadge is rendered inside SealCeremony sealed branch (embedded in status row).
 import { allPostDisplayData, extractMeta } from '../../lib/postMeta';
@@ -30,7 +26,7 @@ import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
 import { daysUntilEntombment, clockUrgency, CLOCK_MAX_DAYS } from '../../lib/death-clock';
-import { decayFactor, dominantConviction } from '../../lib/decay-engine';
+import { decayFactor, dominantConviction, stageFromFactor } from '../../lib/decay-engine';
 import { getGraceState } from '../../lib/cold-start';
 import { getStanceDistribution } from '../../lib/stance-ledger';
 import { computeTension } from '../../lib/tension-score';
@@ -75,6 +71,7 @@ const readingSeconds = safeRead(() => getReadingSeconds(post.slug));
 const postDecay      = decayFactor(pubDateISO, lifespan, new Date(), revivalCount, readingSeconds, dominantVerdict);
 const daysRemaining  = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS);
 const postUrgency    = clockUrgency(daysRemaining);
+const decayStage     = stageFromFactor(postDecay);
 
 // Grace state — discriminated union drives SealCeremony's sealed display clock section
 const graceState     = safeRead(() => getGraceState(post.slug, pubDateISO, postDecay, daysRemaining));
@@ -219,39 +216,21 @@ const jsonLd      = [
       </article>
     </RevivalMoment>
 
-    <!-- Single CTA: end-of-article is the natural moment to act -->
-    <div class="revival-footer">
-      <KeepButton
-        slug={post.slug}
-        count={revivalCount}
-        urgency={postUrgency}
-        conviction={dominantVerdict}
-        decayFactor={postDecay}
-        lifespan={lifespan}
-      />
-    </div>
-
-    <!-- DisputeChallenge: visible only to readers who staked 'disagree' (client-gated).
-         Allows formal challenge of the author's sealed verdict (Mike §Challenge-Moment). -->
-    <DisputeChallenge
+    <!-- Conviction Record: single card consolidating all post-accountability evidence.
+         Replaces 5 scattered zones: KeepButton, DisputeChallenge, GhostEchoes,
+         audit-receipt-nudge + DisputeTally, and ConvictionAuditTrail.
+         Mike §ConvictionRecord · Tanya §2 -->
+    <ConvictionRecord
       slug={post.slug}
+      revivalCount={revivalCount}
+      urgency={postUrgency}
+      conviction={dominantVerdict}
+      decayFactor={postDecay}
+      lifespan={lifespan}
       verdictSealed={verdictSealed}
       disputeState={disputeState}
+      decayStage={decayStage}
     />
-
-    <!-- Sparkline: only when revival history exists -->
-    <GhostEchoes slug={post.slug} />
-
-    <!-- Audit receipt link + dispute tally: public accountability numbers -->
-    <div class="audit-receipt-nudge" id="conviction-audit">
-      <a href={`/audit/${post.slug}`} class="audit-receipt-link">
-        View conviction receipt →
-      </a>
-      <DisputeTally slug={post.slug} disputeState={disputeState} />
-    </div>
-
-    <!-- Audit trail: collapsed by default, for power readers -->
-    <ConvictionAuditTrail slug={post.slug} />
 
   </main>
 
@@ -313,26 +292,6 @@ const jsonLd      = [
 
   .audit-link { margin-left: auto; }
   .audit-link--receipt { margin-left: 0; }
-
-  /* Quiet "View conviction receipt" pointer + dispute tally above audit trail */
-  .audit-receipt-nudge {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin: 1.5rem 0 0.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-faint);
-  }
-
-  .audit-receipt-link {
-    font-size: var(--text-xs);
-    color: var(--text-ghost);
-    text-decoration: none;
-    letter-spacing: 0.03em;
-    transition: color 150ms ease;
-  }
-
-  .audit-receipt-link:hover { color: var(--text-secondary); }
 
   /* Post header: cover → date → title → badge (Tanya §9 — above-fold layout) */
   .post-header { margin-bottom: 2rem; }
@@ -505,13 +464,4 @@ const jsonLd      = [
   }
   .post-predictions__vault-link:hover { color: var(--text-secondary); }
 
-  /* Revival footer: centered single CTA (Tanya §9 — one primary action) */
-  .revival-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 3rem 0 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--border-subtle);
-  }
 </style>

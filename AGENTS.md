@@ -4,16 +4,15 @@
 
 ## Paths
 
-- `src/lib/` — domain logic (decay, verdict, seals, batting average, OG images)
+- `src/lib/` — domain logic
 - `src/components/` — UI components
 - `src/pages/api/` — REST API
-- `src/styles/` — design system (tokens, surfaces, typography, motion)
-- `scripts/` — build tooling (token compliance guard)
+- `src/styles/` — design system
+- `scripts/` — build tooling
 - `cli/` — CLI tools
 
 ## WIP
 
-- Homepage hero — BattingAverageHero Zone 1 (warm/cold states)
-- Blog detail — consolidate bottom zones into single "Conviction Record" card
+- Homepage hero — BattingAverageHero warm/cold states
 - EndangeredFeed — reuse EndangeredCard component
-- Typography migration — 258 WARN-level issues in unguarded files
+- Typography migration — 257 warnings in unguarded files

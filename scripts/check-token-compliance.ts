@@ -72,6 +72,9 @@ const GUARD_FILES = new Set([
   "src/components/SealCeremony.astro",
   "src/components/BattingAverageHero.astro",
   "src/styles/nav.css",
+  // Conviction Record card — ships clean from day one (Sid 2026-04-17)
+  "src/components/ConvictionRecord.astro",
+  "src/styles/conviction-record.css",
 ]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;

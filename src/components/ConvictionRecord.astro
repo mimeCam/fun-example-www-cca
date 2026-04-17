@@ -1,0 +1,92 @@
+---
+/**
+ * ConvictionRecord.astro
+ *
+ * A single card that consolidates all post-accountability evidence:
+ * KeepButton, GhostEchoes, DisputeTally, DisputeChallenge, ConvictionAuditTrail.
+ *
+ * Replaces 5 scattered zones in blog/[slug].astro with one unified surface.
+ * Stage-aware: adapts border, shadow, and radius to the post's decay stage.
+ * SSR-only — zero hydration. All interactivity belongs to subcomponents.
+ *
+ * Mike §ConvictionRecord napkin plan
+ * Tanya §2 Conviction Record card
+ */
+import type { DisputeState } from '../lib/verdict-dispute';
+import type { DecayStage }   from '../lib/decay-engine';
+import KeepButton            from './KeepButton.astro';
+import GhostEchoes           from './GhostEchoes.astro';
+import DisputeTally          from './DisputeTally.astro';
+import DisputeChallenge      from './DisputeChallenge.astro';
+import ConvictionAuditTrail  from './ConvictionAuditTrail.astro';
+
+interface Props {
+  slug:          string;
+  revivalCount:  number;
+  urgency:       string;
+  conviction:    string | null;
+  decayFactor:   number;
+  lifespan:      number;
+  verdictSealed: boolean;
+  disputeState:  DisputeState;
+  decayStage:    DecayStage;
+}
+
+const {
+  slug,
+  revivalCount,
+  urgency,
+  conviction,
+  decayFactor,
+  lifespan,
+  verdictSealed,
+  disputeState,
+  decayStage,
+} = Astro.props;
+---
+
+<section
+  class="conviction-record surface-card"
+  data-decay-stage={decayStage}
+  aria-label="Conviction record"
+  id="conviction-audit"
+>
+  <header class="cr-header">
+    <span class="cr-label type-label">Conviction Record</span>
+    <a
+      href={`/audit/${slug}`}
+      class="cr-audit-link type-caption"
+      aria-label="View conviction receipt"
+    >
+      view receipt ↗
+    </a>
+  </header>
+
+  <div class="cr-action">
+    <KeepButton
+      slug={slug}
+      count={revivalCount}
+      urgency={urgency}
+      conviction={conviction}
+      decayFactor={decayFactor}
+      lifespan={lifespan}
+    />
+  </div>
+
+  <div class="cr-evidence">
+    <GhostEchoes slug={slug} />
+    <DisputeTally slug={slug} disputeState={disputeState} />
+  </div>
+
+  <div class="cr-challenge">
+    <DisputeChallenge
+      slug={slug}
+      verdictSealed={verdictSealed}
+      disputeState={disputeState}
+    />
+  </div>
+
+  <div class="cr-audit">
+    <ConvictionAuditTrail slug={slug} />
+  </div>
+</section>

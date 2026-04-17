@@ -4,6 +4,46 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v123 — ConvictionRecord Card Consolidation (2026-04-17)
+#   Sprint: Blog detail accountability UX — consolidated 5 scattered
+#     post-accountability zones (KeepButton, DisputeChallenge, GhostEchoes,
+#     audit-receipt-nudge + DisputeTally, ConvictionAuditTrail) into a single
+#     unified ConvictionRecord card component. The card is stage-aware: border,
+#     shadow, and radius adapt to the post's decay stage via [data-decay-stage].
+#     SSR-only — zero hydration cost. All interactivity delegated to existing
+#     subcomponents. Orphaned CSS from replaced zones purged from [slug].astro.
+#     Token compliance checker expanded with 2 new guard files (15 total).
+#     Typography migration violation count corrected from 258 to 257.
+#   New files:
+#     src/components/ConvictionRecord.astro — composition wrapper that imports
+#       KeepButton, GhostEchoes, DisputeTally, DisputeChallenge, and
+#       ConvictionAuditTrail. Stage-aware via data-decay-stage attribute. Props:
+#       slug, revivalCount, urgency, conviction, decayFactor, lifespan,
+#       verdictSealed, disputeState, decayStage. Pure SSR — no client JS.
+#     src/styles/conviction-record.css — stage-aware card styles; base card
+#       (.conviction-record), header (.cr-header), action (.cr-action), evidence
+#       grid (.cr-evidence), challenge (.cr-challenge), audit (.cr-audit);
+#       5 stage overrides (fresh/fading/endangered/ghost/fossil) using existing
+#       stage tokens; responsive grid at 480px breakpoint; reduced-motion guard.
+#       100% token-compliant (zero raw values).
+#   Modified files:
+#     src/pages/blog/[slug].astro — 5 scattered zones replaced with single
+#       <ConvictionRecord /> invocation; removed imports: ConvictionAuditTrail,
+#       GhostEchoes, KeepButton, DisputeChallenge, DisputeTally; added imports:
+#       ConvictionRecord, stageFromFactor; added decayStage SSR computation;
+#       orphaned CSS purged (.audit-receipt-nudge, .audit-receipt-link,
+#       .revival-footer).
+#     src/layouts/BaseLayout.astro — @import '../styles/conviction-record.css'
+#       added to global CSS cascade.
+#     scripts/check-token-compliance.ts — ConvictionRecord.astro and
+#       conviction-record.css added to GUARD_FILES (15 total guarded files).
+#     AGENTS.md — ConvictionRecord card marked Done with file manifest;
+#       typography migration violation count corrected 258→257.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence unchanged
+#     (steps 1–8 identical to v122).
+#
 # Architecture v122 — Typography Composition System & Token Migration (2026-04-17)
 #   Sprint: Design-system polish — added typography.css composition layer
 #     (13 presets, 5 modifiers, responsive overrides) as the missing abstraction

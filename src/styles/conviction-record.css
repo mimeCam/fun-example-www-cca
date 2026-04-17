@@ -1,0 +1,141 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   conviction-record.css
+   Shared styles for the ConvictionRecord card — a single unified surface
+   that replaces 5 scattered post-accountability zones.
+
+   Stage-aware: border, shadow, and radius adapt to the post's decay stage
+   via [data-decay-stage]. Tokens only — zero raw values.
+
+   Mike §ConvictionRecord napkin plan · Tanya §2 Conviction Record card
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Base card ──────────────────────────────────────────────────────────── */
+
+.conviction-record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--border-medium);
+  border-left: 3px solid var(--gold-mid);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-conviction);
+  margin-top: var(--space-12);
+  margin-bottom: var(--space-12);
+  transition:
+    border-color var(--motion-flow-duration) var(--motion-flow-easing),
+    box-shadow   var(--motion-flow-duration) var(--motion-flow-easing),
+    border-radius var(--motion-flow-duration) var(--motion-flow-easing);
+}
+
+/* ── Header: flex row, baseline-aligned ─────────────────────────────── */
+
+.cr-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-faint);
+  padding-bottom: var(--space-3);
+}
+
+.cr-label {
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+
+.cr-audit-link {
+  color: var(--text-ghost);
+  text-decoration: none;
+  transition: color var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+.cr-audit-link:hover {
+  color: var(--text-secondary);
+}
+
+/* ── Action: primary CTA zone ───────────────────────────────────────── */
+
+.cr-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) 0;
+  border-bottom: 1px dashed var(--border-faint);
+}
+
+/* ── Evidence: 2-col responsive grid ────────────────────────────────── */
+
+.cr-evidence {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-3) 0;
+}
+
+@media (max-width: 480px) {
+  .cr-evidence {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Challenge: conditional dispute panel ───────────────────────────── */
+
+.cr-challenge {
+  border-top: 1px dashed var(--border-faint);
+  padding-top: var(--space-3);
+}
+
+/* ── Audit: collapsed trail ─────────────────────────────────────────── */
+
+.cr-audit {
+  border-top: 1px dashed var(--border-faint);
+  padding-top: var(--space-3);
+}
+
+/* ── Stage overrides — no new tokens, only rewiring existing ones ──── */
+
+.conviction-record[data-decay-stage="fresh"] {
+  border-color: color-mix(in oklch, var(--stage-fresh-border) 25%, transparent);
+  border-left-color: var(--gold-mid);
+  box-shadow: var(--shadow-card-fresh);
+}
+
+.conviction-record[data-decay-stage="fading"] {
+  border-color: color-mix(in oklch, var(--stage-fading-border) 20%, transparent);
+  border-left-color: var(--gold-mid);
+  box-shadow: var(--shadow-card-fading);
+}
+
+.conviction-record[data-decay-stage="endangered"] {
+  border-color: color-mix(in oklch, var(--stage-endangered-border) 20%, transparent);
+  border-left-color: var(--gold-mid);
+  box-shadow: var(--shadow-card-endangered);
+}
+
+.conviction-record[data-decay-stage="ghost"] {
+  border-color: color-mix(in oklch, var(--stage-ghost-border) 15%, transparent);
+  border-left-color: color-mix(in oklch, var(--gold-mid) 50%, transparent);
+  box-shadow: var(--shadow-card-rest);
+  border-radius: var(--radius-stage-ghost);
+  border-style: dashed;
+  border-left-style: solid;
+}
+
+.conviction-record[data-decay-stage="fossil"] {
+  border-color: color-mix(in oklch, var(--stage-fossil-border) 15%, transparent);
+  border-left-color: color-mix(in oklch, var(--gold-mid) 30%, transparent);
+  box-shadow: var(--shadow-card-fossil);
+  border-radius: var(--radius-stage-fossil);
+  border-style: dotted;
+  border-left-style: solid;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .conviction-record {
+    transition: none;
+  }
+}
