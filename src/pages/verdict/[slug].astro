@@ -200,25 +200,25 @@ function safeRead<T>(fn: () => T): T | null {
   }
 
   .ceremony-nav-link {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.3);
+    font-size: var(--text-xs);
+    color: var(--text-dim);
     text-decoration: none;
     letter-spacing: 0.03em;
     transition: color 150ms ease;
   }
 
-  .ceremony-nav-link:hover           { color: rgba(255, 255, 255, 0.65); }
+  .ceremony-nav-link:hover           { color: var(--text-secondary); }
   .ceremony-nav-link--right          { margin-left: auto; }
 
   /* ── Header ───────────────────────────────────────────────────────── */
   .ceremony-header { margin-bottom: 2rem; }
 
   .ceremony-eyebrow {
-    font-size: 0.62rem;
+    font-size: var(--text-2xs);
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(245, 166, 35, 0.6);
+    color: var(--gold-dim);
     margin: 0 0 0.4rem;
   }
 
@@ -227,14 +227,14 @@ function safeRead<T>(fn: () => T): T | null {
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.02em;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
     margin: 0 0 0.65rem;
   }
 
   .ceremony-subtitle {
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--text-tertiary);
     font-style: italic;
     margin: 0;
   }
@@ -243,18 +243,18 @@ function safeRead<T>(fn: () => T): T | null {
   .ceremony-footer {
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .ceremony-audit-link {
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.28);
+    font-size: var(--text-xs);
+    color: var(--text-dim);
     text-decoration: none;
     letter-spacing: 0.02em;
     transition: color 150ms ease;
   }
 
-  .ceremony-audit-link:hover { color: rgba(255, 255, 255, 0.6); }
+  .ceremony-audit-link:hover { color: var(--text-secondary); }
 
   /* ── Dispute Panel header ─────────────────────────────────────── */
   .dispute-panel__header {

@@ -73,17 +73,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
 
   .author-title {
-    font-size: 1.4rem;
+    font-size: var(--text-xl);
     font-weight: 700;
     letter-spacing: -0.02em;
-    color: rgba(255, 255, 255, 0.92);
+    color: var(--text-primary);
     margin: 0 0 0.9rem;
   }
 
   .author-intro {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     line-height: 1.65;
-    color: rgba(255, 255, 255, 0.48);
+    color: var(--text-tertiary);
     margin: 0;
     max-width: 32rem;
   }
@@ -94,17 +94,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     gap: 1.25rem;
     padding: 1.5rem;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-raised);
     margin-bottom: 1rem;
   }
 
   .author-card--primary {
-    box-shadow: 0 8px 32px rgba(245, 166, 35, 0.10);
+    box-shadow: 0 8px 32px var(--gold-bg);
   }
 
   .card-icon {
-    font-size: 1.25rem;
+    font-size: var(--text-lg);
     flex-shrink: 0;
     margin-top: 2px;
   }
@@ -116,16 +116,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
 
   .card-title {
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.82);
+    color: var(--text-primary);
     margin: 0;
   }
 
   .card-desc {
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.42);
+    color: var(--text-tertiary);
     margin: 0;
   }
 
@@ -135,7 +135,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     margin-top: 0.5rem;
     padding: 8px 16px;
     border-radius: 8px;
-    font-size: 0.78rem;
+    font-size: var(--text-sm);
     font-weight: 500;
     text-decoration: none;
     transition: opacity 150ms ease, box-shadow 150ms ease;
@@ -143,8 +143,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
 
   .btn--ghost {
-    border: 1px solid rgba(255, 255, 255, 0.20);
-    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--border-interactive-hover);
+    color: var(--text-secondary);
     background: transparent;
   }
   .btn--ghost:hover { opacity: 0.75; }
@@ -153,27 +153,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     background: var(--gold);
     color: var(--surface-base);
     font-weight: 600;
-    box-shadow: 0 4px 16px rgba(245, 166, 35, 0.25);
+    box-shadow: 0 4px 16px var(--gold-border);
     border: none;
   }
-  .btn--amber:hover { box-shadow: 0 6px 20px rgba(245, 166, 35, 0.38); opacity: 0.93; }
+  .btn--amber:hover { box-shadow: 0 6px 20px var(--gold-border-strong); opacity: 0.93; }
 
   /* Footnote */
   .author-footnote {
     margin-top: 2rem;
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.25);
+    font-size: var(--text-xs);
+    color: var(--text-ghost);
   }
   .author-footnote a {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--text-tertiary);
     text-decoration: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid var(--border-medium);
   }
-  .author-footnote a:hover { color: rgba(255, 255, 255, 0.65); }
+  .author-footnote a:hover { color: var(--text-secondary); }
 
   @media (max-width: 640px) {
     .author-page  { padding: 2rem 1rem 4rem; }
     .author-card  { flex-direction: column; gap: 0.75rem; }
-    .author-title { font-size: 1.15rem; }
+    .author-title { font-size: var(--text-prose); }
   }
 </style>

@@ -45,7 +45,7 @@ const show = nav.newer || nav.older;
     max-width: 40rem;
     margin: 3rem auto 0;
     padding: 2rem 0 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .post-nav__link {
@@ -63,7 +63,7 @@ const show = nav.newer || nav.older;
   .post-nav__link--older { margin-left: auto; text-align: right; }
 
   .post-nav__arrow {
-    font-size: 1.1rem;
+    font-size: var(--text-prose);
     line-height: 1.4;
     flex-shrink: 0;
     color: var(--mood-accent, currentColor);
@@ -72,14 +72,14 @@ const show = nav.newer || nav.older;
   .post-nav__meta { display: flex; flex-direction: column; }
 
   .post-nav__dir {
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     opacity: 0.5;
   }
 
   .post-nav__title {
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     line-height: 1.35;
     font-weight: 500;
     color: var(--mood-accent, currentColor);

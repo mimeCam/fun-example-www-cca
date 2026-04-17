@@ -38,7 +38,7 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
   .graveyard-teaser {
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.045);
+    border-top: 1px solid var(--border-faint);
   }
 
   .teaser-link {
@@ -46,12 +46,12 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
     align-items: center;
     gap: 0.55rem;
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-dim);
     transition: color 250ms ease;
   }
 
   .teaser-link:hover {
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--text-secondary);
   }
 
   /* Dim amber dot — life extinguished but not forgotten */
@@ -74,7 +74,7 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
     display: flex;
     align-items: baseline;
     gap: 0.3rem;
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.02em;
   }
 
@@ -90,7 +90,7 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
 
   .teaser-cta {
     margin-left: auto;
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     letter-spacing: 0.04em;
     opacity: 0;
     transform: translateX(-6px);

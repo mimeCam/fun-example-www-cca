@@ -63,11 +63,11 @@ const pageDesc = 'Every author ranked by conviction accuracy. The score only exi
     font-size: var(--text-sm);
     color: var(--text-secondary);
     text-decoration: none;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
+    border-bottom: 1px solid var(--border-medium);
     transition: color 150ms ease, border-color 150ms ease;
   }
   .lb-cold-link:hover {
     color: var(--text-primary);
-    border-bottom-color: rgba(255,255,255,0.35);
+    border-bottom-color: color-mix(in oklch, white 35%, transparent);
   }
 </style>

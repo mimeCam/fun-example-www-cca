@@ -13,6 +13,6 @@
 
 ## WIP
 
-- [wip] Token compliance — 31/~60 files guarded; unguarded files still carry raw values
-- [wip] P1 polish — blog above-fold simplification, resurrection bloom ceremony
-- [wip] Design audit — accent consolidation, surface tier lightness delta, concentric radius cascade, tabular-nums, receipt link relocation
+- [wip] P1 polish — blog above-fold simplification, KeepButton promotion, DecayClock overlay
+- [wip] Design audit — accent consolidation, surface tier lightness delta, radius cascade, tabular-nums
+- [wip] UIX spec — 20 deliverables remain (sticky stance mutual exclusion, card hover revival, tension badge icons, sepia cap tuning)

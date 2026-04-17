@@ -57,7 +57,7 @@ const style = `--decay: ${ratio.toFixed(3)};`;
     position: relative;
     padding: calc(0.6rem + 0.6rem * (1 - var(--d)));
     border-radius: calc(8px + 4px * (1 - var(--d)));
-    background: rgba(255, 255, 255, calc(0.03 + 0.06 * var(--d)));
+    background: color-mix(in oklch, white calc(3% + 6% * var(--d)), transparent);
     border: calc(1px + 1px * var(--d)) solid
       color-mix(in oklch, var(--mood-accent) calc(6% + 14% * var(--d)), transparent);
     box-shadow:
@@ -118,14 +118,15 @@ const style = `--decay: ${ratio.toFixed(3)};`;
     display: flex; align-items: baseline; gap: 0.5rem;
   }
   .loop-question {
-    font-size: calc(0.82rem + 0.12rem * (1 - var(--d)));
+    --loop-font-boost: 0.12rem;
+    font-size: calc(var(--text-sm) + var(--loop-font-boost) * (1 - var(--d)));
     line-height: 1.45;
     opacity: calc(0.55 + 0.45 * var(--d));
     font-weight: calc(400 + 100 * var(--d));
   }
   .loop-context {
     margin: 0.4rem 0 0 1.35rem;
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     line-height: 1.4;
     opacity: calc(0.3 + 0.3 * var(--d));
   }

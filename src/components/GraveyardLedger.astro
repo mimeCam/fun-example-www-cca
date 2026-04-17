@@ -67,7 +67,7 @@ const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = su
   /* Eyebrow + subtitle — small, engraved feel */
   .hall-eyebrow {
     display: block;
-    font-size: 0.58rem;
+    font-size: var(--text-3xs);
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--color-grave-ghost);
@@ -76,7 +76,7 @@ const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = su
 
   .hall-subtitle {
     margin: 0 0 1.5rem;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-style: italic;
     color: var(--color-grave-ghost);
     line-height: 1.5;
@@ -103,7 +103,7 @@ const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = su
 
   /* Small label: "LONGEST SURVIVOR" */
   .panel-label {
-    font-size: 0.57rem;
+    font-size: var(--text-3xs);
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--color-grave-ghost);
@@ -111,7 +111,7 @@ const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = su
 
   /* The big number — weight 300 like headstone chiselling */
   .panel-stat {
-    font-size: 1.75rem;
+    font-size: var(--text-xl);
     font-weight: 300;
     line-height: 1.1;
     color: var(--color-grave-text);
@@ -120,7 +120,7 @@ const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = su
 
   /* Struck-through dead post link */
   .panel-title {
-    font-size: 0.78rem;
+    font-size: var(--text-sm);
     color: var(--color-grave-ghost);
     text-decoration: none;
     transition: color 180ms ease;
@@ -135,7 +135,7 @@ const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = su
 
   /* "never revived" sub-label */
   .panel-desc {
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     color: var(--color-grave-ghost);
     font-style: italic;
   }
@@ -143,7 +143,7 @@ const { longestSurvivor, mostContested, totalForeverLost, avgSurvivalDays } = su
   /* Footer avg line */
   .hall-avg {
     margin: 1.25rem 0 0;
-    font-size: 0.62rem;
+    font-size: var(--text-2xs);
     letter-spacing: 0.08em;
     color: var(--color-grave-ghost);
     text-align: right;

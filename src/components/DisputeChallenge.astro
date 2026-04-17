@@ -217,8 +217,8 @@ const { slug, verdictSealed, disputeState } = Astro.props;
   /* ── Section wrapper ──────────────────────────────────────────────────── */
   .dispute-challenge {
     padding: 1.5rem;
-    background: rgba(251, 191, 36, 0.025);
-    border: 1px solid rgba(251, 191, 36, 0.12);
+    background: color-mix(in oklch, var(--gold) 2.5%, transparent);
+    border: 1px solid var(--gold-bg-strong);
     border-radius: var(--radius-md);
   }
 
@@ -234,7 +234,7 @@ const { slug, verdictSealed, disputeState } = Astro.props;
     font-weight: var(--weight-bold);
     letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
-    color: rgba(251, 191, 36, 0.55);
+    color: var(--gold-dim);
     margin: 0;
   }
 
@@ -328,10 +328,10 @@ const { slug, verdictSealed, disputeState } = Astro.props;
     justify-content: center;
     min-height: 44px;
     padding: 0.5rem 1.5rem;
-    border: 1.5px solid rgba(251, 191, 36, 0.30);
+    border: 1.5px solid var(--gold-border-strong);
     border-radius: var(--radius-sm);
-    background: rgba(251, 191, 36, 0.05);
-    color: rgba(251, 191, 36, 0.80);
+    background: color-mix(in oklch, var(--gold) 5%, transparent);
+    color: var(--gold-mid);
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
     font-family: inherit;
@@ -346,8 +346,8 @@ const { slug, verdictSealed, disputeState } = Astro.props;
   }
 
   .dispute-challenge__btn:hover:not(:disabled):not(.disputed) {
-    border-color: rgba(251, 191, 36, 0.55);
-    background:   rgba(251, 191, 36, 0.09);
+    border-color: var(--gold-dim);
+    background:   var(--gold-bg);
     transform: scale(1.01);
   }
 
@@ -378,9 +378,9 @@ const { slug, verdictSealed, disputeState } = Astro.props;
 
   /* Committed state */
   .dispute-challenge__btn.disputed {
-    border-color: rgba(251, 191, 36, 0.15);
-    background:   rgba(251, 191, 36, 0.04);
-    color: rgba(251, 191, 36, 0.45);
+    border-color: var(--gold-bg-strong);
+    background:   color-mix(in oklch, var(--gold) 4%, transparent);
+    color: var(--gold-dim);
     cursor: default;
   }
 

@@ -213,11 +213,11 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
   }
 
   @keyframes share-confirm-pulse {
-    0%   { border-color: var(--clr-gold-400, #F5A623); box-shadow: 0 0 0 3px rgba(245,166,35,0.25); }
+    0%   { border-color: var(--clr-gold-400, #F5A623); box-shadow: 0 0 0 3px var(--gold-border); }
     100% { border-color: var(--clr-gold-border, rgba(245,166,35,0.30)); box-shadow: none; }
   }
 
-  .ssc-copy-icon { font-size: 0.95rem; }
+  .ssc-copy-icon { font-size: var(--text-base); }
 
   /* ── Confirm span: visually hidden, announced via aria-live ────────────── */
   .ssc-copy-confirm {

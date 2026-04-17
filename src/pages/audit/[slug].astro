@@ -172,26 +172,26 @@ const pageDescription = payload.seal
 
   .audit-back,
   .audit-field {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.32);
+    font-size: var(--text-xs);
+    color: var(--text-dim);
     text-decoration: none;
     letter-spacing: 0.03em;
     transition: color 150ms ease;
   }
 
   .audit-back:hover,
-  .audit-field:hover { color: rgba(255, 255, 255, 0.65); }
+  .audit-field:hover { color: var(--text-secondary); }
   .audit-field        { margin-left: auto; }
 
   /* Page heading */
   .audit-header { margin-bottom: 2rem; }
 
   .audit-eyebrow {
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(245, 166, 35, 0.65);
+    color: var(--gold-mid);
     margin: 0 0 0.4rem;
   }
 
@@ -200,14 +200,14 @@ const pageDescription = payload.seal
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.02em;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--text-primary);
     margin: 0 0 0.75rem;
   }
 
   .audit-sub {
-    font-size: 0.82rem;
+    font-size: var(--text-sm);
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.38);
+    color: var(--text-tertiary);
     margin: 0;
     font-style: italic;
   }
@@ -216,24 +216,24 @@ const pageDescription = payload.seal
   .audit-footer {
     margin-top: 2.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .audit-post-link {
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.35);
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
     text-decoration: none;
     letter-spacing: 0.02em;
     transition: color 150ms ease;
   }
 
-  .audit-post-link:hover { color: rgba(255, 255, 255, 0.7); }
+  .audit-post-link:hover { color: var(--text-secondary); }
 
   /* API footnote — text-2xs, muted, monospace; Tanya §11 */
   .audit-api-note {
     margin-top: 1.25rem;
-    font-size: 0.64rem;  /* --text-2xs */
-    color: rgba(255, 255, 255, 0.22);
+    font-size: var(--text-2xs);
+    color: var(--text-ghost);
     letter-spacing: 0.02em;
     line-height: 1.5;
   }
@@ -241,7 +241,7 @@ const pageDescription = payload.seal
   .audit-api-code {
     font-family: var(--font-mono, monospace);
     font-size: inherit;
-    color: rgba(255, 255, 255, 0.32);
+    color: var(--text-dim);
   }
 
   @media (max-width: 640px) {

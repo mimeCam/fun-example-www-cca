@@ -68,13 +68,13 @@ const badge = BADGE[p.status] ?? BADGE['pending'];
 <style>
   .pred-card {
     background: oklch(11% 0.008 270);
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 1rem 1.25rem;
     transition: border-color 180ms ease;
   }
 
-  .pred-card:target { border-color: rgba(255,255,255,0.18); }
+  .pred-card:target { border-color: var(--border-interactive-hover); }
 
   .pred-card--overdue { border-left: 3px solid oklch(60% 0.18 20); }
   .pred-card--pending { border-left: 3px solid oklch(72% 0.16 75); }
@@ -90,7 +90,7 @@ const badge = BADGE[p.status] ?? BADGE['pending'];
   }
 
   .pred-badge {
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -106,27 +106,27 @@ const badge = BADGE[p.status] ?? BADGE['pending'];
   .badge--partial   { background: oklch(65% 0.18 220 / 0.15); color: oklch(65% 0.18 220); }
 
   .pred-card__post-link {
-    font-size: 0.72rem;
-    color: rgba(255,255,255,0.35);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
     text-decoration: none;
     letter-spacing: 0.03em;
     transition: color 150ms ease;
   }
-  .pred-card__post-link:hover { color: rgba(255,255,255,0.65); }
+  .pred-card__post-link:hover { color: var(--text-secondary); }
 
   .pred-card__anchor {
     margin-left: auto;
-    font-size: 0.72rem;
-    color: rgba(255,255,255,0.2);
+    font-size: var(--text-xs);
+    color: var(--text-faint);
     text-decoration: none;
     transition: color 150ms ease;
   }
-  .pred-card__anchor:hover { color: rgba(255,255,255,0.55); }
+  .pred-card__anchor:hover { color: var(--text-secondary); }
 
   .pred-card__claim {
-    font-size: 0.95rem;
+    font-size: var(--text-base);
     line-height: 1.5;
-    color: rgba(255,255,255,0.88);
+    color: var(--text-primary);
     margin: 0 0 0.75rem;
   }
 
@@ -141,19 +141,19 @@ const badge = BADGE[p.status] ?? BADGE['pending'];
     display: grid;
     grid-template-columns: 4.5rem 1fr;
     gap: 0.5rem;
-    font-size: 0.78rem;
+    font-size: var(--text-sm);
   }
 
   .pred-card__meta-row dt {
-    color: rgba(255,255,255,0.3);
+    color: var(--text-dim);
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    font-size: 0.68rem;
+    font-size: var(--text-2xs);
     padding-top: 0.1em;
   }
 
   .pred-card__meta-row dd {
-    color: rgba(255,255,255,0.6);
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.4;
   }

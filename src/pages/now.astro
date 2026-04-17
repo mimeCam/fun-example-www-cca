@@ -66,21 +66,21 @@ const freshness   = computeFreshness(lastUpdated);
     gap: 1rem;
     margin-bottom: 1.75rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-faint);
   }
 
   .now-title {
-    font-size: 1.05rem;
+    font-size: var(--text-base);
     font-weight: 600;
     letter-spacing: -0.01em;
     margin: 0;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--text-primary);
   }
 
   /* Freshness quip: secondary, ephemeral — matches the page's register */
   .now-freshness {
-    font-size: 0.68rem;
-    color: rgba(255, 255, 255, 0.28);
+    font-size: var(--text-2xs);
+    color: var(--text-dim);
     font-style: italic;
     letter-spacing: 0.03em;
     cursor: default;
@@ -89,31 +89,31 @@ const freshness   = computeFreshness(lastUpdated);
   .now-footer {
     margin-top: 3rem;
     padding-top: 1.25rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-top: 1px solid var(--border-faint);
   }
 
   .now-back {
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.28);
+    font-size: var(--text-xs);
+    color: var(--text-dim);
     text-decoration: none;
     letter-spacing: 0.02em;
     transition: color 200ms ease;
   }
 
-  .now-back:hover { color: rgba(255, 255, 255, 0.6); }
+  .now-back:hover { color: var(--text-secondary); }
 
   /* Conviction record whisper — Tanya §7: no amber, 0.68rem, 0.25 opacity */
   .now-record {
     display: block;
     margin-top: 0.6rem;
-    font-size: 0.68rem;
-    color: rgba(255, 255, 255, 0.25);
+    font-size: var(--text-2xs);
+    color: var(--text-ghost);
     text-decoration: none;
     letter-spacing: 0.01em;
     transition: color 200ms ease;
   }
 
-  .now-record:hover { color: rgba(255, 255, 255, 0.5); }
+  .now-record:hover { color: var(--text-secondary); }
 
   @media (max-width: 640px) {
     .now-page { padding: 1.5rem 1rem 3rem; }

@@ -151,7 +151,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--surface-base);
-      color: rgba(255, 255, 255, 0.88);
+      color: var(--text-primary);
       min-height: 100vh;
       padding: 2rem 1.25rem;
     }
@@ -163,20 +163,20 @@ const sealedCount = posts.filter(p => p.sealed).length;
       align-items: baseline;
       justify-content: space-between;
       margin-bottom: 2.5rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      border-bottom: 1px solid var(--border-subtle);
       padding-bottom: 1rem;
     }
 
     .admin-title {
-      font-size: 0.78rem;
+      font-size: var(--text-sm);
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.35);
+      color: var(--text-tertiary);
     }
 
     .admin-stat {
-      font-size: 0.72rem;
-      color: rgba(245, 166, 35, 0.6);
+      font-size: var(--text-xs);
+      color: var(--gold-dim);
       font-family: ui-monospace, monospace;
     }
 
@@ -190,42 +190,42 @@ const sealedCount = posts.filter(p => p.sealed).length;
     }
 
     .login-label {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.4);
+      font-size: var(--text-xs);
+      color: var(--text-tertiary);
       letter-spacing: 0.03em;
     }
 
     .login-input {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--surface-raised);
+      border: 1px solid var(--border-light);
       border-radius: 10px;
       padding: 0.65rem 0.9rem;
-      font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.88);
+      font-size: var(--text-sm);
+      color: var(--text-primary);
       outline: none;
       width: 100%;
       transition: border-color 150ms ease;
     }
 
-    .login-input:focus { border-color: rgba(245, 166, 35, 0.4); }
+    .login-input:focus { border-color: var(--gold-border-strong); }
 
     .login-btn {
-      background: rgba(245, 166, 35, 0.12);
-      border: 1px solid rgba(245, 166, 35, 0.25);
+      background: var(--gold-bg-strong);
+      border: 1px solid var(--gold-border);
       border-radius: 10px;
       padding: 0.65rem 1.25rem;
-      font-size: 0.85rem;
-      color: rgba(245, 166, 35, 0.9);
+      font-size: var(--text-sm);
+      color: var(--gold);
       cursor: pointer;
       align-self: flex-start;
       transition: background 150ms ease;
     }
 
-    .login-btn:hover { background: rgba(245, 166, 35, 0.2); }
+    .login-btn:hover { background: var(--gold-glow); }
 
     .login-error {
-      font-size: 0.75rem;
-      color: rgba(220, 90, 90, 0.8);
+      font-size: var(--text-xs);
+      color: color-mix(in oklch, var(--clr-red-500) 80%, transparent);
     }
 
     /* Post list */
@@ -240,24 +240,24 @@ const sealedCount = posts.filter(p => p.sealed).length;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      border-left: 2px solid rgba(255, 255, 255, 0.05);
+      border-left: 2px solid var(--surface-raised);
       padding-left: 0.75rem;
     }
 
     /* Upcoming deadlines panel */
     .deadlines-panel {
       margin-bottom: 2.5rem;
-      border: 1px solid rgba(245, 166, 35, 0.18);
+      border: 1px solid var(--gold-glow);
       border-radius: 10px;
       padding: 1rem 1.1rem;
-      background: rgba(245, 166, 35, 0.03);
+      background: color-mix(in oklch, var(--gold) 3%, transparent);
     }
 
     .deadlines-heading {
-      font-size: 0.7rem;
+      font-size: var(--text-xs);
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: rgba(245, 166, 35, 0.55);
+      color: var(--gold-dim);
       margin-bottom: 0.75rem;
     }
 
@@ -266,14 +266,14 @@ const sealedCount = posts.filter(p => p.sealed).length;
       align-items: baseline;
       gap: 0.75rem;
       padding: 0.4rem 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      font-size: 0.8rem;
+      border-bottom: 1px solid var(--border-faint);
+      font-size: var(--text-sm);
     }
 
     .deadline-row:last-child { border-bottom: none; }
 
     .deadline-row-title {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--text-secondary);
       flex: 1;
       white-space: nowrap;
       overflow: hidden;
@@ -282,23 +282,23 @@ const sealedCount = posts.filter(p => p.sealed).length;
 
     .deadline-row-days {
       font-family: ui-monospace, monospace;
-      font-size: 0.72rem;
-      color: rgba(245, 166, 35, 0.8);
+      font-size: var(--text-xs);
+      color: var(--gold-mid);
       white-space: nowrap;
     }
 
-    .deadline-row-days--overdue { color: rgba(220, 70, 70, 0.9); }
+    .deadline-row-days--overdue { color: var(--clr-red-500); }
 
     .deadline-row-status {
-      font-size: 0.68rem;
+      font-size: var(--text-2xs);
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.25);
+      color: var(--text-ghost);
     }
 
     .deadlines-empty {
-      font-size: 0.78rem;
-      color: rgba(255, 255, 255, 0.22);
+      font-size: var(--text-sm);
+      color: var(--text-ghost);
       font-style: italic;
     }
   </style>

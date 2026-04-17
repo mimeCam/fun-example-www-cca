@@ -84,22 +84,22 @@ const resolvedCount = stats.correct + stats.incorrect + stats.partial;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.82rem;
+    font-size: var(--text-sm);
     letter-spacing: 0.03em;
     padding-bottom: 1.25rem;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
-  .vault__sep { color: rgba(255,255,255,0.2); }
+  .vault__sep { color: var(--text-faint); }
 
-  .vault__stat              { color: rgba(255,255,255,0.55); }
+  .vault__stat              { color: var(--text-secondary); }
   .vault__stat--overdue     { color: oklch(60% 0.18 20); }
   .vault__stat--accuracy    { color: oklch(76% 0.18 85); font-variant-numeric: tabular-nums; }
-  .vault__stat--cold        { color: rgba(255,255,255,0.3); font-style: italic; }
+  .vault__stat--cold        { color: var(--text-dim); font-style: italic; }
 
   .vault__empty {
-    font-size: 0.9rem;
-    color: rgba(255,255,255,0.3);
+    font-size: var(--text-sm);
+    color: var(--text-dim);
     text-align: center;
     padding: 3rem 0;
   }
@@ -107,11 +107,11 @@ const resolvedCount = stats.correct + stats.incorrect + stats.partial;
   .vault__group { display: flex; flex-direction: column; gap: 0.75rem; }
 
   .vault__group-label {
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.3);
+    color: var(--text-dim);
     margin: 0;
   }
 
