@@ -204,7 +204,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
       color: var(--text-primary);
       outline: none;
       width: 100%;
-      transition: border-color 150ms ease;
+      transition: border-color var(--motion-flow-duration) ease;
     }
 
     .login-input:focus { border-color: var(--gold-border-strong); }
@@ -218,7 +218,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
       color: var(--gold);
       cursor: pointer;
       align-self: flex-start;
-      transition: background 150ms ease;
+      transition: background var(--motion-flow-duration) ease;
     }
 
     .login-btn:hover { background: var(--gold-glow); }

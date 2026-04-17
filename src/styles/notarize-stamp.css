@@ -117,7 +117,7 @@
   z-index:        var(--z-card);
   opacity:        0;
   transition:     opacity var(--motion-duration-base) var(--motion-easing-standard);
-  transition-delay: 120ms;
+  transition-delay: var(--motion-snap-duration);
 }
 
 [data-seal-phase="notarize"] .ns-label {

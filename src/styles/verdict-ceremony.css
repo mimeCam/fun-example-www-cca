@@ -142,8 +142,8 @@
   .vc-fingerprint {
     clip-path: inset(0 0% 0 0);
     animation:
-      reveal-hash  800ms linear     calc(var(--motion-ceremony-duration) * 0.5) forwards,
-      hash-ink-dry   2s  ease-in-out calc(var(--motion-ceremony-duration) * 0.5) forwards;
+      reveal-hash  var(--motion-spring-duration) linear     calc(var(--motion-ceremony-duration) * 0.5) forwards,
+      hash-ink-dry var(--motion-cycle-short)   ease-in-out calc(var(--motion-ceremony-duration) * 0.5) forwards;
     color: var(--text-ghost);
   }
 }

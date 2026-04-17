@@ -69,15 +69,15 @@
   stroke-width:     3;
   stroke-linecap:   round;
   animation:
-    ring-fill 800ms var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
-    300ms both;
+    ring-fill var(--motion-spring-duration) var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+    var(--duration-normal) both;
 }
 
 .bpr__fill--unlocked {
   stroke:    var(--ring-unlocked-color);
   animation:
-    ring-fill        600ms var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) 300ms both,
-    ring-unlock-pulse 800ms var(--motion-easing-standard) 900ms both;
+    ring-fill        var(--motion-ceremony-duration) var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) var(--duration-normal) both,
+    ring-unlock-pulse var(--motion-spring-duration)   var(--motion-easing-standard) var(--motion-spring-duration) both;
 }
 
 /* ── Tick marks — stagger-delayed spring pop ─────────────────────────────── */
@@ -86,7 +86,7 @@
   stroke-width: 2;
   stroke-linecap: round;
   transform-origin: 50px 50px;
-  animation:        tick-pop 500ms 300ms both;
+  animation:        tick-pop var(--motion-drift-duration) var(--duration-normal) both;
 
   /* Spring curve — CSS linear() encode (Baseline 2024, Comeau ref). */
   animation-timing-function: linear(
@@ -120,7 +120,7 @@
   font-family: var(--font-mono);
   font-size:   var(--text-base);
   font-weight: var(--weight-bold);
-  animation:   count-reveal 500ms var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) 700ms both;
+  animation:   count-reveal var(--motion-drift-duration) var(--motion-easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) var(--motion-spring-duration) both;
 }
 
 /* ── Lock icon ────────────────────────────────────────────────────────────── */
@@ -130,7 +130,7 @@
 }
 
 .bpr--has-shattered .bpr__lock {
-  animation: lock-shatter 400ms var(--motion-easing-standard) forwards;
+  animation: lock-shatter var(--motion-duration-measured) var(--motion-easing-standard) forwards;
 }
 
 /* ── Caption label ────────────────────────────────────────────────────────── */

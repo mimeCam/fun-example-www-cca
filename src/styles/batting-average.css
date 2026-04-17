@@ -30,7 +30,7 @@
 /* Tier-upgrade spring: fires once on verdict resolve (JS adds .ba-trophy--spring) */
 /* Fallback to ease-out for browsers without linear() support */
 .ba-trophy--spring {
-  animation: ba-trophy-spring 400ms ease-out both;
+  animation: ba-trophy-spring var(--motion-duration-measured) ease-out both;
 }
 
 @supports (animation-timing-function: linear(0, 1)) {
@@ -88,11 +88,11 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .ba-fill-bar__track {
-    animation: ba-bar-fill 600ms var(--motion-easing-spring) both;
+    animation: ba-bar-fill var(--motion-ceremony-duration) var(--motion-easing-spring) both;
   }
 
   .ba-sel-bar__track {
-    animation: ba-bar-fill 600ms var(--motion-easing-spring) 100ms both;
+    animation: ba-bar-fill var(--motion-ceremony-duration) var(--motion-easing-spring) var(--motion-snap-duration) both;
   }
 
   @keyframes ba-bar-fill {
@@ -119,7 +119,7 @@
 
 /* Locked → eligible transition (5th verdict resolve — JS adds class) */
 .ba-locked--fade-out {
-  animation: ba-locked-fade 300ms ease-out forwards;
+  animation: ba-locked-fade var(--duration-normal) ease-out forwards;
 }
 
 @keyframes ba-locked-fade {
@@ -222,7 +222,7 @@
 /* Breathe animation — lit dots glow gently (4s cycle) */
 @media (prefers-reduced-motion: no-preference) {
   .bah-ember-dot[data-ember-lit="true"] {
-    animation: bah-ember-breathe 4s ease-in-out infinite;
+    animation: bah-ember-breathe var(--motion-cycle-long) ease-in-out infinite;
   }
 
   /* Staggered entry — 150ms offset per dot */
@@ -238,7 +238,7 @@
 
 /* Ember pulse — JS fires on verdict:declared during warming (200ms scale-in) */
 .bah-ember-dot--pulse {
-  animation: bah-ember-pulse 200ms var(--motion-easing-spring) both;
+  animation: bah-ember-pulse var(--motion-flow-duration) var(--motion-easing-spring) both;
 }
 
 @keyframes bah-ember-pulse {

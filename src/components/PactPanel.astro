@@ -99,8 +99,8 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
     transition:
-      opacity   280ms ease,
-      transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      opacity   var(--duration-normal) ease,
+      transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Entrance animation — from invisible start position */
@@ -117,7 +117,7 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pact-panel[data-open] { transition: opacity 150ms ease; }
+    .pact-panel[data-open] { transition: opacity var(--motion-flow-duration) ease; }
     @starting-style {
       .pact-panel[data-open] { opacity: 0; transform: translateX(-50%); }
     }
@@ -169,7 +169,7 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     stroke-dasharray: 251.3px;
     transform: rotate(-90deg);
     transform-origin: 50% 50%;
-    transition: stroke-dashoffset 600ms ease;
+    transition: stroke-dashoffset var(--motion-ceremony-duration) ease;
   }
 
   .pact-days {
@@ -212,7 +212,7 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-pill);
     cursor: pointer;
-    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+    transition: background var(--motion-flow-duration) ease, border-color var(--motion-flow-duration) ease, color var(--motion-flow-duration) ease;
   }
 
   .pact-chip:hover {
@@ -242,10 +242,10 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     border-radius: 10px;
     cursor: pointer;
     transition:
-      background 180ms ease,
-      border-color 180ms ease,
-      transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 180ms ease;
+      background var(--motion-flow-duration) ease,
+      border-color var(--motion-flow-duration) ease,
+      transform var(--motion-flow-duration) cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow var(--motion-flow-duration) ease;
   }
 
   .pact-seal-btn:hover {
@@ -274,7 +274,7 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: color 150ms ease, background 150ms ease;
+    transition: color var(--motion-flow-duration) ease, background var(--motion-flow-duration) ease;
     padding: 0;
   }
 

@@ -84,7 +84,7 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
     border-radius: 9999px;
     border: 1px solid transparent;
     white-space: nowrap;
-    transition: opacity 300ms ease;
+    transition: opacity var(--duration-normal) ease;
     vertical-align: middle;
   }
 
@@ -93,7 +93,7 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
     color: var(--gold);
     background: var(--gold-bg);
     border-color: var(--gold-border-strong);
-    animation: tension-pulse 2.4s ease-in-out infinite;
+    animation: tension-pulse calc(var(--motion-ceremony-duration) * 4) ease-in-out infinite;
   }
 
   /* ── Consensus — sage green, static ────────────────────────── */

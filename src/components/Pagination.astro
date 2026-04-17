@@ -113,7 +113,7 @@ const nextHref = href(page + 1);
   /* ── Edge nav: "← older graves" / "newer graves →" ─────────────── */
   .pg-edge {
     /* FLOW (200ms) — Tanya §12 motion profile rule */
-    transition: color 200ms ease, opacity 200ms ease;  /* FLOW */
+    transition: color var(--motion-flow-duration) ease, opacity var(--motion-flow-duration) ease;  /* FLOW */
     white-space: nowrap;
     letter-spacing: 0.04em;
     text-decoration: none;
@@ -156,7 +156,7 @@ const nextHref = href(page + 1);
     text-decoration: none;
     font-size: var(--text-2xs, 0.65rem);
     font-variant-numeric: tabular-nums;     /* Tanya §3 — no layout shift on count update */
-    transition: border-color 200ms ease, color 200ms ease, box-shadow 200ms ease;  /* FLOW */
+    transition: border-color var(--motion-flow-duration) ease, color var(--motion-flow-duration) ease, box-shadow var(--motion-flow-duration) ease;  /* FLOW */
   }
 
   .pg-pill:hover {

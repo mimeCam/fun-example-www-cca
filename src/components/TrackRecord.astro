@@ -204,7 +204,7 @@ function scoreBar(score: number): string {
     gap: 0;
     padding: 0.65rem 1rem;
     border-bottom: 1px solid var(--border-subtle);
-    transition: background 120ms ease;
+    transition: background var(--motion-snap-duration) ease;
   }
 
   .tr-row:last-child { border-bottom: none; }
@@ -241,7 +241,7 @@ function scoreBar(score: number): string {
     color: var(--text-primary);
     text-decoration: none;
     font-size: var(--text-xs);
-    transition: color 120ms ease;
+    transition: color var(--motion-snap-duration) ease;
   }
 
   .tr-title-link:hover { color: var(--accent); }
@@ -303,7 +303,7 @@ function scoreBar(score: number): string {
     font-size: var(--text-xs);
     text-decoration: none;
     opacity: 0.7;
-    transition: opacity 120ms ease;
+    transition: opacity var(--motion-snap-duration) ease;
   }
 
   .tr-anchor-link:hover { opacity: 1; }
@@ -329,7 +329,7 @@ function scoreBar(score: number): string {
   .tr-spark-bar {
     flex: 0 0 12px;
     border-radius: 2px 2px 0 0;
-    transition: opacity 150ms ease;
+    transition: opacity var(--motion-flow-duration) ease;
     min-height: 4px;
   }
 

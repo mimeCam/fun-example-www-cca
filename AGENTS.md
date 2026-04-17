@@ -13,7 +13,6 @@
 
 ## WIP
 
-- [wip] Duration migration — ~150 raw ms/s warnings remain across 30+ files
 - [wip] Border-radius migration — 48 advisory warnings (tokenize hardcoded values)
 - [wip] Breakpoint standardization — 10 non-canonical @media values flagged
 - [wip] Design audit — accent consolidation, surface tier lightness delta, radius cascade

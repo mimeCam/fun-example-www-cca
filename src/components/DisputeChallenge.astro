@@ -361,7 +361,7 @@ const { slug, verdictSealed, disputeState } = Astro.props;
     transform-origin: left center;
     background: linear-gradient(90deg, var(--color-dispute-fill-from), var(--color-dispute-fill-to));
     opacity: 0.22;
-    transition: transform 200ms linear;
+    transition: transform var(--motion-flow-duration) linear;
     pointer-events: none;
   }
 

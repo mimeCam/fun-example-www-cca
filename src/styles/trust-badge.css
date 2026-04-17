@@ -115,12 +115,12 @@
 }
 
 .badge-card.is-settling {
-  animation: badge-settle 300ms var(--ease-spring) forwards;
+  animation: badge-settle var(--duration-normal) var(--ease-spring) forwards;
 }
 
 /* Upheld glow: fires when .is-settled lands on upheld state */
 .badge-card.is-settled[data-next-state="upheld"] .badge-inner {
-  animation: badge-upheld-glow 600ms var(--ease-out) forwards;
+  animation: badge-upheld-glow var(--motion-ceremony-duration) var(--ease-out) forwards;
 }
 
 /* ── Accessibility: prefers-reduced-motion ────────────────────────────── */

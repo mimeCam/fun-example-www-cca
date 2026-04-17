@@ -78,14 +78,14 @@
 
 @supports (transition-timing-function: linear(0, 1)) {
   .keep-btn[data-keep-state="threshold_reached"] {
-    animation: arc-complete 400ms var(--motion-spring-easing) forwards;
+    animation: arc-complete var(--motion-duration-measured) var(--motion-spring-easing) forwards;
   }
 }
 
 /* Fallback for non-supporting browsers */
 @supports not (transition-timing-function: linear(0, 1)) {
   .keep-btn[data-keep-state="threshold_reached"] {
-    animation: arc-complete 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: arc-complete var(--motion-duration-measured) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 }
 
@@ -97,7 +97,7 @@
 }
 
 .keep-btn[data-keep-state="submitting"] {
-  animation: keep-submitting-pulse 600ms ease-in-out infinite;
+  animation: keep-submitting-pulse var(--motion-ceremony-duration) ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -120,7 +120,7 @@
 }
 
 .keep-btn[data-keep-state="error"] {
-  animation: keep-error-shake 300ms var(--motion-flow-easing, ease) forwards;
+  animation: keep-error-shake var(--duration-normal) var(--motion-flow-easing, ease) forwards;
   color: var(--verdict-wrong);
 }
 
@@ -129,7 +129,7 @@
 .keep-btn--critical[data-keep-state="idle"] {
   border-color: color-mix(in oklch, var(--clr-gold-400) 40%, transparent);
   box-shadow:   0 0 12px color-mix(in oklch, var(--clr-gold-400) 20%, transparent);
-  animation: pulse-warm 2s ease-in-out infinite;
+  animation: pulse-warm var(--motion-cycle-short) ease-in-out infinite;
 }
 
 /* ── Revival phase: physical depress (Phase 1) ───────────────────────────

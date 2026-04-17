@@ -4,31 +4,32 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v131 — Design Token Deep Migration & Compliance Hardening (2026-04-17)
-#   Sprint: Motion/duration/z-index/breakpoint/radius token migration across
-#     25 files. Token compliance checker expanded with 4 new enforcement rules
-#     (no-raw-duration, no-raw-zindex, breakpoint-advisory, border-radius-advisory).
-#     Motion token vocabulary expanded: 5 named durations (swift 200ms through
-#     breath 1200ms), stagger utility tokens, 3 transition composites.
-#     Shadow system: --shadow-e4 split into neutral E4 + --shadow-e4-ceremony
-#     (gold glow) so non-ceremony panels don't inherit glow. Breakpoint
-#     reference tokens (--bp-sm/md/lg/xl) added as canonical source-of-truth.
-#     tabular-nums applied to all numeric mono-spaced displays (7 classes).
-#     z-index values migrated from raw integers to --z-* tokens. All
-#     prefers-reduced-motion guards updated for new duration tokens.
-#   Modified files:
-#     scripts/check-token-compliance.ts — 4 new enforcement rules; exempt
-#       sets for motion.css; canonical breakpoint validation.
-#     src/styles/tokens.css — breakpoint refs, shadow-e4 split, card-footer-height.
-#     src/styles/motion.css — 5 duration tokens, stagger tokens, 3 composites,
-#       reduced-motion overrides for all new tokens.
-#     src/styles/*.css (14 files) — raw duration/z-index → token migration.
-#     src/components/*.astro (5 files) — tabular-nums, z-index tokenization.
-#     AGENTS.md — WIP updated (duration/z-index/radius/breakpoint status).
+# Architecture v132 — Semantic Motion Aliases, Cycle Tokens & Duration Error Ratchet (2026-04-17)
+#   Sprint: Final design-token sweep — semantic motion aliases, ambient
+#     cycle tokens, duration linter ratcheted to error severity, and
+#     comprehensive raw-duration → token migration across 55 files.
+#   Key changes:
+#     src/styles/motion.css — 5 semantic aliases (--motion-stage-crossing,
+#       --motion-bloom-settle, --motion-urgency-pulse, --motion-ceremony-phase,
+#       --motion-ambient) + 5 cycle tokens (--motion-cycle-short through
+#       --motion-cycle-glacial) using calc() multiples. Full reduced-motion
+#       overrides for all new tokens.
+#     scripts/check-token-compliance.ts — prefers-reduced-motion block
+#       awareness (brace depth tracking); near-zero duration exemption
+#       (<=1ms accessibility pattern); severity promoted warn→error.
+#     src/components/*.astro (20 files) — raw ms/s → motion token vars.
+#     src/styles/*.css (16 files) — raw durations → token/calc() vars.
+#     src/pages/*.astro (7 files) — token alignment in page styles.
+#     AGENTS.md — WIP updated (duration migration 100% done).
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
 #     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
 #     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
 #     unchanged (steps 1–8 identical to v129).
+#
+# Architecture v131 — Design Token Deep Migration & Compliance Hardening (2026-04-17)
+#   Sprint: Motion/duration/z-index/breakpoint/radius token migration across
+#     25 files. Token compliance checker expanded with 4 new enforcement rules.
+#   Infrastructure: no changes. (see git log for full details)
 #
 # Architecture v130 — Token Compliance 100% Ratchet & UIX Polish (2026-04-17)
 #   Sprint: Token compliance ratchet to 100% + component UIX polish pass.

@@ -173,7 +173,7 @@ const ctaHref  = sealedCount === 0 ? '/' : '/blog';
       transparent 60%
     );
     background-size: 200% 100%;
-    animation: ghost-shimmer 2.4s linear infinite;
+    animation: ghost-shimmer calc(var(--motion-ceremony-duration) * 4) linear infinite;
   }
 
   @keyframes ghost-shimmer {

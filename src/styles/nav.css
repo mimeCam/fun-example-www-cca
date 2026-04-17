@@ -147,7 +147,7 @@
 
 /* Gold atmosphere pulse — seal ceremony */
 [data-atmosphere="gold"] .batting-chip {
-  animation: gold-breathe 3s ease-in-out infinite;
+  animation: gold-breathe var(--motion-cycle-medium) ease-in-out infinite;
   border-color: var(--gold-border-strong);
 }
 

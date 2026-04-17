@@ -41,7 +41,7 @@ const { compact = false, scope = 'slug' } = Astro.props;
     max-width: 38rem;
     margin: 0 auto;
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity var(--motion-duration-measured) ease;
   }
 
   .presence-band.presence-active {

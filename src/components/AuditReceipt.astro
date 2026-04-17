@@ -539,7 +539,7 @@ function fmtDate(ts: number): string {
     border-radius: 4px;
     padding: 0.3rem 0.65rem;
     text-decoration: none;
-    transition: color 120ms ease, border-color 120ms ease;
+    transition: color var(--motion-snap-duration) ease, border-color var(--motion-snap-duration) ease;
     white-space: nowrap;
   }
 
@@ -574,7 +574,7 @@ function fmtDate(ts: number): string {
     border-radius: 3px;
     padding: 0.2rem 0.5rem;
     cursor: pointer;
-    transition: color 120ms ease, border-color 120ms ease;
+    transition: color var(--motion-snap-duration) ease, border-color var(--motion-snap-duration) ease;
     line-height: 1;
   }
 
@@ -585,7 +585,7 @@ function fmtDate(ts: number): string {
 
   /* Snap transition per motion.css SNAP profile (120ms) */
   .copy-label-default,
-  .copy-label-done { transition: opacity 120ms ease; }
+  .copy-label-done { transition: opacity var(--motion-snap-duration) ease; }
 
   .verify-copy-btn[data-copied="false"] .copy-label-default { opacity: 1; }
   .verify-copy-btn[data-copied="false"] .copy-label-done    { opacity: 0; position: absolute; }

@@ -364,11 +364,20 @@ function isWrappedByVar(line: string, matchIdx: number): boolean {
   return /var\(--[\w-]+/.test(segment);
 }
 
+/** True when a raw duration value is near-zero (accessibility pattern).
+ *  0ms, 0.01ms, 1ms — intentional instant-transition overrides for
+ *  prefers-reduced-motion or JS-driven properties. Not design durations. */
+function isNearZeroDuration(value: string): boolean {
+  const num = parseFloat(value);
+  return num <= 1;
+}
+
 // ── Core scan (pure function — works on any CSS string) ────────────────────
 
 function scanCSS(lines: string[], fileName: string): Violation[] {
   const violations: Violation[] = [];
   let inBlockComment = false;
+  let inReducedMotion = 0; /* brace depth inside @media (prefers-reduced-motion) */
 
   lines.forEach((rawLine, idx) => {
     if (!inBlockComment && rawLine.includes("/*")) {
@@ -384,6 +393,16 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
 
     const line = stripInlineComment(rawLine);
     const lineNumber = idx + 1;
+
+    // Track @media (prefers-reduced-motion) block depth
+    if (/prefers-reduced-motion/.test(rawLine)) {
+      inReducedMotion = 1;
+    } else if (inReducedMotion > 0) {
+      const opens = (rawLine.match(/{/g) ?? []).length;
+      const closes = (rawLine.match(/}/g) ?? []).length;
+      inReducedMotion += opens - closes;
+      if (inReducedMotion <= 0) inReducedMotion = 0;
+    }
 
     for (const rule of RULES) {
       if (rule.name === "no-raw-font-size-rem") {
@@ -433,8 +452,9 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
 
     // ── Duration enforcement (Mike §napkin — ERROR) ──────────────────────
     // Raw ms/s in transition/animation lines → must use motion token.
-    // Exempt: motion.css (defines tokens), custom prop defs, var() ctx.
-    if (!isDurationExempt(fileName) && !isCustomPropDef(line)) {
+    // Exempt: motion.css (defines tokens), custom prop defs, var() ctx,
+    //         prefers-reduced-motion blocks, near-zero accessibility values.
+    if (!isDurationExempt(fileName) && !isCustomPropDef(line) && inReducedMotion === 0) {
       if (isTimingPropLine(line) || isTimingShorthand(line)) {
         const durRe = /\b(\d+)(ms)\b/g;
         durRe.lastIndex = 0;
@@ -442,12 +462,13 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
         while ((dm = durRe.exec(line)) !== null) {
           if (isInsideVarFallback(line, dm.index)) continue;
           if (isVarReference(line) && isWrappedByVar(line, dm.index)) continue;
+          if (isNearZeroDuration(dm[0])) continue;
           violations.push({
             file: fileName, line: lineNumber, column: dm.index + 1,
             rule: "no-raw-duration",
             match: dm[0],
             context: rawLine.trim(),
-            severity: "warn",
+            severity: "error",
           });
         }
         // Catch seconds (0.3s, 1.2s) — separate pattern
@@ -458,12 +479,13 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
           if (sm[0].endsWith("ms")) continue;
           if (isInsideVarFallback(line, sm.index)) continue;
           if (isVarReference(line) && isWrappedByVar(line, sm.index)) continue;
+          if (isNearZeroDuration(sm[0])) continue;
           violations.push({
             file: fileName, line: lineNumber, column: sm.index + 1,
             rule: "no-raw-duration",
             match: sm[0],
             context: rawLine.trim(),
-            severity: "warn",
+            severity: "error",
           });
         }
       }

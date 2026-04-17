@@ -40,7 +40,7 @@ const script = readingHeartbeatScript(slug);
     justify-content: center;
     margin-top: 3rem;
     opacity: 0;
-    transition: opacity 1.2s ease;
+    transition: opacity var(--duration-bloom) ease;
     pointer-events: none;
   }
 
@@ -54,7 +54,7 @@ const script = readingHeartbeatScript(slug);
     height: 4px;
     border-radius: 50%;
     background: var(--mood-accent, #D4956A);
-    animation: reading-breathe 4s ease-in-out infinite;
+    animation: reading-breathe var(--motion-cycle-long) ease-in-out infinite;
   }
 
   @keyframes reading-breathe {

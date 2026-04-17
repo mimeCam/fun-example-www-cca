@@ -242,7 +242,7 @@
 
 .verdict-contested-banner__glyph {
   font-size: var(--text-base);
-  animation: pulse-glyph 2.4s ease-in-out infinite;
+  animation: pulse-glyph calc(var(--motion-ceremony-duration) * 4) ease-in-out infinite;
 }
 
 @keyframes pulse-glyph {

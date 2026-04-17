@@ -86,7 +86,7 @@ const LABELS: Record<Conviction['verdict'], string> = {
     letter-spacing: var(--tracking-wide);
     color: var(--text-tertiary);
     user-select: none;
-    transition: color 200ms ease;
+    transition: color var(--motion-flow-duration) ease;
     width: fit-content;
   }
 
@@ -109,7 +109,7 @@ const LABELS: Record<Conviction['verdict'], string> = {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    animation: panel-open 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: panel-open var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
   @keyframes panel-open {

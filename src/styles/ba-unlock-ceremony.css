@@ -160,7 +160,7 @@
   background:    var(--gold);
   border-radius: var(--radius-pill);
   width:         calc(var(--ba-count-progress) * 1%);
-  transition:    --ba-count-progress 800ms var(--motion-easing-spring);
+  transition:    --ba-count-progress var(--motion-spring-duration) var(--motion-easing-spring);
 }
 
 /* ── Badge drop phase ────────────────────────────────────────────────────── */
@@ -185,7 +185,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .bauc[data-phase="dropping"] .bauc-badge-wrap,
   .bauc[data-phase="settling"] .bauc-badge-wrap {
-    animation: bauc-badge-spring 400ms ease-out both;
+    animation: bauc-badge-spring var(--motion-duration-measured) ease-out both;
   }
 
   /* linear() spring — Josh Comeau pattern; cubic-bezier fallback below */

@@ -130,7 +130,7 @@
   border: 2px solid var(--gold-border);
   border-top-color: var(--gold);
   border-radius: var(--radius-full);
-  animation: seal-spin 600ms linear infinite;
+  animation: seal-spin var(--motion-ceremony-duration) linear infinite;
 }
 
 [data-phase="anchor"] .seal-spinner   { display: block; }
@@ -222,8 +222,8 @@
 .seal-receipt-hash {
   clip-path: inset(0 0% 0 0);
   animation:
-    reveal-hash  800ms linear               200ms forwards,
-    hash-ink-dry   2s   ease-in-out         200ms forwards;
+    reveal-hash  var(--motion-spring-duration) linear               var(--motion-flow-duration) forwards,
+    hash-ink-dry var(--motion-cycle-short)   ease-in-out           var(--motion-flow-duration) forwards;
   font-family:    var(--font-mono);
   font-size:      var(--text-xs);
   letter-spacing: -0.02em;
@@ -262,7 +262,7 @@
   letter-spacing: 0;
   line-height:    var(--leading-normal);
   margin:         0;
-  animation:      pulse-warm 3s ease-in-out 1;
+  animation:      pulse-warm var(--motion-cycle-medium) ease-in-out 1;
 }
 
 /* Cancel: ghost style — present but not pressuring */
@@ -413,7 +413,7 @@
 
   /* Override: spinner must stay visible (functional, not decorative) */
   .seal-spinner {
-    animation: seal-spin 1200ms linear infinite !important;
+    animation: seal-spin var(--duration-bloom) linear infinite !important;
   }
 
   /* Override: hash must be readable immediately */

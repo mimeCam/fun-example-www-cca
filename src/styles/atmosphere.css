@@ -108,7 +108,7 @@ body::after {
 
 [data-atmosphere="gold"] body::after,
 body[data-atmosphere="gold"]::after {
-  animation: gold-breathe 3s ease-in-out infinite;
+  animation: gold-breathe var(--motion-cycle-medium) ease-in-out infinite;
 }
 
 /* ── Stage: vindicated — receipt landed, consequence complete ─────────────── */
@@ -205,8 +205,8 @@ body[data-atmosphere="gold"]::after {
 
 .tension-badge[data-tension="contested"] .tension-glyph {
   display: inline-block;
-  animation: tension-glyph-pulse 2s ease-in-out infinite;
-  animation-delay: 0.25s;
+  animation: tension-glyph-pulse var(--motion-cycle-short) ease-in-out infinite;
+  animation-delay: var(--motion-flow-duration);
 }
 
 @keyframes tension-heartbeat {

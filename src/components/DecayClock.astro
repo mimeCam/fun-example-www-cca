@@ -292,7 +292,7 @@ const deadlineFmt = deadline
     stroke-dashoffset: calc(175.93 * var(--live-decay, 0));
     transform-origin: 32px 32px;
     transform: rotate(-90deg);
-    transition: stroke-dashoffset 1000ms ease;
+    transition: stroke-dashoffset var(--motion-spring-duration) ease;
     filter: drop-shadow(0 0 4px var(--clock-conviction-tint, transparent));
   }
   /* Ring opacity: driven by --hb-opacity from HeartbeatOrchestrator (0.45→1.0).
@@ -403,7 +403,7 @@ const deadlineFmt = deadline
     height: 100%;
     background: var(--dc-color, var(--text-ghost));
     border-radius: var(--radius-full);
-    transition: width 300ms ease;
+    transition: width var(--duration-normal) ease;
   }
   @keyframes dc-label-pulse {
     0%, 100% { opacity: 1;    }
@@ -430,7 +430,7 @@ const deadlineFmt = deadline
     font-size: var(--text-xs);
     color: var(--text-secondary);
     /* Slide-up entrance when page loads and post is endangered */
-    animation: dc-banner-enter 300ms ease-out both;
+    animation: dc-banner-enter var(--duration-normal) ease-out both;
   }
   @keyframes dc-banner-enter {
     from { transform: translateY(40px); opacity: 0; }

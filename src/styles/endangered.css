@@ -68,7 +68,7 @@
   height: 6px;
   border-radius: 50%;
   background: color-mix(in oklch, var(--urgency-warning-color) 60%, transparent);
-  animation: endangered-dot-pulse 2s ease-in-out infinite;
+  animation: endangered-dot-pulse var(--motion-cycle-short) ease-in-out infinite;
 }
 
 .endangered-hint {
@@ -93,11 +93,11 @@
   border: 1px solid color-mix(in oklch, var(--urgency-warning-color) calc(var(--urgency-glow-opacity, 0.15) * 100%), transparent);
   margin-bottom: 0.75rem;
   filter: saturate(var(--stage-endangered-saturation, 0.3));
-  animation: endangered-pulse 2s var(--stage-endangered-pulse-ease, ease-in-out) infinite;
+  animation: endangered-pulse var(--motion-cycle-short) var(--stage-endangered-pulse-ease, ease-in-out) infinite;
   transition:
-    filter 0.5s ease,
-    border-color 0.4s ease,
-    opacity 0.4s ease,
+    filter var(--motion-drift-duration) ease,
+    border-color var(--motion-duration-measured) ease,
+    opacity var(--motion-duration-measured) ease,
     transform 0.4s var(--motion-easing-spring);
 }
 
@@ -188,7 +188,7 @@
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-full);
   border: 1px solid color-mix(in oklch, var(--urgency-warning-color) 15%, transparent);
-  transition: all 0.3s ease;
+  transition: all var(--duration-normal) ease;
   margin-left: auto;
 }
 
@@ -219,7 +219,7 @@
   background: oklch(var(--erosion-lightness, 74%) var(--erosion-chroma, 0.17) var(--erosion-hue, 38deg));
   border-radius: var(--radius-xs);
   animation: erosion-breathe var(--endangered-pulse-speed, 4s) ease-in-out infinite;
-  transition: width 1s ease, background 1s ease;
+  transition: width var(--motion-spring-duration) ease, background var(--motion-spring-duration) ease;
 }
 
 @keyframes erosion-breathe {
@@ -251,7 +251,7 @@
 
 .saved-moment--visible {
   display: block;
-  animation: saved-moment-cycle 3.5s ease-out forwards;
+  animation: saved-moment-cycle calc(var(--motion-ambient) * 7) ease-out forwards;
 }
 
 @keyframes saved-moment-cycle {
@@ -310,10 +310,10 @@
   filter: saturate(0.1);
   box-shadow: none;
   transition:
-    opacity 400ms ease-out,
-    transform 400ms ease-out,
-    filter 400ms ease-out,
-    box-shadow 400ms ease-out;
+    opacity var(--motion-duration-measured) ease-out,
+    transform var(--motion-duration-measured) ease-out,
+    filter var(--motion-duration-measured) ease-out,
+    box-shadow var(--motion-duration-measured) ease-out;
 }
 
 /* Band emptying — container fades when last card exits */

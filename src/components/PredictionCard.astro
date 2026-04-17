@@ -71,7 +71,7 @@ const badge = BADGE[p.status] ?? BADGE['pending'];
     border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 1rem 1.25rem;
-    transition: border-color 180ms ease;
+    transition: border-color var(--motion-flow-duration) ease;
   }
 
   .pred-card:target { border-color: var(--border-interactive-hover); }
@@ -110,7 +110,7 @@ const badge = BADGE[p.status] ?? BADGE['pending'];
     color: var(--text-tertiary);
     text-decoration: none;
     letter-spacing: 0.03em;
-    transition: color 150ms ease;
+    transition: color var(--motion-flow-duration) ease;
   }
   .pred-card__post-link:hover { color: var(--text-secondary); }
 
@@ -119,7 +119,7 @@ const badge = BADGE[p.status] ?? BADGE['pending'];
     font-size: var(--text-xs);
     color: var(--text-faint);
     text-decoration: none;
-    transition: color 150ms ease;
+    transition: color var(--motion-flow-duration) ease;
   }
   .pred-card__anchor:hover { color: var(--text-secondary); }
 

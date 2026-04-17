@@ -151,7 +151,7 @@ const decayStage = stageAttr(post.decay);
       opacity(calc(1 - var(--decay-factor, 0) * 0.55))
       /* Tanya §5: cap blur at 1.2px — 2px looks broken, not aged */
       blur(calc(var(--decay-factor, 0) * 1.2px));
-    transition: filter 600ms ease;
+    transition: filter var(--motion-ceremony-duration) ease;
     will-change: filter;
   }
 

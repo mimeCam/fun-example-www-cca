@@ -90,7 +90,7 @@
 
 /* ── Inner wrapper: breathing — separate layer from scroll anim ── */
 .tombstone-inner {
-  animation: breathe 8s ease-in-out infinite;
+  animation: breathe var(--motion-cycle-breath) ease-in-out infinite;
 }
 
 /* Stagger so cards don't all breathe in sync */
@@ -103,11 +103,11 @@
 
 /* CSS :has() triggers warm glow when JS applies .risen to the button */
 .tombstone-card:has(.resurrect-btn.risen) {
-  animation: bloom-ring-once 0.8s ease-out forwards;
+  animation: bloom-ring-once var(--motion-spring-duration) ease-out forwards;
 }
 
 .tombstone-card:has(.resurrect-btn.risen) .tomb-title {
-  animation: warm-title 1.2s ease-out forwards;
+  animation: warm-title var(--duration-bloom) ease-out forwards;
 }
 
 /* ── Candlelight footer ambient — Mike §5, @property enables smooth ─ */
@@ -127,7 +127,7 @@
   );
   pointer-events: none;
   z-index: -1;
-  animation: flicker 4s ease-in-out infinite;
+  animation: flicker var(--motion-cycle-long) ease-in-out infinite;
 }
 
 /* ── Reduced motion: skip all animations — Mike §2, Tanya §3.4 ──── */

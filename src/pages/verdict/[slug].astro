@@ -204,7 +204,7 @@ function safeRead<T>(fn: () => T): T | null {
     color: var(--text-dim);
     text-decoration: none;
     letter-spacing: 0.03em;
-    transition: color 150ms ease;
+    transition: color var(--motion-flow-duration) ease;
   }
 
   .ceremony-nav-link:hover           { color: var(--text-secondary); }
@@ -251,7 +251,7 @@ function safeRead<T>(fn: () => T): T | null {
     color: var(--text-dim);
     text-decoration: none;
     letter-spacing: 0.02em;
-    transition: color 150ms ease;
+    transition: color var(--motion-flow-duration) ease;
   }
 
   .ceremony-audit-link:hover { color: var(--text-secondary); }

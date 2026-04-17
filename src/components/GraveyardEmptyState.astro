@@ -35,7 +35,7 @@
     font-size: var(--text-sm);
     font-style: italic;
     color: var(--color-grave-ghost);
-    animation: empty-breathe 8s ease-in-out infinite;
+    animation: empty-breathe var(--motion-cycle-breath) ease-in-out infinite;
   }
 
   .empty-link {
@@ -45,7 +45,7 @@
     text-transform: uppercase;
     color: var(--color-grave-ghost);
     text-decoration: none;
-    transition: color 200ms ease;
+    transition: color var(--motion-flow-duration) ease;
     /* Invisible tap target expansion — Tanya §6.2 */
     padding: 14px 0;
   }

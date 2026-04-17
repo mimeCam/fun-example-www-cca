@@ -128,7 +128,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     flex-direction: column;
     gap: var(--space-4);
     /* Outcome color wash — background bleeds via CSS custom property */
-    transition: background 600ms ease, box-shadow 600ms ease;
+    transition: background var(--motion-ceremony-duration) ease, box-shadow var(--motion-ceremony-duration) ease;
   }
 
   /* Outcome-specific shell wash — 6% alpha tints (Tanya §6 color grammar) */
@@ -146,7 +146,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     border-radius: var(--radius-full);
     background: transparent;
     /* Ring expands from center, then fades: 0 → 120px, opacity 0.35 → 0 */
-    animation: vr-gold-pulse 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: vr-gold-pulse var(--motion-ceremony-duration) cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   @keyframes vr-gold-pulse {
     0%   { box-shadow: 0 0 0  0px var(--gold-glow); opacity: 0.35; }
@@ -161,7 +161,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
     color: var(--gold-dim);
-    animation: vr-fade-in 200ms ease both;
+    animation: vr-fade-in var(--motion-flow-duration) ease both;
   }
 
   /* ── Badge stamp-in (Beat 1→2 overlap, 200ms delay) ─────────────────── */
@@ -169,7 +169,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    animation: vr-stamp-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 200ms both;
+    animation: vr-stamp-in var(--motion-duration-measured) cubic-bezier(0.34, 1.56, 0.64, 1) var(--motion-flow-duration) both;
   }
   @keyframes vr-stamp-in {
     from { transform: scale(0); opacity: 0; }
@@ -203,7 +203,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     font-size: var(--text-sm);
     color: var(--text-secondary);
     line-height: var(--leading-normal);
-    animation: vr-fade-in 200ms ease 300ms both;
+    animation: vr-fade-in var(--motion-flow-duration) ease var(--duration-normal) both;
   }
 
   /* ── Beat 2: HMAC hash reveal ────────────────────────────────────────── */
@@ -224,19 +224,19 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     /* Each char: invisible → gold, staggered via animation-delay on element */
     opacity: 0;
     color: var(--gold-dim);
-    animation: vr-char-in 80ms ease forwards;
-    transition: color 200ms ease;
+    animation: vr-char-in var(--duration-instant) ease forwards;
+    transition: color var(--motion-flow-duration) ease;
   }
   /* Last char brightens to full gold */
   .vr__hash-char:last-of-type {
-    animation: vr-char-in 80ms ease forwards, vr-char-land 200ms ease forwards;
-    animation-delay: inherit, calc(var(--animation-delay, 0ms) + 80ms);
+    animation: vr-char-in var(--duration-instant) ease forwards, vr-char-land var(--motion-flow-duration) ease forwards;
+    animation-delay: inherit, calc(var(--animation-delay, 0ms) + var(--duration-instant));
   }
   @keyframes vr-char-in  { from { opacity: 0; } to { opacity: 1; } }
   @keyframes vr-char-land { to { color: var(--gold); } }
   .vr__hash-ellipsis {
     color: var(--text-ghost);
-    animation: vr-fade-in 200ms ease 900ms both;
+    animation: vr-fade-in var(--motion-flow-duration) ease var(--motion-spring-duration) both;
   }
 
   /* ── Beat 3: Timestamp stamp-in ──────────────────────────────────────── */
@@ -244,7 +244,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    animation: vr-timestamp-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 900ms both;
+    animation: vr-timestamp-in var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1) var(--motion-spring-duration) both;
   }
   @keyframes vr-timestamp-in {
     from { transform: scale(0.92); opacity: 0; }
@@ -268,7 +268,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     margin: 0;
     padding: var(--space-3) var(--space-4);
     border-left: 2px solid var(--gold-border);
-    animation: vr-fade-in 200ms ease 1400ms both;
+    animation: vr-fade-in var(--motion-flow-duration) ease var(--duration-museum) both;
   }
   .vr__note p {
     margin: 0;
@@ -289,7 +289,7 @@ const hashChars  = hashShort.split('').map((c, i) => ({ c, delay: `${400 + i * 4
     .vr__badge-wrap,
     .vr__hash-char,
     .vr__timestamp {
-      animation: vr-fade-in 300ms ease both !important;
+      animation: vr-fade-in var(--duration-normal) ease both !important;
     }
     .vr__eyebrow,
     .vr__desc,

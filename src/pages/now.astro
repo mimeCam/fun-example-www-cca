@@ -97,7 +97,7 @@ const freshness   = computeFreshness(lastUpdated);
     color: var(--text-dim);
     text-decoration: none;
     letter-spacing: 0.02em;
-    transition: color 200ms ease;
+    transition: color var(--motion-flow-duration) ease;
   }
 
   .now-back:hover { color: var(--text-secondary); }
@@ -110,7 +110,7 @@ const freshness   = computeFreshness(lastUpdated);
     color: var(--text-ghost);
     text-decoration: none;
     letter-spacing: 0.01em;
-    transition: color 200ms ease;
+    transition: color var(--motion-flow-duration) ease;
   }
 
   .now-record:hover { color: var(--text-secondary); }

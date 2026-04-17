@@ -47,7 +47,7 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
     gap: 0.55rem;
     text-decoration: none;
     color: var(--text-dim);
-    transition: color 250ms ease;
+    transition: color var(--motion-flow-duration) ease;
   }
 
   .teaser-link:hover {
@@ -62,7 +62,7 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
     border-radius: 50%;
     background: var(--text-tertiary);
     opacity: 0.55;
-    transition: background 250ms ease, opacity 250ms ease;
+    transition: background var(--motion-flow-duration) ease, opacity var(--motion-flow-duration) ease;
   }
 
   .teaser-link:hover .teaser-dot {
@@ -94,7 +94,7 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
     letter-spacing: 0.04em;
     opacity: 0;
     transform: translateX(-6px);
-    transition: opacity 220ms ease, transform 220ms ease;
+    transition: opacity var(--motion-flow-duration) ease, transform var(--motion-flow-duration) ease;
   }
 
   .teaser-link:hover .teaser-cta {

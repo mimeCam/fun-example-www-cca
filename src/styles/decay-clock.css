@@ -139,7 +139,7 @@
 }
 
 [data-atmosphere="endangered"] {
-  animation: endangered-shadow-pulse 1575ms ease-in-out infinite;
+  animation: endangered-shadow-pulse var(--duration-museum) ease-in-out infinite;
 }
 
 /* ── @supports fallback for browsers without @property ──────────────────── */

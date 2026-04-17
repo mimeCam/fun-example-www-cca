@@ -32,7 +32,7 @@
 
 /* Count FLIP transition */
 .presence-count.count-flip {
-  animation: count-flip 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: count-flip var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes count-flip {
@@ -42,7 +42,7 @@
 
 /* Revival ripple on presence band */
 #presence-band.presence-ripple {
-  animation: presence-ripple-pulse 800ms ease-out forwards;
+  animation: presence-ripple-pulse var(--motion-spring-duration) ease-out forwards;
 }
 
 @keyframes presence-ripple-pulse {
@@ -69,7 +69,7 @@
   justify-content: center;
   margin-top: 3rem;
   opacity: 0;
-  transition: opacity 1.2s ease;
+  transition: opacity var(--duration-bloom) ease;
   pointer-events: none;
 }
 
@@ -82,7 +82,7 @@
   height: 4px;
   border-radius: 50%;
   background: var(--mood-accent);
-  animation: reading-breathe 4s ease-in-out infinite;
+  animation: reading-breathe var(--motion-cycle-long) ease-in-out infinite;
 }
 
 @keyframes reading-breathe {

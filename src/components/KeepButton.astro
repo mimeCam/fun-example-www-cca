@@ -131,7 +131,7 @@ const hasPact     = decayFactor !== undefined;
 
   /* Sealing state — brief pulse */
   .keep-btn[data-pact-state="sealing"] {
-    animation: pact-seal-pulse 400ms ease forwards;
+    animation: pact-seal-pulse var(--motion-duration-measured) ease forwards;
   }
 
   @keyframes pact-seal-pulse {
@@ -152,7 +152,7 @@ const hasPact     = decayFactor !== undefined;
   /* Critical urgency — pulsing ring (uses clr-red-500 for urgency, not gold) */
   .keep-btn--critical {
     border-color: color-mix(in oklch, var(--clr-red-500) 40%, transparent);
-    animation: pulse-ring 2s ease-in-out infinite;
+    animation: pulse-ring var(--motion-cycle-short) ease-in-out infinite;
   }
 
   /* still-true conviction — faint gold ring */
@@ -182,7 +182,7 @@ const hasPact     = decayFactor !== undefined;
     transform: translate(-50%, -50%) rotate(-90deg);  /* 0° = top */
     pointer-events: none;
     opacity: 0;
-    transition: opacity 120ms ease;
+    transition: opacity var(--motion-snap-duration) ease;
     overflow: visible;
   }
 
@@ -202,7 +202,7 @@ const hasPact     = decayFactor !== undefined;
     stroke: color-mix(in oklch, var(--keep-accent) 65%, transparent);
     stroke-width: 2.5;
     stroke-linecap: round;
-    transition: stroke 200ms ease;   /* colour shift at TENSION */
+    transition: stroke var(--motion-flow-duration) ease;   /* colour shift at TENSION */
   }
 
   /* Gold stroke at threshold — "commitment colour" */
@@ -213,7 +213,7 @@ const hasPact     = decayFactor !== undefined;
 
   /* ── State: threshold_reached — brief scale overshoot ─────────── */
   .keep-btn[data-keep-state="threshold_reached"] {
-    animation: keep-peak-burst 400ms var(--ease-spring, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+    animation: keep-peak-burst var(--motion-duration-measured) var(--ease-spring, cubic-bezier(0.34,1.56,0.64,1)) forwards;
   }
 
   @keyframes keep-peak-burst {
@@ -252,7 +252,7 @@ const hasPact     = decayFactor !== undefined;
   }
 
   .keep-btn.keep-activated {
-    animation: breath-bloom 1100ms var(--motion-spring-easing, cubic-bezier(0.34,1.56,0.64,1)) forwards;
+    animation: breath-bloom var(--duration-bloom) var(--motion-spring-easing, cubic-bezier(0.34,1.56,0.64,1)) forwards;
   }
 
   /* ── prefers-reduced-motion: instant color change, no motion ── */

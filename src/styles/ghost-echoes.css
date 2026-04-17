@@ -94,11 +94,11 @@
 }
 
 .echo-sparkline--loaded .echo-line {
-  animation: sparkline-draw 1.2s ease forwards;
+  animation: sparkline-draw var(--duration-bloom) ease forwards;
 }
 
 .echo-pulse-dot.echo-pulse-active {
-  animation: echo-pulse 0.9s ease-out forwards;
+  animation: echo-pulse var(--motion-spring-duration) ease-out forwards;
 }
 
 /* ---------------------------------------------------------------------------
