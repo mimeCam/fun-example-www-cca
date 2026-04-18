@@ -1,0 +1,123 @@
+/* src/styles/verdict-seal-ceremony.css
+ * VerdictSealCeremony — 3-phase interactive ceremony animations.
+ *
+ * Phase 1 (deliberation): conviction reveal + dwell timer
+ * Phase 2 (declaration):  verdict selection + BA preview
+ * Phase 3 (reckoning):    BA counter animation + receipt
+ *
+ * State machine: data-phase="deliberation|declaration|reckoning"
+ * Same pattern as SealCeremony — CSS selector owns phase visibility.
+ * Two ceremonies, two components — no shared base (Mike §POI #4).
+ *
+ * All timing references tokens.css — no magic numbers.
+ * Architecture: Michael Koch · UX: Tanya Donska · 2026-04-18
+ */
+
+/* ── Phase visibility — CSS owns this, not JS ──────────────────────────── */
+
+.vsc-phase { display: none; }
+[data-phase="deliberation"] .vsc-phase--deliberation { display: block; }
+[data-phase="declaration"]  .vsc-phase--declaration  { display: block; }
+[data-phase="reckoning"]    .vsc-phase--reckoning    { display: block; }
+
+/* ── Phase entrance keyframes ──────────────────────────────────────────── */
+
+@keyframes vsc-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vsc-scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Phase transitions ─────────────────────────────────────────────────── */
+
+.vsc-phase--deliberation {
+  animation: vsc-fade-in var(--motion-duration-deliberate) var(--motion-easing-spring) both;
+}
+
+.vsc-phase--declaration {
+  animation: vsc-scale-in var(--motion-duration-base) var(--motion-easing-spring) both;
+}
+
+.vsc-phase--reckoning {
+  animation: vsc-fade-in var(--motion-duration-deliberate) var(--motion-easing-spring) both;
+}
+
+/* ── Verdict option cards ──────────────────────────────────────────────── */
+
+.vsc-option {
+  transition:
+    background-color var(--motion-duration-fast) ease,
+    border-color var(--motion-duration-fast) ease,
+    box-shadow var(--motion-duration-fast) ease;
+}
+
+.vsc-option[aria-checked="true"][data-verdict="still-true"] {
+  border-color: var(--verdict-true-border);
+  background: var(--verdict-true-bg);
+}
+.vsc-option[aria-checked="true"][data-verdict="wrong"] {
+  border-color: var(--verdict-wrong-border);
+  background: var(--verdict-wrong-bg);
+}
+.vsc-option[aria-checked="true"][data-verdict="evolved"] {
+  border-color: var(--verdict-evolved-border);
+  background: var(--verdict-evolved-bg);
+}
+.vsc-option[aria-checked="true"][data-verdict="abandoned"] {
+  border-color: var(--verdict-pending-border);
+  background: var(--verdict-pending-bg);
+}
+
+/* ── BA delta counter animation (Phase 3) ──────────────────────────────── */
+
+@property --vsc-ba-pct {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.vsc-ba-counter {
+  transition: --vsc-ba-pct var(--verdict-ceremony-counter) ease-out;
+  counter-reset: ba-pct var(--vsc-ba-pct);
+}
+
+.vsc-ba-counter::after {
+  content: counter(ba-pct) '%';
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: var(--tracking-display);
+}
+
+/* ── Dwell timer CTA lock ──────────────────────────────────────────────── */
+
+.vsc-cta[data-locked="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.vsc-cta[data-locked="false"] {
+  opacity: 1;
+  pointer-events: auto;
+  animation: vsc-fade-in var(--motion-duration-fast) ease both;
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+/* Tanya §10: stagger tells the story even without motion. */
+
+@media (prefers-reduced-motion: reduce) {
+  .vsc-phase--deliberation,
+  .vsc-phase--declaration,
+  .vsc-phase--reckoning {
+    animation-duration: 1ms;
+  }
+
+  .vsc-ba-counter {
+    transition-duration: 1ms;
+  }
+}

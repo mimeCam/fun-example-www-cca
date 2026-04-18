@@ -143,6 +143,16 @@ export function playReceiptReveal(): void {
   catch (e) { console.error('[seal-sound] playReceiptReveal failed:', e); }
 }
 
+/** Verdict stamp — lower-pitch seal lock. Two ceremonies, two sounds. */
+export function playVerdictStamp(): void {
+  const ac = ready();
+  if (!ac) return;
+  try {
+    osc(ac, 'triangle', 60, MAX_GAIN, 100);
+    oscGlide(ac, 'sine', 600, 900, MAX_GAIN * 0.6, 400);
+  } catch (e) { console.error('[seal-sound] playVerdictStamp failed:', e); }
+}
+
 /** Error — soft detuned drop. */
 export function playSealError(): void {
   const ac = ready();

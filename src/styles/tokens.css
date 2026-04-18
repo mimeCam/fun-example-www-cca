@@ -734,6 +734,14 @@
   --seal-score-tier-high: oklch(72% 0.14  68deg);  /* gold-adjacent — committed */
   --seal-score-tier-max:  var(--gold);              /* full conviction gold      */
 
+  /* ── Verdict Seal Ceremony Tokens (Mike §napkin — 3-phase ceremony) ────── */
+  /* Phase timing: dwell → hesitation → counter animation.                   */
+  /* Rule: two ceremonies, two components — no shared base.                  */
+  --verdict-ceremony-dwell:      2000ms;   /* Phase 1 minimum read time      */
+  --verdict-ceremony-hesitation: 400ms;    /* Phase 2 Doherty threshold      */
+  --verdict-ceremony-counter:    800ms;    /* Phase 3 BA counter animation   */
+  --verdict-seal-bg:             var(--surface-deep);  /* Ceremony container  */
+
   /* ── Hesitation Beat Token (Mike §HesitationBeat) ───────────────────────── */
   /* 400ms = Doherty threshold; author feels the weight before proceeding.      */
   --seal-hesitation-duration: 400ms;

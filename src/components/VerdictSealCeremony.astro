@@ -1,0 +1,761 @@
+---
+// src/components/VerdictSealCeremony.astro
+// Interactive 3-phase verdict sealing ceremony.
+//
+// Phase 1 — Deliberation: author re-reads their original conviction (2s dwell).
+// Phase 2 — Declaration:  pick verdict, see BA delta, confirm checkbox (400ms beat).
+// Phase 3 — Reckoning:    BA counter animates, receipt displayed.
+//
+// State machine: data-phase="deliberation|declaration|reckoning"
+// Same pattern as SealCeremony.astro — CSS selector owns phase visibility.
+// Two ceremonies, two components — no shared base (Mike §POI #4).
+//
+// SSR: Phase 1 renders server-side with all conviction data.
+// Progressive enhancement: <script> adds dwell timer, BA preview, submit.
+//
+// Credits: Mike (napkin spec §VerdictSealCeremony),
+//          Tanya (UX §3 verdict ceremony emotional elevation),
+//          Paul Kim (BA delta preview, "wrong" visual treatment)
+
+import type { LedgerEntry } from '../lib/conviction-ledger';
+import type { StanceDistribution } from '../lib/stance-ledger';
+import SealSoundToggle from './SealSoundToggle.astro';
+import NotarizeStamp   from './NotarizeStamp.astro';
+import BloomParticles  from './BloomParticles.astro';
+
+interface Props {
+  slug: string;
+  title: string;
+  seal: LedgerEntry;
+  decayPct: number;
+  stanceSummary: { total: number; disputed: number };
+}
+
+const { slug, title, seal, decayPct, stanceSummary } = Astro.props;
+
+const sealDate    = new Date(seal.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+const daysSince   = Math.floor((Date.now() - seal.timestamp) / 86_400_000);
+const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
+---
+
+<section
+  class="verdict-seal-ceremony"
+  data-phase="deliberation"
+  data-slug={slug}
+  aria-label="Verdict seal ceremony"
+  aria-live="polite"
+>
+  <!-- Sound toggle — same position as SealCeremony header -->
+  <div class="vsc-sound-wrap"><SealSoundToggle /></div>
+
+  <!-- ═══ Phase 1: Deliberation ═══════════════════════════════════════ -->
+  <div class="vsc-phase vsc-phase--deliberation">
+    <p class="vsc-eyebrow">Face Your Conviction</p>
+
+    <blockquote class="vsc-conviction-quote">
+      <p class="vsc-quote-text">{seal.author_note ?? 'No note recorded.'}</p>
+      <footer class="vsc-quote-meta">
+        <span class="vsc-score">{seal.conviction_score}/10</span>
+        <span class="vsc-divider">&middot;</span>
+        <span>sealed {sealDate}</span>
+      </footer>
+      <p class="vsc-fingerprint vc-fingerprint" title="HMAC-SHA256 — retroactive edits invalidate this seal">
+        HMAC: {fingerprint}&hellip;
+      </p>
+    </blockquote>
+
+    <div class="vsc-context">
+      <p>You sealed this <strong>{daysSince} days ago</strong>.</p>
+      <p>The clock is at <strong>{Math.round(decayPct * 100)}% decay</strong>.</p>
+      {stanceSummary.total > 0 && (
+        <p>
+          <strong>{stanceSummary.total}</strong> reader{stanceSummary.total !== 1 ? 's' : ''} took stances.
+          {stanceSummary.disputed > 0 && <> <strong>{stanceSummary.disputed}</strong> disputed.</>}
+        </p>
+      )}
+    </div>
+
+    <button
+      class="vsc-cta vsc-cta--advance"
+      data-locked="true"
+      type="button"
+      aria-label="Proceed to verdict declaration"
+    >
+      Face the verdict &rarr;
+    </button>
+  </div>
+
+  <!-- ═══ Phase 2: Declaration ════════════════════════════════════════ -->
+  <div class="vsc-phase vsc-phase--declaration">
+    <p class="vsc-eyebrow">Your Verdict</p>
+
+    <div class="vsc-options" role="radiogroup" aria-label="Choose your verdict">
+      <button class="vsc-option" role="radio" aria-checked="false" data-verdict="still-true" type="button">
+        <span class="vsc-option-icon">&#10003;</span>
+        <span class="vsc-option-label">Still True</span>
+      </button>
+      <button class="vsc-option" role="radio" aria-checked="false" data-verdict="wrong" type="button">
+        <span class="vsc-option-icon">&#10007;</span>
+        <span class="vsc-option-label">Wrong</span>
+      </button>
+      <button class="vsc-option" role="radio" aria-checked="false" data-verdict="evolved" type="button">
+        <span class="vsc-option-icon">&nearr;</span>
+        <span class="vsc-option-label">Evolved</span>
+      </button>
+      <button class="vsc-option" role="radio" aria-checked="false" data-verdict="abandoned" type="button">
+        <span class="vsc-option-icon">&mdash;</span>
+        <span class="vsc-option-label">Abandoned</span>
+      </button>
+    </div>
+
+    <!-- Courage note for "wrong" -->
+    <p class="vsc-courage-note" data-visible="false">
+      Admitting you were wrong is rare. The community will see this.
+    </p>
+
+    <!-- BA preview -->
+    <div class="vsc-ba-preview" data-visible="false" aria-label="Batting average impact">
+      <p class="vsc-ba-preview-title">Batting Average Impact</p>
+      <div class="vsc-ba-preview-row">
+        <span>Current: <strong data-ba-current>—</strong></span>
+        <span class="vsc-ba-arrow">&rarr;</span>
+        <span>After: <strong data-ba-new>—</strong></span>
+        <span class="vsc-ba-delta" data-ba-delta></span>
+      </div>
+    </div>
+
+    <!-- Author note -->
+    <div class="vsc-note-wrap">
+      <label class="vsc-note-label" for="vsc-note">Note (optional)</label>
+      <textarea
+        id="vsc-note"
+        class="vsc-note-input"
+        rows="2"
+        maxlength="500"
+        placeholder="Reflect on your verdict..."
+      ></textarea>
+    </div>
+
+    <!-- Confirm checkbox -->
+    <label class="vsc-confirm-label">
+      <input type="checkbox" class="vsc-confirm-checkbox" />
+      <span>I accept this verdict permanently.</span>
+    </label>
+
+    <!-- Submit -->
+    <button
+      class="vsc-cta vsc-cta--seal"
+      data-locked="true"
+      type="button"
+      disabled
+      aria-label="Seal this verdict permanently"
+    >
+      Seal this verdict
+    </button>
+
+    <p class="vsc-error" data-visible="false" role="alert"></p>
+  </div>
+
+  <!-- ═══ Phase 3: Reckoning ═════════════════════════════════════════ -->
+  <div class="vsc-phase vsc-phase--reckoning">
+    <p class="vsc-eyebrow">Verdict Sealed</p>
+
+    <div class="vsc-receipt-card" data-verdict="">
+      <p class="vsc-receipt-verdict" data-receipt-verdict></p>
+      <div class="vsc-receipt-meta">
+        <p data-receipt-date></p>
+        <p class="vsc-fingerprint" data-receipt-proof></p>
+      </div>
+    </div>
+
+    <div class="vsc-ba-result">
+      <p class="vsc-ba-result-title">Batting Average</p>
+      <div class="vsc-ba-result-row">
+        <span class="vsc-ba-counter" style="--vsc-ba-pct: 0;" data-ba-from></span>
+        <span class="vsc-ba-transition-arrow">&rarr;</span>
+        <span class="vsc-ba-counter" style="--vsc-ba-pct: 0;" data-ba-to></span>
+      </div>
+      <p class="vsc-ba-closure">The accountability loop is closed.</p>
+    </div>
+
+    <NotarizeStamp />
+    <BloomParticles variant="receipt" />
+
+    <div class="vsc-receipt-actions">
+      <a class="vsc-action-link" data-audit-link href={`/audit/${slug}/`}>
+        View full audit trail &nearr;
+      </a>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initSealSound, playVerdictStamp, playReceiptReveal, playSealError } from '../lib/client/seal-sound';
+  import { hapticForEvent } from '../lib/client/seal-haptic';
+
+  function initCeremony(el: HTMLElement): void {
+    const slug = el.dataset.slug ?? '';
+    initSealSound();
+    setupDwellTimer(el);
+    setupVerdictOptions(el, slug);
+    setupConfirmGate(el);
+    setupSubmit(el, slug);
+  }
+
+  /* ── Phase 1: dwell timer ────────────────────────────────── */
+
+  function setupDwellTimer(el: HTMLElement): void {
+    const cta = el.querySelector<HTMLButtonElement>('.vsc-cta--advance');
+    if (!cta) return;
+    const DWELL_MS = 2000;
+
+    setTimeout(() => {
+      cta.dataset.locked = 'false';
+    }, DWELL_MS);
+
+    cta.addEventListener('click', () => {
+      if (cta.dataset.locked === 'true') return;
+      setPhase(el, 'declaration');
+    });
+  }
+
+  /* ── Phase 2: verdict option selection ───────────────────── */
+
+  function setupVerdictOptions(el: HTMLElement, slug: string): void {
+    const options = el.querySelectorAll<HTMLButtonElement>('.vsc-option');
+    let debounceId: ReturnType<typeof setTimeout> | null = null;
+
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        selectOption(el, options, opt);
+        const verdict = opt.dataset.verdict ?? '';
+        showCourageNote(el, verdict);
+        if (debounceId) clearTimeout(debounceId);
+        debounceId = setTimeout(() => fetchPreview(el, slug, verdict), 300);
+      });
+    });
+  }
+
+  function selectOption(
+    el: HTMLElement,
+    all: NodeListOf<HTMLButtonElement>,
+    selected: HTMLButtonElement,
+  ): void {
+    all.forEach(o => o.setAttribute('aria-checked', 'false'));
+    selected.setAttribute('aria-checked', 'true');
+    updateSealGate(el);
+  }
+
+  function showCourageNote(el: HTMLElement, verdict: string): void {
+    const note = el.querySelector<HTMLElement>('.vsc-courage-note');
+    if (note) note.dataset.visible = String(verdict === 'wrong');
+  }
+
+  async function fetchPreview(el: HTMLElement, slug: string, verdict: string): Promise<void> {
+    const preview = el.querySelector<HTMLElement>('.vsc-ba-preview');
+    if (!preview) return;
+    try {
+      const res = await fetch(`/api/verdict-resolve?slug=${slug}&verdict=${verdict}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const p = data.preview;
+      setPreviewValues(el, p.currentPct, p.newPct, p.delta);
+      preview.dataset.visible = 'true';
+    } catch { /* network error — preview stays hidden */ }
+  }
+
+  function setPreviewValues(el: HTMLElement, cur: number, next: number, delta: number): void {
+    setText(el, '[data-ba-current]', `${cur}%`);
+    setText(el, '[data-ba-new]', `${next}%`);
+    const sign = delta >= 0 ? '+' : '';
+    setText(el, '[data-ba-delta]', `${sign}${delta}%`);
+  }
+
+  /* ── Phase 2: confirm gate ───────────────────────────────── */
+
+  function setupConfirmGate(el: HTMLElement): void {
+    const cb = el.querySelector<HTMLInputElement>('.vsc-confirm-checkbox');
+    if (!cb) return;
+    cb.addEventListener('change', () => updateSealGate(el));
+  }
+
+  function updateSealGate(el: HTMLElement): void {
+    const selected = el.querySelector('.vsc-option[aria-checked="true"]');
+    const checked  = el.querySelector<HTMLInputElement>('.vsc-confirm-checkbox')?.checked;
+    const btn      = el.querySelector<HTMLButtonElement>('.vsc-cta--seal');
+    if (!btn) return;
+    const canSeal = !!selected && !!checked;
+    btn.disabled = !canSeal;
+    btn.dataset.locked = String(!canSeal);
+  }
+
+  /* ── Phase 2: submit with hesitation beat ────────────────── */
+
+  function setupSubmit(el: HTMLElement, slug: string): void {
+    const btn = el.querySelector<HTMLButtonElement>('.vsc-cta--seal');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const HESITATION_MS = 400;
+      setTimeout(() => submitVerdict(el, slug), HESITATION_MS);
+    });
+  }
+
+  async function submitVerdict(el: HTMLElement, slug: string): Promise<void> {
+    const verdict = selectedVerdict(el);
+    const note    = noteText(el);
+    if (!verdict) return;
+
+    try {
+      const res = await fetch('/api/verdict-resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, verdict, note }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        populateReceipt(el, data);
+        playVerdictStamp();
+        hapticForEvent('LOCK');
+        setPhase(el, 'reckoning');
+        animateBACounter(el, data.newBattingAverage);
+        scheduleReceiptReveal(el);
+      } else if (data.alreadySealed) {
+        showError(el, 'This verdict has already been sealed.');
+      } else {
+        showError(el, data.error ?? 'Failed to seal verdict.');
+      }
+    } catch {
+      playSealError();
+      showError(el, 'Network error. Please try again.');
+      resetSealButton(el);
+    }
+  }
+
+  function selectedVerdict(el: HTMLElement): string | null {
+    const opt = el.querySelector<HTMLButtonElement>('.vsc-option[aria-checked="true"]');
+    return opt?.dataset.verdict ?? null;
+  }
+
+  function noteText(el: HTMLElement): string {
+    return el.querySelector<HTMLTextAreaElement>('.vsc-note-input')?.value.trim() ?? '';
+  }
+
+  /* ── Phase 3: receipt population ─────────────────────────── */
+
+  function populateReceipt(el: HTMLElement, data: Record<string, unknown>): void {
+    const LABELS: Record<string, string> = {
+      'still-true': 'Still True', 'wrong': 'Wrong',
+      'evolved': 'Evolved', 'abandoned': 'Abandoned',
+    };
+    const v = String(data.verdict ?? '');
+    setText(el, '[data-receipt-verdict]', `\u2713  ${LABELS[v] ?? v}`);
+    const card = el.querySelector<HTMLElement>('.vsc-receipt-card');
+    if (card) card.dataset.verdict = v;
+    const ts = new Date(data.sealedAt as number);
+    setText(el, '[data-receipt-date]', `Sealed: ${ts.toLocaleString()}`);
+    const proof = String(data.hmac_seal ?? '').slice(0, 16);
+    setText(el, '[data-receipt-proof]', `Proof: ${proof}\u2026`);
+  }
+
+  function animateBACounter(el: HTMLElement, newPct: number | null): void {
+    const targets = el.querySelectorAll<HTMLElement>('[data-ba-to]');
+    if (newPct === null) return;
+    targets.forEach(t => t.style.setProperty('--vsc-ba-pct', String(newPct)));
+    const from = el.querySelector<HTMLElement>('[data-ba-from]');
+    const cur  = el.querySelector<HTMLElement>('[data-ba-current]');
+    if (from && cur) from.style.setProperty('--vsc-ba-pct', String(parseInt(cur.textContent ?? '0')));
+  }
+
+  function scheduleReceiptReveal(el: HTMLElement): void {
+    setTimeout(() => {
+      playReceiptReveal();
+      hapticForEvent('RECEIPT');
+      el.classList.add('blooming-receipt');
+    }, 800);
+  }
+
+  /* ── Utilities ───────────────────────────────────────────── */
+
+  function setPhase(el: HTMLElement, phase: string): void {
+    el.dataset.phase = phase;
+  }
+
+  function setText(el: HTMLElement, selector: string, text: string): void {
+    const target = el.querySelector(selector);
+    if (target) target.textContent = text;
+  }
+
+  function showError(el: HTMLElement, msg: string): void {
+    const err = el.querySelector<HTMLElement>('.vsc-error');
+    if (!err) return;
+    err.textContent = msg;
+    err.dataset.visible = 'true';
+    playSealError();
+  }
+
+  function resetSealButton(el: HTMLElement): void {
+    const btn = el.querySelector<HTMLButtonElement>('.vsc-cta--seal');
+    if (btn) { btn.disabled = false; btn.dataset.locked = 'false'; }
+  }
+
+  /* ── Init ────────────────────────────────────────────────── */
+
+  document.querySelectorAll<HTMLElement>('.verdict-seal-ceremony').forEach(initCeremony);
+</script>
+
+<style>
+  @import '../styles/verdict-seal-ceremony.css';
+
+  .verdict-seal-ceremony {
+    position: relative;
+    background: var(--verdict-seal-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8) var(--space-6);
+    box-shadow: var(--shadow-e3);
+    margin-top: var(--space-10);
+  }
+
+  .vsc-sound-wrap {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+  }
+
+  /* ── Eyebrow ──────────────────────────────────────── */
+  .vsc-eyebrow {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin: 0 0 var(--space-4);
+  }
+
+  /* ── Phase 1: conviction quote ────────────────────── */
+  .vsc-conviction-quote {
+    background: var(--surface-inset);
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--gold);
+    border-radius: var(--radius-md);
+    padding: var(--space-4) var(--space-5);
+    margin: 0 0 var(--space-5);
+  }
+
+  .vsc-quote-text {
+    font-size: var(--text-base);
+    font-style: italic;
+    line-height: var(--leading-normal);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-3);
+  }
+
+  .vsc-quote-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+  }
+
+  .vsc-score {
+    font-family: var(--font-mono);
+    font-weight: var(--weight-semibold);
+    color: var(--gold);
+  }
+
+  .vsc-divider { color: var(--text-ghost); }
+
+  .vsc-fingerprint {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-ghost);
+    margin: var(--space-2) 0 0;
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .vsc-context {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-snug);
+    margin-bottom: var(--space-5);
+  }
+
+  .vsc-context p { margin: 0 0 var(--space-1); }
+
+  /* ── CTA buttons ──────────────────────────────────── */
+  .vsc-cta {
+    display: block;
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-primary);
+    background: var(--gold-bg);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition:
+      background-color var(--motion-duration-fast) ease,
+      border-color var(--motion-duration-fast) ease;
+  }
+
+  .vsc-cta:hover:not(:disabled) {
+    background: var(--gold-bg-strong);
+    border-color: var(--gold-border-strong);
+  }
+
+  .vsc-cta:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* ── Phase 2: verdict options ─────────────────────── */
+  .vsc-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .vsc-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-2);
+    min-height: 48px;
+    min-width: 48px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+  }
+
+  .vsc-option:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-medium);
+  }
+
+  .vsc-option-icon {
+    font-size: var(--text-lg);
+    line-height: 1;
+  }
+
+  .vsc-option-label {
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  /* ── Courage note (wrong verdict) ─────────────────── */
+  .vsc-courage-note {
+    font-size: var(--text-xs);
+    font-style: italic;
+    color: var(--verdict-wrong);
+    margin: 0 0 var(--space-3);
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity var(--motion-duration-fast) ease;
+  }
+
+  .vsc-courage-note[data-visible="true"] {
+    opacity: 1;
+    height: auto;
+    margin-bottom: var(--space-3);
+  }
+
+  /* ── BA preview ───────────────────────────────────── */
+  .vsc-ba-preview {
+    background: var(--surface-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    opacity: 0;
+    transition: opacity var(--motion-duration-base) ease;
+  }
+
+  .vsc-ba-preview[data-visible="true"] { opacity: 1; }
+
+  .vsc-ba-preview-title {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 var(--space-2);
+  }
+
+  .vsc-ba-preview-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+
+  .vsc-ba-arrow { color: var(--text-ghost); }
+  .vsc-ba-delta { font-weight: var(--weight-semibold); color: var(--gold); }
+
+  /* ── Note input ───────────────────────────────────── */
+  .vsc-note-wrap { margin-bottom: var(--space-4); }
+
+  .vsc-note-label {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-1);
+  }
+
+  .vsc-note-input {
+    width: 100%;
+    background: var(--surface-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-input);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    padding: var(--space-2) var(--space-3);
+    resize: vertical;
+    font-family: var(--font-sans);
+  }
+
+  .vsc-note-input:focus {
+    outline: none;
+    border-color: var(--border-focus);
+  }
+
+  /* ── Confirm checkbox ─────────────────────────────── */
+  .vsc-confirm-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-4);
+    cursor: pointer;
+  }
+
+  .vsc-confirm-checkbox {
+    accent-color: var(--gold);
+    min-width: 16px;
+    min-height: 16px;
+  }
+
+  /* ── Error message ────────────────────────────────── */
+  .vsc-error {
+    font-size: var(--text-xs);
+    color: var(--verdict-wrong);
+    margin: var(--space-2) 0 0;
+    opacity: 0;
+    transition: opacity var(--motion-duration-fast) ease;
+  }
+
+  .vsc-error[data-visible="true"] { opacity: 1; }
+
+  /* ── Phase 3: receipt card ────────────────────────── */
+  .vsc-receipt-card {
+    background: var(--surface-inset);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    text-align: center;
+    margin-bottom: var(--space-5);
+  }
+
+  .vsc-receipt-card[data-verdict="still-true"] {
+    border-color: var(--verdict-true-border);
+  }
+  .vsc-receipt-card[data-verdict="wrong"] {
+    border-color: var(--verdict-wrong-border);
+    /* Paul Kim: honor the courage, don't punish — amber recognition */
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--clr-amber-400) 15%, transparent);
+  }
+  .vsc-receipt-card[data-verdict="evolved"] {
+    border-color: var(--verdict-evolved-border);
+  }
+
+  .vsc-receipt-verdict {
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-extrabold);
+    letter-spacing: var(--tracking-display);
+    margin: 0 0 var(--space-3);
+    color: var(--text-primary);
+  }
+
+  .vsc-receipt-meta {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+  }
+
+  .vsc-receipt-meta p { margin: 0 0 var(--space-1); }
+
+  /* ── Phase 3: BA result ───────────────────────────── */
+  .vsc-ba-result {
+    text-align: center;
+    margin-bottom: var(--space-5);
+  }
+
+  .vsc-ba-result-title {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 var(--space-2);
+  }
+
+  .vsc-ba-result-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+  }
+
+  .vsc-ba-transition-arrow {
+    font-size: var(--text-xl);
+    color: var(--text-ghost);
+  }
+
+  .vsc-ba-closure {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    font-style: italic;
+    margin: var(--space-3) 0 0;
+  }
+
+  /* ── Receipt actions ──────────────────────────────── */
+  .vsc-receipt-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+  }
+
+  .vsc-action-link {
+    font-size: var(--text-xs);
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: var(--tracking-wide);
+    transition: color var(--motion-duration-fast) ease;
+  }
+
+  .vsc-action-link:hover { color: var(--text-secondary); }
+
+  /* ── Mobile ───────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .verdict-seal-ceremony {
+      padding: var(--space-6) var(--space-4);
+      border-radius: var(--radius-lg);
+    }
+
+    .vsc-options { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>

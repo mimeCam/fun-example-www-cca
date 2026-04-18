@@ -262,6 +262,61 @@ export function getSealedSlugs(): string[] {
   } catch { return []; }
 }
 
+// ── Verdict Delta Preview (Mike napkin §VerdictSealCeremony Phase 2) ──────────
+// Pure simulation: reads current counts, applies one hypothetical verdict.
+// Never writes. Stale-safe: the POST response returns authoritative BA anyway.
+
+export interface BattingAverageDelta {
+  currentPct:     number;
+  newPct:         number;
+  delta:          number;
+  currentCorrect: number;
+  currentWrong:   number;
+  newCorrect:     number;
+  newWrong:       number;
+}
+
+/** Simulate the BA impact of a hypothetical verdict. Pure computation. */
+export function simulateVerdictDelta(verdict: string): BattingAverageDelta {
+  const cur = fetchCurrentCounts();
+  const next = applyHypothetical(cur, verdict);
+  return buildDelta(cur, next);
+}
+
+function fetchCurrentCounts() {
+  const d = avgDb();
+  if (!d) return { correct: 0, wrong: 0, evolved: 0 };
+  const seals   = fetchSealSlugs(d);
+  const events  = fetchVerdictEvents(d);
+  const counted = tallyVerdicts(events, seals.length);
+  return { correct: counted.correct, wrong: counted.wrong, evolved: counted.evolved };
+}
+
+function applyHypothetical(
+  cur: { correct: number; wrong: number; evolved: number },
+  verdict: string,
+) {
+  const next = { ...cur };
+  const t = verdictTally(verdict);
+  if (t === 'correct') next.correct++;
+  else if (t === 'wrong') next.wrong++;
+  else next.evolved++;
+  return next;
+}
+
+function buildDelta(
+  cur: { correct: number; wrong: number; evolved: number },
+  next: { correct: number; wrong: number; evolved: number },
+): BattingAverageDelta {
+  const currentPct = toPercent(cur.correct, cur.wrong, cur.evolved);
+  const newPct     = toPercent(next.correct, next.wrong, next.evolved);
+  return {
+    currentPct, newPct, delta: newPct - currentPct,
+    currentCorrect: cur.correct,  currentWrong: cur.wrong,
+    newCorrect:     next.correct,  newWrong:    next.wrong,
+  };
+}
+
 // ── Unlock Progress (Mike napkin §BattingProgressRing) ────────────────────────
 // Derived state — never persisted. COUNT of resolved verdicts, queried from ledger.
 // "Query it, don't write it." — Mike §points-of-interest #9

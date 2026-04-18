@@ -17,7 +17,7 @@ import { getCollection } from 'astro:content';
 import { broadcastNamed } from '../../lib/heartbeat';
 import { resolveVerdict, VerdictAlreadySealedError } from '../../lib/verdict-resolver';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
-import { computeBattingAverage, getUnlockProgress, getThermalState, MIN_VERDICTS } from '../../lib/batting-average';
+import { computeBattingAverage, getUnlockProgress, getThermalState, MIN_VERDICTS, simulateVerdictDelta } from '../../lib/batting-average';
 import { getAnchorGistId, getSealEntry } from '../../lib/conviction-ledger';
 import { anchorVerdict }          from '../../lib/conviction-anchor';
 import { stamp, hashContent }     from '../../lib/rfc3161-client';
@@ -76,7 +76,26 @@ function isValidVerdict(v: unknown): v is VerdictOutcome {
 }
 
 // ---------------------------------------------------------------------------
-// Route handler
+// GET — BA delta preview (no auth, read-only, public data)
+// Mike §napkin: "Pure simulation — reads current BA + applies one hypothetical
+// verdict. No write. Preview is always stale-safe."
+// ---------------------------------------------------------------------------
+
+export const GET: APIRoute = async ({ request }) => {
+  const url     = new URL(request.url);
+  const slug    = url.searchParams.get('slug');
+  const verdict = url.searchParams.get('verdict');
+
+  if (!slug)                  return badRequest('Missing slug');
+  if (!isValidVerdict(verdict)) return badRequest('Invalid verdict');
+  if (!(await slugExists(slug))) return badRequest('Unknown slug');
+
+  const preview = simulateVerdictDelta(verdict);
+  return json({ slug, verdict, preview });
+};
+
+// ---------------------------------------------------------------------------
+// POST — seal a final verdict (auth required)
 // ---------------------------------------------------------------------------
 
 export const POST: APIRoute = async ({ request }) => {

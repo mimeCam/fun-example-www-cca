@@ -32,6 +32,7 @@ import { getGraceState } from '../../lib/cold-start';
 import { getStanceDistribution } from '../../lib/stance-ledger';
 import { computeTension } from '../../lib/tension-score';
 import { getSealEntry } from '../../lib/conviction-ledger';
+import { getVerdictRecord } from '../../lib/verdict-resolver';
 import { getTstForSeal } from '../../lib/timestamp-store';
 import { getDisputeState } from '../../lib/verdict-dispute';
 import { canonicalUrl } from '../../config/seo.config';
@@ -92,10 +93,12 @@ const tensionResult = stanceDist ? computeTension(stanceDist) : null;
 // Prediction Vault — derive statuses at render time (wall-clock)
 const postPredictions = flattenPredictions([post], new Date());
 
-const sealEntry       = safeRead(() => getSealEntry(post.slug));
-const tstData         = safeRead(() => getTstForSeal(post.slug));
-const disputeState    = safeRead(() => getDisputeState(post.slug), { status: 'no-verdict' as const });
-const verdictSealed   = disputeState.status !== 'no-verdict';
+const sealEntry         = safeRead(() => getSealEntry(post.slug));
+const tstData           = safeRead(() => getTstForSeal(post.slug));
+const disputeState      = safeRead(() => getDisputeState(post.slug), { status: 'no-verdict' as const });
+const verdictSealed     = disputeState.status !== 'no-verdict';
+const verdictRecord     = safeRead(() => getVerdictRecord(post.slug));
+const showVerdictCTA    = !!sealEntry && !verdictRecord;
 const postMeta        = extractMeta(post);
 const convictionState = buildConvictionState(
   sealEntry?.conviction_score ?? null,
@@ -230,6 +233,13 @@ const jsonLd      = [
       tst={tstData}
     />
 
+    {/* Verdict CTA — sealed conviction with no verdict yet (Mike §napkin §10) */}
+    {showVerdictCTA && (
+      <a href={`/verdict/${post.slug}/`} class="verdict-cta-link">
+        Face your verdict &rarr;
+      </a>
+    )}
+
   </main>
 
   <PostNav nav={nav} />
@@ -307,7 +317,7 @@ const jsonLd      = [
     margin-bottom: 1.75rem;
     aspect-ratio: 16 / 6;
     overflow: hidden;
-    border-radius: 12px 12px 0 0;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
   }
 
   .post-cover-img {
@@ -328,7 +338,7 @@ const jsonLd      = [
       color-mix(in oklch, var(--mood-accent) 12%, transparent) 0%,
       transparent 100%
     );
-    border-radius: 12px 12px 0 0;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
   }
 
   .post-header time {
@@ -467,5 +477,28 @@ const jsonLd      = [
     transition: color var(--motion-snap-duration) var(--motion-snap-easing);
   }
   .post-predictions__vault-link:hover { color: var(--text-secondary); }
+
+  /* Verdict CTA — subtle navigation prompt (Mike §napkin §10) */
+  .verdict-cta-link {
+    display: block;
+    text-align: center;
+    margin-top: var(--space-6);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-dim);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition:
+      color var(--motion-duration-fast) ease,
+      border-color var(--motion-duration-fast) ease;
+  }
+
+  .verdict-cta-link:hover {
+    color: var(--gold-dim);
+    border-color: var(--gold-border);
+  }
 
 </style>

@@ -19,9 +19,11 @@
 
 export const prerender = false;
 
+import { createHmac }       from 'crypto';
 import { getCollection }    from 'astro:content';
 import BaseLayout           from '../../layouts/BaseLayout.astro';
 import VerdictCeremony      from '../../components/VerdictCeremony.astro';
+import VerdictSealCeremony  from '../../components/VerdictSealCeremony.astro';
 import DisputeChallenge     from '../../components/DisputeChallenge.astro';
 import DisputeTally         from '../../components/DisputeTally.astro';
 import DisputeQuorum        from '../../components/DisputeQuorum.astro';
@@ -30,6 +32,9 @@ import { getVerdictRecord, getVerdictState } from '../../lib/verdict-resolver';
 import { computeBattingAverage } from '../../lib/batting-average';
 import { getDisputeState, getDisputeResolution } from '../../lib/verdict-dispute';
 import { getDisputeSummary } from '../../lib/dispute-quorum';
+import { getStanceDistribution } from '../../lib/stance-ledger';
+import { decayFactor, dominantConviction } from '../../lib/decay-engine';
+import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
 import VerdictReveal from '../../components/VerdictReveal.astro';
 
@@ -52,6 +57,35 @@ const quorumSummary = safeRead(() => getDisputeSummary(slug)) ?? { status: 'open
 const verdictSealed = verdict !== null;
 const verdictState  = safeRead(() => getVerdictState(slug)) ?? 'unaudited';
 const resolution    = safeRead(() => getDisputeResolution(slug));
+
+// ── Admin detection — show ceremony when admin + verdict unsealed ──────────
+function isAdminAuthed(request: Request): boolean {
+  const secret = process.env.ADMIN_SECRET ?? '';
+  if (!secret) return false;
+  const cookie = request.headers.get('Cookie') ?? '';
+  const match = cookie.match(/(?:^|;\s*)admin_token=([^;]+)/);
+  if (!match) return false;
+  const expected = createHmac('sha256', secret).update('admin-session').digest('hex');
+  return match[1] === expected;
+}
+const isAdmin            = isAdminAuthed(Astro.request);
+const showSealCeremony   = !verdictSealed && !!seal && isAdmin;
+
+// ── Ceremony data — only fetched when ceremony will render ────────────────
+const stanceDist    = showSealCeremony ? safeRead(() => getStanceDistribution(slug)) : null;
+const stanceSummary = stanceDist
+  ? { total: stanceDist.total, disputed: stanceDist.disagree }
+  : { total: 0, disputed: 0 };
+const revivalCount  = showSealCeremony ? safeRead(() => getRevivalCount(slug)) ?? 0 : 0;
+const readingSec    = showSealCeremony ? safeRead(() => getReadingSeconds(slug)) ?? 0 : 0;
+const pubDateISO    = post.data.pubDate.toISOString();
+const lifespan      = post.data.lifespan ?? 365;
+const convictions   = post.data.convictions ?? [];
+const convictionVerdicts = convictions.map((c: { verdict: string }) => c.verdict as Parameters<typeof dominantConviction>[0][number]);
+const dominantVerdict = dominantConviction(convictionVerdicts);
+const postDecay     = showSealCeremony
+  ? decayFactor(pubDateISO, lifespan, new Date(), revivalCount, readingSec, dominantVerdict)
+  : 0;
 
 // ── Page meta ─────────────────────────────────────────────────────────────────
 const VERDICT_LABELS: Record<VerdictOutcome, string> = {
@@ -114,7 +148,7 @@ function safeRead<T>(fn: () => T): T | null {
     <header class="ceremony-header">
       <p class="ceremony-eyebrow">The Verdict</p>
       <h1 class="ceremony-title">{post.data.title}</h1>
-      {!verdict && seal && (
+      {!verdict && seal && !showSealCeremony && (
         <p class="ceremony-subtitle">
           The conviction is sealed. The verdict has not been resolved yet.
         </p>
@@ -126,7 +160,18 @@ function safeRead<T>(fn: () => T): T | null {
       )}
     </header>
 
-    <!-- The ceremony — three acts -->
+    <!-- Verdict Seal Ceremony — interactive 3-phase ritual (admin only, unsealed verdicts) -->
+    {showSealCeremony && seal && (
+      <VerdictSealCeremony
+        slug={slug}
+        title={post.data.title}
+        seal={seal}
+        decayPct={postDecay}
+        stanceSummary={stanceSummary}
+      />
+    )}
+
+    <!-- The ceremony — three acts (public display of sealed verdicts) -->
     <VerdictCeremony
       slug={slug}
       title={post.data.title}
