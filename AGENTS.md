@@ -9,12 +9,11 @@
 - `src/pages/api/` — REST API
 - `src/styles/` — design system (tokens, stages)
 - `scripts/` — build tooling
-- `cli/` — CLI tools
 
 ## WIP
 
-- [wip] Border-radius migration — 48 advisory warnings (tokenize hardcoded values)
-- [wip] Breakpoint standardization — 10 non-canonical @media values flagged
-- [wip] Design audit — accent consolidation, surface tier lightness delta, radius cascade
-- [wip] UIX spec — 20 deliverables remain (sticky stance, card hover revival, tension badge icons, sepia cap tuning)
-- [wip] P1 polish — blog above-fold simplification, KeepButton promotion, DecayClock overlay
+- [wip] Border-radius migration — 48 advisory warnings
+- [wip] Breakpoint standardization — 10 non-canonical @media values
+- [wip] Design audit — accent consolidation, surface tiers, radius cascade
+- [wip] UIX polish — sticky stance, card hover revival, tension badge icons, sepia cap tuning
+- [wip] P1 polish — ConvictionRecord simplification, DecayCard footer clock sizing, hover-revival gating

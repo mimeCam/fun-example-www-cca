@@ -1,0 +1,136 @@
+---
+// src/components/FloatingKeepButton.astro
+// Floating gold circle — the unmissable KEEP action.
+// Appears after scrolling past the post header (sentinel-based).
+// Coexists with StickyStanceBar: stacked vertically with 20px gap.
+//
+// Hold-to-revive: inherits RevivalOrchestrator wiring via .keep-btn class.
+// Sync: listens for revival:confirmed to update state across all instances.
+//
+// Tanya §2A: "Promote KeepButton to a persistent, floating position"
+// Mike §Module1: "KeepButton (hero-sized, unmissable)"
+
+interface Props {
+  slug:       string;
+  count:      number;
+  urgency:    string;
+  decayStage: string;
+}
+
+const { slug, count, urgency, decayStage } = Astro.props;
+---
+
+<div
+  class="keep-float"
+  data-keep-float
+  data-keep-float-slug={slug}
+  data-decay-stage={decayStage}
+  role="complementary"
+  aria-label="Quick revival"
+>
+  <button
+    class="keep-float-btn keep-btn"
+    data-keep-slug={slug}
+    data-keep-state="idle"
+    aria-label={`Keep this post alive${count > 0 ? ` (${count} revivals)` : ''}`}
+    aria-pressed="false"
+    type="button"
+  >
+    <svg class="keep-arc" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <circle class="keep-arc-track"  cx="24" cy="24" r="20" />
+      <circle class="keep-arc-circle" cx="24" cy="24" r="20"
+        stroke-dasharray="125.664"
+        stroke-dashoffset="125.664"
+      />
+    </svg>
+    <span class="keep-float-icon" aria-hidden="true">♥</span>
+  </button>
+  {count > 0 && (
+    <span class="keep-float-badge">{count}</span>
+  )}
+</div>
+
+<script>
+  // FloatingKeepButton visibility + revival sync.
+  // Sentinel: .post-header — float appears when header exits viewport.
+  // Sync: revival:confirmed from ANY button → update float + inline.
+  // Stance prompt: dispatched after bloom settle to trigger StickyStanceBar.
+
+  function initFloatingKeep(): void {
+    const float = document.querySelector<HTMLElement>('[data-keep-float]');
+    if (!float) return;
+
+    observeSentinel(float);
+    listenForRevival(float);
+    watchSsbState(float);
+  }
+
+  /** IntersectionObserver on .post-header — zero scroll listeners. */
+  function observeSentinel(float: HTMLElement): void {
+    const header = document.querySelector('.post-header');
+    if (!header) return;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => float.classList.toggle('keep-float--visible', !entry.isIntersecting),
+      { threshold: 0 },
+    );
+    obs.observe(header);
+  }
+
+  /** Sync revival state across floating + inline buttons. */
+  function listenForRevival(float: HTMLElement): void {
+    document.addEventListener('revival:confirmed', (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+
+      updateBadge(float, detail.count ?? detail.revivalCount);
+      markRevived(float);
+      scheduleStancePrompt(float);
+    });
+  }
+
+  function updateBadge(float: HTMLElement, count: number | undefined): void {
+    if (count == null) return;
+    let badge = float.querySelector<HTMLElement>('.keep-float-badge');
+    if (!badge && count > 0) {
+      badge = document.createElement('span');
+      badge.className = 'keep-float-badge';
+      float.appendChild(badge);
+    }
+    if (badge) badge.textContent = String(count);
+  }
+
+  function markRevived(float: HTMLElement): void {
+    float.classList.add('keep-float--revived');
+    const icon = float.querySelector('.keep-float-icon');
+    if (icon) icon.textContent = '✓';
+  }
+
+  /** After bloom settles, prompt StickyStanceBar to slide up. */
+  function scheduleStancePrompt(float: HTMLElement): void {
+    const slug = float.dataset.keepFloatSlug;
+    if (!slug) return;
+    const BLOOM_SETTLE_MS = 1200;
+    setTimeout(() => {
+      document.dispatchEvent(new CustomEvent('stance:prompt', { detail: { slug } }));
+    }, BLOOM_SETTLE_MS);
+  }
+
+  /** Track StickyStanceBar visibility — shift float down when SSB dismissed. */
+  function watchSsbState(float: HTMLElement): void {
+    const ssb = document.querySelector('.ssb');
+    if (!ssb) return;
+
+    const mo = new MutationObserver(() => {
+      const visible = ssb.classList.contains('ssb--visible');
+      float.classList.toggle('keep-float--ssb-gone', !visible);
+    });
+    mo.observe(ssb, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFloatingKeep);
+  } else {
+    initFloatingKeep();
+  }
+</script>

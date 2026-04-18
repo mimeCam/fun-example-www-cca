@@ -1,9 +1,9 @@
 ---
 // src/pages/blog/[slug].astro
 // Blog detail page — "The Sealed Bet" (Tanya §9).
-// Above-fold: ConvictionSeal (sealed display) or SealCeremony (unsealed self-service).
-// SealCeremony replaces the unsealed state — no ADMIN_SECRET needed to seal.
-// Below fold: post content, KeepButton (single CTA), AuditTrail.
+// Above-fold: cover → title → author → article content (Tanya §1, Mike §Module1).
+// Below fold: ConvictionRecord, DecayClock, SealCeremony (post-read context).
+// FloatingKeepButton: persistent gold circle, appears at 15% scroll depth.
 //
 // DONE: reading progress "erosion bar" — see SiteNav.astro + inline script below
 
@@ -16,6 +16,7 @@ import SealCeremony from '../../components/SealCeremony.astro';
 import ConvictionRecord from '../../components/ConvictionRecord.astro';
 import RevivalMoment from '../../components/RevivalMoment.astro';
 import StickyStanceBar from '../../components/StickyStanceBar.astro';
+import FloatingKeepButton from '../../components/FloatingKeepButton.astro';
 import DecayClock from '../../components/DecayClock.astro';
 import PredictionCard from '../../components/PredictionCard.astro';
 import { flattenPredictions } from '../../lib/prediction-engine';
@@ -133,14 +134,9 @@ const jsonLd      = [
   disputed={isDisputed}
 >
   <main class="post-detail">
+    <!-- Nav row — simplified: back link only (Tanya §1: remove audit link duplication) -->
     <nav class="post-nav-row" aria-label="Post navigation">
       <a href="/" class="back-link">← back to field</a>
-      <a href="#conviction-audit" class="audit-link" aria-label="View conviction audit trail">
-        [audit ↓]
-      </a>
-      <a href={`/audit/${post.slug}`} class="audit-link audit-link--receipt" aria-label="View conviction receipt">
-        [receipt ↗]
-      </a>
     </nav>
 
     <header class="post-header">
@@ -164,40 +160,18 @@ const jsonLd      = [
       <PostBadge readingTime={readingTime} badge={post.data.badge} />
     </header>
 
-    <!-- Conviction: single SealCeremony handles sealed display OR self-service ceremony.
-         sealEntry != null → sealed display (zero JS, permanent record).
-         sealEntry == null → self-seal ceremony (variant="self", 4-phase flow).
-         Admin conviction sealing lives in /admin (variant="conviction"). -->
-    <SealCeremony
-      slug={post.slug}
-      title={post.data.title}
-      authorSlug={post.data.authorSlug ?? 'host'}
-      variant="self"
-      sealEntry={sealEntry ?? null}
-      graceState={safeGraceState}
-      revivalCount={revivalCount}
-      conviction={dominantVerdict}
-      tensionResult={tensionResult}
-      tst={tstData}
-    />
+    <!-- Article body — MOVED UP: content is king (Tanya §1, Mike §Module1).
+         Above-fold now shows: cover → title → author → article begins.
+         Readers see content decaying, not UI chrome. -->
+    <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
+      <article class="post-body">
+        <Content />
+      </article>
+    </RevivalMoment>
 
-    <!-- DecayClock bar: renders only when author has set a resolution_deadline.
-         Maps to DeadlineStatus discriminated union — no booleans, no nullable flags.
-         Auto-seal via POST /api/deadline-sweep (Mike §deadline-enforcer). -->
-    {post.data.resolution_deadline && (
-      <DecayClock
-        variant="bar"
-        slug={post.slug}
-        publishDate={post.data.pubDate}
-        deadline={post.data.resolution_deadline}
-      />
-    )}
-
-    <!-- Prediction Vault inline: falsifiable claims baked into this post.
-         Renders only when the post carries predictions[] in frontmatter.
-         Each card anchors to /predictions#{slug}-{id} for shareability. -->
+    <!-- Predictions — post-article aside (Tanya §1: content-adjacent, not content-blocking) -->
     {postPredictions.length > 0 && (
-      <section class="post-predictions" aria-label="Predictions in this post">
+      <aside class="post-predictions" aria-label="Predictions in this post">
         <h2 class="post-predictions__heading">Predictions</h2>
         <ul class="post-predictions__list">
           {postPredictions.map(p => (
@@ -207,14 +181,8 @@ const jsonLd      = [
         <a href="/predictions" class="post-predictions__vault-link">
           View all predictions →
         </a>
-      </section>
+      </aside>
     )}
-
-    <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
-      <article class="post-body">
-        <Content />
-      </article>
-    </RevivalMoment>
 
     <!-- Conviction Record: single card consolidating all post-accountability evidence.
          Replaces 5 scattered zones: KeepButton, DisputeChallenge, GhostEchoes,
@@ -232,6 +200,36 @@ const jsonLd      = [
       decayStage={decayStage}
     />
 
+    <!-- DecayClock bar — post-read context, near conviction evidence (Tanya §1).
+         Renders only when author has set a resolution_deadline.
+         Auto-seal via POST /api/deadline-sweep (Mike §deadline-enforcer). -->
+    {post.data.resolution_deadline && (
+      <DecayClock
+        variant="bar"
+        slug={post.slug}
+        publishDate={post.data.pubDate}
+        deadline={post.data.resolution_deadline}
+      />
+    )}
+
+    <!-- SealCeremony — MOVED DOWN: post-read context (Tanya §1).
+         Readers encounter the conviction seal AFTER reading the content,
+         when they have context for what was sealed.
+         sealEntry != null → sealed display (zero JS, permanent record).
+         sealEntry == null → self-seal ceremony (variant="self", 4-phase flow). -->
+    <SealCeremony
+      slug={post.slug}
+      title={post.data.title}
+      authorSlug={post.data.authorSlug ?? 'host'}
+      variant="self"
+      sealEntry={sealEntry ?? null}
+      graceState={safeGraceState}
+      revivalCount={revivalCount}
+      conviction={dominantVerdict}
+      tensionResult={tensionResult}
+      tst={tstData}
+    />
+
   </main>
 
   <PostNav nav={nav} />
@@ -241,6 +239,16 @@ const jsonLd      = [
   <StickyStanceBar
     slug={post.slug}
     dist={stanceDist ?? { agree: 0, torn: 0, disagree: 0, total: 0 }}
+  />
+
+  <!-- FloatingKeepButton: fixed gold circle, surfaces at 15% read depth.
+       THE one unmissable action — appears above StickyStanceBar.
+       Tanya §2A · Mike §Module1: KeepButton promotion. -->
+  <FloatingKeepButton
+    slug={post.slug}
+    count={revivalCount}
+    urgency={postUrgency}
+    decayStage={decayStage}
   />
 
   <!-- Erosion bar: scroll-driven progress as a CSS custom property -->
@@ -270,16 +278,15 @@ const jsonLd      = [
     padding: 3rem 1.5rem 6rem;
   }
 
-  /* Nav row — back + audit link (Tanya §9: quiet nav, not prominent) */
+  /* Nav row — single back link (Tanya §1: audit links live in ConvictionRecord) */
   .post-nav-row {
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
 
-  .back-link,
-  .audit-link {
+  .back-link {
     font-size: var(--text-xs);
     color: var(--text-tertiary);
     text-decoration: none;
@@ -287,14 +294,11 @@ const jsonLd      = [
     transition: color var(--motion-flow-duration) ease;
   }
 
-  .back-link:hover,
-  .audit-link:hover { color: var(--text-secondary); }
+  .back-link:hover { color: var(--text-secondary); }
 
-  .audit-link { margin-left: auto; }
-  .audit-link--receipt { margin-left: 0; }
-
-  /* Post header: cover → date → title → badge (Tanya §9 — above-fold layout) */
-  .post-header { margin-bottom: 2rem; }
+  /* Post header: cover → date → title → badge
+     Tighter margin (Tanya §1: header-to-content coupling signals "this flows together") */
+  .post-header { margin-bottom: 1.25rem; }
 
   /* Cover image: full-bleed hero with decay filters — same physics as DecayCard */
   .post-cover-wrap {

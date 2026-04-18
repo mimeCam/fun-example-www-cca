@@ -4,27 +4,39 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v132 — Semantic Motion Aliases, Cycle Tokens & Duration Error Ratchet (2026-04-17)
-#   Sprint: Final design-token sweep — semantic motion aliases, ambient
-#     cycle tokens, duration linter ratcheted to error severity, and
-#     comprehensive raw-duration → token migration across 55 files.
+# Architecture v133 — Above-Fold Simplification, FloatingKeepButton & Bloom Profiles (2026-04-18)
+#   Sprint: P1 UIX polish — content-first layout, KeepButton promotion,
+#     stage-proportional bloom duration. Blog detail page restructured:
+#     article body moved above fold, SealCeremony/DecayClock/Predictions
+#     pushed below. FloatingKeepButton added as persistent gold circle CTA.
 #   Key changes:
-#     src/styles/motion.css — 5 semantic aliases (--motion-stage-crossing,
-#       --motion-bloom-settle, --motion-urgency-pulse, --motion-ceremony-phase,
-#       --motion-ambient) + 5 cycle tokens (--motion-cycle-short through
-#       --motion-cycle-glacial) using calc() multiples. Full reduced-motion
-#       overrides for all new tokens.
-#     scripts/check-token-compliance.ts — prefers-reduced-motion block
-#       awareness (brace depth tracking); near-zero duration exemption
-#       (<=1ms accessibility pattern); severity promoted warn→error.
-#     src/components/*.astro (20 files) — raw ms/s → motion token vars.
-#     src/styles/*.css (16 files) — raw durations → token/calc() vars.
-#     src/pages/*.astro (7 files) — token alignment in page styles.
-#     AGENTS.md — WIP updated (duration migration 100% done).
+#     src/pages/blog/[slug].astro — above-fold restructure: article body
+#       first, conviction/seal context below. Nav simplified (audit links
+#       removed — live in ConvictionRecord). FloatingKeepButton integrated.
+#     src/components/FloatingKeepButton.astro — NEW: fixed-position gold
+#       circle KeepButton. Sentinel-based visibility (IntersectionObserver
+#       on .post-header). Revival sync across inline+float instances.
+#       Stance prompt dispatch after bloom settle. SSB coexistence.
+#     src/styles/floating-keep.css — NEW: floating keep styles. Gold circle,
+#       urgency-driven glow pulse (endangered/ghost stages), reduced-motion
+#       overrides, WCAG touch targets, SSB stacking gap.
+#     src/layouts/BaseLayout.astro — floating-keep.css import added.
+#     src/lib/client/revival-orchestrator.ts — slug added to revival:confirmed
+#       event detail; bloomMs() method for stage-proportional bloom duration
+#       (endangered/ghost/fossil: full, fading: 600ms, fresh: 300ms).
+#     AGENTS.md — WIP updated (P1 above-fold, KeepButton promotion, bloom
+#       profiles marked done; remaining polish items tracked).
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
 #     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
 #     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
 #     unchanged (steps 1–8 identical to v129).
+#
+# Architecture v132 — Semantic Motion Aliases, Cycle Tokens & Duration Error Ratchet (2026-04-17)
+#   Sprint: Final design-token sweep — semantic motion aliases, ambient
+#     cycle tokens, duration linter ratcheted to error severity, and
+#     comprehensive raw-duration → token migration across 55 files.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     (see git log for full details)
 #
 # Architecture v131 — Design Token Deep Migration & Compliance Hardening (2026-04-17)
 #   Sprint: Motion/duration/z-index/breakpoint/radius token migration across

@@ -225,7 +225,7 @@ export class RevivalOrchestrator {
   private onRevived(data: RevivePayload): void {
     this.setState('revived');
     this.lastReviveAt = Date.now();
-    const detail = { ...data, count: data.revivalCount ?? data.count ?? 0 };
+    const detail = { ...data, slug: this.slug, count: data.revivalCount ?? data.count ?? 0 };
     document.dispatchEvent(new CustomEvent('revival:confirmed', { detail }));
     this.el.dispatchEvent(new CustomEvent('revival:confirmed', { detail, bubbles: true }));
     triggerCascadeBloom(this.slug, data.relatedSlugs ?? []);
@@ -233,13 +233,22 @@ export class RevivalOrchestrator {
     setTimeout(() => { this.setState('idle'); this.setProgress(0); }, COOLDOWN_MS);
   }
 
-  /** Add .blooming to the parent .decay-card for the bloom animation duration. */
+  /** Bloom duration scales with urgency — Mike §Module4: bloom proportionality. */
+  private bloomMs(): number {
+    const stage = this.el.closest<HTMLElement>('[data-decay-stage]')?.dataset.decayStage;
+    if (stage === 'endangered' || stage === 'ghost' || stage === 'fossil') return BLOOM_DURATION_MS;
+    if (stage === 'fading') return 600;
+    return 300;
+  }
+
+  /** Add .blooming to the parent .decay-card for stage-proportional duration. */
   private addBlooming(): void {
     if (this.rm) return;
     const card = this.el.closest<HTMLElement>('.decay-card');
     if (!card) return;
+    const ms = this.bloomMs();
     card.classList.add('blooming');
-    setTimeout(() => card.classList.remove('blooming'), BLOOM_DURATION_MS);
+    setTimeout(() => card.classList.remove('blooming'), ms);
   }
 
   private onError(): void {

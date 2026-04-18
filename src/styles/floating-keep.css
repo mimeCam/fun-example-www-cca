@@ -1,0 +1,227 @@
+/* src/styles/floating-keep.css
+ * Floating KeepButton — persistent gold circle, fixed bottom-right.
+ * Appears when post header scrolls past viewport (IntersectionObserver).
+ * Coexists with StickyStanceBar via vertical stacking (20px gap).
+ *
+ * Tanya §2A: floating keep promotion
+ * Mike §Module1: above-fold focus, hero KeepButton
+ */
+
+/* ── Container — fixed, hidden by default ────────────────────────── */
+
+.keep-float {
+  position: fixed;
+  bottom: 72px;                                              /* 52px SSB + 20px gap */
+  right: max(var(--space-4), calc(50% - 20rem + 1.5rem));   /* within 40rem column */
+  z-index: var(--z-sticky);
+
+  /* Hidden until JS adds .keep-float--visible */
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  pointer-events: none;
+
+  transition:
+    opacity   var(--motion-spring-duration) var(--motion-spring-easing),
+    transform var(--motion-spring-duration) var(--motion-spring-easing),
+    bottom    var(--motion-flow-duration)   var(--motion-flow-easing);
+}
+
+.keep-float--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* When StickyStanceBar dismissed → float claims freed space */
+.keep-float--ssb-gone {
+  bottom: 20px;   /* Apple HIG: controls never touch screen edge */
+}
+
+/* ── Button — gold circle ────────────────────────────────────────── */
+
+.keep-float-btn.keep-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  border: 1px solid var(--gold-border);
+  color: oklch(100% 0 0);
+  font-size: 0;                        /* hide inherited text size */
+  letter-spacing: 0;
+  box-shadow:
+    var(--shadow-e3),
+    0 0 0 1px var(--gold-border),
+    0 4px 16px color-mix(in oklch, var(--gold) 25%, transparent);
+}
+
+/* Hide pill-mode children — float shows only the heart icon */
+.keep-float-btn .keep-label,
+.keep-float-btn .keep-count,
+.keep-float-btn .keep-icon {
+  display: none;
+}
+
+/* Heart icon — centered in circle */
+.keep-float-icon {
+  font-size: 20px;
+  line-height: 1;
+  color: oklch(100% 0 0);
+  pointer-events: none;
+}
+
+/* ── Arc ring — base styles for float context ────────────────────── */
+/* Mirrors KeepButton.astro scoped arc; needed because scoped styles  */
+/* don't cascade across component boundaries.                         */
+
+.keep-float-btn .keep-arc {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 56px;
+  height: 56px;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-snap-duration) ease;
+  overflow: visible;
+}
+
+.keep-float-btn .keep-arc-track {
+  fill: none;
+  stroke: color-mix(in oklch, oklch(100% 0 0) 20%, transparent);
+  stroke-width: 2;
+}
+
+.keep-float-btn .keep-arc-circle {
+  fill: none;
+  stroke: oklch(100% 0 0 / 0.8);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+/* ── Hover — scale + shadow deepen ───────────────────────────────── */
+
+.keep-float-btn.keep-btn:hover {
+  transform: scale(1.08);
+  box-shadow:
+    var(--shadow-e4),
+    0 0 0 1px var(--gold-border),
+    0 4px 16px color-mix(in oklch, var(--gold) 35%, transparent);
+}
+
+/* ── Active / hold ───────────────────────────────────────────────── */
+
+.keep-float-btn.keep-btn:active {
+  transform: scale(0.96);
+  cursor: grabbing;
+}
+
+/* ── Revival count badge ─────────────────────────────────────────── */
+
+.keep-float-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  border: 1px solid var(--gold-border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ── Urgency modulation — stage-aware glow pulse ─────────────────── */
+/* data-decay-stage on .keep-float cascades from blog detail SSR.     */
+
+.keep-float[data-decay-stage="endangered"] .keep-float-btn {
+  animation: keep-float-pulse var(--motion-cycle-medium) ease-in-out infinite;
+}
+
+.keep-float[data-decay-stage="ghost"] .keep-float-btn {
+  animation: keep-float-pulse var(--motion-cycle-short) ease-in-out infinite;
+}
+
+@keyframes keep-float-pulse {
+  0%, 100% {
+    box-shadow:
+      var(--shadow-e3),
+      0 0 0 1px var(--gold-border),
+      0 4px 16px color-mix(in oklch, var(--gold) 25%, transparent);
+  }
+  50% {
+    box-shadow:
+      var(--shadow-e3),
+      0 0 0 3px color-mix(in oklch, var(--gold) 40%, transparent),
+      0 4px 20px color-mix(in oklch, var(--gold) 40%, transparent);
+  }
+}
+
+/* ── Revived state — muted, non-interactive ──────────────────────── */
+
+.keep-float--revived .keep-float-btn.keep-btn {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+  background: color-mix(in oklch, var(--gold) 40%, var(--surface-raised));
+}
+
+/* ── Focus ring (a11y — WCAG 2.4.7) ─────────────────────────────── */
+
+.keep-float-btn.keep-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Reduced motion — respect user preference ────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .keep-float {
+    transition: none;
+    transform: none;
+  }
+
+  .keep-float--visible {
+    transform: none;
+  }
+
+  .keep-float[data-decay-stage="endangered"] .keep-float-btn,
+  .keep-float[data-decay-stage="ghost"] .keep-float-btn {
+    animation: none;
+  }
+}
+
+/* ── Mobile — WCAG 2.5.8 min touch target ────────────────────────── */
+
+@media (max-width: 639px) {
+  .keep-float {
+    bottom: 60px;                        /* 44px SSB mobile + 16px gap */
+    right: var(--space-3);
+  }
+
+  .keep-float-btn.keep-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .keep-float-icon {
+    font-size: 18px;
+  }
+
+  .keep-float--ssb-gone {
+    bottom: 20px;
+  }
+}
