@@ -10,12 +10,15 @@
 //   conviction  — 'still-true' triggers subtle gold ring
 //   decayFactor — when provided, enables Pact Ritual (PactPanel + keep-pact.ts)
 //   lifespan    — post lifespan in days (used by PactPanel ring)
+//   stage       — when provided, gates button (data-gated="true") for fresh/fading stages
 //
 // Client wiring:
 //   With decayFactor:    keep-pact.ts wires the button (pact ritual flow)
 //   Without decayFactor: inline script below handles feed cards + banner buttons
 
 import PactPanel from './PactPanel.astro';
+import { canRevive } from '../lib/revival-gate';
+import type { DecayStage } from '../lib/decay-engine';
 
 interface Props {
   slug:         string;
@@ -24,12 +27,15 @@ interface Props {
   conviction?:  string | null;
   decayFactor?: number;
   lifespan?:    number;
+  stage?:       DecayStage;
 }
 
-const { slug, count = 0, urgency, conviction, decayFactor, lifespan = 365 } = Astro.props;
+const { slug, count = 0, urgency, conviction, decayFactor, lifespan = 365, stage } = Astro.props;
 const isCritical  = urgency === 'critical';
 const isStillTrue = conviction === 'still-true';
 const hasPact     = decayFactor !== undefined;
+// SSR gate: data-gated suppresses interaction; client re-gates on stage transitions.
+const isGated     = stage !== undefined ? !canRevive(stage) : false;
 ---
 
 <div class:list={['pact-wrapper', hasPact && 'pact-wrapper--active']}>
@@ -38,6 +44,7 @@ const hasPact     = decayFactor !== undefined;
     data-keep-slug={slug}
     data-pact-trigger={hasPact ? '' : undefined}
     data-keep-state="idle"
+    data-gated={isGated ? 'true' : undefined}
     aria-label="Keep this post alive"
     aria-pressed="false"
     role="button"

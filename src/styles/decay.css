@@ -74,17 +74,35 @@
   transition: opacity var(--motion-drift-duration) var(--motion-drift-easing);
 }
 
-/* Revival: hover (desktop) + long-press class (mobile).
- * Tanya §4.6: decay-aware lift — fossil barely moves (heavy from age).
- * Two-phase: opacity/filter snap fast; shadow/transform spring slower. */
-.decay-card:hover,
-.decay-card:focus-within,
+/* ── Stage-gated hover revival — Mike Koch arch §1, Tanya P1-C ──────────────
+ * ONLY endangered + ghost cards get the full revival hover effect.
+ * Fresh + fading: subtle lift only — alive posts don't need saving.
+ * Fossil: inert — a record, not an invitation.
+ * .revived always gets the full treatment (bloom fired by JS after API success). */
+
+/* Fresh + fading: subtle lift — no filter clearing, no bloom glow */
+.decay-card[data-decay-stage="fresh"]:hover,
+.decay-card[data-decay-stage="fresh"]:focus-within,
+.decay-card[data-decay-stage="fading"]:hover,
+.decay-card[data-decay-stage="fading"]:focus-within {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  transition:
+    box-shadow var(--motion-spring-duration) var(--motion-spring-easing),
+    transform  var(--motion-spring-duration) var(--motion-spring-easing);
+}
+
+/* Endangered + ghost: full revival hover — the emotional core of the product */
+.decay-card[data-decay-stage="endangered"]:hover,
+.decay-card[data-decay-stage="endangered"]:focus-within,
+.decay-card[data-decay-stage="ghost"]:hover,
+.decay-card[data-decay-stage="ghost"]:focus-within,
 .decay-card.revived {
   opacity: 1;
   filter: blur(0px) saturate(1) sepia(0);
   box-shadow: var(--shadow-card-hover);
   border-color: color-mix(in oklch, var(--atm-bloom-color, var(--keep-accent)) 15%, transparent);
-  /* Decay-aware lift: fresh lifts 2px, fossil barely moves — it's heavy. */
+  /* Decay-aware lift: ghost cards are heavier — they lift less than endangered */
   transform: translateY(calc(-2px * var(--decay-opacity, 1)));
   transition:
     opacity    var(--motion-snap-duration) var(--motion-snap-easing),
@@ -93,12 +111,25 @@
     transform  var(--motion-spring-duration) var(--motion-spring-easing);
 }
 
-/* Hide grain on revival */
-.decay-card:hover::after,
-.decay-card:focus-within::after,
-.decay-card.revived::after {
-  opacity: 0;
+/* Fossil: no hover behavior — flat, permanent, sealed (Tanya P1-C) */
+.decay-card[data-decay-stage="fossil"]:hover,
+.decay-card[data-decay-stage="fossil"]:focus-within {
+  transform: none;
 }
+
+/* Hide grain only on revivable stages + explicit revived state */
+.decay-card[data-decay-stage="endangered"]:hover::after,
+.decay-card[data-decay-stage="endangered"]:focus-within::after,
+.decay-card[data-decay-stage="ghost"]:hover::after,
+.decay-card[data-decay-stage="ghost"]:focus-within::after,
+.decay-card.revived::after { opacity: 0; }
+
+/* ── Stage-driven footer signal (Tanya P1-B, Mike §arch) ────────────────────
+ * Fresh: clock hidden — the date above is sufficient signal.
+ * Fresh: badge hidden — no decay data to show yet.
+ * Fossil: footer-meta hidden (KeepButton not rendered from SSR; epitaph shown instead). */
+.decay-card[data-decay-stage="fresh"] .decay-clock { display: none; }
+.decay-card[data-decay-stage="fresh"] .card-footer-meta { display: none; }
 
 /* Freshness tag */
 .decay-freshness {

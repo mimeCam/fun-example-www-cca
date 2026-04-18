@@ -4,6 +4,33 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v136 — Stage-Gated Revival System (2026-04-18)
+#   Sprint: Defense-in-depth revival gating — API + SSR + client runtime layers.
+#   Key changes:
+#     src/lib/revival-gate.ts — single source of truth: REVIVABLE = {endangered, ghost}.
+#       canRevive(stage) / gateReason(stage) exported for all consumers.
+#     src/lib/client/revival-gate-client.ts — client mirror of revival-gate.ts.
+#       regate(card, stage) toggles data-gated on KeepButton.
+#       watchFeedGates() wires MutationObserver for stage attribute changes.
+#     src/pages/api/revive.ts — API-level stage gate (403 stageGated response).
+#       Imports stageFromFactor + decayFactor to derive current stage at request time.
+#       Guards direct API calls that bypass the UI.
+#     src/lib/client/heartbeat-orchestrator.ts — regate() integrated into
+#       writeStaticState() and tickColor() so KeepButton gates update on every
+#       stage transition (fossil exit + live color tick paths).
+#     src/components/KeepButton.astro — new stage prop; SSR gate via data-gated.
+#       canRevive() from revival-gate.ts sets initial gate state server-side.
+#     src/components/DecayCard.astro — fossil cards render epitaph instead of clock;
+#       footer-meta and KeepButton not rendered for fossil stage (Tanya P1-C).
+#       watchFeedGates() wired in boot() for MutationObserver runtime re-gating.
+#     src/styles/decay.css — stage-specific hover rules: fresh/fading → subtle lift
+#       only; endangered/ghost → full revival hover (emotional core); fossil → inert.
+#     src/styles/keep-button.css — data-gated styles: pointer-events none, opacity 0.25.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v135).
+#
 # Architecture v135 — Typography Token Expansion & Design-System-Wide Migration (2026-04-18)
 #   Sprint: Final typography & radius token vocabulary expansion + blanket
 #     migration across 61 files. Pure UIX polish — zero infra changes.

@@ -152,6 +152,23 @@
 .keep-btn:active { cursor: grabbing; }
 .keep-btn[data-keep-state="revived"] { cursor: default; }
 
+/* ── Gated state: fresh + fading stages — revival not mechanically meaningful.
+ * data-gated="true" is set by revival-gate-client.ts on load + stage change.
+ * Layout-stable: button still renders, interaction suppressed. Tanya P1-C. */
+.keep-btn[data-gated="true"] {
+  pointer-events: none;
+  opacity: 0.25;
+  cursor: default;
+  animation: none;
+  box-shadow: none;
+}
+
+/* Critical urgency class must not override gated suppression */
+.keep-btn--critical[data-gated="true"] {
+  animation: none;
+  border-color: color-mix(in oklch, var(--atm-bloom-color, var(--keep-base)) 20%, transparent);
+}
+
 /* ── Reduced motion: remove all hold choreography ── */
 
 @media (prefers-reduced-motion: reduce) {

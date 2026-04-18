@@ -22,7 +22,8 @@ import { isEndangered, urgencyLevel } from '../../lib/endangered';
 import { getConstellation } from '../../lib/constellationLookup';
 import { checkRevival } from '../../lib/revivalGuard';
 import { FP_HEADER } from '../../lib/visitorFingerprint';
-import { decayFactorWithCount } from '../../lib/decay-engine';
+import { decayFactorWithCount, stageFromFactor, decayFactor } from '../../lib/decay-engine';
+import { canRevive as stageCanRevive, gateReason } from '../../lib/revival-gate';
 import { appendResonance } from '../../lib/conviction-ledger';
 import { getReadingSeconds } from '../../lib/collectiveMemory';
 
@@ -74,6 +75,11 @@ export const POST: APIRoute = async ({ request }) => {
   if (slug === '__demo__') return jsonOk({ ok: true, count: 0, resonance: [] });
   const pubDateISO = await findPost(slug);
   if (!pubDateISO) return badRequest('Unknown slug');
+
+  // Stage gate — defense in depth: reject non-revivable posts at the API level.
+  // The UI gate (CSS + data-gated) handles UX; this guards direct API calls.
+  const currentStage = stageFromFactor(decayFactor(pubDateISO));
+  if (!stageCanRevive(currentStage)) return stageGated(gateReason(currentStage));
 
   const sessionId = request.headers.get('x-session-id');
   const ip = clientIp(request);
@@ -160,6 +166,15 @@ function tooManyRequests(reason?: string): Response {
   const body    = reason ? JSON.stringify({ error: reason }) : null;
   const headers: HeadersInit = reason ? { 'Content-Type': 'application/json' } : {};
   return new Response(body, { status: 429, headers });
+}
+
+/**
+ * Stage gate rejection — post is not in a revivable stage.
+ * Mike Koch arch §4, Tanya P1-C: "API contract mirrors the UI gate."
+ */
+function stageGated(reason: string): Response {
+  const body = JSON.stringify({ error: reason });
+  return new Response(body, { status: 403, headers: { 'Content-Type': 'application/json' } });
 }
 
 /**

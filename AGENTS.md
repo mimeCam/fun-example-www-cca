@@ -4,15 +4,13 @@
 
 ## Paths
 
-- `src/lib/` — domain logic
+- `src/lib/` — domain logic (`revival-gate.ts` = stage gate source of truth)
 - `src/components/` — UI components
 - `src/pages/api/` — REST API
-- `src/styles/` — design system (tokens, stages)
+- `src/styles/` — design system (tokens, stages, decay, keep-button)
 - `scripts/` — build tooling
 
 ## WIP
 
 - [wip] Verdict Seal Ceremony — 3-phase (deliberation → declaration → reckoning). Needs: integration tests, SSE live-update, share button
-- [wip] Design audit — accent consolidation, surface tiers
-- [wip] UIX polish — sticky stance, card hover revival, tension badge icons, sepia cap
-- [wip] P1 polish — ConvictionRecord simplification, DecayCard footer, hover-revival gating
+- [wip] ConvictionRecord simplification (P1-A) — collapse to 3-zone layout (button + evidence bar + collapsed audit). Separate sprint.

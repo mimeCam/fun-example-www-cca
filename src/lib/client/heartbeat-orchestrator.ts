@@ -26,6 +26,7 @@ import { decayColorLerp } from './decay-color-lerp';
 import type { OklchColor } from './decay-color-lerp';
 import scheduler, { FramePriority } from './frame-scheduler';
 import { applyStageTokens, stageFor } from './stage-identity';
+import { regate } from './revival-gate-client';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -113,9 +114,11 @@ function writeColor(color: OklchColor): void {
  *  Mike Koch §napkin-plan: "Also add a one-time call in writeStaticState() (fossil exit path)."
  */
 function writeStaticState(factor: number, el: HTMLElement): void {
+  const stage = stageFor(factor);
   writePhysics(0, bpmForFactor(factor));
   writeColor(decayColorLerp(factor));
-  applyStageTokens(el, stageFor(factor));
+  applyStageTokens(el, stage);
+  regate(el, stage);  // gate button on fossil/static path too
 }
 
 // ── Orchestrator class ────────────────────────────────────────────────────────
@@ -168,8 +171,10 @@ export class HeartbeatOrchestrator {
   /** Called every ~120ms by FrameScheduler. Writes color + stage identity when factor changes. */
   tickColor(_ts: DOMHighResTimeStamp): void {
     if (Math.abs(this.factor - this.prevColorFactor) > COLOR_FACTOR_EPSILON) {
+      const stage = stageFor(this.factor);
       writeColor(decayColorLerp(this.factor));
-      applyStageTokens(this.cardEl, stageFor(this.factor));  // card-scoped, idempotent
+      applyStageTokens(this.cardEl, stage);  // card-scoped, idempotent
+      regate(this.cardEl, stage);            // re-gate KeepButton on stage transition
       this.prevColorFactor = this.factor;
     }
   }

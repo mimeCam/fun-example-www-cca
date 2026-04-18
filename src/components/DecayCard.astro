@@ -19,6 +19,7 @@ import { formatPubDate } from '../lib/dates';
 import type { PostDisplayData } from '../lib/postMeta';
 import { clockUrgency } from '../lib/death-clock';
 import { convictionMultiplier } from '../lib/decay-engine';
+import type { DecayStage } from '../lib/decay-engine';
 
 // BattingAverageChip removed from card per Tanya §4.2:
 //   "Do not show batting average on the card — too much cognitive load per card."
@@ -94,21 +95,34 @@ const decayStage = stageAttr(post.decay);
   <PostBadge readingTime={post.readingTime} badge={post.badge} />
   {post.description && <p class="post-excerpt">{post.description}</p>}
   <div class="card-footer">
-    <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} decayFactor={post.decay} verdictModifier={verdictModifier} />
+    {/* Stage-driven dominant signal (Tanya P1-B, Mike §arch).
+        Fossil: epitaph only — the record is sealed, no clock needed.
+        All others: clock communicates urgency, badge adds context. */}
+    {decayStage === 'fossil'
+      ? <span class="card-footer-epitaph">Faded {formattedDate}</span>
+      : <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} decayFactor={post.decay} verdictModifier={verdictModifier} />
+    }
     {/* Single badge slot — priority: risen > tension > revival > empty.
         Mutually exclusive: only ONE badge renders (Mike Koch arch §2).
+        Hidden for fresh (CSS) and fossil (not rendered).
         TensionBadge embedded=true suppresses the tension-memory sub-label. */}
-    <div class="card-footer-meta">
-      {post.recentlyRisen
-        ? <RisenBadge visible={true} />
-        : (post.tensionResult && post.tensionResult.label !== 'indifferent')
-          ? <TensionBadge tensionResult={post.tensionResult} revivalCount={post.revivalCount} slug={post.slug} embedded={true} />
-          : post.revivalCount > 0
-            ? <RevivalBadge count={post.revivalCount} />
-            : null
-      }
-    </div>
-    <KeepButton slug={post.slug} count={post.revivalCount} urgency={urgency} conviction={conviction} />
+    {decayStage !== 'fossil' && (
+      <div class="card-footer-meta">
+        {post.recentlyRisen
+          ? <RisenBadge visible={true} />
+          : (post.tensionResult && post.tensionResult.label !== 'indifferent')
+            ? <TensionBadge tensionResult={post.tensionResult} revivalCount={post.revivalCount} slug={post.slug} embedded={true} />
+            : post.revivalCount > 0
+              ? <RevivalBadge count={post.revivalCount} />
+              : null
+        }
+      </div>
+    )}
+    {/* Fossil: no KeepButton — a fossil cannot be revived from the feed (Tanya P1-C).
+        All others: stage prop gates the button for fresh/fading via data-gated. */}
+    {decayStage !== 'fossil' && (
+      <KeepButton slug={post.slug} count={post.revivalCount} urgency={urgency} conviction={conviction} stage={decayStage as DecayStage} />
+    )}
   </div>
 </article>
 
@@ -249,6 +263,16 @@ const decayStage = stageAttr(post.decay);
   .card-footer :global(.pact-wrapper) {
     margin-left: auto;
   }
+
+  /* Fossil epitaph — single signal for sealed posts (Tanya P1-B) */
+  .card-footer-epitaph {
+    flex: 1;
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    opacity: 0.45;
+    font-style: italic;
+  }
 </style>
 
 <script>
@@ -259,6 +283,7 @@ const decayStage = stageAttr(post.decay);
   // Stage Transition Orchestrator: Mike §Orchestrator · Impl: Sid.
 
   import { initStageTransitions } from '../lib/client/stage-transitions';
+  import { watchFeedGates } from '../lib/client/revival-gate-client';
 
   const PREFIX = 'decay-card--crossing-';
 
@@ -305,6 +330,7 @@ const decayStage = stageAttr(post.decay);
   function boot(): void {
     attachListeners();
     initStageTransitions();
+    watchFeedGates();  // initial gate + MutationObserver for stage transitions
   }
 
   if (document.readyState === 'loading') {
