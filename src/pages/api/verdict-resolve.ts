@@ -17,7 +17,7 @@ import { getCollection } from 'astro:content';
 import { broadcastNamed } from '../../lib/heartbeat';
 import { resolveVerdict, VerdictAlreadySealedError } from '../../lib/verdict-resolver';
 import type { VerdictOutcome } from '../../lib/verdict-resolver';
-import { computeBattingAverage, getUnlockProgress, getThermalState, MIN_VERDICTS, simulateVerdictDelta } from '../../lib/batting-average';
+import { computeBattingAverage, getUnlockProgress, getThermalState, MIN_VERDICTS, simulateVerdictDelta, invalidateBACacheFor } from '../../lib/batting-average';
 import { getAnchorGistId, getSealEntry } from '../../lib/conviction-ledger';
 import { anchorVerdict }          from '../../lib/conviction-anchor';
 import { stamp, hashContent }     from '../../lib/rfc3161-client';
@@ -133,6 +133,11 @@ export const POST: APIRoute = async ({ request }) => {
       console.warn('[verdict-resolve] RFC 3161 stamp failed (verdict still valid):', tstErr);
     }
 
+    // Invalidate BA cache — verdict changes resolved count and batting average.
+    // Do this before broadcast so any SSE subscriber reading BA gets fresh data.
+    const authorSlug = getSealEntry(slug)?.author_slug ?? 'host';
+    invalidateBACacheFor(authorSlug);
+
     // Broadcast verdict:declared — non-blocking, fire-and-forget (never rejects POST).
     const batting = computeBattingAverage();
     const newBattingAverage = batting.status === 'live' ? batting.pct : null;
@@ -152,8 +157,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Broadcast batting-unlock if this verdict just crossed the unlock threshold.
     // Derived state — no new ledger event; count it, don't write it (Mike §POI #9).
     try {
-      const authorSlug = getSealEntry(slug)?.author_slug ?? 'host';
-      const progress   = getUnlockProgress(authorSlug);
+      const progress = getUnlockProgress(authorSlug);
       if (progress.resolved === MIN_VERDICTS) {
         broadcastNamed('batting-unlock', { type: 'batting-unlock', authorSlug, ts: Date.now() });
       }

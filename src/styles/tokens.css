@@ -617,6 +617,24 @@
   --stance-torn-border: color-mix(in oklch, var(--clr-amber-500) 35%, transparent);
   --stance-torn-color:  oklch(82% 0.14 58);     /* light amber — uncertain, not weak */
 
+  /* ── Semantic Shadow Aliases (Tanya §2.3 — elevation spec) ──────────── */
+  /* Pure-black shadows on dark theme; color only from glow tokens.        */
+  /* Usage: --shadow-sm → cards, --shadow-md → modals/ceremonies, --shadow-lg → top-level.  */
+  --shadow-sm:
+    0 1px 3px oklch(0% 0 0 / 0.35),
+    0 1px 2px oklch(0% 0 0 / 0.25);
+  --shadow-md:
+    0 4px 12px oklch(0% 0 0 / 0.40),
+    0 2px  4px oklch(0% 0 0 / 0.28);
+  --shadow-lg:
+    0 12px 32px oklch(0% 0 0 / 0.50),
+    0  4px  8px oklch(0% 0 0 / 0.32);
+  --shadow-glow-gold:
+    0 0 24px var(--gold-glow, color-mix(in oklch, var(--gold) 20%, transparent)),
+    0 0  8px var(--gold-glow, color-mix(in oklch, var(--gold) 20%, transparent));
+  --shadow-glow-mood:
+    0 0 20px color-mix(in oklch, var(--mood-accent) 22%, transparent);
+
   /* ── Extended Shadow System (Tanya §13) ────────────────────────────── */
   /* Conviction ceremony: the act of sealing has elevation                */
   --shadow-seal-ceremony:

@@ -4,6 +4,42 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v138 — BA Cache, SealCeremony A11y & UIX Polish (2026-04-18)
+#   Sprint: In-process batting-average cache + seal ceremony accessibility &
+#     micro-interaction polish pass.
+#   Key changes:
+#     src/lib/batting-average.ts — in-process TTL cache (30s per author).
+#       getBattingAverageCached(authorSlug, totalPublished) replaces direct
+#       getBattingAverageResult calls in SSR hot paths. invalidateBACacheFor()
+#       for write-path eviction. Single-server Docker model — no Redis needed.
+#     src/pages/api/conviction-seal.ts — calls invalidateBACacheFor(authorSlug)
+#       after sealing so the next BA read reflects the new sealed count.
+#     src/pages/api/verdict-resolve.ts — calls invalidateBACacheFor(authorSlug)
+#       before verdict broadcast so SSE subscribers read fresh batting average.
+#       authorSlug lookup hoisted (DRY — removes duplicate getSealEntry call).
+#     src/components/SealCeremony.astro — aria-live phase announcer
+#       (data-phase-announce, sr-only) for screen readers. is-hovering class
+#       managed via onHover/onUnhover callbacks (was no-op). triggerHesitation()
+#       fires on score change in compose phase. announcePhase() centralises
+#       PHASE_LABELS screen-reader text. Redundant data-sealed guard removed
+#       (sealed posts never render .seal-ceremony; guard was dead code).
+#     src/components/VerdictSealCeremony.astro — sealedAt parsed with Number()
+#       + isNaN guard; graceful fallback label on invalid timestamp.
+#       data-ba-current-val stores numeric BA value for animateBACounter.
+#       BA preview TypeError (network failure) swallowed; other errors logged.
+#     src/styles/seal-ceremony.css — .seal-ceremony.is-hovering arc glow and
+#       button box-shadow now active (onHover/onUnhover wired). Removed
+#       seal-hesitation-pulse @keyframes block (hesitation now in tokens/JS).
+#     src/styles/tokens.css — semantic shadow aliases: --shadow-sm, --shadow-md,
+#       --shadow-lg, --shadow-glow-gold, --shadow-glow-mood (Tanya §2.3).
+#     src/lib/seal-ceremony.test.ts (new) — integration tests for seal-ceremony
+#       state machine (happy path, abort, 409, 5xx, phase sequence, hover guard).
+#       Run via: npm run test:ceremony. Dev-only; not part of Docker build.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v137).
+#
 # Architecture v137 — Verdict Seal Ceremony SSE + ShareSealButton (2026-04-18)
 #   Sprint: Reckoning-phase live update & share integration for VerdictSealCeremony.
 #   Key changes:

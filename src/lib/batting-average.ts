@@ -317,6 +317,36 @@ function buildDelta(
   };
 }
 
+// ── BA Cache — in-process TTL cache (30s per author) ──────────────────────────
+// Single-server model (Docker). Cache lives in process memory — no Redis needed.
+// TTL = 30s matches the fastest plausible verdict resolution cycle.
+// Eviction is lazy (on next read past TTL) — no background sweep needed.
+// Contract: any write path that touches conviction_ledger MUST call invalidateBACacheFor().
+// Current write paths: conviction-seal.ts (seal) · verdict-resolve.ts (verdict).
+// Credits: Mike (napkin §batting-average.ts §BA Cache Invalidation Contract)
+
+const _baCache = new Map<string, { result: BattingAverageResult; ts: number }>();
+const BA_TTL = 30_000; // 30 seconds
+
+/**
+ * Cached per-author batting average — cold-path DB query at most once per 30s.
+ * Replaces direct `getBattingAverageResult` calls in SSR hot paths.
+ */
+export function getBattingAverageCached(
+  authorSlug: string, totalPublished: number,
+): BattingAverageResult {
+  const hit = _baCache.get(authorSlug);
+  if (hit && Date.now() - hit.ts < BA_TTL) return hit.result;
+  const result = getBattingAverageResult(authorSlug, totalPublished);
+  _baCache.set(authorSlug, { result, ts: Date.now() });
+  return result;
+}
+
+/** Evict cache entry after any write to conviction_ledger for this author. */
+export function invalidateBACacheFor(authorSlug: string): void {
+  _baCache.delete(authorSlug);
+}
+
 // ── Unlock Progress (Mike napkin §BattingProgressRing) ────────────────────────
 // Derived state — never persisted. COUNT of resolved verdicts, queried from ledger.
 // "Query it, don't write it." — Mike §points-of-interest #9

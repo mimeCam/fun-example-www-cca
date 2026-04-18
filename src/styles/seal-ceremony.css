@@ -177,21 +177,6 @@
     infinite;
 }
 
-/* ── Hesitation pulse — compose phase CTA after score change (Mike §4 / Tanya §3) ── */
-/* Fires once on data-hesitating attribute; not a loop.                               */
-
-@keyframes seal-hesitation-pulse {
-  0%, 100% { box-shadow: var(--shadow-e2); }
-  50%       { box-shadow: var(--shadow-ceremony, 0 0 0 3px color-mix(in oklch, var(--gold) 20%, transparent)); }
-}
-
-.seal-ceremony[data-hesitating] [data-compose-cta] {
-  animation: hesitation-pulse
-    var(--seal-hesitation-duration, 400ms)
-    ease-in-out
-    1;
-}
-
 /* ── Receipt bloom — anchor → receipt entrance (Mike §4 keyframes) ─────── */
 
 @keyframes seal-receipt-bloom {
@@ -390,6 +375,18 @@
     var(--seal-hesitation-duration, 400ms)
     ease-in-out
     1;
+}
+
+/* ── Hover arc glow — .is-hovering set by onHover/onUnhover callbacks ──────── */
+/* Was dead (no-op callbacks). Now wired; CSS was already waiting for this class. */
+
+.seal-ceremony.is-hovering .cs-arc-svg {
+  opacity: 1;
+  transition: opacity var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+.seal-ceremony.is-hovering .cs-seal-btn {
+  box-shadow: 0 0 12px color-mix(in oklch, var(--gold) 12%, transparent);
 }
 
 /* ── Score tier border glow ─────────────────────────────────────────────── */

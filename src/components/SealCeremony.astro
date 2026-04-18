@@ -299,6 +299,9 @@ const riskText = variant === 'conviction'
       <ShareSealButton slug={slug} title={title ?? slug} />
     )}
 
+    <!-- Visually-hidden live region — announces phase changes to screen readers -->
+    <span class="sr-only" aria-live="polite" aria-atomic="true" data-phase-announce></span>
+
   </div>
 )}
 
@@ -322,8 +325,8 @@ const riskText = variant === 'conviction'
   };
 
   document.querySelectorAll<HTMLElement>('.seal-ceremony').forEach(el => {
-    // Sealed display is zero-JS — skip all wiring
-    if (el.dataset.sealed === 'true') return;
+    // Sealed display renders as <section class="conviction-seal--sealed">, never .seal-ceremony.
+    // The querySelectorAll above will never select it — no JS guard needed here.
     el.addEventListener('pointerdown', () => initSealSound(), { once: true });
     initOrchestrator(el);
 
@@ -353,6 +356,7 @@ const riskText = variant === 'conviction'
       onPhase: (phase) => {
         el.dataset.phase = phase;
         el.style.setProperty('--seal-weight', PHASE_WEIGHT[phase]);
+        announcePhase(el, phase);
         if (phase === 'anchor') {
           active.v = true;
           ceremonyStart(slug);
@@ -375,8 +379,8 @@ const riskText = variant === 'conviction'
       },
       onPress:    () => { el.classList.add('is-pressing'); arc.classList.add('is-filling'); playSealPress(); hapticForEvent('PRESS'); },
       onRelease:  () => { el.classList.remove('is-pressing'); arc.classList.remove('is-filling'); },
-      onHover:    () => {},
-      onUnhover:  () => {},
+      onHover:    () => { el.classList.add('is-hovering'); },
+      onUnhover:  () => { el.classList.remove('is-hovering'); },
       onNotarize: (data) => {
         el.dataset.sealPhase = 'notarize';
         populateStamp(stamp, data);
@@ -487,6 +491,13 @@ const riskText = variant === 'conviction'
     });
     scoreDisp.textContent = String(val);
     el.style.setProperty('--seal-weight', String(val / 10));
+    if (el.dataset.phase === 'compose') triggerHesitation(el);
+  }
+
+  function triggerHesitation(el: HTMLElement): void {
+    const duration = parseInt(getComputedStyle(el).getPropertyValue('--seal-hesitation-duration')) || 400;
+    el.dataset.hesitating = '';
+    setTimeout(() => { delete el.dataset.hesitating; }, duration);
   }
 
   function springFill(dot: HTMLElement): void {
@@ -505,12 +516,26 @@ const riskText = variant === 'conviction'
 
   const SEAL_PHASE_MAP: Record<string, string> = { anchor: '3', notarize: 'notarize' };
 
+  const PHASE_LABELS: Record<string, string> = {
+    compose:  'Composing conviction',
+    confirm:  'Review your conviction',
+    anchor:   'Anchoring to the public record…',
+    notarize: 'Notarizing…',
+    receipt:  'Conviction sealed',
+  };
+
   function setPhase(el: HTMLElement, phase: string): void {
     el.dataset.phase = phase;
     const sp = SEAL_PHASE_MAP[phase];
     if (sp) el.dataset.sealPhase = sp; else delete el.dataset.sealPhase;
     el.querySelectorAll<HTMLElement>('.sc-phase').forEach(p =>
       p.setAttribute('aria-hidden', String(!p.classList.contains(`sc-phase--${phase}`))));
+    announcePhase(el, phase);
+  }
+
+  function announcePhase(el: HTMLElement, phase: string): void {
+    const region = el.querySelector<HTMLElement>('[data-phase-announce]');
+    if (region) region.textContent = PHASE_LABELS[phase] ?? phase;
   }
 
   function playForPhase(phase: string): void {

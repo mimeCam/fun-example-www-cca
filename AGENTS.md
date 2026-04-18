@@ -12,5 +12,4 @@
 
 ## WIP
 
-- [wip] Verdict Seal Ceremony — integration tests for state machine pending.
 - [wip] ConvictionRecord simplification (P1-A) — collapse to 3-zone layout. Separate sprint.

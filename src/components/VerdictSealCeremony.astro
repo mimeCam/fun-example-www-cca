@@ -273,11 +273,18 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
       const p = data.preview;
       setPreviewValues(el, p.currentPct, p.newPct, p.delta);
       preview.dataset.visible = 'true';
-    } catch { /* network error — preview stays hidden */ }
+    } catch (e) {
+      if (e instanceof TypeError) return; // network failure — stay hidden gracefully
+      console.warn('[vsc] BA preview error (non-network):', e);
+    }
   }
 
   function setPreviewValues(el: HTMLElement, cur: number, next: number, delta: number): void {
-    setText(el, '[data-ba-current]', `${cur}%`);
+    const curEl = el.querySelector<HTMLElement>('[data-ba-current]');
+    if (curEl) {
+      curEl.textContent = `${cur}%`;
+      curEl.dataset.baCurrentVal = String(cur); // numeric store for animateBACounter
+    }
     setText(el, '[data-ba-new]', `${next}%`);
     const sign = delta >= 0 ? '+' : '';
     setText(el, '[data-ba-delta]', `${sign}${delta}%`);
@@ -366,8 +373,10 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
     setText(el, '[data-receipt-verdict]', `\u2713  ${LABELS[v] ?? v}`);
     const card = el.querySelector<HTMLElement>('.vsc-receipt-card');
     if (card) card.dataset.verdict = v;
-    const ts = new Date(data.sealedAt as number);
-    setText(el, '[data-receipt-date]', `Sealed: ${ts.toLocaleString()}`);
+    const ts = new Date(Number(data.sealedAt));
+    if (isNaN(ts.getTime())) console.warn('[vsc] sealedAt is not a valid timestamp:', data.sealedAt);
+    const dateLabel = !isNaN(ts.getTime()) ? `Sealed: ${ts.toLocaleString()}` : 'Sealed: timestamp unavailable';
+    setText(el, '[data-receipt-date]', dateLabel);
     const proof = String(data.hmac_seal ?? '').slice(0, 16);
     setText(el, '[data-receipt-proof]', `Proof: ${proof}\u2026`);
   }
@@ -378,7 +387,7 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
     targets.forEach(t => t.style.setProperty('--vsc-ba-pct', String(newPct)));
     const from = el.querySelector<HTMLElement>('[data-ba-from]');
     const cur  = el.querySelector<HTMLElement>('[data-ba-current]');
-    if (from && cur) from.style.setProperty('--vsc-ba-pct', String(parseInt(cur.textContent ?? '0')));
+    if (from && cur) from.style.setProperty('--vsc-ba-pct', cur.dataset.baCurrentVal ?? '0');
   }
 
   function populateShareCard(el: HTMLElement): void {

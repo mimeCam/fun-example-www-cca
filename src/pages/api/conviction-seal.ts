@@ -14,6 +14,7 @@ import type { APIRoute } from 'astro';
 import { createHmac } from 'crypto';
 import { getCollection } from 'astro:content';
 import { broadcastNamed } from '../../lib/heartbeat';
+import { invalidateBACacheFor } from '../../lib/batting-average';
 import {
   sealConviction,
   getSealEntry,
@@ -131,6 +132,9 @@ export const POST: APIRoute = async ({ request }) => {
     } catch (tstErr) {
       console.warn('[conviction-seal] stampAll failed (seal still valid):', tstErr);
     }
+
+    // Invalidate per-author BA cache — seal count changed, batting average must recompute.
+    invalidateBACacheFor(authorSlug);
 
     // Broadcast conviction:sealed so live-conviction-hero.ts can update open tabs.
     broadcastNamed('conviction:sealed', { slug, score: entry.conviction_score });
