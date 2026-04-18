@@ -215,9 +215,28 @@ const decayStage = stageAttr(post.decay);
   .post-title {
     margin: 0 0 var(--space-2);
     font-size: var(--text-lg);
-    font-weight: var(--weight-semibold);
+    /* Bug 1 fix: consume --card-title-weight set on card by decay.css for ghost/fossil.
+       CSS custom properties cascade from parent → child: no JS, no new tokens needed.
+       Fallback: var(--weight-semibold) = 600 for fresh/fading/endangered stages. */
+    font-weight: var(--card-title-weight, var(--weight-semibold));
     line-height: var(--leading-snug);
-    color: var(--mood-accent, currentColor);
+    /* Bug 2 fix: saturation collapse via color-mix() in oklch (perceptually uniform).
+       Fresh (factor=0): 100% mood-accent — full conviction.
+       Fossil (factor=1): 45% mood-accent + 55% text-secondary — voice quieted, not cold.
+       stage-identity.css overrides endangered to --color-decay-endangered (urgency). */
+    color: color-mix(
+      in oklch,
+      var(--mood-accent, currentColor) calc((1 - var(--decay-factor, 0) * 0.55) * 100%),
+      var(--text-secondary)
+    );
+    /* Opacity: 0.30 max reduction → 0.70 floor at element level.
+       Compounds with card opacity (≈0.25 at fossil) → ≈0.175 visual: inscription weight.
+       stage-identity.css overrides to precise stage targets (0.95/0.85/1.0/0.55/0.45). */
+    opacity: calc(1 - var(--decay-factor, 0) * 0.30);
+    transition:
+      opacity     var(--motion-drift-duration)      var(--motion-drift-easing),
+      color       var(--motion-drift-duration)      var(--motion-drift-easing),
+      font-weight var(--motion-duration-deliberate)  var(--motion-easing-standard);
   }
 
   .post-link:hover .post-title {
@@ -230,7 +249,11 @@ const decayStage = stageAttr(post.decay);
     margin:      var(--space-1) 0 0;
     font-size:   var(--text-sm);
     line-height: var(--leading-normal);
-    opacity:     0.7;
+    /* Bug 3 fix: continuous opacity decay — excerpt fades faster than title (quieter voice).
+       0.25 max reduction → 0.45 floor at fossil element level.
+       stage-identity.css snaps to precise stage targets (0.70/0.60/0.65/0.40/0.30). */
+    opacity: calc(0.7 - var(--decay-factor, 0) * 0.25);
+    transition: opacity var(--motion-drift-duration) var(--motion-drift-easing);
   }
 
   /* Footer: exactly 3 slots — clock · badge · keep (Tanya §2, Mike §arch) */

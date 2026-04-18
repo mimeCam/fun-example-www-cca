@@ -4,6 +4,29 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v141 — DecayCard Title/Excerpt Saturation & Opacity Decay (2026-04-18)
+#   Sprint: Three targeted bug-fixes in DecayCard.astro — pure UIX/CSS polish,
+#     zero infrastructure changes.
+#   Key changes:
+#     src/components/DecayCard.astro:
+#       Bug 1 fix — .post-title font-weight now consumes --card-title-weight
+#         (set by decay.css on the card element for ghost/fossil stages) via
+#         font-weight: var(--card-title-weight, var(--weight-semibold)).
+#         Pure CSS cascade; no JS, no new tokens needed.
+#       Bug 2 fix — .post-title color replaced with color-mix() in oklch:
+#         fresh (factor=0) → 100% mood-accent; fossil (factor=1) → 45% mood-accent +
+#         55% text-secondary. Opacity calc(1 - factor * 0.30) added at element
+#         level (0.70 floor); stage-identity.css overrides to precise stage
+#         targets. Smooth transitions via --motion-drift-* tokens.
+#       Bug 3 fix — .post-excerpt opacity changed from static 0.7 to
+#         calc(0.7 - factor * 0.25) for continuous decay; transition wired
+#         to --motion-drift-* tokens. stage-identity.css retains stage-snap
+#         overrides.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v140).
+#
 # Architecture v140 — Detail Page Cover Decay Physics (2026-04-18)
 #   Sprint: Live decay animation on blog detail page cover images/gradients —
 #     same physics as feed DecayCard, separate IIFE, separate CSS class.
