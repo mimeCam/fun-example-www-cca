@@ -70,7 +70,7 @@ const { title, description = '' } = Astro.props;
     backdrop-filter: blur(12px);
     color: var(--mood-accent);
     font-size: var(--text-xs);
-    letter-spacing: 0.05em;
+    letter-spacing: var(--tracking-loose);
     text-transform: lowercase;
     cursor: pointer;
     transition: background var(--motion-snap-duration) var(--motion-snap-easing),
@@ -92,7 +92,7 @@ const { title, description = '' } = Astro.props;
     bottom: calc(100% + 0.5rem);
     right: 0;
     padding: 0.4rem 0.8rem;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--surface-overlay);
     backdrop-filter: blur(8px);
     color: var(--text-primary);

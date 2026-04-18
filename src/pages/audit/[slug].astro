@@ -175,7 +175,7 @@ const pageDescription = payload.seal
     font-size: var(--text-xs);
     color: var(--text-dim);
     text-decoration: none;
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     transition: color var(--motion-flow-duration) ease;
   }
 
@@ -188,8 +188,8 @@ const pageDescription = payload.seal
 
   .audit-eyebrow {
     font-size: var(--text-2xs);
-    font-weight: 600;
-    letter-spacing: 0.14em;
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-spread);
     text-transform: uppercase;
     color: var(--gold-mid);
     margin: 0 0 0.4rem;
@@ -197,9 +197,9 @@ const pageDescription = payload.seal
 
   .audit-title {
     font-size: clamp(1.3rem, 3vw, 1.75rem);
-    font-weight: 700;
+    font-weight: var(--weight-bold);
     line-height: 1.25;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--tracking-tighter);
     color: var(--text-primary);
     margin: 0 0 0.75rem;
   }
@@ -223,7 +223,7 @@ const pageDescription = payload.seal
     font-size: var(--text-sm);
     color: var(--text-tertiary);
     text-decoration: none;
-    letter-spacing: 0.02em;
+    letter-spacing: var(--tracking-snug);
     transition: color var(--motion-flow-duration) ease;
   }
 
@@ -234,7 +234,7 @@ const pageDescription = payload.seal
     margin-top: 1.25rem;
     font-size: var(--text-2xs);
     color: var(--text-ghost);
-    letter-spacing: 0.02em;
+    letter-spacing: var(--tracking-snug);
     line-height: 1.5;
   }
 

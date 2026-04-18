@@ -206,7 +206,7 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     padding: 0.2rem 0.6rem;
     font-size: var(--text-2xs);
     font-family: inherit;
-    letter-spacing: 0.02em;
+    letter-spacing: var(--tracking-snug);
     color: var(--text-tertiary);
     background: var(--surface-raised);
     border: 1px solid var(--border-light);
@@ -235,11 +235,11 @@ const pactCopy = buildPactCopy(count, decayFactor, conviction);
     font-size: var(--text-xs);
     font-family: inherit;
     font-weight: var(--weight-semibold);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-wide);
     color: var(--mood-accent);
     background: color-mix(in oklch, var(--mood-accent) 10%, transparent);
     border: 1.5px solid color-mix(in oklch, var(--mood-accent) 40%, transparent);
-    border-radius: 10px;
+    border-radius: var(--radius-inset);
     cursor: pointer;
     transition:
       background var(--motion-flow-duration) ease,

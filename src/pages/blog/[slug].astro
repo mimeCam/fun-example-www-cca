@@ -300,7 +300,7 @@ const jsonLd      = [
     font-size: var(--text-xs);
     color: var(--text-tertiary);
     text-decoration: none;
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     transition: color var(--motion-flow-duration) ease;
   }
 
@@ -346,15 +346,15 @@ const jsonLd      = [
     font-size: var(--text-sm);
     opacity: 0.5;
     margin-bottom: 0.5rem;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-wide);
   }
 
   .post-header h1 {
     font-size: clamp(1.75rem, 4vw, 2.5rem);
-    font-weight: 700;
+    font-weight: var(--weight-bold);
     line-height: 1.2;
     margin-bottom: 0.75rem;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--tracking-display);
     color: var(--mood-accent, inherit);
   }
 
@@ -447,14 +447,14 @@ const jsonLd      = [
     margin: 1.5rem 0 2rem;
     padding: 1.25rem;
     background: oklch(11% 0.008 270 / 0.6);
-    border-radius: 12px;
+    border-radius: var(--radius-card);
     border: 1px solid var(--border-faint);
   }
 
   .post-predictions__heading {
     font-size: var(--text-xs);
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-headline);
     text-transform: uppercase;
     color: var(--text-dim);
     margin: 0 0 0.85rem;
@@ -473,7 +473,7 @@ const jsonLd      = [
     font-size: var(--text-xs);
     color: var(--text-ghost);
     text-decoration: none;
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     transition: color var(--motion-snap-duration) var(--motion-snap-easing);
   }
   .post-predictions__vault-link:hover { color: var(--text-secondary); }

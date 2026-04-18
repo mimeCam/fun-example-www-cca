@@ -516,7 +516,7 @@
 
 /* Tombstone corner radius per Tanya design system (§7 — colder = 8px) */
 .tombstone {
-  border-radius: 8px;
+  border-radius: var(--radius-input);
 }
 
 /* Graveyard stats entry animation — staggers in after header */

@@ -149,7 +149,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: var(--font-sans);
       background: var(--surface-base);
       color: var(--text-primary);
       min-height: 100vh;
@@ -169,7 +169,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
 
     .admin-title {
       font-size: var(--text-sm);
-      letter-spacing: 0.1em;
+      letter-spacing: var(--tracking-widest);
       text-transform: uppercase;
       color: var(--text-tertiary);
     }
@@ -177,7 +177,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
     .admin-stat {
       font-size: var(--text-xs);
       color: var(--gold-dim);
-      font-family: ui-monospace, monospace;
+      font-family: var(--font-mono);
     }
 
     /* Login form */
@@ -192,13 +192,13 @@ const sealedCount = posts.filter(p => p.sealed).length;
     .login-label {
       font-size: var(--text-xs);
       color: var(--text-tertiary);
-      letter-spacing: 0.03em;
+      letter-spacing: var(--tracking-relaxed);
     }
 
     .login-input {
       background: var(--surface-raised);
       border: 1px solid var(--border-light);
-      border-radius: 10px;
+      border-radius: var(--radius-inset);
       padding: 0.65rem 0.9rem;
       font-size: var(--text-sm);
       color: var(--text-primary);
@@ -212,7 +212,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
     .login-btn {
       background: var(--gold-bg-strong);
       border: 1px solid var(--gold-border);
-      border-radius: 10px;
+      border-radius: var(--radius-inset);
       padding: 0.65rem 1.25rem;
       font-size: var(--text-sm);
       color: var(--gold);
@@ -248,14 +248,14 @@ const sealedCount = posts.filter(p => p.sealed).length;
     .deadlines-panel {
       margin-bottom: 2.5rem;
       border: 1px solid var(--gold-glow);
-      border-radius: 10px;
+      border-radius: var(--radius-inset);
       padding: 1rem 1.1rem;
       background: color-mix(in oklch, var(--gold) 3%, transparent);
     }
 
     .deadlines-heading {
       font-size: var(--text-xs);
-      letter-spacing: 0.1em;
+      letter-spacing: var(--tracking-widest);
       text-transform: uppercase;
       color: var(--gold-dim);
       margin-bottom: 0.75rem;
@@ -281,7 +281,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
     }
 
     .deadline-row-days {
-      font-family: ui-monospace, monospace;
+      font-family: var(--font-mono);
       font-size: var(--text-xs);
       color: var(--gold-mid);
       white-space: nowrap;
@@ -291,7 +291,7 @@ const sealedCount = posts.filter(p => p.sealed).length;
 
     .deadline-row-status {
       font-size: var(--text-2xs);
-      letter-spacing: 0.05em;
+      letter-spacing: var(--tracking-loose);
       text-transform: uppercase;
       color: var(--text-ghost);
     }

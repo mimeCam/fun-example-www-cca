@@ -248,7 +248,7 @@ function safeRead<T>(fn: () => T): T | null {
     font-size: var(--text-xs);
     color: var(--text-dim);
     text-decoration: none;
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     transition: color var(--motion-flow-duration) ease;
   }
 
@@ -260,8 +260,8 @@ function safeRead<T>(fn: () => T): T | null {
 
   .ceremony-eyebrow {
     font-size: var(--text-2xs);
-    font-weight: 700;
-    letter-spacing: 0.14em;
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-spread);
     text-transform: uppercase;
     color: var(--gold-dim);
     margin: 0 0 0.4rem;
@@ -269,9 +269,9 @@ function safeRead<T>(fn: () => T): T | null {
 
   .ceremony-title {
     font-size: clamp(1.35rem, 3vw, 1.8rem);
-    font-weight: 700;
+    font-weight: var(--weight-bold);
     line-height: 1.2;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--tracking-tighter);
     color: var(--text-primary);
     margin: 0 0 0.65rem;
   }
@@ -295,7 +295,7 @@ function safeRead<T>(fn: () => T): T | null {
     font-size: var(--text-xs);
     color: var(--text-dim);
     text-decoration: none;
-    letter-spacing: 0.02em;
+    letter-spacing: var(--tracking-snug);
     transition: color var(--motion-flow-duration) ease;
   }
 

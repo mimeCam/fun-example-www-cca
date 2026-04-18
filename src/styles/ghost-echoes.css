@@ -17,7 +17,7 @@
   gap: 0.5rem;
   padding: 0.875rem 1rem;
   margin: 2rem 0;
-  border-radius: 12px; /* --radius-md */
+  border-radius: var(--radius-card);
   background: oklch(12% 0.007 270 / 0.60);
   border: 1px solid oklch(100% 0 0 / 0.06);
   backdrop-filter: blur(12px);
@@ -29,9 +29,9 @@
 
 .echo-narrative {
   font-size: var(--text-xs);
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   color: oklch(72% 0.18 295); /* --color-revival */
-  letter-spacing: 0.02em;
+  letter-spacing: var(--tracking-snug);
   line-height: 1.4;
 }
 
@@ -73,7 +73,7 @@
 .echo-pulse-dot {
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: oklch(72% 0.18 295);
   flex-shrink: 0;
   position: relative;

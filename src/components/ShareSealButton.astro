@@ -112,7 +112,7 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
   /* ── Title column ─────────────────────────────────────────────────────── */
   .ssc-post-title {
     font-size:     var(--text-lg, 1.125rem);
-    font-weight:   600;
+    font-weight:   var(--weight-semibold);
     color:         var(--text-primary);
     line-height:   1.4;
     margin:        0;
@@ -139,9 +139,9 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
   .ssc-score-num {
     font-family:    var(--font-mono, ui-monospace, monospace);
     font-size:      var(--text-hero, 3rem);
-    font-weight:    700;
+    font-weight:    var(--weight-bold);
     color:          var(--clr-gold-400, #F5A623);
-    letter-spacing: -0.03em;
+    letter-spacing: var(--tracking-display);
     line-height:    1;
     font-variant-numeric: tabular-nums;
   }
@@ -154,7 +154,7 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
 
   .ssc-score-label {
     font-size:      var(--text-xs, 0.75rem);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-headline);
     text-transform: uppercase;
     color:          var(--text-secondary);
   }
@@ -189,8 +189,8 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
     color:          var(--clr-gold-400, #F5A623);
     cursor:         pointer;
     font-size:      var(--text-xs, 0.75rem);
-    font-weight:    600;
-    letter-spacing: 0.06em;
+    font-weight:    var(--weight-semibold);
+    letter-spacing: var(--tracking-open);
     padding:        var(--space-2, 8px) var(--space-4, 16px);
     transition:
       background   var(--motion-snap-duration, 100ms) ease,
@@ -236,7 +236,7 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
     color:       var(--color-interactive, var(--text-secondary));
     text-decoration: none;
     margin-left: auto;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--tracking-tight, -0.01em);
     transition: color var(--motion-snap-duration, 100ms) ease;
   }
 
@@ -245,7 +245,7 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
   .ssc-audit-link:focus-visible {
     outline:        2px solid var(--border-focus);
     outline-offset: 2px;
-    border-radius:  2px;
+    border-radius:  var(--radius-xs);
   }
 
   /* ── Mobile: stack grid ──────────────────────────────────────────────── */

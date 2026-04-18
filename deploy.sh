@@ -4,37 +4,37 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
-# Architecture v134 — Verdict Seal Ceremony (2026-04-18)
-#   Sprint: Interactive 3-phase verdict sealing ceremony — deliberation
-#     (conviction re-read, 2s dwell), declaration (verdict pick, BA delta
-#     preview, confirm gate), reckoning (BA counter animation, receipt).
+# Architecture v135 — Typography Token Expansion & Design-System-Wide Migration (2026-04-18)
+#   Sprint: Final typography & radius token vocabulary expansion + blanket
+#     migration across 61 files. Pure UIX polish — zero infra changes.
 #   Key changes:
-#     src/components/VerdictSealCeremony.astro — NEW: 3-phase interactive
-#       ceremony. State machine via data-phase CSS selector. SSR Phase 1,
-#       progressive enhancement via <script>. Dwell timer, verdict options
-#       radiogroup, BA preview fetch, hesitation beat, receipt population.
-#     src/styles/verdict-seal-ceremony.css — NEW: phase visibility, entrance
-#       keyframes (vsc-fade-in, vsc-scale-in), verdict option card states,
-#       BA counter @property animation, dwell CTA lock, reduced-motion.
-#     src/lib/batting-average.ts — simulateVerdictDelta() + helpers for BA
-#       delta preview. Pure read-only computation, never writes.
-#     src/pages/api/verdict-resolve.ts — GET handler for BA delta preview
-#       (public, read-only, no auth). POST handler unchanged.
-#     src/pages/verdict/[slug].astro — VerdictSealCeremony wired in
-#       (admin-gated, unsealed verdicts only). Admin detection via HMAC
-#       cookie. Ceremony data fetched conditionally (stance, decay, etc).
-#     src/pages/blog/[slug].astro — Verdict CTA link ("Face your verdict")
-#       when conviction sealed but no verdict. Border-radius token migration
-#       (12px → var(--radius-card)).
-#     src/lib/client/seal-sound.ts — playVerdictStamp() sound variant
-#       (triangle 60Hz + sine glide 600→900Hz).
-#     src/styles/tokens.css — 4 ceremony tokens: --verdict-ceremony-dwell,
-#       --verdict-ceremony-hesitation, --verdict-ceremony-counter,
-#       --verdict-seal-bg.
+#     src/styles/tokens.css — 14 new --tracking-* letter-spacing steps
+#       (tightest through widest), --weight-light (300), 3 new radius
+#       tokens (--radius-detail, --radius-tag, --radius-inset).
+#     ~55 .astro components & pages — hardcoded letter-spacing, font-weight,
+#       border-radius, and remaining raw values migrated to design tokens.
+#       Components: AnchorStrip, AuditReceipt, AuditVerdictPanel,
+#       ConvictionAuditTrail, ConvictionMeter, DecayClock, DisputeChallenge,
+#       GraveyardLedger, Murmurs, NowLine, PactPanel, Pagination, PostBadge,
+#       PredictionCard, PredictionVault, PresenceBand, RevivalBadge,
+#       ShareSealButton, ShareSheet, StickyStanceBar, TensionBadge,
+#       TombstoneCard, TrackRecord, TrustBadge, VerdictCard, VerdictCeremony,
+#       VerdictReveal, and all page templates.
+#     ~12 .css style files — endangered, ghost-echoes, leaderboard, river,
+#       seal-ceremony, seal-receipt, tokens, verdict, etc. All raw values
+#       replaced with canonical token references.
+#     scripts/check-token-compliance.ts — guard expanded/hardened for
+#       letter-spacing and font-weight token enforcement.
+#     AGENTS.md — border-radius, breakpoint, typography migrations marked
+#       [done]; WIP items updated.
 #   Infrastructure: no new services, volumes, env vars, or npm packages.
 #     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
 #     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
 #     unchanged (steps 1–8 identical to v129).
+#
+# Architecture v134 — Verdict Seal Ceremony (2026-04-18)
+#   Sprint: Interactive 3-phase verdict sealing ceremony.
+#   Infrastructure: no changes. (see git log for full details)
 #
 # Architecture v133 — Above-Fold Simplification, FloatingKeepButton & Bloom Profiles (2026-04-18)
 #   Sprint: P1 UIX polish — content-first layout, KeepButton promotion,

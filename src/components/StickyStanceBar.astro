@@ -550,7 +550,7 @@ const hasVotes    = dist.total > 0;
     font-size: var(--text-2xs);
     font-family: inherit;
     font-weight: var(--weight-semibold);
-    letter-spacing: 0.01em;
+    letter-spacing: var(--tracking-micro);
     color: var(--text-secondary);
     background: var(--surface-raised);
     border: 1px solid var(--border-subtle);
@@ -673,7 +673,7 @@ const hasVotes    = dist.total > 0;
     font-weight: var(--weight-semibold);
     color: var(--text-primary);
     white-space: nowrap;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--tracking-tight, -0.01em);
     line-height: 1.2;
   }
 
@@ -688,7 +688,7 @@ const hasVotes    = dist.total > 0;
   .ssb-verdict[data-intensity="moderate"] .ssb-verdict-copy { color: var(--text-secondary); }
 
   /* Mobile: sub-copy hidden; verdict copy still shows */
-  @media (max-width: 639px) { .ssb-verdict-sub { display: none; } }
+  @media (max-width: 639px) /* --bp-md - 1px */ { .ssb-verdict-sub { display: none; } }
 
   /* ── Dismiss button ─────────────────────────────────────────────────────── */
   .ssb-dismiss {
@@ -716,7 +716,7 @@ const hasVotes    = dist.total > 0;
   }
 
   /* ── Mobile (≤639px): 44px height, CTA expands vote group ───────────── */
-  @media (max-width: 639px) {
+  @media (max-width: 639px) /* --bp-md - 1px */ {
     .ssb {
       height: 44px;
       gap: var(--space-2);

@@ -328,7 +328,7 @@ function scoreBar(score: number): string {
   /* ── Individual sparkline bars ─────────────────────────────────────── */
   .tr-spark-bar {
     flex: 0 0 12px;
-    border-radius: 2px 2px 0 0;
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
     transition: opacity var(--motion-flow-duration) ease;
     min-height: 4px;
   }
@@ -405,11 +405,11 @@ function scoreBar(score: number): string {
   }
 
   /* ── Responsive ─────────────────────────────────────────────────────── */
-  @media (min-width: 700px) {
+  @media (min-width: 768px) /* --bp-lg */ {
     .tr-score-bar { display: inline; }
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 640px) /* --bp-md */ {
     .tr-row {
       grid-template-columns: 2rem 1fr 4rem 5rem 6rem 5rem 2rem;
       padding: 0.55rem 0.75rem;

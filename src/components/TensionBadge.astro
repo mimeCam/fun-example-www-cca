@@ -80,8 +80,8 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
     gap: 0.28rem;
     padding: 3px 10px;
     font-size: 11px;
-    letter-spacing: 0.06em;
-    border-radius: 9999px;
+    letter-spacing: var(--tracking-open);
+    border-radius: var(--radius-pill);
     border: 1px solid transparent;
     white-space: nowrap;
     transition: opacity var(--duration-normal) ease;
@@ -107,7 +107,7 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
   .tension-badge--embedded {
     font-size: 10px;
     padding: 2px 7px;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--tracking-loose);
   }
 
   /* ── Pulsing glow for contested posts ──────────────────────── */
@@ -124,7 +124,7 @@ const label = tensionResult ? LABELS[tensionResult.label] : '';
   .tension-memory {
     font-size: 10px;
     color: var(--text-dim);
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     display: block;
     margin-top: 2px;
   }

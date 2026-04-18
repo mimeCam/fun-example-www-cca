@@ -12,9 +12,7 @@
 
 ## WIP
 
-- [wip] Verdict Seal Ceremony — 3-phase ceremony (deliberation → declaration → reckoning). Needs: integration testing, SSE live-update, share button
-- [wip] Border-radius migration — 48 advisory warnings remain
-- [wip] Breakpoint standardization — 10 non-canonical @media values
-- [wip] Design audit — accent consolidation, surface tiers, radius cascade
+- [wip] Verdict Seal Ceremony — 3-phase (deliberation → declaration → reckoning). Needs: integration tests, SSE live-update, share button
+- [wip] Design audit — accent consolidation, surface tiers
 - [wip] UIX polish — sticky stance, card hover revival, tension badge icons, sepia cap
 - [wip] P1 polish — ConvictionRecord simplification, DecayCard footer, hover-revival gating

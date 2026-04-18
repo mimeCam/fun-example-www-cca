@@ -19,12 +19,12 @@ const { visible } = Astro.props;
   .risen-badge {
     display: inline-block;
     font-size: var(--text-3xs);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-open);
     text-transform: uppercase;
     color: color-mix(in oklch, var(--mood-accent) 65%, transparent);
     background: color-mix(in oklch, var(--mood-accent) 8%, transparent);
     border: 1px solid color-mix(in oklch, var(--mood-accent) 12%, transparent);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 0.1rem 0.5rem;
     margin-left: 0.4rem;
     vertical-align: middle;

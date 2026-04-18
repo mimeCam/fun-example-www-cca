@@ -199,8 +199,9 @@ const GUARD_FILES = new Set([
 /** Files exempt from duration enforcement (they DEFINE duration tokens) */
 const DURATION_EXEMPT = new Set(["motion.css"]);
 
-/** Canonical breakpoint values — @media using these is noted, not warned */
-const CANONICAL_BREAKPOINTS = new Set([480, 640, 768, 1024]);
+/** Canonical breakpoint values — @media using these is noted, not warned.
+ *  639 = max-width complement of 640 (--bp-md - 1px) — valid pattern. */
+const CANONICAL_BREAKPOINTS = new Set([480, 639, 640, 768, 1024]);
 
 const FONT_SIZE_PROP = /font-size\s*:/i;
 const FONT_WEIGHT_PROP = /font-weight\s*:/i;
@@ -231,29 +232,29 @@ const RULES: RuleDefinition[] = [
   },
 ];
 
-/* ── Typography composition rules (WARN — not guard violations) ──────────
- * Detect raw typography patterns that suggest a missing .type-* class.
- * These are warnings for the migration backlog, not build blockers.
- * Architecture: Michael Koch · Impl: Sid 2026-04-17                      */
+/* ── Typography composition rules (ERROR — migration complete) ──────────
+ * Raw typography values are now CI-blocking errors.
+ * Migration: 189 → 0 warnings (Sid 2026-04-18). Regressions impossible.
+ * Architecture: Michael Koch · Impl: Sid 2026-04-17 / 2026-04-18        */
 
 const TYPO_WARN_RULES: RuleDefinition[] = [
   {
     name: "typo-raw-letter-spacing",
     pattern: /\b\d+\.?\d*em\b/g,
-    description: "Raw letter-spacing — use --tracking-* token or .type-* class",
-    severity: "warn",
+    description: "Raw letter-spacing — use --tracking-* token",
+    severity: "error",
   },
   {
     name: "typo-raw-font-weight",
     pattern: /\b[1-9]00\b/g,
-    description: "Raw font-weight — use --weight-* token or .type-* class",
-    severity: "warn",
+    description: "Raw font-weight — use --weight-* token",
+    severity: "error",
   },
   {
     name: "typo-raw-font-family",
     pattern: /\bsystem-ui\b|\bsans-serif\b|\bmonospace\b/g,
     description: "Raw font stack — use var(--font-sans) or var(--font-mono)",
-    severity: "warn",
+    severity: "error",
   },
 ];
 
@@ -508,8 +509,10 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
       }
     }
 
-    // ── Breakpoint advisory (Mike §napkin — WARN) ────────────────────────
-    // @media with non-canonical px values gets flagged.
+    // ── Breakpoint (Mike §napkin — ERROR, promoted from WARN) ─────────────
+    // @media with non-canonical px values is a hard error.
+    // Canonical set: 480, 639, 640, 768, 1024.
+    // Migration: 11 → 0 warnings (Sid 2026-04-18). Regressions impossible.
     if (isMediaQuery(line)) {
       const bpRe = /\b(\d+)px\b/g;
       bpRe.lastIndex = 0;
@@ -519,29 +522,31 @@ function scanCSS(lines: string[], fileName: string): Violation[] {
         if (!CANONICAL_BREAKPOINTS.has(px)) {
           violations.push({
             file: fileName, line: lineNumber, column: bm.index + 1,
-            rule: "breakpoint-advisory",
+            rule: "breakpoint-raw",
             match: `${px}px`,
             context: rawLine.trim(),
-            severity: "warn",
+            severity: "error",
           });
         }
       }
     }
 
-    // ── Border-radius advisory (Tanya §10 — WARN) ───────────────────────
-    // Hardcoded border-radius values → should use --radius-* token.
+    // ── Border-radius (Tanya §10 — ERROR, promoted from WARN) ────────────
+    // Hardcoded border-radius values → must use --radius-* token.
+    // `inherit` is intentional CSS cascade (decay card ::after, revival).
+    // Migration: 44 → 0 warnings (Sid 2026-04-18). Regressions impossible.
     if (isBorderRadiusProp(line) && !isVarReference(line) && !isCustomPropDef(line)) {
-      const brRe = /\b(\d+px|50%|9999px|inherit)\b/g;
+      const brRe = /\b(\d+px|50%|9999px)\b/g;
       brRe.lastIndex = 0;
       let br: RegExpExecArray | null;
       while ((br = brRe.exec(line)) !== null) {
         if (isInsideVarFallback(line, br.index)) continue;
         violations.push({
           file: fileName, line: lineNumber, column: br.index + 1,
-          rule: "border-radius-advisory",
+          rule: "border-radius-raw",
           match: br[0],
           context: rawLine.trim(),
-          severity: "warn",
+          severity: "error",
         });
       }
     }

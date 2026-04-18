@@ -175,7 +175,7 @@ function calcSurvivalDays(p: PostDisplayData): number {
   /* "here lies" — tiny label above the title, like a headstone inscription cap */
   .tomb-here-lies {
     font-size: var(--text-3xs);
-    letter-spacing: 0.2em;
+    letter-spacing: var(--tracking-monument);
     text-transform: uppercase;
     color: var(--color-grave-ghost);
   }
@@ -183,10 +183,10 @@ function calcSurvivalDays(p: PostDisplayData): number {
   /* Survival tier badge — pill, uses hue arc positions per tier */
   .tomb-tier {
     font-size: var(--text-3xs);
-    letter-spacing: 0.12em;
+    letter-spacing: var(--tracking-ceremony);
     text-transform: uppercase;
     padding: 2px 6px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 1px solid currentColor;
     opacity: 0.65;
   }
@@ -211,10 +211,10 @@ function calcSurvivalDays(p: PostDisplayData): number {
    */
   .tomb-cause {
     font-size: var(--text-3xs);
-    letter-spacing: 0.12em;
+    letter-spacing: var(--tracking-ceremony);
     text-transform: uppercase;
     padding: 2px 6px;
-    border-radius: 3px;          /* near-sharp — Tanya §6: Graveyard cards are hard */
+    border-radius: var(--radius-detail);          /* near-sharp — Tanya §6: Graveyard cards are hard */
     border: 1px solid currentColor;
     opacity: 0.75;
     cursor: default;
@@ -263,13 +263,13 @@ function calcSurvivalDays(p: PostDisplayData): number {
     gap: 0.4rem;
     align-items: baseline;
     font-size: var(--text-2xs);
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     color: var(--color-grave-ghost);
   }
 
   .tomb-date-row dt {
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-headline);
     font-weight: var(--weight-normal);
     font-size: var(--text-3xs);
     flex-shrink: 0;
@@ -282,7 +282,7 @@ function calcSurvivalDays(p: PostDisplayData): number {
     margin: 0.25rem 0 0;
     font-size: var(--text-2xs);
     color: var(--color-grave-ghost);
-    letter-spacing: 0.02em;
+    letter-spacing: var(--tracking-snug);
   }
 
   /* Footer: resurrect affordance — right-aligned, text-only — Tanya §3.3 */

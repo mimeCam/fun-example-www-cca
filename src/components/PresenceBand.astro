@@ -55,7 +55,7 @@ const { compact = false, scope = 'slug' } = Astro.props;
 
   .presence-text {
     font-size: var(--text-xs);
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     color: var(--mood-accent, #9CA3AF);
     opacity: 0.55;
   }
@@ -77,7 +77,7 @@ const { compact = false, scope = 'slug' } = Astro.props;
 
   .presence-fallback {
     font-size: var(--text-2xs);
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     color: var(--mood-accent, #9CA3AF);
     opacity: 0.38;
     font-style: italic;

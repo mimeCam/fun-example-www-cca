@@ -71,8 +71,8 @@ const freshness   = computeFreshness(lastUpdated);
 
   .now-title {
     font-size: var(--text-base);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-tight);
     margin: 0;
     color: var(--text-primary);
   }
@@ -82,7 +82,7 @@ const freshness   = computeFreshness(lastUpdated);
     font-size: var(--text-2xs);
     color: var(--text-dim);
     font-style: italic;
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-relaxed);
     cursor: default;
   }
 
@@ -96,7 +96,7 @@ const freshness   = computeFreshness(lastUpdated);
     font-size: var(--text-xs);
     color: var(--text-dim);
     text-decoration: none;
-    letter-spacing: 0.02em;
+    letter-spacing: var(--tracking-snug);
     transition: color var(--motion-flow-duration) ease;
   }
 
@@ -109,7 +109,7 @@ const freshness   = computeFreshness(lastUpdated);
     font-size: var(--text-2xs);
     color: var(--text-ghost);
     text-decoration: none;
-    letter-spacing: 0.01em;
+    letter-spacing: var(--tracking-micro);
     transition: color var(--motion-flow-duration) ease;
   }
 

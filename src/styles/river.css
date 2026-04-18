@@ -25,7 +25,7 @@
 
 .river-eyebrow {
   font-size: var(--text-3xs);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-title);
   text-transform: uppercase;
   color: var(--color-grave-ghost);
   margin: 0 0 0.3rem;
@@ -76,7 +76,7 @@
   position: absolute;
   top: 0;
   height: 36px;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   padding: 0 0.75rem;
   display: inline-flex;
   align-items: center;
@@ -128,7 +128,7 @@
 /* Post title — truncated, let CSS var opacity do the decay */
 .river-node__title {
   font-size: var(--text-xs);
-  letter-spacing: 0.02em;
+  letter-spacing: var(--tracking-snug);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -167,7 +167,7 @@
   left: 50%;
   transform: translateX(-50%);
   font-size: var(--text-3xs);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-ceremony);
   text-transform: uppercase;
   color: var(--gold-mid);
   white-space: nowrap;
@@ -189,7 +189,7 @@
   left: 50%;
   transform: translateX(-50%);
   font-size: var(--text-3xs);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-headline);
   color: var(--river-axis-label);
   white-space: nowrap;
 }
@@ -207,7 +207,7 @@
 
 .river-key__item {
   font-size: var(--text-3xs);
-  letter-spacing: 0.10em;
+  letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
   color: var(--river-key-label);
   display: flex;

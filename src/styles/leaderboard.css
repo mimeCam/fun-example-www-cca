@@ -20,7 +20,7 @@
   font-size: var(--text-3xl);
   font-family: var(--font-mono);
   font-weight: var(--weight-extrabold);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tighter);
   color: var(--text-primary);
   margin: 0 0 var(--space-3);
 }
@@ -291,7 +291,7 @@
 .ap-stat-label {
   font-size: var(--text-2xs);
   color: var(--text-ghost);
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-open);
   text-transform: uppercase;
 }
 

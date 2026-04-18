@@ -75,12 +75,12 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
     align-items: baseline;
     gap: 0.3rem;
     font-size: var(--text-xs);
-    letter-spacing: 0.02em;
+    letter-spacing: var(--tracking-snug);
   }
 
   .teaser-count {
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
+    font-weight: var(--weight-medium);
   }
 
   .teaser-text {
@@ -91,7 +91,7 @@ const href = newestSlug ? `/blog/${newestSlug}/` : '/graveyard';
   .teaser-cta {
     margin-left: auto;
     font-size: var(--text-2xs);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-wide);
     opacity: 0;
     transform: translateX(-6px);
     transition: opacity var(--motion-flow-duration) ease, transform var(--motion-flow-duration) ease;

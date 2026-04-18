@@ -104,7 +104,7 @@ const nextHref = href(page + 1);
     padding: var(--space-5) 0 var(--space-2);
     margin-top: var(--space-4);
     border-top: 1px solid var(--color-grave-border);
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;  /* mono: page numbers */
+    font-family: var(--font-mono);  /* mono: page numbers */
     font-size: var(--text-2xs, 0.65rem);
     color: var(--color-grave-ghost);
     user-select: none;
@@ -115,7 +115,7 @@ const nextHref = href(page + 1);
     /* FLOW (200ms) — Tanya §12 motion profile rule */
     transition: color var(--motion-flow-duration) ease, opacity var(--motion-flow-duration) ease;  /* FLOW */
     white-space: nowrap;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-wide);
     text-decoration: none;
     color: var(--color-grave-ghost);
     min-height: 44px;   /* Tanya §16 — 44px tap target */
@@ -183,7 +183,7 @@ const nextHref = href(page + 1);
   /* ── Center label "page N of M" ─────────────────────────────────── */
   .pg-label {
     font-size: var(--text-2xs, 0.65rem);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-open);
     color: var(--color-grave-ghost);
     opacity: 0.7;
     white-space: nowrap;

@@ -195,6 +195,7 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
 
   /* ── Font Weights ────────────────────────────────────────────────────── */
+  --weight-light:     300;  /* graveyard ledger, whispered text     */
   --weight-normal:    400;
   --weight-medium:    500;
   --weight-semibold:  600;
@@ -207,12 +208,28 @@
   --leading-normal: 1.55;
   --leading-prose:  1.75;
 
-  /* ── Letter Spacing ──────────────────────────────────────────────────── */
-  --tracking-tight:    -0.01em;
-  --tracking-display:  -0.03em;  /* hero titles, large score numerals */
-  --tracking-normal:    0;
-  --tracking-wide:      0.04em;
-  --tracking-widest:    0.10em;
+  /* ── Letter Spacing Scale ──────────────────────────────────────────── */
+  /* Full scale from tight → display-wide. Every raw em value maps here. */
+  /* Rule: no raw letter-spacing in components — reference these tokens.  */
+  /* Architecture: Michael Koch §4.1 · UX: Tanya Donska · Impl: Sid     */
+  --tracking-display:   -0.03em;  /* hero titles, large score numerals  */
+  --tracking-tighter:   -0.02em;  /* seal links, leaderboard headings   */
+  --tracking-tight:     -0.01em;  /* headings, snug labels              */
+  --tracking-normal:     0;       /* body copy                          */
+  --tracking-micro:      0.01em;  /* subtle widening — now.astro, clock */
+  --tracking-snug:       0.02em;  /* labels, meta, card details         */
+  --tracking-relaxed:    0.03em;  /* badges, pills, trust labels        */
+  --tracking-wide:       0.04em;  /* stage pills, filter labels         */
+  --tracking-loose:      0.05em;  /* share sheet, tension state         */
+  --tracking-open:       0.06em;  /* risen badge, murmurs, pagination   */
+  --tracking-headline:   0.08em;  /* endangered, seal, predictions      */
+  --tracking-widest:     0.10em;  /* all-caps labels, admin headers     */
+  --tracking-ceremony:   0.12em;  /* notarize, seal receipt, audit      */
+  --tracking-spread:     0.14em;  /* verdict declaration                */
+  --tracking-banner:     0.15em;  /* ledger totals, banner text         */
+  --tracking-title:      0.18em;  /* river section titles               */
+  --tracking-monument:   0.20em;  /* tombstone "here lies"              */
+  --tracking-epitaph:    0.22em;  /* tombstone inscriptions             */
 
   /* ── Spacing Scale (4pt grid) ────────────────────────────────────────── */
   --space-1:  0.25rem;   /* 4px  */
@@ -229,6 +246,8 @@
 
   /* ── Border Radius — shape is identity; only glow/shadow signals age ── */
   --radius-xs:        2px;      /* progress bars, thin indicators, focus outlines (Tanya §9) */
+  --radius-detail:    3px;      /* audit trail, conviction panel, small UI corners */
+  --radius-tag:       4px;      /* tags, meters, small containers */
   --radius-sm:        6px;      /* chips, badges, tooltips, pills */
   --radius-md:        12px;     /* cards, nav elements */
   --radius-lg:        16px;     /* modal sheets, drawer overlays */
@@ -622,6 +641,7 @@
   --radius-pill:   var(--radius-full);  /* 9999px — KeepButton, StagePill   */
   --radius-badge:  var(--radius-sm);    /* 6px — all badge types            */
   --radius-input:  8px;                 /* form inputs                      */
+  --radius-inset:  10px;                /* inset panels, pact, admin blocks */
   --radius-modal:  20px;                /* full modal overlays              */
 
   /* ── KeepButton Color Tokens (Tanya §3 — 3-phase press ceremony) ──────── */

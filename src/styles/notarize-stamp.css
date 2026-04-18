@@ -110,7 +110,7 @@
 .ns-label {
   font-size:      var(--text-3xs);
   font-weight:    var(--weight-semibold);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-ceremony);
   text-transform: uppercase;
   color:          var(--gold-dim);
   position:       relative;

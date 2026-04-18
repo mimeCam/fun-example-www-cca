@@ -83,7 +83,7 @@ function truncateUrl(url: string, maxLen = 46): string {
     border-radius: var(--radius-md, 8px);
     font-size: var(--text-xs, 0.72rem);
     font-family: var(--font-sans);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-wide);
   }
 
   /* Anchored state: gold tint — live trust signal */
@@ -117,7 +117,7 @@ function truncateUrl(url: string, maxLen = 46): string {
   .as-label {
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-open);
     font-size: var(--text-2xs, 0.64rem);
     white-space: nowrap;
     flex-shrink: 0;
@@ -174,7 +174,7 @@ function truncateUrl(url: string, maxLen = 46): string {
   }
 
   /* ── Mobile: two-row layout ── */
-  @media (max-width: 600px) {
+  @media (max-width: 640px) { /* --bp-md */
     .anchor-strip {
       flex-wrap: wrap;
       gap: var(--space-2, 0.5rem);
