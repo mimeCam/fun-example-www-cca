@@ -1,122 +1,146 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   conviction-record.css
-   Shared styles for the ConvictionRecord card — a single unified surface
-   that replaces 5 scattered post-accountability zones.
+   conviction-record.css — 3-Zone Layout (P1-A Sprint)
 
-   Stage-aware: border, shadow, and radius adapt to the post's decay stage
-   via [data-decay-stage]. Tokens only — zero raw values.
+   CSS Grid with named areas — NOT flexbox.
+   Zones: zone-a (author signal) · zone-b (decay pressure) · zone-c (verdict).
+   Token discipline: zero raw values. DO NOT add new tokens (900+ exist).
 
-   Mike §ConvictionRecord napkin plan · Tanya §2 Conviction Record card
+   Mike §ConvictionRecord 3-zone napkin plan · Tanya §2 Zone A/B/C spec
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Base card ──────────────────────────────────────────────────────────── */
+/* ── Animated custom property for decay urgency (Mike §P1-A) ────────── */
+
+@property --cr-gold-tint {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* ── Base card: CSS Grid, named areas ──────────────────────────────── */
 
 .conviction-record {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  display: grid;
+  grid-template-areas:
+    "zone-a"
+    "zone-b"
+    "zone-c";
+  gap: var(--space-6);
   padding: var(--space-8) var(--space-6);
   border: 1px solid var(--border-medium);
-  border-left: 3px solid var(--gold-mid);
+  border-left: 3px solid
+    color-mix(in oklch, var(--gold-mid) calc(var(--cr-gold-tint) * 100%), transparent);
   border-radius: var(--radius-card);
   background: var(--surface-raised);
   box-shadow: var(--shadow-conviction);
   margin-top: var(--space-12);
   margin-bottom: var(--space-12);
   transition:
-    border-color var(--motion-flow-duration) var(--motion-flow-easing),
-    box-shadow   var(--motion-flow-duration) var(--motion-flow-easing),
-    border-radius var(--motion-flow-duration) var(--motion-flow-easing);
+    --cr-gold-tint     var(--motion-flow-duration) var(--motion-flow-easing),
+    border-color       var(--motion-flow-duration) var(--motion-flow-easing),
+    box-shadow         var(--motion-flow-duration) var(--motion-flow-easing),
+    border-radius      var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
-/* ── Header: flex row, baseline-aligned ─────────────────────────────── */
+/* Zone grid assignments */
+.cr-zone-a { grid-area: zone-a; }
+.cr-zone-b { grid-area: zone-b; }
+.cr-zone-c { grid-area: zone-c; }
 
-.cr-header {
+/* ── Zone A: Author Signal ──────────────────────────────────────────── */
+/* One horizontal row: author · chip · stage pill · [clock] · audit link */
+
+.cr-zone-a {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border-faint);
-  padding-bottom: var(--space-3);
+  padding-bottom: var(--space-4);
 }
 
-.cr-label {
-  text-transform: uppercase;
-  color: var(--gold-dim);
-}
-
-.cr-audit-link {
+.cr-author {
   color: var(--text-ghost);
   text-decoration: none;
+  letter-spacing: var(--tracking-wide);
   transition: color var(--motion-snap-duration) var(--motion-snap-easing);
 }
 
-.cr-audit-link:hover {
-  color: var(--text-secondary);
+.cr-author:hover { color: var(--text-secondary); }
+
+/* Stage pill — compact status indicator (Tanya Zone A spec) */
+.cr-stage-pill {
+  font-size: var(--text-2xs);
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-faint);
+  color: var(--text-dim);
+  line-height: 1;
+  transition:
+    color        var(--motion-flow-duration) var(--motion-flow-easing),
+    border-color var(--motion-flow-duration) var(--motion-flow-easing);
 }
 
-/* ── Action: primary CTA zone ───────────────────────────────────────── */
+.cr-stage-pill[data-stage="fading"]     { color: var(--text-tertiary); opacity: 0.85; }
+.cr-stage-pill[data-stage="endangered"] { color: var(--urgency-warning-color); border-color: color-mix(in oklch, var(--urgency-warning-color) 35%, transparent); }
+.cr-stage-pill[data-stage="ghost"]      { color: var(--text-ghost); border-style: dashed; }
+.cr-stage-pill[data-stage="fossil"]     { color: var(--text-faint); opacity: 0.5; }
 
-.cr-action {
+/* Audit link pushed to far right via margin-left: auto */
+.cr-audit-link {
+  margin-left: auto;
+  color: var(--text-ghost);
+  text-decoration: none;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+  transition: color var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+.cr-audit-link:hover { color: var(--text-secondary); }
+
+/* ── Zone B: Decay Pressure ─────────────────────────────────────────── */
+/* Ghost echoes + dispute tally — social proof and stakes */
+
+.cr-zone-b {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed var(--border-faint);
+  min-height: var(--space-8);
+}
+
+/* ── Zone C: Verdict Moment ─────────────────────────────────────────── */
+/* Full-width hero KeepButton is the exit. Challenge + audit follow. */
+
+.cr-zone-c {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: var(--space-4) 0;
-  border-bottom: 1px dashed var(--border-faint);
-}
-
-/* ── Evidence: 2-col responsive grid ────────────────────────────────── */
-
-.cr-evidence {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  align-items: stretch;
   gap: var(--space-4);
-  align-items: start;
-  padding: var(--space-3) 0;
 }
 
-@media (max-width: 480px) {
-  .cr-evidence {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ── Challenge: conditional dispute panel ───────────────────────────── */
-
-.cr-challenge {
-  border-top: 1px dashed var(--border-faint);
-  padding-top: var(--space-3);
-}
-
-/* ── Audit: collapsed trail ─────────────────────────────────────────── */
-
-.cr-audit {
-  border-top: 1px dashed var(--border-faint);
-  padding-top: var(--space-3);
-}
-
-/* ── Stage overrides — no new tokens, only rewiring existing ones ──── */
+/* ── Stage overrides — rewire existing tokens, no new ones ─────────── */
 
 .conviction-record[data-decay-stage="fresh"] {
   border-color: color-mix(in oklch, var(--stage-fresh-border) 25%, transparent);
-  border-left-color: var(--gold-mid);
-  box-shadow: var(--shadow-card-fresh);
 }
 
 .conviction-record[data-decay-stage="fading"] {
   border-color: color-mix(in oklch, var(--stage-fading-border) 20%, transparent);
-  border-left-color: var(--gold-mid);
-  box-shadow: var(--shadow-card-fading);
 }
 
 .conviction-record[data-decay-stage="endangered"] {
   border-color: color-mix(in oklch, var(--stage-endangered-border) 20%, transparent);
-  border-left-color: var(--gold-mid);
   box-shadow: var(--shadow-card-endangered);
 }
 
 .conviction-record[data-decay-stage="ghost"] {
+  --cr-gold-tint: 0.5;
   border-color: color-mix(in oklch, var(--stage-ghost-border) 15%, transparent);
-  border-left-color: color-mix(in oklch, var(--gold-mid) 50%, transparent);
   box-shadow: var(--shadow-card-rest);
   border-radius: var(--radius-stage-ghost);
   border-style: dashed;
@@ -124,8 +148,8 @@
 }
 
 .conviction-record[data-decay-stage="fossil"] {
+  --cr-gold-tint: 0.3;
   border-color: color-mix(in oklch, var(--stage-fossil-border) 15%, transparent);
-  border-left-color: color-mix(in oklch, var(--gold-mid) 30%, transparent);
   box-shadow: var(--shadow-card-fossil);
   border-radius: var(--radius-stage-fossil);
   border-style: dotted;
@@ -135,7 +159,5 @@
 /* ── Reduced motion ─────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .conviction-record {
-    transition: none;
-  }
+  .conviction-record { transition: none; }
 }

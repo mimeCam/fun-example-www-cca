@@ -4,6 +4,28 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v139 — ConvictionRecord 3-Zone Layout (P1-A Sprint) (2026-04-18)
+#   Sprint: CSS Grid 3-zone refactor of ConvictionRecord — author signal (A),
+#     decay pressure (B), verdict moment (C). Hero KeepButton 52px full-width.
+#     Fossil-hiding on FloatingKeepButton. Pure UIX polish, zero infra changes.
+#   Key changes:
+#     src/components/ConvictionRecord.astro — restructured to CSS Grid named
+#       areas (zone-a/b/c). New props: authorSlug, totalPublished, daysRemaining.
+#       Zone A: author link, BattingAverageChip, stage pill, conditional DecayClock
+#       (endangered/ghost only). Zone B: GhostEchoes + DisputeTally. Zone C: hero
+#       full-width KeepButton (52px), DisputeChallenge, ConvictionAuditTrail.
+#     src/pages/blog/[slug].astro — passes 3 new props to ConvictionRecord:
+#       authorSlug, totalPublished, daysRemaining. No logic changes.
+#     src/styles/conviction-record.css — display:flex → CSS Grid with named areas.
+#       @property --cr-gold-tint (animated border tint). Stage-pill styles.
+#       cr-zone-a/b/c replace old cr-header/cr-action/cr-evidence/cr-challenge/cr-audit.
+#     src/styles/floating-keep.css — fossil stage hides FloatingKeepButton
+#       (opacity:0, pointer-events:none) per Tanya Zone C spec.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v138).
+#
 # Architecture v138 — BA Cache, SealCeremony A11y & UIX Polish (2026-04-18)
 #   Sprint: In-process batting-average cache + seal ceremony accessibility &
 #     micro-interaction polish pass.

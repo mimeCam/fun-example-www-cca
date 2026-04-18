@@ -201,6 +201,9 @@ const jsonLd      = [
       verdictSealed={verdictSealed}
       disputeState={disputeState}
       decayStage={decayStage}
+      authorSlug={post.data.authorSlug ?? 'host'}
+      totalPublished={totalPublished}
+      daysRemaining={daysRemaining}
     />
 
     <!-- DecayClock bar — post-read context, near conviction evidence (Tanya §1).

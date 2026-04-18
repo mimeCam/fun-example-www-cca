@@ -185,6 +185,16 @@
   outline-offset: 2px;
 }
 
+/* ── Fossil: dead posts are not invitations (Tanya Zone C spec) ──── */
+/* Override .keep-float--visible so the transition cannot override.   */
+
+.keep-float[data-decay-stage="fossil"],
+.keep-float[data-decay-stage="fossil"].keep-float--visible {
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
 /* ── Reduced motion — respect user preference ────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

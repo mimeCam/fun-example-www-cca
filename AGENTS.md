@@ -10,6 +10,3 @@
 - `src/styles/` — design system (tokens, stages, decay, ceremony)
 - `scripts/` — build tooling (token compliance guard)
 
-## WIP
-
-- [wip] ConvictionRecord simplification (P1-A) — collapse to 3-zone layout. Separate sprint.

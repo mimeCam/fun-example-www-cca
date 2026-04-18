@@ -1,48 +1,51 @@
 ---
 /**
- * ConvictionRecord.astro
+ * ConvictionRecord.astro — 3-Zone Layout (P1-A Sprint)
  *
- * A single card that consolidates all post-accountability evidence:
- * KeepButton, GhostEchoes, DisputeTally, DisputeChallenge, ConvictionAuditTrail.
+ * Zone A — Author Signal:  WHO staked this? Trust bar, stage pill, decay clock.
+ * Zone B — Decay Pressure: WHAT IS AT STAKE? Ghost echoes, dispute tally.
+ * Zone C — Verdict Moment: THE DECISION. Hero KeepButton, challenge, audit trail.
  *
- * Replaces 5 scattered zones in blog/[slug].astro with one unified surface.
- * Stage-aware: adapts border, shadow, and radius to the post's decay stage.
- * SSR-only — zero hydration. All interactivity belongs to subcomponents.
+ * CSS Grid, named areas. No new tokens. No API changes. No JS hydration.
+ * RevivalOrchestrator wiring inherited automatically by .keep-btn in Zone C.
  *
- * Mike §ConvictionRecord napkin plan
- * Tanya §2 Conviction Record card
+ * Mike §ConvictionRecord 3-zone · Tanya §2 Zone A/B/C spec
  */
-import type { DisputeState } from '../lib/verdict-dispute';
-import type { DecayStage }   from '../lib/decay-engine';
-import KeepButton            from './KeepButton.astro';
-import GhostEchoes           from './GhostEchoes.astro';
-import DisputeTally          from './DisputeTally.astro';
-import DisputeChallenge      from './DisputeChallenge.astro';
-import ConvictionAuditTrail  from './ConvictionAuditTrail.astro';
+import type { DisputeState }  from '../lib/verdict-dispute';
+import type { DecayStage }    from '../lib/decay-engine';
+import type { ClockUrgency }  from '../lib/decay-engine';
+import KeepButton             from './KeepButton.astro';
+import GhostEchoes            from './GhostEchoes.astro';
+import DisputeTally           from './DisputeTally.astro';
+import DisputeChallenge       from './DisputeChallenge.astro';
+import ConvictionAuditTrail   from './ConvictionAuditTrail.astro';
+import BattingAverageChip     from './BattingAverageChip.astro';
+import DecayClock             from './DecayClock.astro';
 
 interface Props {
-  slug:          string;
-  revivalCount:  number;
-  urgency:       string;
-  conviction:    string | null;
-  decayFactor:   number;
-  lifespan:      number;
-  verdictSealed: boolean;
-  disputeState:  DisputeState;
-  decayStage:    DecayStage;
+  slug:            string;
+  revivalCount:    number;
+  urgency:         string;
+  conviction:      string | null;
+  decayFactor:     number;
+  lifespan:        number;
+  verdictSealed:   boolean;
+  disputeState:    DisputeState;
+  decayStage:      DecayStage;
+  // Zone A — author trust bar
+  authorSlug:      string;
+  totalPublished?: number;
+  daysRemaining?:  number;
 }
 
 const {
-  slug,
-  revivalCount,
-  urgency,
-  conviction,
-  decayFactor,
-  lifespan,
-  verdictSealed,
-  disputeState,
-  decayStage,
+  slug, revivalCount, urgency, conviction,
+  decayFactor, lifespan, verdictSealed, disputeState, decayStage,
+  authorSlug, totalPublished, daysRemaining = 0,
 } = Astro.props;
+
+// Tanya Zone A: clock visible only at endangered/ghost — no crying wolf at fresh.
+const showClock = decayStage === 'endangered' || decayStage === 'ghost';
 ---
 
 <section
@@ -51,8 +54,32 @@ const {
   aria-label="Conviction record"
   id="conviction-audit"
 >
-  <header class="cr-header">
-    <span class="cr-label type-label">Conviction Record</span>
+  <!-- ── Zone A: Author Signal — WHO staked this? ─────────────────── -->
+  <div class="cr-zone-a">
+    <a href={`/author/${authorSlug}`} class="cr-author type-caption">
+      {authorSlug}
+    </a>
+
+    <BattingAverageChip
+      authorSlug={authorSlug}
+      size="inline"
+      totalPublished={totalPublished}
+    />
+
+    <span class="cr-stage-pill" data-stage={decayStage} aria-label={`Post stage: ${decayStage}`}>
+      {decayStage}
+    </span>
+
+    {showClock && (
+      <DecayClock
+        variant="ring"
+        compact
+        daysRemaining={daysRemaining}
+        urgency={urgency as ClockUrgency}
+        decayFactor={decayFactor}
+      />
+    )}
+
     <a
       href={`/audit/${slug}`}
       class="cr-audit-link type-caption"
@@ -60,9 +87,16 @@ const {
     >
       view receipt ↗
     </a>
-  </header>
+  </div>
 
-  <div class="cr-action">
+  <!-- ── Zone B: Decay Pressure — WHAT IS AT STAKE? ───────────────── -->
+  <div class="cr-zone-b">
+    <GhostEchoes slug={slug} />
+    <DisputeTally slug={slug} disputeState={disputeState} />
+  </div>
+
+  <!-- ── Zone C: Verdict Moment — THE DECISION ────────────────────── -->
+  <div class="cr-zone-c">
     <KeepButton
       slug={slug}
       count={revivalCount}
@@ -71,22 +105,34 @@ const {
       decayFactor={decayFactor}
       lifespan={lifespan}
     />
-  </div>
 
-  <div class="cr-evidence">
-    <GhostEchoes slug={slug} />
-    <DisputeTally slug={slug} disputeState={disputeState} />
-  </div>
-
-  <div class="cr-challenge">
     <DisputeChallenge
       slug={slug}
       verdictSealed={verdictSealed}
       disputeState={disputeState}
     />
-  </div>
 
-  <div class="cr-audit">
     <ConvictionAuditTrail slug={slug} />
   </div>
 </section>
+
+<style>
+  /**
+   * Zone C hero overrides: full-width 52px KeepButton, verdict radius.
+   * Tanya Zone C: "52px tall, full-column-width KeepButton with --radius-md".
+   * :global needed — KeepButton scoped styles use hash selectors.
+   */
+  .cr-zone-c :global(.pact-wrapper) {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .cr-zone-c :global(.keep-btn) {
+    width: 100%;
+    height: 52px;
+    min-width: unset;
+    border-radius: var(--radius-md);
+    justify-content: center;
+    font-size: var(--text-sm);
+  }
+</style>
