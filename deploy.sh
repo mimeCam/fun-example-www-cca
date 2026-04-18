@@ -4,6 +4,35 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v140 — Detail Page Cover Decay Physics (2026-04-18)
+#   Sprint: Live decay animation on blog detail page cover images/gradients —
+#     same physics as feed DecayCard, separate IIFE, separate CSS class.
+#     Mike §PoI-1 / Tanya §P4. Pure UIX polish — zero infra changes.
+#   Key changes:
+#     src/lib/decay-engine.ts — new detailDecayCoverScript() export: independent
+#       client-side IIFE targeting .detail-decay-cover[data-pub-date]. Ticks every
+#       60s via requestAnimationFrame; respects document.visibilityState and
+#       timetravel:seek / timetravel:exit events. Math subroutines (rb/rdg/df/pf/
+#       stg/grn/patch) copied from feed IIFE — independently deployable without a
+#       bundler step. Sanity checks added to _testDecayEngine().
+#     src/pages/blog/[slug].astro — detail-decay-cover class applied to both
+#       .post-cover-wrap (image) and .post-cover-gradient (fallback). SSR initial
+#       state via decayStyleString(postDecay). detailDecayCoverScript() inlined as
+#       <script set:html={...}>. Imports updated. Aspect-ratio 16/6 → 16/7 for
+#       feed→detail visual continuity (Tanya §P0). h1 color: --mood-accent →
+#       --text-primary (Tanya §P5: mood accent must not tint headings). Author
+#       link hover: underline affordance added (text-underline-offset: 2px).
+#     src/styles/decay.css — new .detail-decay-cover block: opacity/filter
+#       (blur/saturate/sepia) + border-radius calcification (14px→8px with
+#       --decay-factor). Grain ::after overlay (same SVG noise as .decay-card).
+#       Fossil stage: cursor:default (inert). Ghost/endangered: amber inset
+#       vignette (60px inset box-shadow, no filter chain interference).
+#       Reduced-motion guards for .detail-decay-cover and ::after.
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v139).
+#
 # Architecture v139 — ConvictionRecord 3-Zone Layout (P1-A Sprint) (2026-04-18)
 #   Sprint: CSS Grid 3-zone refactor of ConvictionRecord — author signal (A),
 #     decay pressure (B), verdict moment (C). Hero KeepButton 52px full-width.

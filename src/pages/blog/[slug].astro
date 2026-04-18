@@ -27,7 +27,10 @@ import { getReadingTime } from '../../lib/readingTime';
 import { formatPubDate } from '../../lib/dates';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
 import { daysUntilEntombment, clockUrgency, CLOCK_MAX_DAYS } from '../../lib/death-clock';
-import { decayFactor, dominantConviction, stageFromFactor } from '../../lib/decay-engine';
+import {
+  decayFactor, dominantConviction, stageFromFactor,
+  decayStyleString, detailDecayCoverScript,
+} from '../../lib/decay-engine';
 import { getGraceState } from '../../lib/cold-start';
 import { getStanceDistribution } from '../../lib/stance-ledger';
 import { computeTension } from '../../lib/tension-score';
@@ -144,8 +147,25 @@ const jsonLd      = [
 
     <header class="post-header">
       {post.data.coverImage
-        ? <div class="post-cover-wrap"><img src={post.data.coverImage} alt="" class="post-cover-img" aria-hidden="true" loading="eager" decoding="async" /></div>
-        : <div class="post-cover-gradient" aria-hidden="true" />
+        ? <div
+            class="post-cover-wrap detail-decay-cover"
+            style={decayStyleString(postDecay)}
+            data-pub-date={pubDateISO}
+            data-revival-count={revivalCount}
+            data-reading-seconds={readingSeconds > 0 ? readingSeconds : undefined}
+            data-conviction={dominantVerdict ?? undefined}
+            data-decay-stage={decayStage}
+          ><img src={post.data.coverImage} alt="" class="post-cover-img" aria-hidden="true" loading="eager" decoding="async" /></div>
+        : <div
+            class="post-cover-gradient detail-decay-cover"
+            style={decayStyleString(postDecay)}
+            data-pub-date={pubDateISO}
+            data-revival-count={revivalCount}
+            data-reading-seconds={readingSeconds > 0 ? readingSeconds : undefined}
+            data-conviction={dominantVerdict ?? undefined}
+            data-decay-stage={decayStage}
+            aria-hidden="true"
+          />
       }
       <time datetime={pubDateISO}>{pubDate}</time>
       <h1>{post.data.title}</h1>
@@ -264,6 +284,9 @@ const jsonLd      = [
     decayStage={decayStage}
   />
 
+  <!-- Detail cover live decay: ticks every 60s, respects visibility + time-travel -->
+  <script set:html={detailDecayCoverScript()} />
+
   <!-- Erosion bar: scroll-driven progress as a CSS custom property -->
   <script>
     (function erosionScroll() {
@@ -313,14 +336,17 @@ const jsonLd      = [
      Tighter margin (Tanya §1: header-to-content coupling signals "this flows together") */
   .post-header { margin-bottom: 1.25rem; }
 
-  /* Cover image: full-bleed hero with decay filters — same physics as DecayCard */
+  /* Cover image: full-bleed hero with decay physics — same as DecayCard feed card.
+     aspect-ratio aligned to 16/7 (was 16/6) — Tanya §P0: feed→detail visual continuity.
+     border-radius uses decay-factor calcification; .detail-decay-cover global class
+     sets it but the scoped rule wins specificity — keep both in sync. */
   .post-cover-wrap {
     width: calc(100% + 3rem);          /* bleed past the 1.5rem padding on each side */
     margin-left: -1.5rem;
     margin-bottom: 1.75rem;
-    aspect-ratio: 16 / 6;
+    aspect-ratio: 16 / 7;
     overflow: hidden;
-    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    border-radius: calc(14px - var(--decay-factor, 0) * 6px) calc(14px - var(--decay-factor, 0) * 6px) 0 0;
   }
 
   .post-cover-img {
@@ -330,18 +356,19 @@ const jsonLd      = [
     display: block;
   }
 
-  /* Fallback gradient: mood-tinted band when no image provided */
+  /* Fallback gradient: mood-tinted band when no image provided.
+     Carries .detail-decay-cover class → opacity fades with --decay-opacity. */
   .post-cover-gradient {
     width: calc(100% + 3rem);
     margin-left: -1.5rem;
     margin-bottom: 1.75rem;
-    aspect-ratio: 16 / 6;
+    aspect-ratio: 16 / 7;
     background: linear-gradient(
       180deg,
       color-mix(in oklch, var(--mood-accent) 12%, transparent) 0%,
       transparent 100%
     );
-    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    border-radius: calc(14px - var(--decay-factor, 0) * 6px) calc(14px - var(--decay-factor, 0) * 6px) 0 0;
   }
 
   .post-header time {
@@ -352,13 +379,16 @@ const jsonLd      = [
     letter-spacing: var(--tracking-wide);
   }
 
+  /* color: --text-primary, not --mood-accent (Tanya §P5 fix 1).
+     Mood accent is ambient/background signal — it must not tint headings
+     or it competes with the decay-stage color cascade. */
   .post-header h1 {
     font-size: clamp(1.75rem, 4vw, 2.5rem);
     font-weight: var(--weight-bold);
     line-height: 1.2;
     margin-bottom: 0.75rem;
     letter-spacing: var(--tracking-display);
-    color: var(--mood-accent, inherit);
+    color: var(--text-primary);
   }
 
   /* Author meta row — name + batting average chip (Tanya §5.2) */
@@ -377,7 +407,13 @@ const jsonLd      = [
     transition: color var(--motion-snap-duration) var(--motion-snap-easing);
   }
 
-  .post-author-link:hover { color: var(--text-secondary); }
+  /* Tanya §P5 fix 2: whispered link is still a link — add underline affordance on hover */
+  .post-author-link:hover {
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+  }
 
   /* Article body */
   .post-body {

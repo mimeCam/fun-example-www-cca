@@ -454,6 +454,65 @@ export function decayEngineClientScript(): string {
 }
 
 // ---------------------------------------------------------------------------
+// Detail page cover decay script — second IIFE, separate from decayEngineClientScript().
+// Targets .detail-decay-cover[data-pub-date] on blog/[slug].astro.
+// Two selectors, two scripts, one concept each — Mike §PoI-1: "polymorphism is a killer."
+// Respects document.visibilityState + timetravel:seek / timetravel:exit events.
+// Math subroutines (rb/rdg/df/pf/stg/grn/patch) are deliberately copied from the feed
+// IIFE so both scripts are independently deployable as is:inline without a bundler step.
+// ---------------------------------------------------------------------------
+
+export function detailDecayCoverScript(): string {
+  return `(function(){
+  var DAY=${MS_PER_DAY},TICK=60000;
+  var mm=document.querySelector('meta[name="decay-max-days"]');
+  var M=mm?+mm.content||${MAX_DAYS_DEFAULT}:${MAX_DAYS_DEFAULT};
+  var paused=false,lastTick=0;
+  var CM={'still-true':.7,'evolved':.9,'unaudited':1,'wrong':1.4,'abandoned':1.4};
+  function rb(c){return Math.min(.3,Math.log(c+1)*.05)}
+  function rdg(s){return Math.min(.15,Math.log(s/30+1)*.04)}
+  function df(p,n,r,s,cv){var m=CM[cv]||1;return Math.max(0,Math.min(1,(n-p)/DAY/M)*m-rb(r)-rdg(s))}
+  function pf(f){return f*f}
+  function stg(f){return f>=.97?'fossil':f>=.75?'ghost':f>=.5?'endangered':f>=.25?'fading':'fresh'}
+  function grn(f){return f<.2?'0':f<.4?'.02':f<.6?'.08':f<.8?'.16':'.25'}
+  function patch(el,n){
+    var r=+(el.dataset.revivalCount||'0');
+    var s=+(el.dataset.readingSeconds||'0');
+    var cv=el.dataset.conviction||'unaudited';
+    var f=df(new Date(el.dataset.pubDate).getTime(),n,r,s,cv);
+    var p=pf(f);
+    el.style.setProperty('--decay-opacity',Math.max(.25,1-p*.75));
+    el.style.setProperty('--decay-blur',(p*2.5).toFixed(2)+'px');
+    el.style.setProperty('--decay-saturation',(1-p*.85).toFixed(2));
+    el.style.setProperty('--decay-sepia',(p*.35).toFixed(3));
+    el.style.setProperty('--decay-grain',grn(f));
+    el.style.setProperty('--decay-factor',f.toFixed(4));
+    el.style.setProperty('--decay-perceptual',p.toFixed(4));
+    el.style.setProperty('--decay-shadow-y',((1-p)*10).toFixed(1)+'px');
+    el.style.setProperty('--decay-shadow-spread',((1-p)*40).toFixed(1)+'px');
+    el.style.setProperty('--decay-shadow-alpha',((1-p)*.22).toFixed(3));
+    var ns=stg(f);if(el.dataset.decayStage!==ns){el.dataset.decayStage=ns}
+  }
+  function tick(){
+    if(!paused&&document.visibilityState!=='hidden'){
+      var n=Date.now();
+      if(n-lastTick>=TICK){
+        lastTick=n;
+        var el=document.querySelector('.detail-decay-cover[data-pub-date]');
+        if(el)patch(el,n);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  document.addEventListener('timetravel:seek',function(){paused=true});
+  document.addEventListener('timetravel:exit',function(){paused=false;lastTick=0});
+  if(document.readyState==='loading')
+    document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(tick)});
+  else requestAnimationFrame(tick);
+})();`;
+}
+
+// ---------------------------------------------------------------------------
 // Sanity checks
 // ---------------------------------------------------------------------------
 
@@ -546,7 +605,7 @@ export function _testDecayEngine(): void {
   const dte0 = daysToEntombment('2020-01-01', 0, 0, 180, new Date('2026-04-05'));
   console.assert(dte0 === 0, `daysToEntombment ancient: expected 0, got ${dte0}`);
 
-  // Client script
+  // Client script — feed cards
   const script = decayEngineClientScript();
   console.assert(script.includes('choreo-pending'), 'has choreography');
   console.assert(script.includes('requestAnimationFrame'), 'has RAF loop');
@@ -554,6 +613,13 @@ export function _testDecayEngine(): void {
   console.assert(script.includes("'still-true':.7"), 'IIFE has conviction map');
   console.assert(script.includes('decay-perceptual'), 'IIFE emits perceptual');
   console.assert(script.includes('decayStage'), 'IIFE updates stage attr');
+
+  // Detail cover script — separate IIFE, same math, different selector
+  const script2 = detailDecayCoverScript();
+  console.assert(script2.includes('detail-decay-cover'), 'targets detail selector');
+  console.assert(script2.includes('--decay-blur'), 'sets blur var');
+  console.assert(script2.includes('visibilityState'), 'has visibility guard');
+  console.assert(script2.includes('timetravel:seek'), 'hooks time travel');
 
   // Conviction multiplier
   console.assert(convictionMultiplier(null) === 1.0, 'null → baseline 1.0');
