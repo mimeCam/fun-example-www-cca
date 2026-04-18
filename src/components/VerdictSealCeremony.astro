@@ -22,6 +22,7 @@ import type { StanceDistribution } from '../lib/stance-ledger';
 import SealSoundToggle from './SealSoundToggle.astro';
 import NotarizeStamp   from './NotarizeStamp.astro';
 import BloomParticles  from './BloomParticles.astro';
+import ShareSealButton from './ShareSealButton.astro';
 
 interface Props {
   slug: string;
@@ -42,6 +43,7 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
   class="verdict-seal-ceremony"
   data-phase="deliberation"
   data-slug={slug}
+  data-conviction-score={seal.conviction_score}
   aria-label="Verdict seal ceremony"
   aria-live="polite"
 >
@@ -186,12 +188,18 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
         View full audit trail &nearr;
       </a>
     </div>
+
+    <!-- Share wrap — revealed after receipt blooms (800ms delay via JS) -->
+    <div class="vsc-share-wrap" data-visible="false">
+      <ShareSealButton slug={slug} title={title} />
+    </div>
   </div>
 </section>
 
 <script>
   import { initSealSound, playVerdictStamp, playReceiptReveal, playSealError } from '../lib/client/seal-sound';
   import { hapticForEvent } from '../lib/client/seal-haptic';
+  import { attachVerdictSSE } from '../lib/client/verdict-seal-ceremony-sse';
 
   function initCeremony(el: HTMLElement): void {
     const slug = el.dataset.slug ?? '';
@@ -200,6 +208,10 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
     setupVerdictOptions(el, slug);
     setupConfirmGate(el);
     setupSubmit(el, slug);
+    // SSE: live BA update when verdict:declared fires for this slug.
+    attachVerdictSSE(slug, newAvg => {
+      if (el.dataset.phase === 'reckoning') animateBACounter(el, newAvg);
+    });
   }
 
   /* ── Phase 1: dwell timer ────────────────────────────────── */
@@ -369,11 +381,24 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
     if (from && cur) from.style.setProperty('--vsc-ba-pct', String(parseInt(cur.textContent ?? '0')));
   }
 
+  function populateShareCard(el: HTMLElement): void {
+    const score   = el.dataset.convictionScore ?? '—';
+    const scoreEl = el.querySelector<HTMLElement>('[data-share-score]');
+    if (scoreEl) scoreEl.textContent = score;
+  }
+
+  function showShareWrap(el: HTMLElement): void {
+    const wrap = el.querySelector<HTMLElement>('.vsc-share-wrap');
+    if (wrap) wrap.dataset.visible = 'true';
+  }
+
   function scheduleReceiptReveal(el: HTMLElement): void {
     setTimeout(() => {
       playReceiptReveal();
       hapticForEvent('RECEIPT');
       el.classList.add('blooming-receipt');
+      populateShareCard(el);
+      showShareWrap(el);
     }, 800);
   }
 
@@ -748,6 +773,13 @@ const fingerprint = (seal.hmac_seal ?? '').slice(0, 12);
   }
 
   .vsc-action-link:hover { color: var(--text-secondary); }
+
+  /* ── Share wrap — Phase 3 only, revealed after receipt blooms ────── */
+  /* Gated by JS showShareWrap() — fires inside 800ms scheduleReceiptReveal */
+  .vsc-share-wrap { display: none; }
+  .vsc-share-wrap[data-visible="true"] { display: block; }
+  /* Pierce ShareSealButton's own display:none (higher specificity wins) */
+  .vsc-share-wrap[data-visible="true"] :global(.ssc-root) { display: block; }
 
   /* ── Mobile ───────────────────────────────────────── */
   @media (max-width: 640px) {

@@ -107,6 +107,22 @@
   animation: vsc-fade-in var(--motion-duration-fast) ease both;
 }
 
+/* ── Share wrap — Phase 3, revealed after receipt blooms ──────────────────
+ * Visibility toggled by JS showShareWrap() at 800ms (same as blooming-receipt).
+ * CSS rule here controls the wrapper; component <style> pierces ssc-root.
+ * Tanya §3.3 reckoning layout: share button directly below receipt block.
+ * ── */
+
+.vsc-share-wrap {
+  display: none;
+  margin-top: var(--space-4);
+}
+
+.vsc-share-wrap[data-visible="true"] {
+  display: block;
+  animation: vsc-fade-in var(--motion-ceremony-duration) var(--motion-easing-spring) both;
+}
+
 /* ── Reduced motion ────────────────────────────────────────────────────── */
 /* Tanya §10: stagger tells the story even without motion. */
 
@@ -119,5 +135,9 @@
 
   .vsc-ba-counter {
     transition-duration: 1ms;
+  }
+
+  .vsc-share-wrap[data-visible="true"] {
+    animation-duration: 1ms;
   }
 }

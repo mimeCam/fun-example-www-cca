@@ -4,6 +4,24 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v137 — Verdict Seal Ceremony SSE + ShareSealButton (2026-04-18)
+#   Sprint: Reckoning-phase live update & share integration for VerdictSealCeremony.
+#   Key changes:
+#     src/lib/client/verdict-seal-ceremony-sse.ts (new) — reuses window.__presenceES
+#       SSE channel; polls 500ms / 8s timeout; fires OnVerdictDeclared callback when
+#       verdict:declared event matches the watched slug. Zero new SSE connections.
+#     src/components/VerdictSealCeremony.astro — attachVerdictSSE() wired into
+#       initCeremony(); animates BA counter in reckoning phase on live verdict.
+#       ShareSealButton rendered in .vsc-share-wrap; revealed via showShareWrap()
+#       inside scheduleReceiptReveal (800ms after reckoning). data-conviction-score
+#       propagated to share card via populateShareCard().
+#     src/styles/verdict-seal-ceremony.css — .vsc-share-wrap fade-in animation;
+#       reduced-motion guard (animation-duration: 1ms).
+#   Infrastructure: no new services, volumes, env vars, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. deploy.sh startup sequence
+#     unchanged (steps 1–8 identical to v136).
+#
 # Architecture v136 — Stage-Gated Revival System (2026-04-18)
 #   Sprint: Defense-in-depth revival gating — API + SSR + client runtime layers.
 #   Key changes:
