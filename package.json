@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts",
+    "prebuild": "npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts && npx tsx --test src/lib/client/ds-kbd-lit.test.ts",
     "build": "astro build",
     "preview": "astro preview",
     "whisper": "node cli/whisper.mjs",
@@ -20,7 +20,8 @@
     "test:nav-legend": "npx tsx --test src/lib/client/nav-legend.test.ts",
     "test:cell-confirm": "npx tsx --test src/lib/client/cell-confirm.test.ts",
     "test:keep-hotkey": "npx tsx --test src/lib/client/keep-hotkey.test.ts",
-    "test:keep-legend": "npx tsx --test src/lib/client/keep-legend.test.ts"
+    "test:keep-legend": "npx tsx --test src/lib/client/keep-legend.test.ts",
+    "test:chip-lit": "npx tsx --test src/lib/client/ds-kbd-lit.test.ts"
   },
   "dependencies": {
     "@astrojs/node": "^8.3.4",

@@ -34,6 +34,8 @@
 import { cellCitationPayload } from '../stage-axes';
 import type { Axis } from '../stage-axes';
 import type { DecayStage } from '../decay-engine';
+// v153 Tanya §3.3 — chip-lit feedback. Pure helper; does not own listeners.
+import { lightForKey } from './ds-kbd-lit';
 
 // ── Selectors & keys ─────────────────────────────────────────────────────
 
@@ -53,6 +55,9 @@ export const ARRIVAL_MS       = 1200;   // stage-keyed bloom hold (incl. fossil)
 export const TOAST_MS         = 1800;   // Tanya §4b linger window
 export const CONFIRM_MS       = 1200;   // Tanya §4a button icon-swap duration
 export const CITE_CONFIRM_MS  = 1200;   // v152 Mike §A — cell confirm ring
+// v153 Tanya §3.3 — chip lit duration. Matches --motion-snap-duration
+// in tokens; the CSS transition + this timeout finish at the same beat.
+export const CHIP_LIT_MS      = 120;
 
 // v151b — keystroke cite (Mike napkin §3.1). Three keys, one handler.
 // Disjoint from matrix-keynav's NAV_KEYS so the two listeners never
@@ -116,6 +121,8 @@ function onMatrixKey(e: KeyboardEvent, toast: HTMLElement | null): void {
   const btn = resolveCellCopyBtn(e);
   if (!btn) return;
   e.preventDefault();      // Space: no page-scroll. Enter: no form-submit.
+  // v153 Tanya §3.3 — breathe the matching chip for one snap beat.
+  lightForKey(e.key, CHIP_LIT_MS);
   void handleCopy(btn, toast);
 }
 

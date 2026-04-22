@@ -11,32 +11,44 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v152 (2026-04-22) — `.ds-kbd` PROMOTE + `K` hotkey ─────────────
+# ── Sprint v153 (2026-04-22) — chip-lit micro-interaction ─────────────────
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • `.api-docs__kbd` → `.ds-kbd` promoted to src/styles/ds-kbd.css
-#       (imported from src/styles/global.css). Second real consumer:
-#       FloatingKeepButton.astro's `K` hotkey legend chip.
-#     • src/lib/client/keep-hotkey.ts — hold-`K` to revive, parallels
-#       hold-click. Bound from FloatingKeepButton's inline script.
-#     • src/lib/client/keep-hotkey.test.ts / keep-legend.test.ts — new
-#       dev-only node:test suites. Wired into `prebuild` so Docker's
-#       `npm run build` fails fast if legend chip ↔ `isKeepKey` parity
-#       drifts.
-#     • scripts/check-ds-kbd.ts — prebuild guard, zero `api-docs__kbd`
-#       stragglers, `.ds-kbd` defined once and used by exactly two
-#       consumers. Wired into `prebuild`.
-#     • src/styles/floating-keep.css — `.keep-float-legend` rule for the
-#       whisper chip below the float button. Zero new tokens.
+#     • src/lib/client/ds-kbd-lit.ts (NEW) — third consumer promote:
+#       one pure `keyToChipLabels()` normaliser + `lightForKey()` /
+#       `unlightForKey()` DOM toggles. Zero listeners, zero module-level
+#       state — the three keystroke modules call it, no new entry points.
+#     • src/lib/client/ds-kbd-lit.test.ts (NEW) — set-equality test that
+#       `keyToChipLabels` mirrors the legend-scrape label vocabulary.
+#       Wired into `prebuild` as `test:chip-lit` so any drift between the
+#       normaliser and the rendered legend chips fails the Docker build.
+#     • src/lib/client/{cell-cite,matrix-keynav,keep-hotkey}.ts — each
+#       now calls `lightForKey(e.key, …)` from its existing keydown
+#       handler; keep-hotkey also calls `unlightForKey` on keyup so the
+#       hold-K arc closes symmetrically.
+#     • src/styles/ds-kbd.css — `.ds-kbd[data-lit]` crossfade to E1 +
+#       RM neighbour + forced-colors outline fallback.
+#     • src/styles/floating-keep.css — legend colour routes through
+#       `--legend-prose-overlay`; line-height through `--legend-leading`;
+#       StickyStanceBar collision fix flips whisper above the FAB when
+#       SSB is present.
+#     • src/styles/tokens.css — four new Legend voice tokens
+#       (--legend-leading, --legend-baseline-nudge, --legend-prose-docs,
+#       --legend-prose-overlay). One `/* Legend voice */` block.
+#     • src/pages/api/docs.astro — legend stack now consumes the four
+#       new tokens; bottom margin bumped --space-3 → --space-4 so the
+#       chip's lifted shadow never touches the matrix breathing band.
 #     • package.json — `prebuild` now chains: check-token-compliance →
 #       check-motion-sanctuary → check-ds-kbd → test:keep-hotkey →
-#       test:keep-legend. All run inside the Docker builder stage.
-#     • AGENTS.md — Build-time guards + Teaching contract v152 section.
+#       test:keep-legend → test:chip-lit. All inside the builder stage.
+#     • AGENTS.md — Chip-lit contract v153 + deferred-item note.
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, volumes, or docker networks.
 #     Dockerfile already COPY-s `scripts/` and `src/` wholesale into the
-#     builder stage, so every new script/test/style ships without edits
-#     to the Dockerfile or the docker run command below.
+#     builder stage, so the new module, the new test, the new tokens,
+#     and the new CSS selectors all ship without edits to the Dockerfile
+#     or the docker run command below. The `test:chip-lit` prebuild link
+#     runs automatically via `npm run build`.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -84,7 +96,8 @@ docker volume create "${SQLITE_VOLUME}" || true
 # ── 4. Build Docker image ────────────────────────────────────────────────────
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
-#   check-ds-kbd  →  test:keep-hotkey  →  test:keep-legend  →  astro build.
+#   check-ds-kbd  →  test:keep-hotkey  →  test:keep-legend  →
+#   test:chip-lit (v153)  →  astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
@@ -179,8 +192,11 @@ fi
 #   (a) GET /api/docs — SSR on demand (`export const prerender = false`).
 #       The first render hydrates @astrojs/node's route handler, reads
 #       `lifetimeByCell()` + `ledgerMaturity()` + `baseline()`, and tints
-#       all 35 grammar-matrix cells with `data-heat`. v152 also ships the
-#       `.ds-kbd` chip CSS and the 3-chip cite + 8-chip nav legend stack.
+#       all 35 grammar-matrix cells with `data-heat`. v153 additionally
+#       ships the `.ds-kbd[data-lit]` crossfade rule + Legend voice
+#       tokens (--legend-leading, --legend-baseline-nudge,
+#       --legend-prose-{docs,overlay}) — all static assets baked into
+#       dist/client/ at build time, no runtime cost to warming.
 #
 #   (b) GET /api/metrics/cited-cells — read-only, unauthenticated; same
 #       single producer (`heatedGrid()`) the SSR page uses. Forces

@@ -32,6 +32,29 @@
   font-size: var(--text-2xs);
   line-height: 1;
   box-shadow: none;
+  /* v153 Tanya §3.3 — the chip can crossfade to E1 when `data-lit`
+   * is toggled by a matching keystroke. Transition tokens only; no
+   * @keyframes (the motion-sanctuary guard only polices `animation:`). */
+  transition:
+    box-shadow   var(--motion-snap-duration) var(--motion-snap-easing),
+    border-color var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+/* v153 Tanya §3.3 — "chip lights on matching keydown".
+ * E0 (at rest) → E1 (lifted) for the duration the matching key is held
+ * (K) or for 120ms on a momentary press (c / Enter / Space / arrows).
+ * data-lit is set by the same client modules that already listen for
+ * the keystroke: matrix-keynav.ts, cell-cite.ts, keep-hotkey.ts. No
+ * new listener, no new module-level state. See ds-kbd-lit.ts. */
+.ds-kbd[data-lit] {
+  box-shadow: var(--shadow-e1);
+  border-color: var(--border-interactive-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Hard-set the lit state — skip the crossfade, keep the feedback.
+   * Neighbours the transition declaration per lint:motion conventions. */
+  .ds-kbd { transition: none; }
 }
 
 @media (forced-colors: active) {
@@ -39,5 +62,11 @@
     border-color: CanvasText;
     background: Canvas;
     color: CanvasText;
+  }
+  /* Forced-colors carries the lit state as an outline — box-shadow is
+   * stripped by the browser in this mode; an outline reads universally. */
+  .ds-kbd[data-lit] {
+    outline: 1px solid Highlight;
+    outline-offset: 1px;
   }
 }

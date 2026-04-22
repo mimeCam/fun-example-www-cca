@@ -30,6 +30,15 @@ import { STAGE_AXES, cellAnchorId, cellIdFromHash } from '../stage-axes';
 import type { Axis } from '../stage-axes';
 import { DECAY_STAGES } from '../decay-engine';
 import type { DecayStage } from '../decay-engine';
+// v153 Tanya §3.3 — nav chip-lit feedback; pure helper, no listener.
+import { lightForKey } from './ds-kbd-lit';
+
+// v153 Tanya §3.3 — snap beat the nav chip stays lit. Kept local (not
+// imported from cell-cite.ts) so the modules remain independent: the
+// chip-lit beat and the cite beat happen to share the token today;
+// either one can evolve without touching the other. Same numeric value
+// as cell-cite.ts#CHIP_LIT_MS and --motion-snap-duration in tokens.css.
+const CHIP_LIT_MS = 120;
 
 // ── Selectors / keys ──────────────────────────────────────────────────────
 
@@ -189,6 +198,9 @@ function handleKey(matrix: HTMLElement, e: KeyboardEvent): void {
   const coord = readCoord(current);
   if (!coord) return;
   e.preventDefault();
+  // v153 Tanya §3.3 — breathe the matching nav chip for one snap beat
+  // (scoped to `document` since the legend sits above the matrix).
+  lightForKey(e.key, CHIP_LIT_MS);
   const next = nextIndex(coord.axisIdx, coord.stageIdx, e.key as NavKey);
   moveTo(matrix, next);
   notifyClamp(matrix, coord, next, e.key as NavKey);

@@ -202,10 +202,26 @@
   margin: 0;
   padding: 0;
   white-space: nowrap;
-  color: var(--text-ghost);
+  /* v153 Tanya §3.1 — overlay-register whisper, single source of truth. */
+  color: var(--legend-prose-overlay);
   font-size: var(--text-2xs);
-  line-height: 1.2;
+  /* v153 Tanya §3.2 — leading aligned with /api/docs legend band. */
+  line-height: var(--legend-leading);
   pointer-events: none;
+}
+
+/* v153 Tanya §4.1 — StickyStanceBar collision fix. When SSB is present
+ * (i.e., keep-float does NOT carry the --ssb-gone modifier), the legend
+ * whisper may geometrically sit *under* the SSB on narrow viewports that
+ * wrap to two lines. Flip the anchor so the legend renders *above* the
+ * button instead. Pure layout flip — no new z-tier, no reflow of
+ * surrounding content, no new JS. Uses :not() to make the default
+ * (unmodified) state == SSB-present, matching the element's real-world
+ * lifecycle: the bar arrives with the page; --ssb-gone is the user's
+ * dismiss signal. */
+.keep-float:not(.keep-float--ssb-gone) .keep-float-legend {
+  top: auto;
+  bottom: calc(100% + var(--space-2));
 }
 
 /* Touch devices have no `K` key — honour the same teaching contract as

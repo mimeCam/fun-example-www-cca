@@ -30,6 +30,10 @@
 const KEEP_KEYS: ReadonlySet<string> = new Set<string>(['k', 'K']);
 const KEEP_BTN_SEL = '.keep-float-btn.keep-btn';
 
+// v153 Tanya §3.3 — chip-lit feedback. Pure helpers; this module owns no
+// module-level state for the lit flag (the chip element carries it).
+import { lightForKey, unlightForKey } from './ds-kbd-lit';
+
 // ── Predicate ──────────────────────────────────────────────────────────────
 
 /**
@@ -73,6 +77,9 @@ function handleKeydown(e: KeyboardEvent): void {
   const btn = findKeepBtn(document);
   if (!btn) return;
   e.preventDefault();
+  // v153 Tanya §3.3 — lit for the duration of the hold; hold-release
+  // pairs symmetrically with handleKeyup. `0` === no auto-flip-off.
+  lightForKey(e.key, 0);
   firePointer(btn, 'pointerdown');
 }
 
@@ -82,6 +89,10 @@ function handleKeyup(e: KeyboardEvent): void {
   const btn = findKeepBtn(document);
   if (!btn) return;
   e.preventDefault();
+  // v153 Tanya §3.3 — symmetric unlit; closes the hold-lit arc even if
+  // the revive threshold already fired (the chip and the hold are the
+  // same beat from the reader's viewpoint).
+  unlightForKey(e.key);
   firePointer(btn, 'pointerup');
 }
 
