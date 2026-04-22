@@ -11,84 +11,76 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v156 (2026-04-22) — "Third Mouth" joins the citation trilogy ──
+# ── Sprint v162 (2026-04-22) — "Stage Ease Divergence" ──────────────────
+#   The tempo axis of the 7×5 /api/docs matrix was five stages wide on
+#   paper but only 1 unique + 4 aliases in code — every non-fresh stage
+#   collapsed onto `--motion-snap-easing`. v162 widens that column so
+#   each decay stage carries its own felt cubic-bezier tempo, with a
+#   prebuild guard asserting CSS↔TS parity + a JND floor on every
+#   unordered stage pair.
+#
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/citation-ref.ts (NEW) — single-source nonce grammar.
-#       Exports `REF_RE`, `REF_PARAM`, `isValidRef(raw)`. Before v156 the
-#       `/^[a-zA-Z0-9-]{8,64}$/` regex lived *identically* inside
-#       arrival.ts AND cell-event-ledger.ts — two copies, two places to
-#       drift. Promoting it to a shared module closes the polymorphism
-#       back-door (Mike §6.1 "one regex, one place"). Pure functions; no
-#       DOM, no URL parsing, no fs, no fetch.
-#     • src/pages/api/docs/cite.ts (NEW) — the TERMINAL/`curl` mouth.
-#       `GET /api/docs/cite?axis=<axis>&stage=<stage>[&r=<nonce>]` returns
-#       `cellCitationPayload()` bytes verbatim. Content-negotiated:
-#       text/plain (default) OR application/json (when Accept:
-#       application/json). Wire contract: 200 on success, 400 on missing
-#       param, 422 on invalid axis/stage/ref, 405 Allow: GET on any other
-#       verb. `export const prerender = false` — SSR at request time so
-#       `url.origin` is trusted server-side (never spoofable Host header,
-#       never undefined `import.meta.env.SITE`). Read-only — zero ledger
-#       writes, zero cookies, zero rate-limit touch. `/api/ingest/cell-
-#       event` remains the one writer.
-#     • src/lib/cell-event-ledger.ts (UPDATED) — `REF_RE` literal removed;
-#       imports `isValidRef` from the new shared module. `isValidEventRow`
-#       now calls `isValidRef(row.ref)` instead of inlining the regex.
-#       One validator, three mouths — the server accepts and rejects the
-#       exact same shapes the client parser and the curl handler do.
-#     • src/lib/client/arrival.ts (UPDATED) — `REF_PARAM` and `REF_RE`
-#       constants deleted; imports `isValidRef` + `REF_PARAM` from the
-#       shared module. `readRef()` now delegates shape-validation to
-#       `isValidRef`. `isValidRef` is RE-EXPORTED so arrival.test.ts's
-#       existing call sites stay byte-stable (Mike §10 "delete without
-#       breaking callers").
-#     • src/lib/citation-golden.ts (UPDATED) — new exports for third-mouth
-#       witnessing: `buildCiteUrl()`, `curlMouthResponse()`,
-#       `curlMouthPayload()`, `VALID_REF_FIXTURES`. The fixtures cover
-#       REF_RE's full shape (8-char lower bound, 64-char upper bound,
-#       UUID shape, internal-hyphen nonce). Helpers dispatch a synthetic
-#       GET through the handler's APIRoute directly — no HTTP server,
-#       no socket.
-#     • src/lib/citation-golden.test.ts (UPDATED) — three new describe
-#       blocks witness the tautology-break (Elon §4 "prove polish by
-#       subtraction"): (a) handler body === oracle payload for all 35
-#       cells; (b) handler body === oracle payload for all valid refs;
-#       (c) adversarial URL-reserved-char refs → 422 "invalid parameter:
-#       r"; (d) missing axis → 400, invalid axis/stage → 422, non-GET →
-#       405 Allow: GET, Accept: application/json → payload field ===
-#       text/plain body.
-#     • scripts/check-citation-delegation.ts (UPDATED) — `TARGETS` widened
-#       from three entries to FOUR. The new fourth target is
-#       `src/pages/api/docs/cite.ts` with required symbol
-#       `cellCitationPayload`. The ORACLE_PATH_RE comment now accepts
-#       `../../../lib/stage-axes` (one level deeper for the terminal
-#       route). Same grep, one new file.
-#     • scripts/check-citation-delegation.test.ts (UPDATED) — the
-#       "exactly three targets" assertion flipped to "exactly four" with
-#       a docblock explaining the trilogy close. A new test locks in
-#       `src/pages/api/docs/cite.ts` by path.
-#     • src/pages/api/docs.astro (UPDATED) — the endpoints appendix now
-#       documents THREE endpoints (was two). A new `<dt>/<dd>` row
-#       describes `GET /api/docs/cite` — query shape, MIME negotiation,
-#       byte-identity vow. The section heading flipped from "Two
-#       endpoints." to "Three endpoints." The lede extended: "The same
-#       bytes reach you by click, key, or `curl`."
-#     • AGENTS.md (UPDATED) — Killer-feature line extended to name the
-#       third mouth. Paths line names `src/lib/citation-ref.ts` and
-#       `src/pages/api/docs/cite.ts`. Prebuild-guards line now reads
-#       "citation-delegation (4 targets as of v156)". Contracts line
-#       extends with the `REF_RE` home + the "/api/docs/cite is
-#       pure-read (no ledger writes)" invariant.
+#     • src/lib/stage-ease.ts (NEW) — single source of truth for the
+#       five 4-tuples. Exports `STAGE_EASE_CURVES` (Record<DecayStage,
+#       BezierTuple>), `JND_FLOOR`, `bezierDivergence`, `cubicBezierCss`,
+#       and `stagePairs()`. Pure data + arithmetic — no DOM, no fs,
+#       no fetch. The record type has exactly 5 entries (freeze
+#       enforced by TypeScript at compile time).
+#     • src/lib/stage-ease.test.ts (NEW) — witnesses the five-felt-
+#       qualities claim: (a) every stage tuple differs byte-for-byte,
+#       (b) every unordered pair clears JND_FLOOR, (c) the `fresh`
+#       tuple equals the legacy spring curve (continuity), (d)
+#       cubicBezierCss() emits the canonical `cubic-bezier(a, b, c, d)`
+#       string the CSS mirror uses.
+#     • scripts/check-stage-ease-divergence.ts (NEW) — prebuild guard.
+#       Scans `src/styles/tokens.css` for all five `--stage-{stage}-ease`
+#       declarations, resolves one hop of `var()` aliases (fresh →
+#       motion-easing-spring), and asserts byte parity against
+#       `cubicBezierCss(STAGE_EASE_CURVES[stage])`. Also asserts
+#       distinctness (no two stages collapse onto the same string) and
+#       the JND floor (every pair's Euclidean divergence ≥ JND_FLOOR).
+#       Exits 1 with a per-breach diagnostic on any drift. Zero deps
+#       beyond `fs` + regex.
+#     • scripts/check-stage-ease-divergence.test.ts (NEW) — fixture-
+#       tests the scanner, the parity checker, and the reporter on
+#       synthetic CSS bodies: parity hits, alias collapses, JND breaches.
+#     • src/styles/tokens.css (UPDATED) — `--stage-fading-ease`,
+#       `--stage-endangered-ease`, `--stage-ghost-ease`, and
+#       `--stage-fossil-ease` flipped from `var(--motion-snap-easing)`
+#       aliases to bespoke cubic-bezier literals. Inline comments
+#       carry the felt reason per stage (soft ease-out / crisp attack /
+#       near-linear drift / late clamp). `--stage-fresh-ease` still
+#       aliases `--motion-easing-spring` (continuity).
+#     • src/lib/stage-tokens.generated.ts (UPDATED) — the four
+#       non-fresh entries in `STAGE_TRANSITION_EASE` now hold the same
+#       cubic-bezier literals as tokens.css. Regenerated by
+#       `scripts/generate-stage-tokens.ts`.
+#     • src/styles/stage-transitions.css (UPDATED) — the five
+#       `.stage-entering-{target}` animation utilities flipped from
+#       `var(--motion-easing-stage)` to `var(--stage-transition-ease)`
+#       so each crossing honours its DESTINATION stage's felt tempo
+#       (polymorphic alias resolved per [data-decay-stage] via the
+#       cascade). Five felt curves, one dispatch path, zero branching
+#       in consumers.
+#     • AGENTS.md (UPDATED) — Prebuild-guards line now reads "…
+#       duration-reasons · stage-ease-divergence". New Tempo-axis bullet
+#       names the oracle (src/lib/stage-ease.ts) + the CSS mirror +
+#       the JND floor.
+#     • package.json (UPDATED) — `prebuild` chain extended with
+#       `check-stage-ease-divergence.ts` (after `check-duration-reasons`)
+#       AND with `--test src/lib/stage-ease.test.ts` +
+#       `--test scripts/check-stage-ease-divergence.test.ts`. New
+#       top-level script aliases: `check:stage-ease-divergence`,
+#       `test:stage-ease`, `test:stage-ease-divergence`.
 #
 #   Infrastructure deltas this sprint: NONE.
-#     No new env vars, ports, services, volumes, or docker networks.
-#     The new files (`src/lib/citation-ref.ts`, `src/pages/api/docs/
-#     cite.ts`) land inside paths the Dockerfile already COPY-s wholesale
-#     (`COPY src/ ./src/` + `COPY scripts/ ./scripts/`) — no Dockerfile
-#     edit. `package.json` was untouched — the prebuild chain link
-#     `check-citation-delegation` automatically picks up the widened
-#     `TARGETS` array (3 → 4), and `test:citation-golden` automatically
-#     picks up the new third-mouth describe blocks. Drift fails the
+#     No new env vars, ports, services, named volumes, or docker
+#     networks. The new files (`src/lib/stage-ease.ts`,
+#     `scripts/check-stage-ease-divergence.ts`, and their `.test.ts`
+#     siblings) land inside paths the Dockerfile already COPY-s
+#     wholesale (`COPY src/ ./src/` + `COPY scripts/ ./scripts/`),
+#     so no Dockerfile edit is required. The prebuild chain picks up
+#     the new guard automatically via `package.json`. Drift fails the
 #     image build, fails this script, and leaves the previous container
 #     already-stopped — operator re-runs after the fix.
 #
@@ -101,8 +93,8 @@
 #   6. Poll until Docker reports the container as running.
 #   7. Post-boot admin sweeps (deadline + OTS upgrade), if ADMIN_SECRET set.
 #   8. Warm the citation trilogy — /api/docs SSR, /api/docs/cite terminal
-#      mouth (v156 NEW), and /api/metrics/cited-cells — so the first
-#      real visitor (or curl) never pays a cold-start cost.
+#      mouth, and /api/metrics/cited-cells — so the first real visitor
+#      (or curl) never pays a cold-start cost.
 #   9. Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -139,20 +131,20 @@ docker volume create "${SQLITE_VOLUME}" || true
 # ── 4. Build Docker image ────────────────────────────────────────────────────
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
-#   check-ds-kbd  →  check-no-chip-lit-in-arrival (v154)  →
-#   check-citation-delegation (v155 · v156 widened TARGETS 3 → 4 with
-#     src/pages/api/docs/cite.ts as the terminal mouth)  →
-#   check-duration-reasons  →
-#   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit (v153)  →
-#   test:arrival (v154 · v156 re-exports isValidRef from shared module) →
-#   test:citation-golden (v155 · v156 third-mouth parity: 35 cell-body
-#     equality tests + 4 valid-ref equality tests + wire-contract error-
-#     surface tests — 422 on invalid r, 400 on missing axis, 422 on
-#     invalid axis/stage, 405 Allow: GET on non-GET, JSON payload ===
-#     text/plain body)  →
-#   test:citation-delegation (v155 · v156 asserts TARGETS.length === 4
-#     and locks in src/pages/api/docs/cite.ts by path)  →
-#   test:duration-reasons  →  astro build.
+#   check-ds-kbd  →  check-no-chip-lit-in-arrival  →
+#   check-citation-delegation  →  check-duration-reasons  →
+#   check-stage-ease-divergence (v162 NEW — asserts byte parity between
+#     STAGE_EASE_CURVES in src/lib/stage-ease.ts and the five
+#     --stage-{stage}-ease literals in src/styles/tokens.css, plus the
+#     JND floor on every unordered pair)  →
+#   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit  →
+#   test:arrival  →  test:citation-golden  →
+#   test:citation-delegation  →  test:duration-reasons  →
+#   test:stage-ease (v162 NEW — 5 curves distinct + pair divergence ≥
+#     JND floor)  →
+#   test:stage-ease-divergence (v162 NEW — scanner + parity + JND
+#     reporter fixtures)  →
+#   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
@@ -244,35 +236,31 @@ fi
 # visitor (browser OR terminal) never pays a cold-start cost AND the
 # ledger schema is eager-created before the first beacon arrives:
 #
-#   (a) GET /api/docs — SSR on demand (`export const prerender = false`).
-#       The first render hydrates @astrojs/node's route handler, reads
-#       `lifetimeByCell()` + `ledgerMaturity()` + `baseline()`, and tints
-#       all 35 grammar-matrix cells with `data-heat`. v155 fences the
-#       server-render mouth of the citation ritual on the oracle's
-#       `cellCitationLabel` + `cellAnchorId` (prebuild-enforced, so
-#       warming this route is ALSO the smoke-test that the now-four-
-#       mouth parity held through the build). v156 adds the shared
-#       `src/lib/citation-ref.ts` validator read by every mouth (click,
-#       keystroke, curl, ingest) so the three mouths accept/reject the
-#       exact same shapes.
+#   (a) GET /api/docs — SSR on demand. Hydrates @astrojs/node's route
+#       handler, reads the cell heat map, and tints all 35 grammar-
+#       matrix cells. As of v162 the tempo axis of the 7×5 product is
+#       five distinct cubic-bezier curves (one felt tempo per decay
+#       stage), mirrored byte-for-byte between src/lib/stage-ease.ts
+#       and src/styles/tokens.css — the prebuild guard above asserts
+#       that parity on every Docker build, so warming this route is
+#       ALSO the runtime smoke-test that the cascade resolves the
+#       per-stage ease correctly.
 #
-#   (b) GET /api/docs/cite — v156 NEW terminal/`curl` mouth. Sends a
-#       hand-shaped (axis, stage) pair and asserts a 200 response with
-#       a non-empty body. This warms the route's import graph and
-#       proves, one redeploy at a time, that the wire contract holds
-#       end-to-end: the Node entry hydrates, `cellCitationPayload()`
-#       emits bytes, and the HTTP surface agrees with the SSR mouth.
-#       Byte-identical to what the click and keystroke mouths place on
-#       the clipboard. Query shape: `?axis=typography&stage=fresh` —
-#       a real valid cell from the 7×5 product so the happy path
-#       really is exercised (never a 4xx). No ref passed — the ref-less
-#       format is the legacy pathway this smoke-tests.
+#   (b) GET /api/docs/cite — terminal/`curl` mouth. Sends a hand-shaped
+#       (axis, stage) pair and asserts a 200 response with a non-empty
+#       body. Warms the route's import graph and proves the wire
+#       contract holds end-to-end: the Node entry hydrates,
+#       `cellCitationPayload()` emits bytes, and the HTTP surface
+#       agrees with the SSR mouth. Query shape:
+#       `?axis=typography&stage=fresh` — a real valid cell from the
+#       7×5 product so the happy path really is exercised (never a
+#       4xx).
 #
 #   (c) GET /api/metrics/cited-cells — read-only, unauthenticated; same
 #       single producer (`heatedGrid()`) the SSR page uses. Forces
 #       `ensureSchema()` on the ledger module, creating `cell_events`
 #       + indexes on the SQLite volume the very first deploy.
-echo "==> [deploy] Warming up /api/docs SSR (cited-cell heat + legend stack)…"
+echo "==> [deploy] Warming up /api/docs SSR (cited-cell heat + v162 tempo axis)…"
 DOCS_STATUS=$(curl --silent --show-error --output /dev/null \
   --write-out '%{http_code}' --max-time 15 \
   --header "Accept: text/html" \
@@ -280,12 +268,12 @@ DOCS_STATUS=$(curl --silent --show-error --output /dev/null \
   || echo '000')
 echo "==> [deploy] /api/docs SSR warm-up: HTTP ${DOCS_STATUS}"
 
-# v156 — Third Mouth smoke-test. A real (axis, stage) pair from the 7×5
+# Terminal mouth smoke-test. A real (axis, stage) pair from the 7×5
 # product exercises the happy path (200 text/plain, non-empty body).
 # `typography × fresh` is a canonical pairing used elsewhere in the test
 # suite (REF_FIXTURE_AXIS/STAGE in citation-golden.ts), so the curl
 # output is predictable for post-mortem inspection of deployment.log.
-echo "==> [deploy] Warming up /api/docs/cite terminal mouth (v156)…"
+echo "==> [deploy] Warming up /api/docs/cite terminal mouth…"
 CITE_BODY_FILE="$(mktemp)"
 CITE_STATUS=$(curl --silent --show-error --output "${CITE_BODY_FILE}" \
   --write-out '%{http_code}' --max-time 10 \

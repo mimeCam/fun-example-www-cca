@@ -37,8 +37,8 @@ export const STAGE_TRANSITION_DURATION_MS: Record<StageKey, string> = {
 };
 export const STAGE_TRANSITION_EASE: Record<StageKey, string> = {
   fresh: "var(--motion-easing-spring)",
-  fading: "var(--motion-snap-easing)",
-  endangered: "var(--motion-snap-easing)",
-  ghost: "var(--motion-snap-easing)",
-  fossil: "var(--motion-snap-easing)",
+  fading: "cubic-bezier(0.25, 0.8, 0.3, 1)",
+  endangered: "cubic-bezier(0.4, 0, 0.2, 1)",
+  ghost: "cubic-bezier(0.5, 0.05, 0.5, 0.95)",
+  fossil: "cubic-bezier(1, 0, 1, 0)",
 };

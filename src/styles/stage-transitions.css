@@ -164,26 +164,32 @@
  * TRANSITION UTILITY CLASSES — applied by stage-transitions.ts
  * Naming: .stage-entering-{target} during transition
  *         .stage-ambient-endangered for persistent pulse loop
+ *
+ * v162 (Mike napkin §4, Tanya UX spec §2): the easing reads the
+ * polymorphic alias --stage-transition-ease — which resolves per
+ * [data-decay-stage] via stage-motion.css — so each crossing honours
+ * its DESTINATION stage's felt tempo. Five felt curves, one dispatch
+ * path, zero branching in consumers.
  * =================================================================== */
 
 .stage-entering-fading {
-  animation: stage-enter-fading var(--motion-stage-transition) var(--motion-easing-stage) forwards;
+  animation: stage-enter-fading var(--motion-stage-transition) var(--stage-transition-ease) forwards;
 }
 
 .stage-entering-endangered {
-  animation: stage-enter-endangered var(--motion-stage-transition-fast) var(--motion-easing-stage) forwards;
+  animation: stage-enter-endangered var(--motion-stage-transition-fast) var(--stage-transition-ease) forwards;
 }
 
 .stage-entering-ghost {
-  animation: stage-enter-ghost var(--motion-stage-transition-slow) var(--motion-easing-stage) forwards;
+  animation: stage-enter-ghost var(--motion-stage-transition-slow) var(--stage-transition-ease) forwards;
 }
 
 .stage-entering-fossil {
-  animation: stage-enter-fossil var(--motion-stage-transition) var(--motion-easing-stage) forwards;
+  animation: stage-enter-fossil var(--motion-stage-transition) var(--stage-transition-ease) forwards;
 }
 
 .stage-entering-fresh {
-  animation: revival-bloom-burst var(--motion-stage-transition-fast) var(--motion-easing-stage) forwards;
+  animation: revival-bloom-burst var(--motion-stage-transition-fast) var(--stage-transition-ease) forwards;
 }
 
 /* Persistent endangered pulse — period set by JS via --st-pulse-period */
