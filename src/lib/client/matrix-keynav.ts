@@ -83,6 +83,32 @@ export function nextIndex(
   return { axisIdx: a, stageIdx: s };
 }
 
+// ── v151a — Edge-of-axis bump (Tanya §2, Mike napkin §3 bumpDirection) ────
+
+/** The four directions we paint onto `.api-docs__matrix` when a clamp lands. */
+export type BumpDirection = 'up' | 'down' | 'left' | 'right';
+
+/** Map Arrow key → the direction the matrix nudges when clamped. Pure. */
+const ARROW_TO_BUMP: Readonly<Partial<Record<NavKey, BumpDirection>>> = {
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+};
+
+/**
+ * Return the bump direction if an Arrow key failed to move the cursor
+ * (clamp at an edge), else `null`. Bounds come from the tuple lengths
+ * upstream — no magic 7/5 in this file (Elon §5.1 non-negotiable).
+ */
+export function bumpDirection(
+  prev: { axisIdx: number; stageIdx: number },
+  next: { axisIdx: number; stageIdx: number },
+  key: NavKey,
+): BumpDirection | null {
+  const dir = ARROW_TO_BUMP[key];
+  if (!dir) return null;
+  if (prev.axisIdx !== next.axisIdx || prev.stageIdx !== next.stageIdx) return null;
+  return dir;
+}
+
 // ── DOM helpers (each ≤ 10 lines, one responsibility) ─────────────────────
 
 function coordToId(axisIdx: number, stageIdx: number): string {
@@ -128,6 +154,17 @@ function moveTo(
   if (target) moveRoving(matrix, target);
 }
 
+/** Optional listener for clamped arrow-keystrokes. One caller: edge-bump.ts. */
+export type ClampListener = (info: {
+  matrix: HTMLElement;
+  coord: { axisIdx: number; stageIdx: number };
+  key: NavKey;
+  direction: BumpDirection;
+}) => void;
+
+/** Module-local slot; set via `setClampListener`. Reset to `null` on clear. */
+let _onClamp: ClampListener | null = null;
+
 function handleKey(matrix: HTMLElement, e: KeyboardEvent): void {
   if (!NAV_KEYS.has(e.key)) return;
   const current = resolveCurrentCell(e);
@@ -135,7 +172,22 @@ function handleKey(matrix: HTMLElement, e: KeyboardEvent): void {
   const coord = readCoord(current);
   if (!coord) return;
   e.preventDefault();
-  moveTo(matrix, nextIndex(coord.axisIdx, coord.stageIdx, e.key as NavKey));
+  const next = nextIndex(coord.axisIdx, coord.stageIdx, e.key as NavKey);
+  moveTo(matrix, next);
+  notifyClamp(matrix, coord, next, e.key as NavKey);
+}
+
+/** If the keystroke clamped, notify the listener. Zero work if no listener. */
+function notifyClamp(
+  matrix: HTMLElement,
+  prev: { axisIdx: number; stageIdx: number },
+  next: { axisIdx: number; stageIdx: number },
+  key: NavKey,
+): void {
+  if (!_onClamp) return;
+  const direction = bumpDirection(prev, next, key);
+  if (!direction) return;
+  _onClamp({ matrix, coord: prev, key, direction });
 }
 
 // ── Boot (seed from hash) ─────────────────────────────────────────────────
@@ -160,6 +212,15 @@ function applySeed(matrix: HTMLElement, seed: { id: string; focusOnArrival: bool
   if (cell) cell.focus({ preventScroll: true });
 }
 
+/**
+ * Register (or clear) the clamp listener. Edge-bump.ts is the only caller.
+ * Called at import time — before DOMContentLoaded fires — so the first
+ * clamped keystroke after boot already has a listener to fire into.
+ */
+export function setClampListener(fn: ClampListener | null): void {
+  _onClamp = fn;
+}
+
 export function initMatrixKeynav(): void {
   const matrix = document.querySelector<HTMLElement>(MATRIX_SEL);
   if (!matrix) return;
@@ -168,6 +229,10 @@ export function initMatrixKeynav(): void {
 }
 
 // ── Auto-boot on DOMContentLoaded (SSR-safe: only runs in a browser) ──────
+//
+// v151a: edge-bump.ts registers its listener via `setClampListener` at
+// module-import time — before this auto-boot fires — so the first clamped
+// keystroke already has a receiver. One boot, one keydown listener.
 
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {

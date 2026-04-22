@@ -14,7 +14,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { nextIndex } from './matrix-keynav.js';
+import { nextIndex, bumpDirection } from './matrix-keynav.js';
 import type { NavKey } from './matrix-keynav.js';
 import { STAGE_AXES } from '../stage-axes.js';
 import { DECAY_STAGES } from '../decay-engine.js';
@@ -131,6 +131,87 @@ describe('nextIndex — exhaustive bounds check across all 7×5×8 cases', () =>
                   || k === 'Home'      || k === 'End';
       if (rowKey) assert.equal(out.stageIdx, MID_STAGE, `${k} leaked into stage`);
       if (colKey) assert.equal(out.axisIdx,  MID_AXIS,  `${k} leaked into axis`);
+    }
+  });
+});
+
+// ── v151a — bumpDirection: clamp-detection at the grammar edges ──────────
+// Pure helper behind the "edge of axis" polish. Non-Arrow keys never bump,
+// and any keystroke that actually moved never bumps either — only the case
+// "Arrow key pressed AND coords unchanged" returns a direction.
+
+describe('bumpDirection — Arrow at edge returns a direction', () => {
+  test('ArrowUp at top row → up', () => {
+    const prev = { axisIdx: 0, stageIdx: 2 };
+    assert.equal(bumpDirection(prev, nextIndex(0, 2, 'ArrowUp'), 'ArrowUp'), 'up');
+  });
+  test('ArrowDown at bottom row → down', () => {
+    const prev = { axisIdx: MAX_AXIS, stageIdx: 3 };
+    assert.equal(
+      bumpDirection(prev, nextIndex(MAX_AXIS, 3, 'ArrowDown'), 'ArrowDown'),
+      'down',
+    );
+  });
+  test('ArrowLeft at leftmost col → left', () => {
+    const prev = { axisIdx: 4, stageIdx: 0 };
+    assert.equal(bumpDirection(prev, nextIndex(4, 0, 'ArrowLeft'), 'ArrowLeft'), 'left');
+  });
+  test('ArrowRight at rightmost col → right', () => {
+    const prev = { axisIdx: 1, stageIdx: MAX_STAGE };
+    assert.equal(
+      bumpDirection(prev, nextIndex(1, MAX_STAGE, 'ArrowRight'), 'ArrowRight'),
+      'right',
+    );
+  });
+});
+
+describe('bumpDirection — movement never bumps', () => {
+  test('ArrowDown from top (room to move) → null', () => {
+    const prev = { axisIdx: 0, stageIdx: 2 };
+    assert.equal(bumpDirection(prev, nextIndex(0, 2, 'ArrowDown'), 'ArrowDown'), null);
+  });
+  test('ArrowRight from leftmost col (room to move) → null', () => {
+    const prev = { axisIdx: 3, stageIdx: 0 };
+    assert.equal(bumpDirection(prev, nextIndex(3, 0, 'ArrowRight'), 'ArrowRight'), null);
+  });
+});
+
+describe('bumpDirection — non-Arrow keys never bump (Home/End/PageUp/PageDown)', () => {
+  test('Home at leftmost col: same coord, but key is not an Arrow → null', () => {
+    const prev = { axisIdx: 3, stageIdx: 0 };
+    assert.equal(bumpDirection(prev, nextIndex(3, 0, 'Home'), 'Home'), null);
+  });
+  test('End at rightmost col: same coord, but key is not an Arrow → null', () => {
+    const prev = { axisIdx: 3, stageIdx: MAX_STAGE };
+    assert.equal(bumpDirection(prev, nextIndex(3, MAX_STAGE, 'End'), 'End'), null);
+  });
+  test('PageUp at top row: same coord, but key is not an Arrow → null', () => {
+    const prev = { axisIdx: 0, stageIdx: 2 };
+    assert.equal(bumpDirection(prev, nextIndex(0, 2, 'PageUp'), 'PageUp'), null);
+  });
+  test('PageDown at bottom row: same coord, but key is not an Arrow → null', () => {
+    const prev = { axisIdx: MAX_AXIS, stageIdx: 2 };
+    assert.equal(
+      bumpDirection(prev, nextIndex(MAX_AXIS, 2, 'PageDown'), 'PageDown'),
+      null,
+    );
+  });
+});
+
+describe('bumpDirection — exhaustive: bumps iff the Arrow key clamped', () => {
+  const ARROWS: NavKey[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+  test('every (a,s,Arrow) case: bump iff prev==next', () => {
+    for (let a = 0; a <= MAX_AXIS; a++) {
+      for (let s = 0; s <= MAX_STAGE; s++) {
+        for (const k of ARROWS) {
+          const prev = { axisIdx: a, stageIdx: s };
+          const next = nextIndex(a, s, k);
+          const clamped = prev.axisIdx === next.axisIdx && prev.stageIdx === next.stageIdx;
+          const got = bumpDirection(prev, next, k);
+          if (clamped) assert.ok(got, `expected bump at ${a},${s},${k}`);
+          else assert.equal(got, null, `unexpected bump at ${a},${s},${k}: ${got}`);
+        }
+      }
     }
   });
 });

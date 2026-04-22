@@ -4,6 +4,89 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v151a — Edge of axis: the wall nods back (2026-04-22)
+#   Sprint: Close one last polish on the v151 keynav. The clamp-not-wrap
+#     semantics were correct but silent — pressing ArrowRight at the
+#     rightmost cell of a row simply did nothing, and the user had no way to
+#     tell "did my keystroke register?" from "is the page broken?". v151a
+#     adds two closed feedback channels when the roving tabindex is already
+#     at an edge and the user presses again: (1) the matrix translates 2px
+#     toward the wall (CSS keyframes, 150ms, snap-back), and (2) the
+#     existing v150b `[data-cell-toast]` aria-live lane whispers "edge of
+#     axis — <axis>" / "edge of stage — <stage>". Motion channel for the
+#     eye, aria-live channel for the ear; one keystroke fires both but each
+#     has its own carrier. Pure UIX polish — zero infrastructure changes.
+#   Key changes (all under active git area this cycle):
+#     src/lib/client/edge-bump.ts (new) — third closed browser module, one
+#       job: translate matrix-keynav's clamp signal into (a) a `is-bumping--
+#       {up|down|left|right}` class on `.api-docs__matrix` and (b) a toast
+#       write. Four pure, unit-testable helpers: `edgeMessage`, `coord-
+#       ToNames`, `shouldAnnounce`, plus `createClampListener` (closure
+#       with an injectable clock for tests). Deliberate non-duties: NO new
+#       aria-live region (reuse `[data-cell-toast]`), NO visual toast
+#       (`is-visible` is never added — the bump IS the eye's channel), NO
+#       beacon to `/api/ingest/cell-event` (keynav clamps are not citation
+#       signals — Tanya §11), NO writes to `location.hash`. Debounce ≥150ms
+#       between announcement writes so a held Arrow key at the boundary
+#       never spams the screen reader. Reduced-motion and forced-colors
+#       both kill the keyframe (motion.css); the aria-live announcement
+#       still fires — motion ≠ feedback. Auto-registers its listener at
+#       module-import time (before DOMContentLoaded) so the first clamped
+#       keystroke already has a receiver. Each helper ≤ 10 lines (Sid).
+#     src/lib/client/edge-bump.test.ts (new, dev-only) — node:test suite.
+#       Covers the three pure helpers and the closure end-to-end with a
+#       controlled clock and a stub matrix element. Bounds loop over
+#       STAGE_AXES × DECAY_STAGES — no hard-coded 7/5 (Elon §5.1). NOT
+#       executed at Docker build or runtime.
+#     src/lib/client/matrix-keynav.ts — exports `bumpDirection` (pure: maps
+#       prev/next coord + key → 'up'|'down'|'left'|'right'|null when Arrow
+#       clamped, else null; Home/End/PageUp/PageDown never bump even when
+#       coords are unchanged), exports `BumpDirection` type, exports
+#       `ClampListener` type + `setClampListener(fn | null)` setter. New
+#       module-local `_onClamp` slot + `notifyClamp()` helper wired into
+#       `handleKey()`; zero work if no listener is registered. Still one
+#       keydown listener total, still SSR-safe, still no writes to
+#       location.hash / history. All bounds still derived from
+#       STAGE_AXES.length / DECAY_STAGES.length.
+#     src/lib/client/matrix-keynav.test.ts — new `describe` blocks for
+#       `bumpDirection`: Arrow-at-edge returns the direction; Arrow with
+#       room-to-move returns null; Home/End/PageUp/PageDown NEVER bump
+#       (even at an edge); exhaustive sweep over every (axis, stage, arrow)
+#       cell asserts "bump iff prev == next". Dev-only; NOT part of Docker
+#       build or runtime.
+#     src/pages/api/docs.astro — the client-side `<script>` import switches
+#       from `../../lib/client/matrix-keynav` to `../../lib/client/edge-
+#       bump`. Edge-bump imports matrix-keynav internally, so both modules
+#       still boot — but order now matters: edge-bump's `setClampListener`
+#       call runs at import time, before matrix-keynav's DOMContentLoaded
+#       auto-boot fires. Three modules, zero overlap: cell-cite owns
+#       citation, matrix-keynav owns navigation, edge-bump owns clamp-
+#       feedback. Shared contract is the DOM.
+#     src/styles/motion.css — four new keyframes (`edge-bump-{up|down|
+#       left|right}`) and four matching `.api-docs__matrix.is-bumping--*`
+#       rules that translate 2px toward the wall at the 40% keyframe peak
+#       and rest at 100% (shape reads "wall pushed back," not "matrix
+#       jitter"). Uses existing `--motion-duration-fast` + `--motion-
+#       easing-standard` tokens (zero net-new tokens). `@media (prefers-
+#       reduced-motion: reduce)` AND `@media (forced-colors: active)` both
+#       zero the animation — the aria-live channel remains the feedback
+#       for vestibular-sensitive / high-contrast users (Tanya §7.1 + §7.3).
+#   Infrastructure: no new services, volumes, env vars, ports, or npm
+#     packages. CONTAINER still exposes 7100 for external Caddy. DATA_VOLUME
+#     and SQLITE_VOLUME unchanged. ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already copies `src/`
+#     wholesale into the builder stage — the new `edge-bump.ts`, the
+#     updated `matrix-keynav.ts`, `docs.astro`, `motion.css`, and the
+#     dev-only `.test.ts` files all ship without any Dockerfile edits.
+#     The prebuild compliance guard (token drift + DECAY_STAGES
+#     immutability + STAGE_AXES ⇄ file inventory parity) is unchanged and
+#     still runs inside `npm run build` during the Docker builder stage.
+#     `.test.ts` files are never executed at build or runtime. deploy.sh
+#     startup sequence (1–9) unchanged; step 8 continues to warm BOTH
+#     `/api/docs` SSR and the cell-metrics endpoint so the first real
+#     visitor never sees cold SSR and the cited-cell ledger is eager-
+#     created.
+#
 # Architecture v151 — Linkable Gaze: keyboard-grid + hash-seeded focus (2026-04-22)
 #   Sprint: Close the citation loop on the keyboard. v150b–d gave every
 #     (axis × stage) cell a deep-link anchor, a heat tint, and a round-trip

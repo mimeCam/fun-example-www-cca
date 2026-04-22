@@ -338,11 +338,15 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
 {/* v150b — client-side citation ritual. One module, one delegated
    listener, one arrival handler. See src/lib/client/cell-cite.ts.
    v151 "Linkable Gaze" — sibling module owning keyboard grid + hash-seed.
-   Two modules, zero overlap: cell-cite owns citation, matrix-keynav owns
-   navigation. The shared contract is the DOM. See matrix-keynav.ts. */}
+   v151a "Edge of axis" — third closed module hooks into matrix-keynav's
+   clamp signal (see setClampListener in matrix-keynav.ts) and paints the
+   2px wall-nod + aria-live whisper. Zero overlap: cell-cite owns citation,
+   matrix-keynav owns navigation, edge-bump owns clamp-feedback. The shared
+   contract is the DOM. Order matters: edge-bump imports matrix-keynav and
+   registers its listener before DOMContentLoaded fires. */}
 <script>
   import '../../lib/client/cell-cite';
-  import '../../lib/client/matrix-keynav';
+  import '../../lib/client/edge-bump';
 </script>
 
 <style>

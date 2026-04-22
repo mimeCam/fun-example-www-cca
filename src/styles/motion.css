@@ -194,3 +194,39 @@
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
 }
+
+/* ── v151a — Edge-of-axis bump (Tanya §2, Mike napkin §8.3) ────────────────
+ * Four keyframes, one per arrow direction, fired when the roving tabindex
+ * is already at a row/column edge and the user presses "again". The matrix
+ * (not the cell) nudges 2px toward the wall, then snaps back in 150ms.
+ * Distance is a literal by design — see Tanya §5. Peak at 40%, rest at 100%,
+ * so the shape reads as "wall pushed back" not "matrix jitter". Reduced-
+ * motion kills the keyframe entirely; the aria-live announcement remains
+ * the feedback channel for vestibular-sensitive readers (Tanya §7.1).
+ *   edge-bump.ts adds `.is-bumping--{up|down|left|right}` to .api-docs__matrix
+ *   and removes it on animationend. One keystroke = one frame cycle.           */
+@keyframes edge-bump-up    { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-2px); } }
+@keyframes edge-bump-down  { 0%,100% { transform: translateY(0); } 40% { transform: translateY( 2px); } }
+@keyframes edge-bump-left  { 0%,100% { transform: translateX(0); } 40% { transform: translateX(-2px); } }
+@keyframes edge-bump-right { 0%,100% { transform: translateX(0); } 40% { transform: translateX( 2px); } }
+
+.api-docs__matrix.is-bumping--up    { animation: edge-bump-up    var(--motion-duration-fast) var(--motion-easing-standard); }
+.api-docs__matrix.is-bumping--down  { animation: edge-bump-down  var(--motion-duration-fast) var(--motion-easing-standard); }
+.api-docs__matrix.is-bumping--left  { animation: edge-bump-left  var(--motion-duration-fast) var(--motion-easing-standard); }
+.api-docs__matrix.is-bumping--right { animation: edge-bump-right var(--motion-duration-fast) var(--motion-easing-standard); }
+
+@media (prefers-reduced-motion: reduce) {
+  .api-docs__matrix.is-bumping--up,
+  .api-docs__matrix.is-bumping--down,
+  .api-docs__matrix.is-bumping--left,
+  .api-docs__matrix.is-bumping--right { animation: none; }
+}
+
+@media (forced-colors: active) {
+  /* Tanya §7.3: forced-colors users are primarily looking for contrast,
+   * not motion. The announcement remains; the paint change is dropped.      */
+  .api-docs__matrix.is-bumping--up,
+  .api-docs__matrix.is-bumping--down,
+  .api-docs__matrix.is-bumping--left,
+  .api-docs__matrix.is-bumping--right { animation: none; }
+}
