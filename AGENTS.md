@@ -11,6 +11,6 @@
 
 ## Stage grammar — frozen
 
-`src/lib/stage-axes.ts` (`STAGE_AXES` + `AXIS_TO_CSS_FILE`) is the single source for the seven axes. One file per axis in `src/styles/stage-*.css`; prebuild guard enforces parity. **Axis count is frozen — no 8th axis. Instrument, measure, polish.**
+`src/lib/stage-axes.ts` (`STAGE_AXES` + `AXIS_TO_CSS_FILE`) is the single source for the seven axes. One file per axis in `src/styles/stage-*.css`; prebuild guard enforces parity. `src/lib/stage-tokens.generated.ts` mirrors tokens for non-CSS consumers.
 
-`src/lib/stage-tokens.generated.ts` mirrors tokens for non-CSS consumers.
+**Axis count is frozen — no 8th axis. Instrument, measure, polish.**

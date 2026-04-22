@@ -38,6 +38,11 @@ const ARRIVAL_MS  = 1200;        // covers stage durations incl. fossil hold
 const TOAST_MS    = 1800;        // Tanya §4b linger window
 const CONFIRM_MS  = 1200;        // Tanya §4a icon-swap duration
 
+// v150c — cell-event ledger wire. Mike napkin §3: event-shape frozen.
+const INGEST_URL  = '/api/ingest/cell-event';
+const REF_PARAM   = 'r';          // ?r=<nonce> in the pasted URL
+const REF_RE      = /^[a-zA-Z0-9-]{8,64}$/;
+
 // ── Boot ──────────────────────────────────────────────────────────────────
 
 /** Wire up the matrix. Safe on pages that have no matrix (no-op). */
@@ -64,12 +69,13 @@ async function handleCopy(btn: HTMLButtonElement, toast: HTMLElement | null): Pr
   const stage = btn.dataset.cellStage ?? '';
   if (!axis || !stage) return;
   // Build payload at copy time — prerendered HTML never bakes in a host.
-  const payload = cellCitationPayload(axis as Axis, stage as DecayStage, window.location.origin);
+  const ref = mintRef();
+  const payload = cellCitationPayload(axis as Axis, stage as DecayStage, window.location.origin, ref);
   const ok = await copyTextSafe(payload);
   if (!ok) return;
   confirmButton(btn);
   announce(toast, axis, stage);
-  beacon(axis, stage);
+  beacon('copy', axis, stage, ref);
 }
 
 // Local re-import of the shared helper as a thin wrapper keeps the bundle
@@ -112,6 +118,33 @@ function paintArrival(): void {
   if (!cell) return;
   retireOthers(cell);
   triggerArrival(cell);
+  reportArrival(cell);
+}
+
+/** Parse `?r=<ref>` off location.search; null if malformed or absent. */
+function readRef(): string | null {
+  try {
+    const ref = new URL(window.location.href).searchParams.get(REF_PARAM);
+    return ref && REF_RE.test(ref) ? ref : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Extract (axis, stage) from a data-cell-cell target element. */
+function readCellCoord(cell: HTMLElement): { axis: string; stage: string } | null {
+  const axis = cell.dataset.axis ?? '';
+  const stage = cell.dataset.decayStage ?? '';
+  if (!axis || !stage) return null;
+  return { axis, stage };
+}
+
+/** Fire the arrive beacon when the hash+ref combo is complete. */
+function reportArrival(cell: HTMLElement): void {
+  const ref = readRef();
+  const coord = readCellCoord(cell);
+  if (!ref || !coord) return;
+  beacon('arrive', coord.axis, coord.stage, ref);
 }
 
 function retireOthers(keep: HTMLElement): void {
@@ -129,21 +162,36 @@ function triggerArrival(cell: HTMLElement): void {
   window.setTimeout(() => cell.classList.remove(ARRIVED), ARRIVAL_MS);
 }
 
-// ── Analytics beacon (Elon §4.6) ──────────────────────────────────────────
+// ── Ingest beacon (v150c — Mike napkin §2/§4, Paul round-trip) ────────────
 
-// TODO: wire an actual ingest endpoint — today the beacon is a no-op
-// recorded in `data-analytics` for future client-side counting.
-function beacon(axis: string, stage: string): void {
-  if (!axis || !stage) return;
+/** Client-generated nonce that joins copy→arrive without a login. */
+function mintRef(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Legacy-browser fallback: 16 hex chars from Math.random (still REF_RE-safe).
+  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+}
+
+/** Fire-and-forget POST to the ingest endpoint. Must never throw. */
+function beacon(event: 'copy' | 'arrive', axis: string, stage: string, ref: string): void {
+  if (!axis || !stage || !ref) return;
   try {
-    const url = '/api/ingest/copy-cell';
-    const body = JSON.stringify({ event: 'copy-cell', axis, stage, ts: Date.now() });
-    if ('sendBeacon' in navigator) {
-      navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
-    }
+    const body = JSON.stringify({ event, axis, stage, ref, ts: Date.now() });
+    sendIngest(body);
   } catch {
     // Intentional no-op: analytics must never block the citation ritual.
   }
+}
+
+/** Prefer sendBeacon (survives page-unload); fall back to fetch keepalive. */
+function sendIngest(body: string): void {
+  const type = 'application/json';
+  if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+    navigator.sendBeacon(INGEST_URL, new Blob([body], { type }));
+    return;
+  }
+  void fetch(INGEST_URL, { method: 'POST', body, headers: { 'Content-Type': type }, keepalive: true });
 }
 
 // ── Auto-boot on DOMContentLoaded (deferred module) ───────────────────────

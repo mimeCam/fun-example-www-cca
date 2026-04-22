@@ -214,6 +214,39 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
       ></div>
     </section>
 
+    {/* v150c — Mike napkin §1 (endpoint documentation). Two endpoints,
+       one paragraph each. API parity vow: every public verb appears
+       in this appendix alongside the vocabulary it uses. */}
+    <section class="api-docs__section" aria-labelledby="endpoints-heading">
+      <h2 id="endpoints-heading" class="api-docs__h2">Two endpoints.</h2>
+      <p class="api-docs__lede">
+        The cell-citation ritual is a loop: a reader copies a cell, pastes
+        a URL elsewhere, and — if the grammar worked — someone clicks back.
+        Two endpoints close that loop without a login, a cookie wall, or
+        any third party.
+      </p>
+      <dl class="api-docs__stages">
+        <div class="api-docs__row">
+          <dt class="api-docs__word">POST /api/ingest/cell-event</dt>
+          <dd class="api-docs__def">
+            <span class="api-docs__dash" aria-hidden="true">—</span>
+            fire-and-forget beacon. Body:
+            <code class="api-docs__inline">{`{ event, axis, stage, ref, ts }`}</code>.
+            Always 202. Telemetry never blocks the ritual.
+          </dd>
+        </div>
+        <div class="api-docs__row">
+          <dt class="api-docs__word">GET /api/metrics/cited-cells</dt>
+          <dd class="api-docs__def">
+            <span class="api-docs__dash" aria-hidden="true">—</span>
+            read-only snapshot. Seven-day rolling window; override with
+            <code class="api-docs__inline">?days=N</code> (1..30). Returns
+            copies, matched arrivals, and the round-trip ratio.
+          </dd>
+        </div>
+      </dl>
+    </section>
+
     <section class="api-docs__section" aria-labelledby="tone-heading">
       <h2 id="tone-heading" class="api-docs__h2">Tone.</h2>
       <p class="api-docs__tone">

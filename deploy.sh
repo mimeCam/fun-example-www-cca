@@ -4,6 +4,100 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v150c — Cited-Cell Round-Trip Ledger (2026-04-22)
+#   Sprint: Close the TODO beacon loop from v150b. The citation ritual
+#     now has causal telemetry: a copy mints a short nonce, bakes it into
+#     the pasted URL as `?r=…`, and the arrival (hashchange + matching
+#     `?r=`) POSTs an `arrive` event. The ratio of matched arrivals to
+#     copies over a rolling 7-day window is the baseline number the next
+#     cycle's polish-vs-pivot argument reads from. Pure code-quality +
+#     one API pair — zero infrastructure changes.
+#   Key changes:
+#     src/lib/cell-event-ledger.ts (new) — the ledger. Single SQLite table
+#       `cell_events(id, event, axis, stage, ref, ts, ua)` plus two
+#       indexes (event+ts, ref). Pure functions only: `ensureSchema()`
+#       (idempotent CREATE IF NOT EXISTS), `isValidEventRow()`,
+#       `clampTimestamp()` (±1h server-trusted window), `record()` (INSERT
+#       wrapper), `roundTripRatio()` (headline number, sub-ms on SQLite),
+#       `baseline()` (one-shot snapshot: copies, arrivals, ratio, per-cell
+#       grid). No parallel DB connection — piggybacks on collective-
+#       memory's singleton via the new `sharedDatabase()` accessor. Mike
+#       napkin §5: "A second definition of the metric in a SQL string is
+#       where reality splits — keep it in code." So API and future
+#       dashboard both read the single `ratio()` helper.
+#     src/lib/cell-event-ledger.test.ts (new, dev-only) — node:test suite
+#       over an in-memory `:memory:` DB (swapped via the new
+#       `__setSharedDbForTests` hatch). Covers schema idempotency, valid-
+#       cell product (7×5 = 35, no 36th), ref regex, ts clamp, ratio math
+#       (incl. 0/0 → 0), baseline shape, matched-arrivals join semantics.
+#       Run via: `node --test --import=tsx/esm src/lib/cell-event-ledger.test.ts`
+#       NOT executed at Docker build or runtime.
+#     src/lib/collectiveMemory.ts — two small exports added without
+#       touching existing behaviour. `sharedDatabase()` returns the same
+#       lazy singleton this file uses (sibling modules piggyback — no
+#       parallel connection, no close(), one WAL). `__setSharedDbForTests`
+#       is the test-only override hatch. No schema changes to existing
+#       tables; `revivals.db` (under `/app/data`, mounted to SQLITE_VOLUME)
+#       now additionally hosts the `cell_events` table after first access.
+#     src/pages/api/ingest/cell-event.ts (new) — POST beacon endpoint.
+#       Always returns 202 (fire-and-forget — Elon §4.6); validation
+#       failures are logged server-side and swallowed. Accepts
+#       `{ event: 'copy'|'arrive', axis, stage, ref, ts? }`, pins UA from
+#       request headers (never client-supplied, Mike §3). GET/other
+#       verbs → 405 with `Allow: POST`. Helpers each ≤10 lines.
+#     src/pages/api/metrics/cited-cells.ts (new) — read-only GET snapshot.
+#       Returns `{ window:{days,since}, copies, arrivals, roundTripRatio,
+#       byCell[] }`. Rolling 7-day default; `?days=N` narrows to 1..30
+#       (clamped). `Cache-Control: public, max-age=30` so tooling can
+#       poll cheaply. POST/other verbs → 405 with `Allow: GET`.
+#     src/lib/client/cell-cite.ts — replaces the v150b TODO no-op
+#       `beacon()` with a real wire. `mintRef()` uses `crypto.randomUUID`
+#       with a Math.random fallback (still REF_RE-safe). Copy path bakes
+#       the ref into the clipboard payload via the updated
+#       `cellCitationPayload(…, ref)`; arrival path reads `?r=` off
+#       location.search, pairs it with `data-axis`/`data-decay-stage`
+#       from the bloomed cell, and fires the `arrive` beacon.
+#       `sendIngest()` prefers `navigator.sendBeacon` (survives unload)
+#       with a `fetch({keepalive:true})` fallback. try/catch blanket
+#       around the emit path — telemetry must never block the ritual.
+#     src/lib/stage-axes.ts — `cellCitationPayload()` gains an optional
+#       `ref` fourth argument. When present, emits
+#       `${origin}/api/docs?r=${encodeURIComponent(ref)}#${anchor}`. When
+#       absent, emits the legacy v150b shape verbatim (existing tests
+#       pin that string — backward-compatible).
+#     src/pages/api/docs.astro — new "Two endpoints." appendix section
+#       documents POST /api/ingest/cell-event and GET /api/metrics/
+#       cited-cells inline with the existing vocabulary page (API parity
+#       vow: every public verb shows up here alongside the grammar it
+#       uses). Pure SSR HTML — no new client scripts.
+#     AGENTS.md — new "Cited-cell round-trip (v150c, shipped)" section
+#       points at the ledger module + the two endpoints as canonical
+#       reuse anchors. One paragraph, well under the 100-word cap.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     CONTAINER still exposes 7100 for external Caddy. DATA_VOLUME and
+#     SQLITE_VOLUME unchanged — `cell_events` lives inside the existing
+#     `revivals.db` at `/app/data/revivals.db` (mounted from
+#     persona-blog-a-sqlite). ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already copies
+#     `src/` wholesale into the builder stage — the new
+#     `cell-event-ledger.ts`, `api/ingest/cell-event.ts`,
+#     `api/metrics/cited-cells.ts`, updated `collectiveMemory.ts`,
+#     `cell-cite.ts`, `stage-axes.ts`, `docs.astro`, and the dev-only
+#     `.test.ts` file all ship without any Dockerfile edits. The
+#     `cell_events` schema is lazily created on first write/read via
+#     `ensureSchema()` — the new step 8 warm-up (GET /api/metrics/
+#     cited-cells) forces that creation during deploy so the very first
+#     real beacon hits a ready table and the baseline snapshot appears
+#     in deployment.log for operator sanity-check. The prebuild
+#     compliance guard (token drift + DECAY_STAGES immutability +
+#     STAGE_AXES ⇄ file inventory parity) is unchanged and still runs
+#     inside `npm run build` during the Docker builder stage. The
+#     `.test.ts` files are never executed at build or runtime.
+#     deploy.sh startup sequence now has nine steps (1–9): the cell-
+#     metrics warm-up sits between OTS upgrade and the image prune so
+#     it runs after the container is confirmed healthy and before the
+#     idle cleanup.
+#
 # Architecture v150b — Copy-Cell-Anchor Citation Ritual (2026-04-22)
 #   Sprint: Make every cell of the 7×5 grammar matrix citable. Hover/focus
 #     a cell → a top-right ⌗ button reveals; click → single-line clipboard
@@ -967,7 +1061,21 @@ else
   echo "==> [deploy] Skipping OTS upgrade (ADMIN_SECRET not set in .env)"
 fi
 
-# ── 8. Prune dangling images from previous builds ────────────────────────────
+# ── 8. Cell-metrics warm-up — eager-create cell_events schema & log baseline ─
+# v150c — GET /api/metrics/cited-cells is read-only and unauthenticated;
+# hitting it forces `ensureSchema()` inside the ledger module, which creates
+# the `cell_events` table + indexes on the SQLite volume the very first time
+# a deploy happens. Captures the rolling 7-day round-trip snapshot in
+# deployment.log so operators have a before/after trail across deploys.
+# Idempotent — safe to call on every redeploy. Never fails the script.
+echo "==> [deploy] Warming up cell-metrics endpoint…"
+METRICS_RESPONSE=$(curl --silent --show-error --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/metrics/cited-cells" \
+  || echo '{"error":"curl failed"}')
+echo "==> [deploy] Cell-metrics baseline: ${METRICS_RESPONSE}"
+
+# ── 9. Prune dangling images from previous builds ────────────────────────────
 echo "==> [deploy] Pruning dangling images…"
 docker image prune -f || true
 

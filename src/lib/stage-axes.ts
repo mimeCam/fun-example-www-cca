@@ -194,13 +194,20 @@ export function cellCitationLabel(axis: Axis, stage: DecayStage): string {
  * Single-line (Elon §4.1 overrides multi-line): newlines break Slack's
  * Enter-to-send and URL-bar paste. U+00B7 (middle dot) separator is
  * visually distinct and URL-adjacent-safe.
+ *
+ * v150c (Mike napkin §3): optional `ref` attaches a causal nonce to the
+ * URL as `?r={ref}` so an arrival click can be joined to its origin
+ * copy. Callers that omit `ref` keep the legacy ref-less format — the
+ * compliance tests rely on that shape verbatim.
  */
 export function cellCitationPayload(
   axis: Axis,
   stage: DecayStage,
   origin: string,
+  ref?: string,
 ): string {
   const label = cellCitationLabel(axis, stage);
-  const url = `${origin}/api/docs#${cellAnchorId(axis, stage)}`;
+  const query = ref ? `?r=${encodeURIComponent(ref)}` : '';
+  const url = `${origin}/api/docs${query}#${cellAnchorId(axis, stage)}`;
   return `${label} · ${url}`;
 }

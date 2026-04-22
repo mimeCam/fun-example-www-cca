@@ -361,6 +361,27 @@ export function recordPulse(sessionId: string, slug: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Shared DB handle — exposed for sibling ledger modules (v150c cell-events).
+// Rule (Mike napkin §1): one module reaches into SQLite first; siblings may
+// piggyback via this accessor to avoid a parallel connection. The exposed
+// handle is the same singleton this file uses — callers must not close it.
+// ---------------------------------------------------------------------------
+
+/** Return the shared DB handle for sibling modules (read + write). */
+export function sharedDatabase(): Database.Database {
+  return db();
+}
+
+/**
+ * @internal Test-only override. Swaps the lazy singleton so a suite can
+ * point sibling modules at an in-memory database without touching the
+ * production file. Pass `null` to restore cold-start behaviour.
+ */
+export function __setSharedDbForTests(override: Database.Database | null): void {
+  _db = override;
+}
+
+// ---------------------------------------------------------------------------
 // Revival Guard: visitor trust
 // ---------------------------------------------------------------------------
 
