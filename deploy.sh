@@ -4,6 +4,55 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v151c — Legend teaches all three cite keys; parity locked by test
+# (2026-04-22). Sprint: Close the teaching gap opened by v151b. v151b extended
+# the handler to accept `c` / Enter / Space but the legend still said only
+# "Press c to cite the focused cell." — a 33 % → 100 % reach on the handler
+# but a flat 33 % teaching coverage, exactly the kind of silent asymmetry
+# that rots docs. v151c promotes the legend to three `<kbd>` chips
+# (`c` — Enter · Space) with `c` first for mnemonic primacy and the
+# Enter/Space courtesy clause wrapped in `.api-docs__legend-nowrap` so
+# narrow viewports break *before* the em-dash, never mid-chip. Critically,
+# the sprint also ships a parity test that fails the CI build whenever the
+# legend and the handler drift again — in either direction.
+# Key changes (all under active git area this cycle):
+#   src/pages/api/docs.astro — `<p data-cite-legend>` now contains three
+#     `<kbd class="api-docs__kbd">` chips (`c`, `Enter`, `Space`) separated
+#     by an em-dash + "and" pattern. New `.api-docs__legend-nowrap` CSS
+#     rule (`white-space: nowrap;`) keeps the courtesy clause atomic on
+#     wrap. Still hidden under `@media (hover: none)` on touch; zero new
+#     design tokens. Updated prose comment documents the wrap rationale
+#     (Tanya §3b / Mike napkin §6).
+#   src/lib/client/cell-cite-legend.test.ts (new, dev-only) — node:test
+#     suite that scrapes every `<kbd>` chip from docs.astro's legend
+#     block and probes `isCiteKey` for each. Asserts set-equality in BOTH
+#     directions (no superset, no subset) across a candidate universe of
+#     cite keys + near-misses + modifier chords. Maps the display label
+#     `"Space"` back to the real key value (`" "`) so the word-in-chip
+#     stays readable without breaking parity math. No JSDOM — pure string
+#     + pure function. NOT executed at Docker build or runtime.
+#   package.json — adds `"test:cite-legend": "npx tsx --test
+#     src/lib/client/cell-cite-legend.test.ts"` script. Dev-only; never
+#     invoked by Docker build or runtime.
+#   AGENTS.md — killer-feature paragraph adopts "v151c, shipped" marker
+#     for the legend-teaches-all-three update and adds a sentence locking
+#     teaching/handler parity to `npm run test:cite-legend`.
+# Infrastructure: no new services, volumes, env vars, ports, or npm
+#   packages. CONTAINER still exposes 7100 for external Caddy.
+#   DATA_VOLUME and SQLITE_VOLUME unchanged. ADMIN_SECRET, HMAC_SECRET,
+#   GITHUB_PAT, DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already
+#   copies `src/` wholesale into the builder stage — the updated
+#   `docs.astro` (legend + nowrap CSS rule) and the new dev-only
+#   `cell-cite-legend.test.ts` all ship without any Dockerfile edits.
+#   The prebuild compliance guard (token drift + DECAY_STAGES
+#   immutability + STAGE_AXES ⇄ file inventory parity) is unchanged and
+#   still runs inside `npm run build` during the Docker builder stage.
+#   `.test.ts` files are never executed at build or runtime. deploy.sh
+#   startup sequence (1–9) unchanged; step 8 continues to warm BOTH
+#   `/api/docs` SSR (now serving the 3-chip legend + nowrap rule) and
+#   the cell-metrics endpoint, so the first real visitor never sees
+#   cold SSR and the cited-cell ledger is eager-created.
+#
 # Architecture v151b — Keystroke cite: `c` / Enter / Space on a focused cell
 # (2026-04-22). Sprint: Close the citation loop on the keyboard itself.
 # v151/v151a made the 7×5 grammar matrix keyboard-navigable and gave the

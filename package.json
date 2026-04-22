@@ -13,7 +13,8 @@
     "test:ceremony": "node --test --import=tsx/esm src/lib/seal-ceremony.test.ts",
     "test:dates": "npx tsx scripts/test-dates.ts",
     "test:stage-tokens": "npx tsx --test scripts/generate-stage-tokens.test.ts",
-    "test:stage-underline": "npx tsx --test src/lib/stage-underline.test.ts"
+    "test:stage-underline": "npx tsx --test src/lib/stage-underline.test.ts",
+    "test:cite-legend": "npx tsx --test src/lib/client/cell-cite-legend.test.ts"
   },
   "dependencies": {
     "@astrojs/node": "^8.3.4",

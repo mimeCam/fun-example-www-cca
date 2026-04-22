@@ -192,12 +192,20 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
         {heatSubtitle()}
       </p>
 
-      {/* v151b — keystroke-cite legend (Tanya UX spec §5). One line, mono,
-         dimmed, above the matrix so the eye meets it on entry. Hidden on
-         touch (hover:none) where `c` has no analogue. Zero new tokens. */}
+      {/* v151c — teach all three cite keys (Mike napkin §6, Tanya §9a).
+         `c` first for mnemonic primacy; Enter/Space trail after an em-dash
+         as platform courtesies. All three chips share .api-docs__kbd —
+         hierarchy comes from word order, not styling. The courtesy clause
+         is wrapped in .api-docs__legend-nowrap so on narrow viewports it
+         breaks *before* the em-dash, never mid-chip. Still hidden on
+         hover:none (touch has no analogue). Zero new tokens. */}
       <p class="api-docs__legend" data-cite-legend>
         <span class="api-docs__legend-ico" aria-hidden="true">⌨︎</span>
-        Press <kbd class="api-docs__kbd">c</kbd> to cite the focused cell.
+        Press <kbd class="api-docs__kbd">c</kbd> to cite the focused cell —
+        <span class="api-docs__legend-nowrap">
+          <kbd class="api-docs__kbd">Enter</kbd> and
+          <kbd class="api-docs__kbd">Space</kbd> also work.
+        </span>
       </p>
 
       <div class="api-docs__matrix" role="table" aria-labelledby="matrix-heading">
@@ -542,6 +550,10 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
     /* Nudge the ⌨︎ glyph onto the text baseline without a token bump. */
     transform: translateY(1px);
   }
+  /* v151c — keep the courtesy clause (Enter + Space chips) atomic on wrap
+     so it never orphans mid-chip or between "Enter" and "and". Narrow
+     viewports break *before* the em-dash. Tanya §3b. */
+  .api-docs__legend-nowrap { white-space: nowrap; }
   .api-docs__kbd {
     padding: 0 var(--space-1);
     border: 1px solid var(--border-subtle);
