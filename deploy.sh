@@ -4,6 +4,63 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v151b — Keystroke cite: `c` / Enter / Space on a focused cell
+# (2026-04-22). Sprint: Close the citation loop on the keyboard itself.
+# v151/v151a made the 7×5 grammar matrix keyboard-navigable and gave the
+# user a two-channel (motion + aria-live) nudge at the edges. The last
+# missing piece was the citation action itself: until now, copying a cell
+# citation required a mouse click on the copy-glyph even though the roving
+# tabindex had already placed focus exactly on the cell the user wanted.
+# v151b delegates one additional listener on `.api-docs__matrix`
+# (keydown) that routes `c`, Enter, and Space into the *same* handleCopy
+# pipeline the click path already uses — so the clipboard string, toast,
+# bloom, and ledger beacon are byte-identical across mouse, keyboard, and
+# `curl`. Cmd/Ctrl/Alt + any of those keys drop through to the browser's
+# native copy handler (non-negotiable: never steal Cmd+C). A one-line
+# mono legend ("Press c to cite the focused cell.") sits above the matrix
+# on pointer devices; it's hidden on touch where the teaching is noise.
+# Key changes (all under active git area this cycle):
+#   src/lib/client/cell-cite.ts — adds `isCiteKey()` pure export (true for
+#     `c`/Enter/Space sans Cmd/Ctrl/Alt; Shift transparent), a new keydown
+#     delegation on the matrix, and an SSR-safe `typeof document` guard
+#     around the DOMContentLoaded auto-boot so the module can be imported
+#     by node:test without synthesising a DOM. Reuses the existing
+#     handleCopy — no new toast variant, no new endpoint, no new CSS
+#     animation, no new clipboard string shape. `e.preventDefault()` on
+#     Space stops page-scroll and on Enter stops enclosing-form submit.
+#   src/lib/client/cell-cite.test.ts (new, dev-only) — node:test suite
+#     covering the truth table for `isCiteKey` (three cite keys, Shift
+#     transparent, every Cmd/Ctrl/Alt combo suppresses) plus a cross-
+#     surface parity snapshot: `cellCitationPayload(axis, stage, origin,
+#     ref)` is deterministic over every STAGE_AXES × DECAY_STAGES cell,
+#     so click-path and keystroke-path cannot silently fork the URL
+#     string a future refactor. NOT executed at Docker build or runtime.
+#   src/pages/api/docs.astro — new `<p class="api-docs__legend">` one-
+#     liner above the matrix with a `<kbd>c</kbd>` hint, plus the
+#     matching tokens-only CSS (mono, 2xs, tertiary text, dimmed icon,
+#     subtle-border kbd). Hidden under `@media (hover: none)` on touch,
+#     and a `forced-colors: active` override keeps the kbd readable in
+#     Windows High Contrast. Zero net-new design tokens — every color,
+#     radius, spacing, and typography value is an existing `--var()`.
+#   AGENTS.md — compresses the stage-grammar frozen note and renames the
+#     "killer feature" section to call out `/api/docs` cell citations
+#     with the v151b three-surface parity (click / keystroke / curl).
+# Infrastructure: no new services, volumes, env vars, ports, or npm
+#   packages. CONTAINER still exposes 7100 for external Caddy.
+#   DATA_VOLUME and SQLITE_VOLUME unchanged. ADMIN_SECRET, HMAC_SECRET,
+#   GITHUB_PAT, DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already
+#   copies `src/` wholesale into the builder stage — the updated
+#   `cell-cite.ts`, `docs.astro`, and the dev-only `cell-cite.test.ts`
+#   all ship without any Dockerfile edits. The prebuild compliance guard
+#   (token drift + DECAY_STAGES immutability + STAGE_AXES ⇄ file
+#   inventory parity) is unchanged and still runs inside `npm run build`
+#   during the Docker builder stage. `.test.ts` files are never executed
+#   at build or runtime. deploy.sh startup sequence (1–9) unchanged;
+#   step 8 continues to warm BOTH `/api/docs` SSR (now also serving the
+#   v151b keystroke-legend + keydown listener import) and the cell-
+#   metrics endpoint, so the first real visitor never sees cold SSR and
+#   the cited-cell ledger is eager-created.
+#
 # Architecture v151a — Edge of axis: the wall nods back (2026-04-22)
 #   Sprint: Close one last polish on the v151 keynav. The clamp-not-wrap
 #     semantics were correct but silent — pressing ArrowRight at the

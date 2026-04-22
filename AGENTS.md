@@ -6,11 +6,15 @@
 
 - `src/lib/` — domain (`client/` = browser)
 - `src/components/`, `src/pages/api/` (docs at `/api/docs`)
-- `src/styles/` — `tokens.css` is single source of truth
+- `src/styles/` — `tokens.css` single source of truth
 - `scripts/` — compliance guard + codegen
 
 ## Stage grammar — frozen
 
-`src/lib/stage-axes.ts` (`STAGE_AXES` + `AXIS_TO_CSS_FILE`) is the single source for the seven axes. One file per axis in `src/styles/stage-*.css`; prebuild guard enforces parity. `src/lib/stage-tokens.generated.ts` mirrors tokens for non-CSS consumers.
+`src/lib/stage-axes.ts` is the single source for the seven axes. Prebuild guard enforces parity. **No 8th axis.**
 
-**Axis count is frozen — no 8th axis. Instrument, measure, polish.**
+## Killer feature — `/api/docs` cell citations
+
+7×5 matrix. Cite a cell via click, keystroke (`c`/Enter/Space on focus — v151b, shipped), or `curl` — all three produce the same payload (`?r=<nonce>` joins copy→arrive via ledger). Three client modules, DOM as shared contract, no WIP:
+
+- `cell-cite.ts` (citation), `matrix-keynav.ts` (roving tabindex), `edge-bump.ts` (clamp feedback).

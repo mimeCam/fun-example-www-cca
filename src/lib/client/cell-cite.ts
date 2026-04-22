@@ -11,15 +11,25 @@
 //     cell whose id matches `location.hash` receives .cell--arrived
 //     for the duration of its own stage, then releases.
 //
+// v151b — keystroke cite (Mike napkin §3, Tanya §3/§4): the same
+// .api-docs__matrix delegation also accepts `c` / Enter / Space on a
+// focused cell, routing to the same `handleCopy` as the mouse click.
+// No new module, no new endpoint, no new CSS, no new animation.
+// Cmd/Ctrl/Alt+<key> combos are let through untouched (Tanya §10 —
+// native copy must not be stolen). `e.preventDefault()` stops Space
+// from scrolling and Enter from submitting an enclosing form.
+//
 // Non-negotiable (Paul): the clipboard *string* is the product. The
 // toast and the bloom make the string believable.
 //
 // Credits: Mike (napkin §2, §5.8 event delegation, §5.9 dual-trigger
-//          arrival), Tanya (§4 sequenced feedback, §5 stage-keyed
-//          arrival, §7 reveal rules, §8 ARIA), Elon (§4.1 single-line
-//          payload, §4.2 fossil-still-arrives, §4.4 "at" wording,
-//          §4.6 instrument before celebrate), Paul (§non-negotiable
-//          + CAR metric), Sid (§simplify — one module, ten 10-line fns).
+//          arrival, §3 v151b keybinding), Tanya (§4 sequenced feedback,
+//          §5 stage-keyed arrival, §7 reveal rules, §8 ARIA, v151b
+//          UX spec §3/§4/§6/§10), Elon (§4.1 single-line payload,
+//          §4.2 fossil-still-arrives, §4.4 "at" wording, §4.6 instrument
+//          before celebrate, v151b §10 no new mythology), Paul
+//          (§non-negotiable + CAR metric, v151b string-parity vow),
+//          Sid (§simplify — one module, ten 10-line fns).
 
 import { cellCitationPayload } from '../stage-axes';
 import type { Axis } from '../stage-axes';
@@ -28,6 +38,7 @@ import type { DecayStage } from '../decay-engine';
 // ── Selectors & keys ─────────────────────────────────────────────────────
 
 const MATRIX_SEL  = '.api-docs__matrix';
+const CELL_SEL    = '.api-docs__matrix-cell';
 const BTN_SEL     = '[data-cell-copy]';
 const TOAST_SEL   = '[data-cell-toast]';
 const ARRIVED     = 'cell--arrived';
@@ -37,6 +48,12 @@ const HASH_RE     = /^#axis-[a-z-]+-stage-[a-z-]+$/;
 const ARRIVAL_MS  = 1200;        // covers stage durations incl. fossil hold
 const TOAST_MS    = 1800;        // Tanya §4b linger window
 const CONFIRM_MS  = 1200;        // Tanya §4a icon-swap duration
+
+// v151b — keystroke cite (Mike napkin §3.1). Three keys, one handler.
+// Disjoint from matrix-keynav's NAV_KEYS so the two listeners never
+// race (Tanya §6 no merge, Mike §5.9). Lowercase-only: Shift+C is a
+// cite (capital letter, not a chord); Cmd/Ctrl+C goes to native copy.
+const CITE_KEYS: ReadonlySet<string> = new Set<string>(['c', 'Enter', ' ']);
 
 // v150c — cell-event ledger wire. Mike napkin §3: event-shape frozen.
 const INGEST_URL  = '/api/ingest/cell-event';
@@ -50,7 +67,8 @@ export function initCellCite(): void {
   const matrix = document.querySelector<HTMLElement>(MATRIX_SEL);
   if (!matrix) return;
   const toast = document.querySelector<HTMLElement>(TOAST_SEL);
-  matrix.addEventListener('click', (e) => onMatrixClick(e, toast));
+  matrix.addEventListener('click',   (e) => onMatrixClick(e, toast));
+  matrix.addEventListener('keydown', (e) => onMatrixKey(e, toast));
   window.addEventListener('hashchange', paintArrival);
   paintArrival();
 }
@@ -61,6 +79,38 @@ function onMatrixClick(e: Event, toast: HTMLElement | null): void {
   const btn = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>(BTN_SEL);
   if (!btn) return;
   e.preventDefault();
+  void handleCopy(btn, toast);
+}
+
+// ── v151b keystroke handling (Mike napkin §3.1, Tanya §3) ─────────────────
+
+/**
+ * Pure predicate — true when a KeyboardEvent should cite the focused
+ * cell. Rejects all modifier combos so Cmd+C / Ctrl+C fall through to
+ * the browser's native copy handler (Tanya §4.1, §10). Shift+C still
+ * cites (capital letter is a letter, not a chord). No JSDOM; pure fn.
+ */
+export function isCiteKey(e: KeyboardEvent): boolean {
+  if (e.metaKey || e.ctrlKey || e.altKey) return false;
+  return CITE_KEYS.has(e.key);
+}
+
+/**
+ * From a keyboard event whose target is somewhere inside a matrix cell,
+ * resolve the cell's copy button (or null). Mirrors matrix-keynav's
+ * `resolveCurrentCell` shape — one convention, two modules (Mike §5.9).
+ */
+function resolveCellCopyBtn(e: KeyboardEvent): HTMLButtonElement | null {
+  const cell = (e.target as HTMLElement | null)?.closest<HTMLElement>(CELL_SEL);
+  return cell?.querySelector<HTMLButtonElement>(BTN_SEL) ?? null;
+}
+
+/** Route a cite keystroke into the same handleCopy the click takes. */
+function onMatrixKey(e: KeyboardEvent, toast: HTMLElement | null): void {
+  if (!isCiteKey(e)) return;
+  const btn = resolveCellCopyBtn(e);
+  if (!btn) return;
+  e.preventDefault();      // Space: no page-scroll. Enter: no form-submit.
   void handleCopy(btn, toast);
 }
 
@@ -195,9 +245,14 @@ function sendIngest(body: string): void {
 }
 
 // ── Auto-boot on DOMContentLoaded (deferred module) ───────────────────────
+// SSR-safe: the `typeof document` guard lets this module be imported by
+// node-test / unit tests (where pure helpers like `isCiteKey` are all we
+// exercise) without synthesising a DOM. Matches matrix-keynav.ts shape.
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initCellCite, { once: true });
-} else {
-  initCellCite();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCellCite, { once: true });
+  } else {
+    initCellCite();
+  }
 }

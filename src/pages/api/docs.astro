@@ -192,6 +192,14 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
         {heatSubtitle()}
       </p>
 
+      {/* v151b — keystroke-cite legend (Tanya UX spec §5). One line, mono,
+         dimmed, above the matrix so the eye meets it on entry. Hidden on
+         touch (hover:none) where `c` has no analogue. Zero new tokens. */}
+      <p class="api-docs__legend" data-cite-legend>
+        <span class="api-docs__legend-ico" aria-hidden="true">⌨︎</span>
+        Press <kbd class="api-docs__kbd">c</kbd> to cite the focused cell.
+      </p>
+
       <div class="api-docs__matrix" role="table" aria-labelledby="matrix-heading">
         <div class="api-docs__matrix-row api-docs__matrix-row--head" role="row">
           <div class="api-docs__matrix-rowhead api-docs__matrix-corner" role="columnheader" aria-hidden="true"></div>
@@ -514,6 +522,44 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
      the page self-monitors the axes it documents.                        */
 
   .api-docs__matrix-section { margin-bottom: var(--space-10); }
+
+  /* ── v151b — keystroke-cite legend (Tanya UX spec §5) ────────────────────
+     A single mono sentence above the matrix. Teaches one keybind; hides on
+     touch where the teaching is noise. Tokens only — no net-new palette.   */
+  .api-docs__legend {
+    margin: var(--space-2) 0 var(--space-3);
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    line-height: var(--leading-snug);
+    color: var(--text-tertiary);
+    letter-spacing: var(--tracking-normal);
+  }
+  .api-docs__legend-ico {
+    color: var(--text-ghost);
+    /* Nudge the ⌨︎ glyph onto the text baseline without a token bump. */
+    transform: translateY(1px);
+  }
+  .api-docs__kbd {
+    padding: 0 var(--space-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-detail);
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    line-height: 1;
+    box-shadow: none;
+  }
+  @media (hover: none) {
+    /* Touch users have no `c` key — hide the teaching line (Tanya §5.3). */
+    .api-docs__legend { display: none; }
+  }
+  @media (forced-colors: active) {
+    .api-docs__kbd { border-color: CanvasText; background: Canvas; color: CanvasText; }
+  }
 
   .api-docs__matrix {
     display: grid;
