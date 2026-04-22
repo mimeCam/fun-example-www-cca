@@ -408,4 +408,10 @@ const { slug, verdictSealed, disputeState } = Astro.props;
   .dispute-challenge__feedback:not([hidden]) {
     animation: badge-enter var(--motion-flow-duration) var(--motion-flow-easing) both;
   }
+
+  /* v152 motion-sanctuary (Mike §C): the entry fade is pure polish; reduced-
+     motion readers see the feedback appear synchronously instead.          */
+  @media (prefers-reduced-motion: reduce) {
+    .dispute-challenge__feedback:not([hidden]) { animation: none; }
+  }
 </style>

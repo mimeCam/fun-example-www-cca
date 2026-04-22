@@ -597,6 +597,10 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
      so it never orphans mid-chip or between "Enter" and "and". Narrow
      viewports break *before* the em-dash. Tanya §3b. */
   .api-docs__legend-nowrap { white-space: nowrap; }
+  /* v152 (Tanya §2.1, Mike §napkin): PROMOTE to src/styles/ds-kbd.css on the
+     second real consumer. Rename `.api-docs__kbd` → `.ds-kbd`. Visual spec
+     frozen in _my/report.md / from-tanya-donska-expert-uix-designer-67 §3.
+     Add a source-grep guard at the same commit. Not yet. */
   .api-docs__kbd {
     padding: 0 var(--space-1);
     border: 1px solid var(--border-subtle);

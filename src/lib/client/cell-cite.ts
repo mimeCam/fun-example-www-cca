@@ -42,12 +42,17 @@ const CELL_SEL    = '.api-docs__matrix-cell';
 const BTN_SEL     = '[data-cell-copy]';
 const TOAST_SEL   = '[data-cell-toast]';
 const ARRIVED     = 'cell--arrived';
+const CONFIRMING  = 'cell--confirming';   // v152 Mike §A — foveal confirm
 const CONFIRMED   = 'cell-copy--confirmed';
 const TOAST_VIS   = 'is-visible';
 const HASH_RE     = /^#axis-[a-z-]+-stage-[a-z-]+$/;
-const ARRIVAL_MS  = 1200;        // covers stage durations incl. fossil hold
-const TOAST_MS    = 1800;        // Tanya §4b linger window
-const CONFIRM_MS  = 1200;        // Tanya §4a icon-swap duration
+
+// Timing constants — snapshotted in cell-confirm.test.ts. Do not tune
+// one without documenting the perceptual reason in the PR body (Mike §6).
+export const ARRIVAL_MS       = 1200;   // stage-keyed bloom hold (incl. fossil)
+export const TOAST_MS         = 1800;   // Tanya §4b linger window
+export const CONFIRM_MS       = 1200;   // Tanya §4a button icon-swap duration
+export const CITE_CONFIRM_MS  = 1200;   // v152 Mike §A — cell confirm ring
 
 // v151b — keystroke cite (Mike napkin §3.1). Three keys, one handler.
 // Disjoint from matrix-keynav's NAV_KEYS so the two listeners never
@@ -125,7 +130,15 @@ async function handleCopy(btn: HTMLButtonElement, toast: HTMLElement | null): Pr
   if (!ok) return;
   confirmButton(btn);
   announce(toast, axis, stage);
+  markConfirmingForBtn(btn);                  // v152 Mike §A — foveal ring
   beacon('copy', axis, stage, ref);
+}
+
+/** v152 Mike §A — resolve the btn's owning cell, then paint the confirm ring. */
+function markConfirmingForBtn(btn: HTMLButtonElement): void {
+  const cell = btn.closest<HTMLElement>(CELL_SEL);
+  if (!cell) return;
+  markConfirming(cell);
 }
 
 // Local re-import of the shared helper as a thin wrapper keeps the bundle
@@ -166,7 +179,7 @@ function paintArrival(): void {
   if (!HASH_RE.test(hash)) return;
   const cell = document.getElementById(hash.slice(1));
   if (!cell) return;
-  retireOthers(cell);
+  retireCompetingGlows(cell);                 // v152 Mike §B — one glow at a time
   triggerArrival(cell);
   reportArrival(cell);
 }
@@ -203,6 +216,20 @@ function retireOthers(keep: HTMLElement): void {
     .forEach((el) => { if (el !== keep) el.classList.remove(ARRIVED); });
 }
 
+/** v152 Mike §B — superset of retireOthers; also clears `.cell--confirming`
+ *  from every other cell so rapid-fire c-c-c-c coalesces cleanly. Old call
+ *  sites of `retireOthers` stay untouched (Mike risk register row #3).     */
+function retireCompetingGlows(keep: HTMLElement): void {
+  retireOthers(keep);
+  retireConfirmingExcept(keep);
+}
+
+function retireConfirmingExcept(keep: HTMLElement): void {
+  document
+    .querySelectorAll<HTMLElement>(`.${CONFIRMING}`)
+    .forEach((el) => { if (el !== keep) el.classList.remove(CONFIRMING); });
+}
+
 function triggerArrival(cell: HTMLElement): void {
   // Restart the animation cleanly: remove, reflow, re-add.
   cell.classList.remove(ARRIVED);
@@ -210,6 +237,25 @@ function triggerArrival(cell: HTMLElement): void {
   void cell.offsetWidth;
   cell.classList.add(ARRIVED);
   window.setTimeout(() => cell.classList.remove(ARRIVED), ARRIVAL_MS);
+}
+
+/** v152 Mike §A — paint the foveal confirm ring on the focused cell.
+ *  Retires competing glows first, then schedules its own removal. On
+ *  rapid-fire cites, a second call on the SAME cell resets the timer. */
+function markConfirming(cell: HTMLElement): void {
+  retireCompetingGlows(cell);
+  cell.classList.add(CONFIRMING);
+  scheduleConfirmRemoval(cell);
+}
+
+function scheduleConfirmRemoval(cell: HTMLElement): void {
+  const prev = Number(cell.dataset.confirmTimer ?? '0');
+  if (prev) window.clearTimeout(prev);
+  const id = window.setTimeout(
+    () => cell.classList.remove(CONFIRMING),
+    CITE_CONFIRM_MS,
+  );
+  cell.dataset.confirmTimer = String(id);
 }
 
 // ── Ingest beacon (v150c — Mike napkin §2/§4, Paul round-trip) ────────────

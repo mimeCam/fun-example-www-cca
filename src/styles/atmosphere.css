@@ -241,3 +241,16 @@ body[data-atmosphere="gold"]::after {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.78; }
 }
+
+/* ── v152 motion-sanctuary (Mike §C / Tanya §2.3) ─────────────────────────
+ * Ambient loops must never loop for vestibular-sensitive readers. Infinite
+ * durations don't collapse to zero visibly even when the duration token
+ * does — so we gate the animation explicitly. Keep the color; drop the
+ * motion. The atmosphere still paints; it just stops breathing.           */
+@media (prefers-reduced-motion: reduce) {
+  [data-atmosphere="gold"] body::after,
+  body[data-atmosphere="gold"]::after,
+  .tension-badge[data-tension="contested"],
+  .tension-badge[data-tension="contested"] .tension-glyph,
+  .bah-share--confirmed { animation: none; }
+}

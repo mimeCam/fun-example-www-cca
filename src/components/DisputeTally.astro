@@ -191,4 +191,10 @@ const initStatus = visible
     font-size: var(--text-xs);
     transition: color var(--motion-flow-duration) var(--motion-flow-easing);
   }
+
+  /* v152 motion-sanctuary (Mike §C): infinite loop — must gate explicitly so
+     vestibular-sensitive readers never meet the pulsing dot.               */
+  @media (prefers-reduced-motion: reduce) {
+    .dispute-tally[data-status="contested"] .dispute-tally__dot { animation: none; }
+  }
 </style>

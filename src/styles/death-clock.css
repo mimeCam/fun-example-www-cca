@@ -86,4 +86,12 @@
 
   /* clock-pulse keyframe lives in motion.css — shared keyframe library */
 
+  /* v152 motion-sanctuary (Mike §C) — `clock-pulse` is an infinite loop
+     with a raw 2s fallback duration; token-zero alone does not reliably
+     stop it. Explicit gate keeps vestibular-sensitive readers still.    */
+  @media (prefers-reduced-motion: reduce) {
+    .death-clock[data-urgency="critical"] .death-clock__ring,
+    .death-clock[data-urgency="dying"]    .death-clock__ring { animation: none; }
+  }
+
 }

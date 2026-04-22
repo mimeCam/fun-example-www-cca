@@ -273,4 +273,11 @@ const declaredDate = vd.declaredAt
     .avp__dt { color: var(--text-ghost); }
     .avp__dd { margin-bottom: 0.4rem; }
   }
+
+  /* v152 motion-sanctuary (Mike §C): drop the entry animation for vestibular-
+     sensitive readers. Token zeros cover the duration; the local gate makes
+     the contract explicit in review. */
+  @media (prefers-reduced-motion: reduce) {
+    .avp { animation: none; }
+  }
 </style>

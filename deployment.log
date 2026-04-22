@@ -1,4 +1,4 @@
-==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 06:17:54 PM UTC 2026
+==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 06:50:55 PM UTC 2026
 ==> [deploy] Stopping existing container: persona-blog-a
 persona-blog-a
 ==> [deploy] Removing existing container: persona-blog-a
@@ -15,7 +15,7 @@ persona-blog-a-sqlite
 #1 DONE 0.0s
 
 #2 [internal] load metadata for docker.io/library/node:20-alpine
-#2 DONE 0.1s
+#2 DONE 0.2s
 
 #3 [internal] load .dockerignore
 #3 transferring context: 120B done
@@ -28,80 +28,77 @@ persona-blog-a-sqlite
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 85.20kB 0.3s done
+#6 transferring context: 168.88kB 0.3s done
 #6 DONE 0.3s
 
-#7 [builder  3/10] RUN apk add --no-cache python3 make g++
-#7 0.695 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
-#7 0.888 ( 2/29) Installing jansson (2.14.1-r0)
-#7 0.890 ( 3/29) Installing zstd-libs (1.5.7-r2)
-#7 0.898 ( 4/29) Installing binutils (2.45.1-r0)
-#7 0.979 ( 5/29) Installing libgomp (15.2.0-r2)
-#7 0.984 ( 6/29) Installing libatomic (15.2.0-r2)
-#7 0.986 ( 7/29) Installing gmp (6.3.0-r4)
-#7 0.992 ( 8/29) Installing isl26 (0.26-r1)
-#7 1.008 ( 9/29) Installing mpfr4 (4.2.2-r0)
-#7 1.015 (10/29) Installing mpc1 (1.3.1-r1)
-#7 1.018 (11/29) Installing gcc (15.2.0-r2)
-#7 ...
+#7 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
+#7 0.760 ( 1/10) Installing libexpat (2.7.5-r0)
+#7 0.780 ( 2/10) Installing brotli-libs (1.2.0-r0)
+#7 0.802 ( 3/10) Installing libbz2 (1.0.8-r6)
+#7 0.819 ( 4/10) Installing libpng (1.6.57-r0)
+#7 0.836 ( 5/10) Installing freetype (2.14.1-r0)
+#7 0.863 ( 6/10) Installing fontconfig (2.17.1-r0)
+#7 0.905 ( 7/10) Installing encodings (1.1.0-r0)
+#7 0.943 ( 8/10) Installing libfontenc (1.1.8-r0)
+#7 0.959 ( 9/10) Installing mkfontscale (1.2.3-r1)
+#7 0.976 (10/10) Installing font-dejavu (2.37-r6)
+#7 1.072 Executing busybox-1.37.0-r30.trigger
+#7 1.079 Executing fontconfig-2.17.1-r0.trigger
+#7 1.127 Executing mkfontscale-1.2.3-r1.trigger
+#7 1.168 OK: 23.8 MiB in 28 packages
+#7 DONE 1.3s
 
-#8 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
-#8 0.821 ( 1/10) Installing libexpat (2.7.5-r0)
-#8 0.847 ( 2/10) Installing brotli-libs (1.2.0-r0)
-#8 0.873 ( 3/10) Installing libbz2 (1.0.8-r6)
-#8 0.892 ( 4/10) Installing libpng (1.6.57-r0)
-#8 0.918 ( 5/10) Installing freetype (2.14.1-r0)
-#8 0.945 ( 6/10) Installing fontconfig (2.17.1-r0)
-#8 0.987 ( 7/10) Installing encodings (1.1.0-r0)
-#8 1.018 ( 8/10) Installing libfontenc (1.1.8-r0)
-#8 1.038 ( 9/10) Installing mkfontscale (1.2.3-r1)
-#8 1.057 (10/10) Installing font-dejavu (2.37-r6)
-#8 1.149 Executing busybox-1.37.0-r30.trigger
-#8 1.156 Executing fontconfig-2.17.1-r0.trigger
-#8 1.200 Executing mkfontscale-1.2.3-r1.trigger
-#8 1.246 OK: 23.8 MiB in 28 packages
-#8 DONE 1.4s
-
-#7 [builder  3/10] RUN apk add --no-cache python3 make g++
-#7 2.054 (12/29) Installing musl-dev (1.2.5-r23)
-#7 2.118 (13/29) Installing g++ (15.2.0-r2)
-#7 2.380 (14/29) Installing make (4.4.1-r3)
-#7 2.384 (15/29) Installing libbz2 (1.0.8-r6)
-#7 2.388 (16/29) Installing libexpat (2.7.5-r0)
-#7 2.391 (17/29) Installing libffi (3.5.2-r0)
-#7 2.393 (18/29) Installing gdbm (1.26-r0)
-#7 2.395 (19/29) Installing xz-libs (5.8.2-r0)
-#7 2.399 (20/29) Installing mpdecimal (4.0.1-r0)
-#7 2.402 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
-#7 2.409 (22/29) Installing libncursesw (6.5_p20251123-r0)
-#7 2.414 (23/29) Installing libpanelw (6.5_p20251123-r0)
-#7 2.416 (24/29) Installing readline (8.3.1-r0)
-#7 2.420 (25/29) Installing sqlite-libs (3.51.2-r0)
-#7 2.433 (26/29) Installing python3 (3.12.13-r0)
-#7 2.642 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
-#7 2.780 (28/29) Installing pyc (3.12.13-r0)
-#7 2.780 (29/29) Installing python3-pyc (3.12.13-r0)
-#7 2.780 Executing busybox-1.37.0-r30.trigger
-#7 2.796 OK: 301.2 MiB in 47 packages
-#7 DONE 3.0s
+#8 [builder  3/10] RUN apk add --no-cache python3 make g++
+#8 1.365 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
+#8 1.586 ( 2/29) Installing jansson (2.14.1-r0)
+#8 1.590 ( 3/29) Installing zstd-libs (1.5.7-r2)
+#8 1.598 ( 4/29) Installing binutils (2.45.1-r0)
+#8 1.711 ( 5/29) Installing libgomp (15.2.0-r2)
+#8 1.719 ( 6/29) Installing libatomic (15.2.0-r2)
+#8 1.723 ( 7/29) Installing gmp (6.3.0-r4)
+#8 1.732 ( 8/29) Installing isl26 (0.26-r1)
+#8 1.758 ( 9/29) Installing mpfr4 (4.2.2-r0)
+#8 1.767 (10/29) Installing mpc1 (1.3.1-r1)
+#8 1.770 (11/29) Installing gcc (15.2.0-r2)
+#8 3.022 (12/29) Installing musl-dev (1.2.5-r23)
+#8 3.111 (13/29) Installing g++ (15.2.0-r2)
+#8 3.393 (14/29) Installing make (4.4.1-r3)
+#8 3.397 (15/29) Installing libbz2 (1.0.8-r6)
+#8 3.401 (16/29) Installing libexpat (2.7.5-r0)
+#8 3.404 (17/29) Installing libffi (3.5.2-r0)
+#8 3.407 (18/29) Installing gdbm (1.26-r0)
+#8 3.409 (19/29) Installing xz-libs (5.8.2-r0)
+#8 3.413 (20/29) Installing mpdecimal (4.0.1-r0)
+#8 3.417 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+#8 3.424 (22/29) Installing libncursesw (6.5_p20251123-r0)
+#8 3.430 (23/29) Installing libpanelw (6.5_p20251123-r0)
+#8 3.431 (24/29) Installing readline (8.3.1-r0)
+#8 3.436 (25/29) Installing sqlite-libs (3.51.2-r0)
+#8 3.449 (26/29) Installing python3 (3.12.13-r0)
+#8 3.646 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
+#8 3.776 (28/29) Installing pyc (3.12.13-r0)
+#8 3.776 (29/29) Installing python3-pyc (3.12.13-r0)
+#8 3.777 Executing busybox-1.37.0-r30.trigger
+#8 3.789 OK: 301.2 MiB in 47 packages
+#8 DONE 4.0s
 
 #9 [builder  4/10] COPY package.json package-lock.json* ./
 #9 DONE 0.0s
 
 #10 [builder  5/10] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#10 9.249 
-#10 9.249 added 447 packages, and audited 448 packages in 9s
-#10 9.249 
-#10 9.249 173 packages are looking for funding
-#10 9.249   run `npm fund` for details
-#10 9.302 
-#10 9.302 4 vulnerabilities (2 moderate, 2 high)
-#10 9.302 
-#10 9.302 To address all issues (including breaking changes), run:
-#10 9.302   npm audit fix --force
-#10 9.302 
-#10 9.302 Run `npm audit` for details.
-#10 DONE 9.8s
+#10 9.767 
+#10 9.767 added 447 packages, and audited 448 packages in 9s
+#10 9.767 
+#10 9.767 173 packages are looking for funding
+#10 9.767   run `npm fund` for details
+#10 9.821 
+#10 9.821 4 vulnerabilities (2 moderate, 2 high)
+#10 9.821 
+#10 9.821 To address all issues (including breaking changes), run:
+#10 9.821   npm audit fix --force
+#10 9.821 
+#10 9.821 Run `npm audit` for details.
+#10 DONE 10.3s
 
 #11 [builder  6/10] COPY astro.config.mjs tsconfig.json ./
 #11 DONE 0.0s
@@ -116,96 +113,97 @@ persona-blog-a-sqlite
 #14 DONE 0.0s
 
 #15 [builder 10/10] RUN npm run build
-#15 0.350 
-#15 0.350 > persona-blog@0.1.0 prebuild
-#15 0.350 > npx tsx scripts/check-token-compliance.ts --guard
-#15 0.350 
-#15 1.432 npm warn exec The following package was not found and will be installed: tsx@4.21.0
-#15 3.377 ✅  Guard check: 137 guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable. STAGE_AXES inventory clean.
-#15 3.377    ⚠️  0 errors + 2 typography warnings remain in unguarded files.
-#15 3.377 
-#15 3.409 
-#15 3.409 > persona-blog@0.1.0 build
-#15 3.409 > astro build
-#15 3.409 
-#15 4.080 ▶ Astro collects anonymous usage data.
-#15 4.080   This information helps us improve Astro.
-#15 4.080   Run "astro telemetry disable" to opt-out.
-#15 4.080   https://astro.build/telemetry
-#15 4.080 
-#15 5.489 18:18:13 [types] Generated 491ms
-#15 5.489 18:18:13 [build] output: "hybrid"
-#15 5.489 18:18:13 [build] directory: /app/dist/
-#15 5.490 18:18:13 [build] adapter: @astrojs/node
-#15 5.490 18:18:13 [build] Collecting build info...
-#15 5.491 18:18:13 [build] ✓ Completed in 532ms.
-#15 5.494 18:18:13 [build] Building hybrid entrypoints...
-#15 10.80 18:18:18 [vite] ✓ built in 5.25s
-#15 10.80 18:18:18 [build] ✓ Completed in 5.30s.
-#15 10.80 
-#15 10.80  building client (vite) 
-#15 10.81 18:18:18 [vite] transforming...
-#15 11.17 18:18:18 [vite] ✓ 75 modules transformed.
-#15 11.21 18:18:18 [vite] rendering chunks...
-#15 11.24 18:18:18 [vite] computing gzip size...
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/clipboard.TJO71FjA.js                                               0.46 kB │ gzip: 0.30 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.DgV-i7gH.js                                                 1.33 kB │ gzip: 0.72 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.DVP5K3fI.js    3.81 kB │ gzip: 1.57 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.BGX_bt_j.js                                                 4.48 kB │ gzip: 1.83 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.D2qnmWAa.js                                                 6.25 kB │ gzip: 2.47 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.DjbMzxIt.js                                                 7.32 kB │ gzip: 2.68 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/hoisted.C4crS92D.js                                                 7.47 kB │ gzip: 3.11 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
-#15 11.25 18:18:18 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CTw20Qv1.js       12.14 kB │ gzip: 4.27 kB
-#15 11.25 18:18:18 [vite] ✓ built in 449ms
-#15 11.28 
-#15 11.28  prerendering static routes 
-#15 11.31 18:18:19 λ src/pages/api/graveyard-stats.ts
-#15 11.31 18:18:19   └─ /api/graveyard-stats (+35ms)
-#15 11.35 18:18:19 λ src/pages/api/ingest/cell-event.ts
-#15 11.35 18:18:19   └─ /api/ingest/cell-event (+1ms)
-#15 11.36 18:18:19 λ src/pages/api/metrics/cited-cells.ts
-#15 11.36 18:18:19   └─ /api/metrics/cited-cells (+3ms)
-#15 11.36 18:18:19 λ src/pages/api/reading-pulse.ts
-#15 11.36 18:18:19   └─ /api/reading-pulse (+1ms)
-#15 11.37 18:18:19 ▶ src/pages/author/index.astro
-#15 11.37 18:18:19   └─ /author/index.html (+10ms)
-#15 11.54 18:18:19 ▶ src/pages/blog/[slug].astro
-#15 11.54 18:18:19   ├─ /blog/building-in-public/index.html (+31ms)
-#15 11.57 18:18:19   ├─ /blog/focus-as-a-mood/index.html (+17ms)
-#15 11.59 18:18:19   ├─ /blog/hello-world/index.html (+12ms)
-#15 11.60 18:18:19   ├─ /blog/lo-fi-loop/index.html (+11ms)
-#15 11.61 18:18:19   ├─ /blog/now-page/index.html (+18ms)
-#15 11.63 18:18:19   └─ /blog/the-decay-theory/index.html (+18ms)
-#15 11.65 18:18:19 λ src/pages/feed.xml.ts
-#15 11.65 18:18:19   └─ /feed.xml (+1ms)
-#15 11.65 18:18:19 ✓ Completed in 395ms.
-#15 11.65 
-#15 11.66 18:18:19 [build] Rearranging server assets...
-#15 11.66 18:18:19 [build] Server built in 6.70s
-#15 11.66 18:18:19 [build] Complete!
-#15 DONE 11.8s
+#15 0.370 
+#15 0.370 > persona-blog@0.1.0 prebuild
+#15 0.370 > npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts
+#15 0.370 
+#15 1.524 npm warn exec The following package was not found and will be installed: tsx@4.21.0
+#15 3.665 ✅  Guard check: 137 guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable. STAGE_AXES inventory clean.
+#15 3.665    ⚠️  0 errors + 2 typography warnings remain in unguarded files.
+#15 3.665 
+#15 5.075 ✅  motion-sanctuary: 143 scannable files clean (0 hits).
+#15 5.104 
+#15 5.104 > persona-blog@0.1.0 build
+#15 5.104 > astro build
+#15 5.104 
+#15 5.812 ▶ Astro collects anonymous usage data.
+#15 5.812   This information helps us improve Astro.
+#15 5.812   Run "astro telemetry disable" to opt-out.
+#15 5.812   https://astro.build/telemetry
+#15 5.812 
+#15 7.207 18:51:17 [types] Generated 499ms
+#15 7.208 18:51:17 [build] output: "hybrid"
+#15 7.208 18:51:17 [build] directory: /app/dist/
+#15 7.208 18:51:17 [build] adapter: @astrojs/node
+#15 7.208 18:51:17 [build] Collecting build info...
+#15 7.209 18:51:17 [build] ✓ Completed in 540ms.
+#15 7.212 18:51:17 [build] Building hybrid entrypoints...
+#15 12.55 18:51:23 [vite] ✓ built in 5.29s
+#15 12.55 18:51:23 [build] ✓ Completed in 5.34s.
+#15 12.55 
+#15 12.55  building client (vite) 
+#15 12.56 18:51:23 [vite] transforming...
+#15 12.90 18:51:23 [vite] ✓ 75 modules transformed.
+#15 12.95 18:51:23 [vite] rendering chunks...
+#15 12.98 18:51:23 [vite] computing gzip size...
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/clipboard.TJO71FjA.js                                               0.46 kB │ gzip: 0.30 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.DgV-i7gH.js                                                 1.33 kB │ gzip: 0.72 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.DVP5K3fI.js    3.81 kB │ gzip: 1.57 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.rj3x2-M7.js                                                 4.48 kB │ gzip: 1.84 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.D2qnmWAa.js                                                 6.25 kB │ gzip: 2.47 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.DoT45hvv.js                                                 7.32 kB │ gzip: 2.68 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.Blx46WV1.js                                                 7.89 kB │ gzip: 3.19 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
+#15 12.99 18:51:23 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CTw20Qv1.js       12.14 kB │ gzip: 4.27 kB
+#15 12.99 18:51:23 [vite] ✓ built in 433ms
+#15 13.03 
+#15 13.03  prerendering static routes 
+#15 13.06 18:51:23 λ src/pages/api/graveyard-stats.ts
+#15 13.06 18:51:23   └─ /api/graveyard-stats (+35ms)
+#15 13.10 18:51:23 λ src/pages/api/ingest/cell-event.ts
+#15 13.10 18:51:23   └─ /api/ingest/cell-event (+1ms)
+#15 13.11 18:51:23 λ src/pages/api/metrics/cited-cells.ts
+#15 13.11 18:51:23   └─ /api/metrics/cited-cells (+3ms)
+#15 13.11 18:51:23 λ src/pages/api/reading-pulse.ts
+#15 13.11 18:51:23   └─ /api/reading-pulse (+1ms)
+#15 13.12 18:51:23 ▶ src/pages/author/index.astro
+#15 13.12 18:51:23   └─ /author/index.html (+12ms)
+#15 13.25 18:51:23 ▶ src/pages/blog/[slug].astro
+#15 13.25 18:51:23   ├─ /blog/building-in-public/index.html (+32ms)
+#15 13.28 18:51:23   ├─ /blog/focus-as-a-mood/index.html (+17ms)
+#15 13.30 18:51:23   ├─ /blog/hello-world/index.html (+12ms)
+#15 13.31 18:51:23   ├─ /blog/lo-fi-loop/index.html (+12ms)
+#15 13.32 18:51:23   ├─ /blog/now-page/index.html (+17ms)
+#15 13.34 18:51:23   └─ /blog/the-decay-theory/index.html (+16ms)
+#15 13.36 18:51:24 λ src/pages/feed.xml.ts
+#15 13.36 18:51:24   └─ /feed.xml (+1ms)
+#15 13.36 18:51:24 ✓ Completed in 361ms.
+#15 13.36 
+#15 13.36 18:51:24 [build] Rearranging server assets...
+#15 13.37 18:51:24 [build] Server built in 6.70s
+#15 13.37 18:51:24 [build] Complete!
+#15 DONE 13.5s
 
 #16 [server 4/8] COPY --from=builder /app/dist ./dist
 #16 DONE 0.1s
 
 #17 [server 5/8] COPY --from=builder /app/node_modules ./node_modules
-#17 DONE 2.3s
+#17 DONE 2.5s
 
 #18 [server 6/8] COPY --from=builder /app/src/content/blog/ ./src/content/blog/
 #18 DONE 0.0s
@@ -219,11 +217,11 @@ persona-blog-a-sqlite
 #21 exporting to image
 #21 exporting layers
 #21 exporting layers 1.4s done
-#21 writing image sha256:ad25a8f5ed20a818226d42ec9adb1bc869cd9893b2937f3812204595a8e9d2a1 done
+#21 writing image sha256:db9e0ed2a501a0b2741a667eb8c6df5a5310818fe115e7c1afc6c596b1ccfd35 done
 #21 naming to docker.io/library/persona-blog-a done
 #21 DONE 1.4s
 ==> [deploy] Starting container: persona-blog-a on port 7100
-0b06c76d296b4d219f454dcf006b477df83223630b2e14a95986b1094787243a
+6ea674a74b3ad5e24c3ef1d2cd0a6ed4b3ac76982d24d754bc534ae4aa2f4590
 ==> [deploy] Waiting for container to become healthy…
 ==> [deploy] ✓ Container is running
 ==> [deploy] Running deadline sweep…
@@ -233,10 +231,10 @@ persona-blog-a-sqlite
 ==> [deploy] Warming up /api/docs SSR (v150d cited-cell heat)…
 ==> [deploy] /api/docs SSR warm-up: HTTP 200
 ==> [deploy] Warming up cell-metrics endpoint…
-==> [deploy] Cell-metrics baseline: {"window":{"days":1,"since":"2026-04-21T18:18:19.088Z"},"copies":0,"arrivals":0,"roundTripRatio":0,"byCell":[],"heatByCell":[{"axis":"typography","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0}],"ledger":{"ready":false,"ageDays":0,"coldStartDays":7,"warmDays":7}}
+==> [deploy] Cell-metrics baseline: {"window":{"days":1,"since":"2026-04-21T18:51:23.761Z"},"copies":0,"arrivals":0,"roundTripRatio":0,"byCell":[],"heatByCell":[{"axis":"typography","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0}],"ledger":{"ready":false,"ageDays":0,"coldStartDays":7,"warmDays":7}}
 ==> [deploy] Pruning dangling images…
 Deleted Images:
-deleted: sha256:5dbcd7eb18c1855b039634661acf917ae1c826d7cd6d3189508568273877b46b
+deleted: sha256:ad25a8f5ed20a818226d42ec9adb1bc869cd9893b2937f3812204595a8e9d2a1
 
 Total reclaimed space: 0B
-==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 06:18:33 PM UTC 2026
+==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 06:51:39 PM UTC 2026

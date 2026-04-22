@@ -73,6 +73,13 @@
   to   { opacity: 1; }
 }
 
+/* v152 motion-sanctuary (Mike §C) — `--motion-duration-deliberate` is not in
+ * motion.css's zeroed-in-RM list, so the entry animation survives global RM
+ * unless we gate it locally. Keep the toggle; skip the fade.                */
+@media (prefers-reduced-motion: reduce) {
+  .seal-sound-toggle { animation: none; }
+}
+
 /* ── Icon inside toggle ──────────────────────────────────────────────────── */
 
 .seal-sound-toggle__icon {

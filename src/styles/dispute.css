@@ -94,3 +94,10 @@
   40%  { box-shadow: 0 0 20px var(--color-dispute-flash-glow); }
   100% { box-shadow: 0 0 0   transparent; }
 }
+
+/* ── v152 motion-sanctuary (Mike §C) — duration already zeroes via motion.css
+ *    :root override, but a local gate keeps the contract readable beside the
+ *    author's own keyframes. `animation: none` short-circuits every name.    */
+@media (prefers-reduced-motion: reduce) {
+  .dispute-panel { animation: none; }
+}

@@ -204,3 +204,65 @@
     transition-delay: 0s;
   }
 }
+
+/* ── v152 — Cite-confirm ring on the focused cell (Mike napkin §A) ────────
+ *    When a cite handler actually runs (mouse, key, or curl-arrival), the
+ *    owning cell wears `.cell--confirming` for CITE_CONFIRM_MS (1200 ms).
+ *    This is the FOVEAL receipt — the reader's eye is on the cell during
+ *    confirm, so the ring paints where gaze already is. Legend chips stay
+ *    quiet: they are peripheral by physics of the layout (Tanya §2.2).
+ *
+ *    Visual contract:
+ *      · `box-shadow`, NOT `outline` — so the ring never fights the
+ *        `:focus-visible` outline or the `:target` hash-anchor ring. Two
+ *        channels, one cell, no override (Mike napkin §8 risk #1).
+ *      · Stage-keyed color, reused from `--stage-{s}-border`. Zero new
+ *        tokens. Zero new keyframes. No transition — the class flip IS
+ *        the beat; adding easing would make the feedback lag the action.
+ *      · Dim stages (ghost / fossil) lean quieter — same ramp the rest
+ *        of the grammar follows.
+ *
+ *    Sanctuaries (mirrors .cell--arrived exactly):
+ *      · prefers-reduced-motion → no transition, color only.
+ *      · forced-colors          → Highlight box-shadow ring.
+ *
+ *    Credits: Mike (napkin §A foveal ring, §8 risk register #1 outline
+ *             avoidance, §5.7 forced-colors pair), Tanya (UX §2.2 chip
+ *             pulse decline → redirect to the cell surface), Paul (the
+ *             test IS the feature — CITE_CONFIRM_MS is snapshot-locked).
+ *             Sid — 2026-04-22.                                           */
+
+.api-docs__matrix-cell.cell--confirming {
+  box-shadow: 0 0 0 2px var(--cell-confirm-ring, var(--border-focus));
+  border-radius: var(--radius-detail);
+}
+
+.api-docs__matrix-cell[data-decay-stage="fresh"].cell--confirming {
+  --cell-confirm-ring: var(--stage-fresh-border);
+}
+.api-docs__matrix-cell[data-decay-stage="fading"].cell--confirming {
+  --cell-confirm-ring: var(--stage-fading-border);
+}
+.api-docs__matrix-cell[data-decay-stage="endangered"].cell--confirming {
+  --cell-confirm-ring: var(--stage-endangered-border);
+}
+/* Dim stages: endangered floor on hash-arrival is a documented pattern
+ * (see :target block in docs.astro). We DO NOT re-apply that floor here —
+ * the confirming ring is a deliberate action receipt, so it should paint
+ * in the cell's true stage color even on ghost/fossil. The dimmer color
+ * is the signal. */
+.api-docs__matrix-cell[data-decay-stage="ghost"].cell--confirming {
+  --cell-confirm-ring: var(--stage-ghost-border);
+}
+.api-docs__matrix-cell[data-decay-stage="fossil"].cell--confirming {
+  --cell-confirm-ring: var(--stage-fossil-border);
+}
+
+@media (forced-colors: active) {
+  .api-docs__matrix-cell.cell--confirming {
+    box-shadow: 0 0 0 2px Highlight;
+  }
+}
+
+/* No @keyframes = no motion-sanctuary needed. The class flip is the beat,
+ * and removal (1200 ms later, JS) is instant. motion-sanctuary: ok       */

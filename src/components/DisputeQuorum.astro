@@ -124,4 +124,12 @@ const cappedNote  = threshold > 20
     font-size: var(--text-2xs);
     font-style: italic;
   }
+
+  /* v152 motion-sanctuary (Mike §C): token-zero on --motion-ceremony-duration
+     already neutralises these under RM; the local gate keeps the contract
+     visible where the animations live. */
+  @media (prefers-reduced-motion: reduce) {
+    .quorum-bar__seg--filled,
+    .quorum-bar[data-status="contested"] .quorum-bar__seg--filled { animation: none; }
+  }
 </style>

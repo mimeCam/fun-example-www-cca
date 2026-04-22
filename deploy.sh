@@ -4,6 +4,86 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v152 — Cite-confirm foveal ring + motion-sanctuary prebuild guard
+# (2026-04-22). Sprint: pure UIX polish on the cite-confirm beat — NO new
+# feature, NO new design tokens, NO new containers, volumes, env vars, or
+# ports. Only the container exposes 7100 (external Caddy terminates SSL and
+# reverse-proxies). deploy.sh startup sequence (1–9) unchanged; no edits
+# needed to the run-command. Warm-up in step 8 continues to hit /api/docs
+# SSR (now also serving the `.cell--confirming` ring CSS and the v152
+# PROMOTE-to-`.ds-kbd` note) and the cell-metrics endpoint so the ledger
+# schema is eager-created.
+# Key changes (all under active git area this cycle):
+#   src/lib/client/cell-cite.ts — adds `.cell--confirming` 1200 ms foveal
+#     confirm ring on the cited cell (Mike §A). New pure helpers:
+#     `retireCompetingGlows()` supersets `retireOthers()` and also strips
+#     `.cell--confirming` from every other cell, so rapid-fire `c-c-c-c`
+#     coalesces to a single quiet glow (Mike §B risk register row #3
+#     untouched — old callers of retireOthers still work). New
+#     `markConfirming()` / `scheduleConfirmRemoval()` / `markConfirmingForBtn()`
+#     private helpers. Four timing constants (ARRIVAL_MS, TOAST_MS,
+#     CONFIRM_MS, CITE_CONFIRM_MS) are now EXPORTED so cell-confirm.test.ts
+#     can snapshot them; the three 1200 ms values share one perceptual
+#     beat on purpose (button glyph + cell ring + arrival bloom).
+#   src/styles/stage-focus.css — `.api-docs__matrix-cell.cell--confirming`
+#     rule (box-shadow NOT outline so it never fights :focus-visible or
+#     :target hash-anchor rings), five stage-keyed colour variants
+#     (fresh/fading/endangered/ghost/fossil, reusing `--stage-*-border`
+#     tokens — zero new tokens), and a `forced-colors: active` Highlight
+#     override. Self-declared `motion-sanctuary: ok` — no @keyframes,
+#     the class-flip IS the beat, JS removes the class after 1200 ms.
+#   src/lib/client/cell-confirm.test.ts (new, dev-only) — node:test suite
+#     that snapshot-locks the four 1200 / 1800 timing constants. Tuning
+#     any of them forces a PR with a perceptual note (Mike §D / Paul
+#     "the test IS the feature"). NOT executed at Docker build or runtime.
+#   scripts/check-motion-sanctuary.ts (new) — prebuild guard. Every file
+#     that declares a CSS `animation:` / `animation-name:` outside a
+#     `prefers-reduced-motion: reduce` block MUST neighbour one in the
+#     same file. Escape hatch: `/* motion-sanctuary: ok */`. Wired into
+#     `prebuild` via package.json so Docker's `npm run build` fails fast
+#     on any new animation that forgets its reduced-motion sanctuary.
+#     Exit code 1 on violation; teaching message lists offending lines.
+#   scripts/lib/astro-style-blocks.ts (new) — `extractStyleBlocks()`
+#     promoted out of check-token-compliance.ts now that motion-sanctuary
+#     makes it a two-consumer helper (Mike §4 "extract on second real
+#     consumer"). Pure functions, no I/O.
+#   src/components/AuditVerdictPanel.astro, DisputeChallenge.astro,
+#     DisputeQuorum.astro, DisputeTally.astro, OpenLoopCard.astro —
+#     each grows a local `@media (prefers-reduced-motion: reduce) {
+#     animation: none; }` gate to satisfy the new motion-sanctuary
+#     guard. Pure CSS additions; zero behavioural change for bare-key
+#     users; vestibular-sensitive readers finally see a still surface.
+#   src/styles/atmosphere.css, death-clock.css, dispute.css,
+#     seal-sound-toggle.css — same pattern: explicit RM sanctuary
+#     alongside the author's own keyframes. Infinite-loop animations
+#     (clock-pulse, atmosphere breathing, dispute tally dot) now gate
+#     cleanly; no more ambient motion for readers who opted out.
+#   package.json — new scripts `"lint:motion"` and `"test:cell-confirm"`;
+#     `"prebuild"` is now `check-token-compliance --guard && check-motion-
+#     sanctuary`. Both guards run inside the Docker builder stage via
+#     the existing `npm run build` step. No new dependencies.
+#   AGENTS.md — v152 section documents the foveal ring, retire-competing
+#     logic, motion-sanctuary guard, snapshot test, and the single-line
+#     `.api-docs__kbd → .ds-kbd` PROMOTE deferred until the second
+#     consumer lands.
+# Infrastructure: no new services, volumes, env vars, ports, or npm
+#   packages. CONTAINER still exposes 7100 for external Caddy.
+#   DATA_VOLUME and SQLITE_VOLUME unchanged. ADMIN_SECRET, HMAC_SECRET,
+#   GITHUB_PAT, DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already
+#   copies `scripts/` and `src/` wholesale into the builder stage — the
+#   new `scripts/check-motion-sanctuary.ts`, `scripts/lib/astro-style-
+#   blocks.ts`, `cell-cite.ts` edits, `stage-focus.css` confirm-ring
+#   block, RM sanctuaries across components/styles, and the dev-only
+#   `cell-confirm.test.ts` all ship without any Dockerfile edits. The
+#   prebuild compliance guard chain (token drift + DECAY_STAGES
+#   immutability + STAGE_AXES ⇄ file inventory parity + motion-
+#   sanctuary) runs inside `npm run build` during the builder stage.
+#   `.test.ts` files are never executed at build or runtime. deploy.sh
+#   startup sequence (1–9) unchanged; step 8 continues to warm both
+#   `/api/docs` SSR (now also serving the cell-confirming CSS) and the
+#   cell-metrics endpoint, so the first real visitor never sees cold
+#   SSR and the cited-cell ledger is eager-created.
+#
 # Architecture v151d — Nav-legend (the quiet sibling) teaches the 8 nav keys;
 # parity locked by test (2026-04-22). Sprint: Close the last silent arc of
 # the keyboard loop on /api/docs. v151 made the 7×5 matrix arrow-navigable

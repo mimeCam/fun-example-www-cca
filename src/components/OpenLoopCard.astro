@@ -130,4 +130,10 @@ const style = `--decay: ${ratio.toFixed(3)};`;
     line-height: 1.4;
     opacity: calc(0.3 + 0.3 * var(--d));
   }
+
+  /* v152 motion-sanctuary (Mike §C): the shimmer sweep is hover-polish only;
+     vestibular-sensitive readers get a static crystallized surface.        */
+  @media (prefers-reduced-motion: reduce) {
+    .loop-crystallized:hover::before { animation: none; }
+  }
 </style>
