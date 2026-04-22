@@ -8,11 +8,21 @@
 // decay-engine.ts via DECAY_STAGES — there is no hand-typed list here, so
 // the page can never drift from the wire.
 //
-// Credits: Tanya Donska (UX spec §1 — page layout, lede, list, tone, footer),
-//          Mike Koch (napkin §3 — endpoint scope, response shape),
-//          Paul Kim (immutability commitment, self-selection paragraph),
-//          Krystle (response-layer derivation pattern).
-//          AGENTS.md ("polish what we have — AAA").
+// v150d — the 35 grammar cells now also carry `data-heat` (Tanya §2), a
+// telemetry-side attribute painted by the cited-cell ledger. Same classifier
+// the JSON endpoint uses — the page is the proof on the page.
+//
+// Credits: Tanya Donska (UX spec §1 — page layout, lede, list, tone, footer;
+//          §2 layer-collision, §4 heat vocabulary, §7 ARIA sentence),
+//          Mike Koch (napkin §3 — endpoint scope, response shape; §classifier
+//          as single producer), Paul Kim (immutability commitment,
+//          self-selection paragraph, API-parity vow), Elon (cold-start
+//          guardrail, window discipline), Krystle (response-layer derivation
+//          pattern). AGENTS.md ("polish what we have — AAA").
+
+// v150d — SSR on demand so each request sees current ledger data. The page
+// remains cheap (sub-50ms): one GROUP BY + one MIN() on an indexed table.
+export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { DECAY_STAGES } from '../../lib/decay-engine';
@@ -25,6 +35,15 @@ import {
   stageAnchorId,
   cellCitationLabel,
 } from '../../lib/stage-axes';
+import type { Axis } from '../../lib/stage-axes';
+import {
+  baseline,
+  lifetimeByCell,
+  ledgerMaturity,
+  ROUND_TRIP_WINDOW_DAYS,
+} from '../../lib/cell-event-ledger';
+import { heatedGrid, heatSentence } from '../../lib/cell-heat';
+import type { HeatedCell } from '../../lib/cell-heat';
 
 // NOTE: the clipboard payload is built CLIENT-SIDE from window.location.origin
 // so prerendered HTML never bakes in a build-time host (Paul §non-negotiable —
@@ -53,6 +72,40 @@ const STAGE_MEANING: Record<DecayStage, string> = {
 
 const PAGE_TITLE = 'API — Octopoid';
 const REVIEWED_ON = '2026-04-22';
+
+// v150d — per-request SSR fetch. heated is the 7×5 grid (never partial);
+// snap.byCell drives the subtitle sentence; dormant suppresses the sentence
+// until the ledger earns the right to speak (Elon's cold-start rule).
+const _heatNow = Date.now();
+const heatedCells: HeatedCell[] = heatedGrid(lifetimeByCell(), ledgerMaturity(_heatNow), _heatNow);
+const heatSnapshot = baseline(ROUND_TRIP_WINDOW_DAYS);
+const heatByKey = indexHeat(heatedCells);
+
+/** Index heated cells by `${axis}:${stage}` — pure lookup, no side-effects. */
+function indexHeat(cells: HeatedCell[]): Map<string, HeatedCell> {
+  const out = new Map<string, HeatedCell>();
+  for (const c of cells) out.set(`${c.axis}:${c.stage}`, c);
+  return out;
+}
+
+/** Resolve the heated record for one cell — always defined (full grid). */
+function heatFor(axis: Axis, stage: DecayStage): HeatedCell {
+  return heatByKey.get(`${axis}:${stage}`)!;
+}
+
+/** DOM id for the sr-only sentence that backs `aria-describedby`. */
+function heatSrId(axis: Axis, stage: DecayStage): string {
+  return `heat-${axis}-${stage}`;
+}
+
+/** Subtitle copy — single-window, single-source. Tanya §5 / Elon §window. */
+function heatSubtitle(): string {
+  if (!heatSnapshot.copies) {
+    return 'Citations will light this up over the coming week.';
+  }
+  const noun = heatSnapshot.arrivals === 1 ? 'citation' : 'citations';
+  return `${heatSnapshot.arrivals} of ${heatSnapshot.copies} ${noun} returned within ${ROUND_TRIP_WINDOW_DAYS} days.`;
+}
 
 // JSON sample shown in the code block — small enough to read in one breath,
 // representative enough that a builder can predict the rest. The `decayStage`
@@ -132,6 +185,12 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
         CSS it documents — if a cell looks wrong, the axis is wrong, not the
         page.
       </p>
+      {/* v150d — single-window subtitle (Tanya §5). 7-day window named
+         explicitly so nobody silently widens to 30d later. Omitted on
+         cold start, swapped to an onboarding line instead. */}
+      <p class="api-docs__lede api-docs__lede--heat" data-heat-subtitle>
+        {heatSubtitle()}
+      </p>
 
       <div class="api-docs__matrix" role="table" aria-labelledby="matrix-heading">
         <div class="api-docs__matrix-row api-docs__matrix-row--head" role="row">
@@ -153,7 +212,9 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
                 id={cellAnchorId(axis, stage)}
                 data-axis={axis}
                 data-decay-stage={stage}
+                data-heat={heatFor(axis, stage).heat}
                 aria-label={`${axis} at ${stage}`}
+                aria-describedby={heatSrId(axis, stage)}
               >
                 {/* v150b — copy-cell-anchor. Top-right affordance revealed on
                    hover/focus-within; the clipboard payload + human label
@@ -195,6 +256,13 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
                 {axis === 'underline' && (
                   <p class="mx-demo mx-demo--under"><a href={`#${rowAnchorId(axis)}`}>link</a></p>
                 )}
+
+                {/* v150d — sr-only sentence carrying the heat story in words.
+                   Referenced by the cell's `aria-describedby`. Plain English,
+                   no punctuation noise. Tanya §7. */}
+                <span id={heatSrId(axis, stage)} class="mx-sr-only">
+                  {heatSentence(heatFor(axis, stage), _heatNow)}
+                </span>
               </div>
             ))}
           </div>
@@ -796,5 +864,75 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
   @media (forced-colors: active) {
     .api-docs__matrix-cell { border-top-color: CanvasText; }
     .api-docs__matrix-cell:target { outline-color: Highlight; }
+  }
+
+  /* ── v150d — Cited-cell heat (Tanya §3 / §4) ──────────────────────────
+     Two attributes, two surfaces, one rounded rectangle:
+       · data-decay-stage → top-edge hairline (labeled identity, unchanged)
+       · data-heat        → bottom-edge hairline + 4% background wash
+     Zero new tokens; reuses --color-decay-* primitives verbatim.         */
+
+  .api-docs__matrix-cell {
+    /* Declare a neutral border-bottom at the cell level so the per-heat
+       rule only needs to recolor, never re-add structure.                */
+    border-bottom: 1px solid transparent;
+    background-color: transparent;
+    transition:
+      background-color   var(--motion-duration-base) ease-out,
+      border-bottom-color var(--motion-duration-base) ease-out;
+  }
+
+  .api-docs__matrix-cell[data-heat="warm"]    { border-bottom-color: color-mix(in oklch, var(--color-decay-fresh)      22%, var(--border-subtle));
+                                                background-color:    color-mix(in oklch, var(--color-decay-fresh)      4%,  transparent); }
+  .api-docs__matrix-cell[data-heat="cooling"] { border-bottom-color: color-mix(in oklch, var(--color-decay-fading)     22%, var(--border-subtle));
+                                                background-color:    color-mix(in oklch, var(--color-decay-fading)     4%,  transparent); }
+  .api-docs__matrix-cell[data-heat="cold"]    { border-bottom-color: color-mix(in oklch, var(--color-decay-endangered) 22%, var(--border-subtle));
+                                                background-color:    color-mix(in oklch, var(--color-decay-endangered) 4%,  transparent); }
+  .api-docs__matrix-cell[data-heat="unseen"]  { border-bottom-color: color-mix(in oklch, var(--color-decay-ghost)      22%, var(--border-subtle));
+                                                background-color:    color-mix(in oklch, var(--color-decay-ghost)      4%,  transparent); }
+  /* dormant = cold-start guardrail: visually identical to today's page   */
+  .api-docs__matrix-cell[data-heat="dormant"] { border-bottom-color: transparent;
+                                                background-color:    transparent; }
+
+  /* The heat subtitle uses the same token ramp but as a glanceable dot —
+     it sits at prose size and inherits from .api-docs__lede otherwise.   */
+  .api-docs__lede--heat {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+
+  /* sr-only — visually-hidden but screen-reader-addressable. Scoped to
+     this page (mx- prefix) so it can't be mistaken for a global utility. */
+  .mx-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .api-docs__matrix-cell { transition: none; }
+  }
+
+  @media (forced-colors: active) {
+    /* Heat disappears in high-contrast; identity stays. Tanya §7.        */
+    .api-docs__matrix-cell[data-heat] {
+      background-color: Canvas;
+      border-bottom-color: CanvasText;
+    }
+  }
+
+  @media (max-width: 480px) {
+    /* Mobile: no background wash on a shadowed card; keep the bottom-edge
+       only (Tanya §9). One pixel, one signal, plenty at 360 px.          */
+    .api-docs__matrix-row .api-docs__matrix-cell[data-heat] {
+      background-color: transparent;
+    }
   }
 </style>

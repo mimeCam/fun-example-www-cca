@@ -31,6 +31,8 @@ import {
   ensureSchema, record, baseline, roundTripRatio,
   isValidCell, isValidEventRow, clampTimestamp, ratio,
   ROUND_TRIP_WINDOW_DAYS,
+  COLD_START_DAYS,
+  lifetimeByCell, ledgerMaturity,
   __resetSchemaFlagForTests,
 } from './cell-event-ledger.js';
 
@@ -151,5 +153,57 @@ describe('cell-event-ledger — events older than the window are ignored', () =>
     const snap = baseline(1);
     assert.equal(snap.copies, 0);
     assert.equal(snap.arrivals, 0);
+  });
+});
+
+// ── 4 · Lifetime + maturity (v150d — cited-cell heat) ─────────────────────
+//
+// Same bypass pattern as above: a direct INSERT goes around record()'s
+// ±1h clamp so a lifetime query can see genuinely ancient events.
+
+function insertRaw(event: 'copy' | 'arrive', axis: string, stage: string, ref: string, ts: number): void {
+  memDb.prepare(
+    'INSERT INTO cell_events (event, axis, stage, ref, ts) VALUES (?, ?, ?, ?, ?)',
+  ).run(event, axis, stage, ref, ts);
+}
+
+describe('cell-event-ledger — lifetimeByCell', () => {
+  test('empty ledger → empty array', () => {
+    assert.deepEqual(lifetimeByCell(), []);
+  });
+  test('folds copies + arrivals per cell with lastTs', () => {
+    insertRaw('copy',   'focus', 'fresh', 'lifetest-01', NOW - 5 * 86_400_000);
+    insertRaw('arrive', 'focus', 'fresh', 'lifetest-01', NOW - 4 * 86_400_000);
+    insertRaw('copy',   'focus', 'fresh', 'lifetest-02', NOW - 1 * 86_400_000);
+    const rows = lifetimeByCell();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].copies, 2);
+    assert.equal(rows[0].arrivals, 1);
+    assert.equal(rows[0].lastTs, NOW - 1 * 86_400_000);
+  });
+  test('ignores rows with invalid axis/stage', () => {
+    insertRaw('copy', 'bogus', 'fresh', 'badaxis-01', NOW);
+    assert.equal(lifetimeByCell().length, 0);
+  });
+});
+
+describe('cell-event-ledger — ledgerMaturity', () => {
+  test('empty ledger → ready false, ageDays 0', () => {
+    const m = ledgerMaturity(NOW);
+    assert.equal(m.ready, false);
+    assert.equal(m.ageDays, 0);
+    assert.equal(m.coldStartDays, COLD_START_DAYS);
+  });
+  test('one fresh event → ready false, ageDays ~0', () => {
+    insertRaw('copy', 'focus', 'fresh', 'young-event-1', NOW);
+    const m = ledgerMaturity(NOW);
+    assert.equal(m.ready, false);
+    assert.ok(m.ageDays < 1);
+  });
+  test('oldest event older than COLD_START_DAYS → ready true', () => {
+    insertRaw('copy', 'focus', 'fresh', 'old-event-1', NOW - (COLD_START_DAYS + 1) * 86_400_000);
+    const m = ledgerMaturity(NOW);
+    assert.equal(m.ready, true);
+    assert.ok(m.ageDays > COLD_START_DAYS);
   });
 });

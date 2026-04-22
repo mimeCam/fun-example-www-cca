@@ -4,6 +4,89 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v150d — Cited-Cell Heat on /api/docs (2026-04-22)
+#   Sprint: Turn the v150c ledger into a visible, glanceable surface on the
+#     vocabulary page itself. Every one of the 35 (axis × stage) matrix
+#     cells now carries `data-heat="warm|cooling|cold|unseen|dormant"`, a
+#     telemetry-side attribute that paints a subtle bottom-hairline + 4%
+#     background wash. Same classifier the new JSON endpoint uses — the
+#     page is the proof on the page. Pure UIX polish + code-quality dedupe.
+#     Zero infrastructure changes: no new services, volumes, env vars,
+#     ports, or npm packages.
+#   Key changes (all under active git area this cycle):
+#     src/lib/cell-heat.ts (new) — pure, stateless, SSR-safe heat classifier.
+#       Exports HEAT_LEVELS (warm|cooling|cold|unseen|dormant — deliberately
+#       disjoint from DECAY_STAGES so `data-heat` ⊥ `data-decay-stage`
+#       never collide on the wire, in CSS, or in tests), cellHeat()
+#       (deterministic pure fn: lastTs + now + ledgerReady → level),
+#       heatedGrid() (full 7×5 projection — never missing a cell),
+#       heatSentence() (sr-only ARIA sentence for `aria-describedby`).
+#       Cold-start discipline: first COLD_START_DAYS (7) of ledger history
+#       → every cell renders `dormant` (neutral — Elon "don't ship a lie on
+#       day one"). Each helper ≤ 10 lines (Sid). Single producer: both
+#       /api/docs SSR and /api/metrics/cited-cells JSON call heatedGrid()
+#       so page tint and JSON cannot drift (Paul API-parity vow).
+#     src/lib/cell-heat.test.ts (new, dev-only) — node:test suite. Covers
+#       the five-level classifier, dormant-before-ledger-ready guardrail,
+#       unseen (null lastTs, ready ledger), warm/cooling/cold day buckets,
+#       full-grid cardinality (exactly 35 heated cells, row-major order),
+#       sentence shapes (pluralisation, today/N-days-ago, no trailing
+#       punctuation drift). NOT executed at Docker build or runtime.
+#     src/lib/cell-event-ledger.ts — two additions, zero breakage.
+#       `lifetimeByCell()` returns the all-time per-cell counts + last-seen
+#       (single indexed GROUP BY — sub-ms class same as `baseline()`).
+#       `ledgerMaturity(now?)` returns `{ ageDays, ready, coldStartDays }`
+#       (ready iff `ageDays >= COLD_START_DAYS`). Existing v150c exports
+#       (`baseline`, `record`, `roundTripRatio`, etc.) are untouched — API
+#       is additive. `cell_events` schema unchanged; the two new reads
+#       share the same connection via `sharedDatabase()`.
+#     src/pages/api/docs.astro — now SSR on demand (`export const
+#       prerender = false`). Per-request it reads `lifetimeByCell()` +
+#       `ledgerMaturity()` + `baseline()` (total: ~sub-50ms on SQLite),
+#       projects through `heatedGrid()`, and paints:
+#         · `data-heat` on every `.api-docs__matrix-cell`
+#         · a single-window subtitle (7-day — explicit, never silently
+#           widens) omitted on cold start, swapped to an onboarding line
+#         · a `<span class="mx-sr-only">` sentence per cell, referenced
+#           by `aria-describedby` — same story the tint tells, in words.
+#       New CSS block (zero net-new tokens — reuses color-decay-*
+#       primitives verbatim via color-mix in oklch): transparent defaults,
+#       per-heat bottom-hairline 22% + background-wash 4%; `dormant` is
+#       fully transparent (visually identical to today's page); reduced-
+#       motion kills the transition; forced-colors collapses to
+#       Canvas/CanvasText; mobile (<480px) drops the wash — hairline only.
+#     src/pages/api/metrics/cited-cells.ts — response is additively
+#       extended. v150c fields (`window`, `copies`, `arrivals`,
+#       `roundTripRatio`, `byCell`) stay byte-identical. New blocks:
+#         · `heatByCell: HeatedCell[]` (35 entries — the same array SSR
+#           paints, so external consumers agree with the page)
+#         · `ledger: { ready, ageDays, coldStartDays, warmDays }` (lets
+#           external tooling suppress the headline during cold start)
+#       SLA still sub-50ms (three indexed scalar queries + two group-bys).
+#       `Cache-Control: public, max-age=30` unchanged.
+#     AGENTS.md — "Shared helpers" list gains `cell-heat.ts` as the single
+#       canonical heat classifier; stage grammar paragraph untouched.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm
+#     packages. CONTAINER still exposes 7100 for external Caddy. DATA_VOLUME
+#     and SQLITE_VOLUME unchanged. The `cell_events` table continues to
+#     live inside `revivals.db` at `/app/data/revivals.db` (mounted from
+#     persona-blog-a-sqlite). ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already copies `src/`
+#     wholesale into the builder stage — the new `cell-heat.ts`, updated
+#     `cell-event-ledger.ts`, `docs.astro`, `cited-cells.ts`, and dev-only
+#     `.test.ts` all ship without any Dockerfile edits. The prebuild
+#     compliance guard (token drift + DECAY_STAGES immutability + STAGE_AXES
+#     ⇄ file inventory parity) is unchanged and still runs inside
+#     `npm run build` during the Docker builder stage. `.test.ts` files
+#     are never executed at build or runtime. deploy.sh startup sequence
+#     (1–9) unchanged; step 8 now warms BOTH endpoints — `/api/docs` (the
+#     new SSR path — `prerender=false` — pays its first-render cost once,
+#     inside the deploy window, so real visitors never see cold SSR) AND
+#     `/api/metrics/cited-cells` (unchanged: forces `ensureSchema()` on the
+#     ledger table and captures the v150d-extended baseline snapshot —
+#     including `heatByCell` + `ledger.ready` — in deployment.log for
+#     operator before/after inspection).
+#
 # Architecture v150c — Cited-Cell Round-Trip Ledger (2026-04-22)
 #   Sprint: Close the TODO beacon loop from v150b. The citation ritual
 #     now has causal telemetry: a copy mints a short nonce, bakes it into
@@ -1061,13 +1144,35 @@ else
   echo "==> [deploy] Skipping OTS upgrade (ADMIN_SECRET not set in .env)"
 fi
 
-# ── 8. Cell-metrics warm-up — eager-create cell_events schema & log baseline ─
-# v150c — GET /api/metrics/cited-cells is read-only and unauthenticated;
-# hitting it forces `ensureSchema()` inside the ledger module, which creates
-# the `cell_events` table + indexes on the SQLite volume the very first time
-# a deploy happens. Captures the rolling 7-day round-trip snapshot in
-# deployment.log so operators have a before/after trail across deploys.
-# Idempotent — safe to call on every redeploy. Never fails the script.
+# ── 8. Cited-cell warm-up — SSR page + metrics endpoint ──────────────────────
+# v150d — warms BOTH surfaces of the cited-cell story so the first real
+# visitor never pays a cold-start cost AND the ledger schema is eager-created
+# before the first beacon arrives:
+#
+#   (a) GET /api/docs — now SSR on demand (`export const prerender = false`).
+#       The first render hydrates @astrojs/node's route handler, reads
+#       `lifetimeByCell()` + `ledgerMaturity()` + `baseline()`, and tints
+#       all 35 grammar-matrix cells with `data-heat`. Hitting it here pays
+#       that one-time cost inside the deploy window instead of the first
+#       real visitor's page load. Response body is large HTML — discarded
+#       (only the HTTP status is logged). Never fails the script.
+#
+#   (b) GET /api/metrics/cited-cells — read-only, unauthenticated; same
+#       single producer (`heatedGrid()`) the SSR page uses. Hitting it
+#       forces `ensureSchema()` on the ledger module, which creates the
+#       `cell_events` table + indexes on the SQLite volume the very first
+#       time a deploy happens, and captures the v150d-extended baseline
+#       (copies / arrivals / roundTripRatio / byCell / heatByCell / ledger)
+#       in deployment.log so operators have a before/after trail across
+#       deploys. Idempotent — safe to call on every redeploy.
+echo "==> [deploy] Warming up /api/docs SSR (v150d cited-cell heat)…"
+DOCS_STATUS=$(curl --silent --show-error --output /dev/null \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/api/docs" \
+  || echo '000')
+echo "==> [deploy] /api/docs SSR warm-up: HTTP ${DOCS_STATUS}"
+
 echo "==> [deploy] Warming up cell-metrics endpoint…"
 METRICS_RESPONSE=$(curl --silent --show-error --max-time 10 \
   --header "Accept: application/json" \

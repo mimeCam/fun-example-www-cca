@@ -62,6 +62,28 @@ export interface CellCount {
 /** The rolling window used for the headline number. Mike §5, Paul §154. */
 export const ROUND_TRIP_WINDOW_DAYS = 7;
 
+/** Days of ledger history required before "never-cited" turns from dormant
+ *  (cold start) into unseen (genuine silence). Elon's guardrail, Tanya §4. */
+export const COLD_START_DAYS = 7;
+
+/** All-time per-cell counters + most-recent event timestamp. No window.
+ *  Callers use this to classify cell heat (see `cell-heat.ts`). */
+export interface CellLifetime {
+  axis: Axis;
+  stage: DecayStage;
+  copies: number;
+  arrivals: number;
+  lastTs: number | null;   // ms of most recent event, null if none
+}
+
+/** Ledger-maturity snapshot. `ready` is the only boolean consumers need;
+ *  `ageDays` + `coldStartDays` surface the threshold for screen readers. */
+export interface LedgerMaturity {
+  ageDays: number;         // 0 when the ledger is empty
+  ready: boolean;          // true when `ageDays >= coldStartDays`
+  coldStartDays: number;   // mirrors COLD_START_DAYS (constant, exposed for JSON)
+}
+
 // ── Schema (idempotent) ───────────────────────────────────────────────────
 
 const SCHEMA_SQL = `
@@ -229,6 +251,55 @@ export function baseline(windowDays = ROUND_TRIP_WINDOW_DAYS): RoundTripBaseline
   };
 }
 
-// TODO(next cycle): expose `byDay()` for a sparkline without a dashboard —
-// same pattern as getRevivalTimeline in collectiveMemory. Parked until the
-// baseline number tells us whether a chart is worth the LOC.
+// ── Lifetime + maturity (v150d — /api/docs cited-cell heat, Mike §) ──────
+
+/** Per-(axis,stage) all-time counters + last-seen timestamp. Single indexed
+ *  GROUP BY — sub-ms on SQLite, same class as `baseline()`. */
+export function lifetimeByCell(): CellLifetime[] {
+  ensureSchema();
+  const rows = sharedDatabase().prepare(`
+    SELECT axis, stage, event, COUNT(*) AS c, MAX(ts) AS last
+    FROM cell_events GROUP BY axis, stage, event
+  `).all() as Array<{ axis: string; stage: string; event: string; c: number; last: number }>;
+  return foldLifetimeRows(rows);
+}
+
+/** Merge the per-event group-by into one (axis,stage) summary per cell. */
+function foldLifetimeRows(
+  rows: Array<{ axis: string; stage: string; event: string; c: number; last: number }>,
+): CellLifetime[] {
+  const out = new Map<string, CellLifetime>();
+  for (const r of rows) mergeLifetimeRow(out, r);
+  return [...out.values()];
+}
+
+/** Fold one event's aggregate row into the running (axis,stage) summary. */
+function mergeLifetimeRow(
+  out: Map<string, CellLifetime>,
+  r: { axis: string; stage: string; event: string; c: number; last: number },
+): void {
+  if (!isValidCell(r.axis, r.stage)) return;
+  const key = `${r.axis}:${r.stage}`;
+  const cur = out.get(key) ?? emptyLifetime(r.axis as Axis, r.stage as DecayStage);
+  if (r.event === 'copy')   cur.copies   += r.c;
+  if (r.event === 'arrive') cur.arrivals += r.c;
+  cur.lastTs = cur.lastTs === null ? r.last : Math.max(cur.lastTs, r.last);
+  out.set(key, cur);
+}
+
+/** Zeroed lifetime row for a (axis,stage) pair. Pure, trivially testable. */
+function emptyLifetime(axis: Axis, stage: DecayStage): CellLifetime {
+  return { axis, stage, copies: 0, arrivals: 0, lastTs: null };
+}
+
+/** Age of the oldest ledger event. Empty ledger → ageDays=0, ready=false
+ *  (cold-start guardrail — Elon's "don't ship a lie on day one"). */
+export function ledgerMaturity(now = Date.now()): LedgerMaturity {
+  ensureSchema();
+  const row = sharedDatabase().prepare(
+    'SELECT MIN(ts) AS first FROM cell_events',
+  ).get() as { first: number | null };
+  if (row.first === null) return { ageDays: 0, ready: false, coldStartDays: COLD_START_DAYS };
+  const ageDays = (now - row.first) / DAY_MS;
+  return { ageDays, ready: ageDays >= COLD_START_DAYS, coldStartDays: COLD_START_DAYS };
+}
