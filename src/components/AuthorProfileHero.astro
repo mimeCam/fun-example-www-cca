@@ -14,13 +14,18 @@
 // Credits: Tanya Donska (UX), Michael Koch (arch)
 
 import type { BattingAverageResult, TrophyTier } from '../lib/batting-average';
+import type { RecordStage } from '../lib/record-stage';
 
 interface Props {
   result: BattingAverageResult;
   slug: string;
+  /** Record-age stage — forwarded onto `.aph-hero` as `data-record-stage`.
+   *  Optional: defaults to `'fresh'` when omitted (brand-new authors).
+   *  Drives the v143 inversion — voice softens, record (BA number) hardens. */
+  recordStage?: RecordStage;
 }
 
-const { result, slug } = Astro.props;
+const { result, slug, recordStage = 'fresh' } = Astro.props;
 
 const { battingAverage, trophyTier, resolvedCorrect, resolvedTotal, totalSealed, eligible } = result;
 const wrong   = resolvedTotal - resolvedCorrect;
@@ -49,7 +54,7 @@ const tierLabel = TIER_LABEL[trophyTier];
 const fingerprint = slug.slice(0, 8).padEnd(8, '·');
 ---
 
-<div class="aph-hero" data-tier={trophyTier}>
+<div class="aph-hero" data-tier={trophyTier} data-record-stage={recordStage}>
 
   {/* SVG Gauge — arc fills clockwise from top */}
   <div class="aph-gauge-wrap" aria-hidden="true">
@@ -314,6 +319,39 @@ const fingerprint = slug.slice(0, 8).padEnd(8, '·');
     color: var(--text-ghost);
     letter-spacing: var(--tracking-wide);
     margin: 0;
+  }
+
+  /* ── Record-age grammar — record HARDENS with age (v143 inversion) ────
+   * Mirror of the `.ap-slug` / `.ap-since` voice-softens pass in
+   * author-profile.css. Here the BA number gains weight and tightens
+   * letter-spacing as the record ages, and the tier badge tracks it.
+   * Fossil = stone; fresh = paper.
+   *
+   * Font-weight is a plain numeric property (not a token-compliance
+   * concern — the guard polices colors & font-size rem only). Opacity
+   * stays on 1.0 here: the record must NOT dim with age. That's the
+   * whole inversion.
+   *
+   * Credits: Mike (napkin §7 inversion rule), Tanya (UX §6 stage table).
+   * ───────────────────────────────────────────────────────────────────── */
+
+  .aph-hero[data-record-stage="fresh"]      .aph-gauge-pct { font-weight: var(--weight-semibold); letter-spacing: var(--tracking-display); }
+  .aph-hero[data-record-stage="fading"]     .aph-gauge-pct { font-weight: var(--weight-bold);     letter-spacing: -0.01em; }
+  .aph-hero[data-record-stage="endangered"] .aph-gauge-pct { font-weight: var(--weight-bold);     letter-spacing: -0.02em; }
+  .aph-hero[data-record-stage="ghost"]      .aph-gauge-pct { font-weight: var(--weight-extrabold); letter-spacing: -0.03em; }
+  .aph-hero[data-record-stage="fossil"]     .aph-gauge-pct { font-weight: var(--weight-extrabold); letter-spacing: -0.04em; }
+
+  .aph-hero[data-record-stage="fresh"]      .aph-tier-badge { font-weight: var(--weight-semibold); }
+  .aph-hero[data-record-stage="fading"]     .aph-tier-badge { font-weight: var(--weight-bold); }
+  .aph-hero[data-record-stage="endangered"] .aph-tier-badge { font-weight: var(--weight-bold); }
+  .aph-hero[data-record-stage="ghost"]      .aph-tier-badge { font-weight: var(--weight-extrabold); }
+  .aph-hero[data-record-stage="fossil"]     .aph-tier-badge { font-weight: var(--weight-extrabold); }
+
+  .aph-gauge-pct,
+  .aph-tier-badge {
+    transition:
+      font-weight    var(--motion-duration-deliberate) var(--motion-easing-standard),
+      letter-spacing var(--motion-duration-deliberate) var(--motion-easing-standard);
   }
 
   /* ── Responsive ─────────────────────────────── */

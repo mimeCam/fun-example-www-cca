@@ -100,6 +100,41 @@
 .ap-page[data-tier="diamond"] { --ap-tint: color-mix(in oklch, var(--clr-violet-400) 4%, transparent); }
 .ap-page { background: var(--ap-tint, transparent); border-radius: var(--radius-xl); }
 
+/* ── Record-age grammar — voice softens with record age (v143 inversion) ───
+ * The writer's identity (slug name, "on record since" subtitle) dims stage-
+ * by-stage. The record itself (BA number, tier badge) HARDENS on a separate
+ * pass inside AuthorProfileHero's scoped styles.
+ *
+ * Opacity values pull from the existing `--stage-*-text-primary` family in
+ * tokens.css (lines 120–131) — this module defines NO new token values.
+ * Weight values drop stage by stage (softer voice) using `--weight-*` tokens.
+ *
+ * Credits: Mike (napkin §7 inversion rule), Tanya (UX §6 stage table),
+ *          Paul (polish ship §7.1 — voice fades, record hardens).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.ap-page[data-record-stage="fresh"]      .ap-slug { opacity: var(--stage-fresh-text-primary);      font-weight: var(--weight-semibold); }
+.ap-page[data-record-stage="fading"]     .ap-slug { opacity: var(--stage-fading-text-primary);     font-weight: var(--weight-medium); }
+.ap-page[data-record-stage="endangered"] .ap-slug { opacity: var(--stage-endangered-text-primary); font-weight: var(--weight-medium); }
+.ap-page[data-record-stage="ghost"]      .ap-slug { opacity: var(--stage-ghost-text-primary);      font-weight: var(--weight-normal); }
+.ap-page[data-record-stage="fossil"]     .ap-slug { opacity: var(--stage-fossil-text-primary);     font-weight: var(--weight-normal); }
+
+.ap-page[data-record-stage="fresh"]      .ap-since { opacity: var(--stage-fresh-text-secondary); }
+.ap-page[data-record-stage="fading"]     .ap-since { opacity: var(--stage-fading-text-secondary); }
+.ap-page[data-record-stage="endangered"] .ap-since { opacity: var(--stage-endangered-text-secondary); }
+.ap-page[data-record-stage="ghost"]      .ap-since { opacity: var(--stage-ghost-text-secondary); }
+.ap-page[data-record-stage="fossil"]     .ap-since { opacity: var(--stage-fossil-text-secondary); }
+
+/* Transition so live page loads don't snap when stage changes (e.g. a new
+ * seal nudges an author from `fresh` → `fading`). Duration matches the
+ * site's deliberate band — not showy, just coherent. */
+.ap-slug,
+.ap-since {
+  transition:
+    opacity     var(--motion-duration-deliberate) var(--motion-easing-standard),
+    font-weight var(--motion-duration-deliberate) var(--motion-easing-standard);
+}
+
 /* ── Unlock ring row — ring + ceremony side-by-side ─────────────────── */
 /* Position: below hero, above stats grid (Mike napkin §6 integration).  */
 

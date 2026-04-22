@@ -23,6 +23,7 @@ import BattingAverageUnlockCeremony from '../../components/BattingAverageUnlockC
 import { getBattingAverageResult, getUnlockProgress } from '../../lib/batting-average';
 import { getSealsByAuthor }         from '../../lib/conviction-ledger';
 import { buildTrackRecord }         from '../../lib/track-record';
+import { recordStage }              from '../../lib/record-stage';
 import { canonicalUrl }             from '../../config/seo.config';
 import { getCollection }            from 'astro:content';
 
@@ -45,6 +46,12 @@ const trackData   = buildTrackRecord(authorPosts);
 // totalPublished: posts sealed by this author from the content collection (best proxy available).
 const result   = getBattingAverageResult(slug, authorPosts.length);
 const progress = getUnlockProgress(slug);
+
+// Record-age grammar: classify `firstSealDate` into a 5-stage band.
+// Mirrors the post-TTL decay grammar on a new axis (v143 inversion):
+//   voice softens (name dims) · record hardens (BA number gains weight).
+// Null-safe — brand-new authors render as 'fresh'. Elon §4 atom.
+const stage = recordStage(trackData.firstSealDate);
 
 // ── Pagination ─────────────────────────────────────────────────────────────
 
@@ -84,6 +91,7 @@ const ogImage = canonicalUrl(`/api/og/batting-average.png?author=${slug}`);
   <main
     class="ap-page"
     data-tier={result.trophyTier}
+    data-record-stage={stage}
     aria-label={`${slug}'s conviction profile`}
   >
 
@@ -104,7 +112,7 @@ const ogImage = canonicalUrl(`/api/og/batting-average.png?author=${slug}`);
     </header>
 
     {/* ── Batting average hero — the loudest element on the page ────────── */}
-    <AuthorProfileHero result={result} slug={slug} />
+    <AuthorProfileHero result={result} slug={slug} recordStage={stage} />
 
     {/* ── Conviction unlock ring — progress toward batting average unlock ── */}
     {/* Always shown: tracks progress when cold, confirms unlock when live.  */}

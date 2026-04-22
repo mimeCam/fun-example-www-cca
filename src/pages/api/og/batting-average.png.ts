@@ -17,6 +17,9 @@ import {
 } from '../../../lib/batting-average';
 import { renderBattingAverageImage } from '../../../lib/og/renderOGImage';
 import type { OGAuthor } from '../../../lib/og/renderOGImage';
+import { buildTrackRecord } from '../../../lib/track-record';
+import { recordStage } from '../../../lib/record-stage';
+import { getSealsByAuthor } from '../../../lib/conviction-ledger';
 import { siteDefaults } from '../../../config/seo.config';
 import { getCollection } from 'astro:content';
 
@@ -43,8 +46,23 @@ async function authorCard(
   const count = allPosts.length;
   const result = getBattingAverageResult(authorSlug, count);
   const avg = toBattingAverage(result);
-  const author = toOGAuthor(authorSlug, result);
+  // Record-age stage — mirrors the live /author/[slug] page (Mike napkin §7.3).
+  // `?author=<slug>` is already the cache key; SWR of 24h is acceptable given
+  // record-stage boundaries are months/years apart (Mike §8 risk table).
+  const stage = authorRecordStage(authorSlug, allPosts);
+  const author = toOGAuthor(authorSlug, result, stage);
   return renderBattingAverageImage(avg, siteName, author);
+}
+
+/** Compute record-stage for the given author, null-safe through trackData. */
+function authorRecordStage(
+  authorSlug: string,
+  allPosts: Awaited<ReturnType<typeof getCollection<'blog'>>>,
+): ReturnType<typeof recordStage> {
+  const sealedSlugs = getSealsByAuthor(authorSlug).map(s => s.post_slug);
+  const authorPosts = allPosts.filter(p => sealedSlugs.includes(p.slug));
+  const track = buildTrackRecord(authorPosts);
+  return recordStage(track.firstSealDate);
 }
 
 /** Convert BattingAverageResult → BattingAverage discriminated union. */
@@ -71,12 +89,14 @@ function toBattingAverage(
 function toOGAuthor(
   slug: string,
   r: ReturnType<typeof getBattingAverageResult>,
+  stage: ReturnType<typeof recordStage>,
 ): OGAuthor {
   return {
     slug,
     name: slug,
     tier: r.trophyTier,
     selectivity: r.selectivityRate,
+    recordStage: stage,
   };
 }
 

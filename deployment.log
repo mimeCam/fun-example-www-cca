@@ -1,4 +1,4 @@
-==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 11:02:27 AM UTC 2026
+==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 11:29:04 AM UTC 2026
 ==> [deploy] Stopping existing container: persona-blog-a
 persona-blog-a
 ==> [deploy] Removing existing container: persona-blog-a
@@ -28,80 +28,77 @@ persona-blog-a-sqlite
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 143.12kB 0.6s done
-#6 DONE 0.6s
+#6 transferring context: 75.03kB 0.4s done
+#6 DONE 0.4s
 
-#7 [builder  3/10] RUN apk add --no-cache python3 make g++
-#7 0.816 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
-#7 1.016 ( 2/29) Installing jansson (2.14.1-r0)
-#7 1.018 ( 3/29) Installing zstd-libs (1.5.7-r2)
-#7 1.025 ( 4/29) Installing binutils (2.45.1-r0)
-#7 1.105 ( 5/29) Installing libgomp (15.2.0-r2)
-#7 ...
+#7 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
+#7 0.723 ( 1/10) Installing libexpat (2.7.5-r0)
+#7 0.730 ( 2/10) Installing brotli-libs (1.2.0-r0)
+#7 0.741 ( 3/10) Installing libbz2 (1.0.8-r6)
+#7 0.744 ( 4/10) Installing libpng (1.6.57-r0)
+#7 0.747 ( 5/10) Installing freetype (2.14.1-r0)
+#7 0.756 ( 6/10) Installing fontconfig (2.17.1-r0)
+#7 0.774 ( 7/10) Installing encodings (1.1.0-r0)
+#7 0.793 ( 8/10) Installing libfontenc (1.1.8-r0)
+#7 0.795 ( 9/10) Installing mkfontscale (1.2.3-r1)
+#7 0.797 (10/10) Installing font-dejavu (2.37-r6)
+#7 0.905 Executing busybox-1.37.0-r30.trigger
+#7 0.915 Executing fontconfig-2.17.1-r0.trigger
+#7 0.970 Executing mkfontscale-1.2.3-r1.trigger
+#7 1.025 OK: 23.8 MiB in 28 packages
+#7 DONE 1.2s
 
-#8 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
-#8 0.812 ( 1/10) Installing libexpat (2.7.5-r0)
-#8 0.819 ( 2/10) Installing brotli-libs (1.2.0-r0)
-#8 0.832 ( 3/10) Installing libbz2 (1.0.8-r6)
-#8 0.834 ( 4/10) Installing libpng (1.6.57-r0)
-#8 0.838 ( 5/10) Installing freetype (2.14.1-r0)
-#8 0.846 ( 6/10) Installing fontconfig (2.17.1-r0)
-#8 0.867 ( 7/10) Installing encodings (1.1.0-r0)
-#8 0.880 ( 8/10) Installing libfontenc (1.1.8-r0)
-#8 0.883 ( 9/10) Installing mkfontscale (1.2.3-r1)
-#8 0.886 (10/10) Installing font-dejavu (2.37-r6)
-#8 0.967 Executing busybox-1.37.0-r30.trigger
-#8 0.976 Executing fontconfig-2.17.1-r0.trigger
-#8 1.012 Executing mkfontscale-1.2.3-r1.trigger
-#8 1.052 OK: 23.8 MiB in 28 packages
-#8 DONE 1.2s
-
-#7 [builder  3/10] RUN apk add --no-cache python3 make g++
-#7 1.110 ( 6/29) Installing libatomic (15.2.0-r2)
-#7 1.112 ( 7/29) Installing gmp (6.3.0-r4)
-#7 1.118 ( 8/29) Installing isl26 (0.26-r1)
-#7 1.138 ( 9/29) Installing mpfr4 (4.2.2-r0)
-#7 1.145 (10/29) Installing mpc1 (1.3.1-r1)
-#7 1.148 (11/29) Installing gcc (15.2.0-r2)
-#7 2.204 (12/29) Installing musl-dev (1.2.5-r23)
-#7 2.278 (13/29) Installing g++ (15.2.0-r2)
-#7 2.564 (14/29) Installing make (4.4.1-r3)
-#7 2.568 (15/29) Installing libbz2 (1.0.8-r6)
-#7 2.570 (16/29) Installing libexpat (2.7.5-r0)
-#7 2.572 (17/29) Installing libffi (3.5.2-r0)
-#7 2.574 (18/29) Installing gdbm (1.26-r0)
-#7 2.576 (19/29) Installing xz-libs (5.8.2-r0)
-#7 2.579 (20/29) Installing mpdecimal (4.0.1-r0)
-#7 2.582 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
-#7 2.588 (22/29) Installing libncursesw (6.5_p20251123-r0)
-#7 2.592 (23/29) Installing libpanelw (6.5_p20251123-r0)
-#7 2.593 (24/29) Installing readline (8.3.1-r0)
-#7 2.597 (25/29) Installing sqlite-libs (3.51.2-r0)
-#7 2.610 (26/29) Installing python3 (3.12.13-r0)
-#7 2.807 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
-#7 2.939 (28/29) Installing pyc (3.12.13-r0)
-#7 2.939 (29/29) Installing python3-pyc (3.12.13-r0)
-#7 2.939 Executing busybox-1.37.0-r30.trigger
-#7 2.952 OK: 301.2 MiB in 47 packages
-#7 DONE 3.2s
+#8 [builder  3/10] RUN apk add --no-cache python3 make g++
+#8 0.733 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
+#8 0.967 ( 2/29) Installing jansson (2.14.1-r0)
+#8 0.970 ( 3/29) Installing zstd-libs (1.5.7-r2)
+#8 0.978 ( 4/29) Installing binutils (2.45.1-r0)
+#8 1.072 ( 5/29) Installing libgomp (15.2.0-r2)
+#8 1.076 ( 6/29) Installing libatomic (15.2.0-r2)
+#8 1.080 ( 7/29) Installing gmp (6.3.0-r4)
+#8 1.089 ( 8/29) Installing isl26 (0.26-r1)
+#8 1.111 ( 9/29) Installing mpfr4 (4.2.2-r0)
+#8 1.117 (10/29) Installing mpc1 (1.3.1-r1)
+#8 1.120 (11/29) Installing gcc (15.2.0-r2)
+#8 2.168 (12/29) Installing musl-dev (1.2.5-r23)
+#8 2.241 (13/29) Installing g++ (15.2.0-r2)
+#8 2.512 (14/29) Installing make (4.4.1-r3)
+#8 2.516 (15/29) Installing libbz2 (1.0.8-r6)
+#8 2.518 (16/29) Installing libexpat (2.7.5-r0)
+#8 2.520 (17/29) Installing libffi (3.5.2-r0)
+#8 2.522 (18/29) Installing gdbm (1.26-r0)
+#8 2.524 (19/29) Installing xz-libs (5.8.2-r0)
+#8 2.528 (20/29) Installing mpdecimal (4.0.1-r0)
+#8 2.533 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+#8 2.540 (22/29) Installing libncursesw (6.5_p20251123-r0)
+#8 2.544 (23/29) Installing libpanelw (6.5_p20251123-r0)
+#8 2.546 (24/29) Installing readline (8.3.1-r0)
+#8 2.551 (25/29) Installing sqlite-libs (3.51.2-r0)
+#8 2.565 (26/29) Installing python3 (3.12.13-r0)
+#8 2.768 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
+#8 2.903 (28/29) Installing pyc (3.12.13-r0)
+#8 2.903 (29/29) Installing python3-pyc (3.12.13-r0)
+#8 2.904 Executing busybox-1.37.0-r30.trigger
+#8 2.918 OK: 301.2 MiB in 47 packages
+#8 DONE 3.1s
 
 #9 [builder  4/10] COPY package.json package-lock.json* ./
 #9 DONE 0.0s
 
 #10 [builder  5/10] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#10 9.199 
-#10 9.199 added 447 packages, and audited 448 packages in 9s
-#10 9.199 
-#10 9.199 173 packages are looking for funding
-#10 9.199   run `npm fund` for details
-#10 9.252 
-#10 9.252 4 vulnerabilities (2 moderate, 2 high)
-#10 9.252 
-#10 9.252 To address all issues (including breaking changes), run:
-#10 9.252   npm audit fix --force
-#10 9.252 
-#10 9.252 Run `npm audit` for details.
-#10 DONE 9.7s
+#10 9.060 
+#10 9.060 added 447 packages, and audited 448 packages in 9s
+#10 9.060 
+#10 9.060 173 packages are looking for funding
+#10 9.060   run `npm fund` for details
+#10 9.106 
+#10 9.106 4 vulnerabilities (2 moderate, 2 high)
+#10 9.106 
+#10 9.106 To address all issues (including breaking changes), run:
+#10 9.106   npm audit fix --force
+#10 9.106 
+#10 9.106 Run `npm audit` for details.
+#10 DONE 9.5s
 
 #11 [builder  6/10] COPY astro.config.mjs tsconfig.json ./
 #11 DONE 0.0s
@@ -116,81 +113,81 @@ persona-blog-a-sqlite
 #14 DONE 0.0s
 
 #15 [builder 10/10] RUN npm run build
-#15 0.384 
-#15 0.384 > persona-blog@0.1.0 prebuild
-#15 0.384 > npx tsx scripts/check-token-compliance.ts --guard
-#15 0.384 
-#15 1.465 npm warn exec The following package was not found and will be installed: tsx@4.21.0
-#15 3.350 ✅  Guard check: 132 guarded files clean.
-#15 3.388 
-#15 3.388 > persona-blog@0.1.0 build
-#15 3.388 > astro build
-#15 3.388 
-#15 4.126 ▶ Astro collects anonymous usage data.
-#15 4.126   This information helps us improve Astro.
-#15 4.126   Run "astro telemetry disable" to opt-out.
-#15 4.126   https://astro.build/telemetry
-#15 4.126 
-#15 5.504 11:02:46 [types] Generated 501ms
-#15 5.504 11:02:46 [build] output: "hybrid"
-#15 5.504 11:02:46 [build] directory: /app/dist/
-#15 5.504 11:02:46 [build] adapter: @astrojs/node
-#15 5.504 11:02:46 [build] Collecting build info...
-#15 5.505 11:02:46 [build] ✓ Completed in 540ms.
-#15 5.508 11:02:46 [build] Building hybrid entrypoints...
-#15 10.43 11:02:51 [vite] ✓ built in 4.88s
-#15 10.43 11:02:51 [build] ✓ Completed in 4.93s.
-#15 10.43 
-#15 10.43  building client (vite) 
-#15 10.44 11:02:51 [vite] transforming...
-#15 10.73 11:02:51 [vite] ✓ 65 modules transformed.
-#15 10.77 11:02:51 [vite] rendering chunks...
-#15 10.81 11:02:51 [vite] computing gzip size...
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.DI7-tSFY.js                                                 1.29 kB │ gzip: 0.70 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.oEbAzmp8.js    3.98 kB │ gzip: 1.65 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.rj3x2-M7.js                                                 4.48 kB │ gzip: 1.84 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.BOseIRjE.js                                                 6.22 kB │ gzip: 2.45 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/hoisted.mUJHcMDU.js                                                 7.29 kB │ gzip: 2.66 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
-#15 10.82 11:02:51 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CvhL-04L.js       12.14 kB │ gzip: 4.26 kB
-#15 10.82 11:02:51 [vite] ✓ built in 378ms
-#15 10.85 
-#15 10.85  prerendering static routes 
-#15 10.89 11:02:51 λ src/pages/api/graveyard-stats.ts
-#15 10.89 11:02:51   └─ /api/graveyard-stats (+35ms)
-#15 10.92 11:02:51 λ src/pages/api/reading-pulse.ts
-#15 10.92 11:02:51   └─ /api/reading-pulse (+1ms)
-#15 10.93 11:02:51 ▶ src/pages/author/index.astro
-#15 10.93 11:02:51   └─ /author/index.html (+11ms)
-#15 11.08 11:02:52 ▶ src/pages/blog/[slug].astro
-#15 11.09 11:02:52   ├─ /blog/building-in-public/index.html (+29ms)
-#15 11.12 11:02:52   ├─ /blog/focus-as-a-mood/index.html (+15ms)
-#15 11.13 11:02:52   ├─ /blog/hello-world/index.html (+11ms)
-#15 11.14 11:02:52   ├─ /blog/lo-fi-loop/index.html (+17ms)
-#15 11.16 11:02:52   ├─ /blog/now-page/index.html (+18ms)
-#15 11.18 11:02:52   └─ /blog/the-decay-theory/index.html (+12ms)
-#15 11.20 11:02:52 λ src/pages/feed.xml.ts
-#15 11.20 11:02:52   └─ /feed.xml (+2ms)
-#15 11.20 11:02:52 ✓ Completed in 372ms.
-#15 11.20 
-#15 11.20 11:02:52 [build] Rearranging server assets...
-#15 11.20 11:02:52 [build] Server built in 6.24s
-#15 11.20 11:02:52 [build] Complete!
+#15 0.381 
+#15 0.381 > persona-blog@0.1.0 prebuild
+#15 0.381 > npx tsx scripts/check-token-compliance.ts --guard
+#15 0.381 
+#15 1.458 npm warn exec The following package was not found and will be installed: tsx@4.21.0
+#15 3.230 ✅  Guard check: 132 guarded files clean.
+#15 3.269 
+#15 3.269 > persona-blog@0.1.0 build
+#15 3.269 > astro build
+#15 3.269 
+#15 3.967 ▶ Astro collects anonymous usage data.
+#15 3.967   This information helps us improve Astro.
+#15 3.967   Run "astro telemetry disable" to opt-out.
+#15 3.967   https://astro.build/telemetry
+#15 3.967 
+#15 5.330 11:29:23 [types] Generated 488ms
+#15 5.330 11:29:23 [build] output: "hybrid"
+#15 5.330 11:29:23 [build] directory: /app/dist/
+#15 5.330 11:29:23 [build] adapter: @astrojs/node
+#15 5.330 11:29:23 [build] Collecting build info...
+#15 5.331 11:29:23 [build] ✓ Completed in 530ms.
+#15 5.334 11:29:23 [build] Building hybrid entrypoints...
+#15 10.39 11:29:28 [vite] ✓ built in 5.01s
+#15 10.39 11:29:28 [build] ✓ Completed in 5.06s.
+#15 10.39 
+#15 10.39  building client (vite) 
+#15 10.41 11:29:28 [vite] transforming...
+#15 10.69 11:29:28 [vite] ✓ 65 modules transformed.
+#15 10.73 11:29:28 [vite] rendering chunks...
+#15 10.76 11:29:28 [vite] computing gzip size...
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.DI7-tSFY.js                                                 1.29 kB │ gzip: 0.70 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.oEbAzmp8.js    3.98 kB │ gzip: 1.65 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.rj3x2-M7.js                                                 4.48 kB │ gzip: 1.84 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.BOseIRjE.js                                                 6.22 kB │ gzip: 2.45 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/hoisted.mUJHcMDU.js                                                 7.29 kB │ gzip: 2.66 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
+#15 10.77 11:29:28 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CvhL-04L.js       12.14 kB │ gzip: 4.26 kB
+#15 10.77 11:29:28 [vite] ✓ built in 375ms
+#15 10.80 
+#15 10.80  prerendering static routes 
+#15 10.83 11:29:28 λ src/pages/api/graveyard-stats.ts
+#15 10.83 11:29:28   └─ /api/graveyard-stats (+31ms)
+#15 10.87 11:29:28 λ src/pages/api/reading-pulse.ts
+#15 10.87 11:29:28   └─ /api/reading-pulse (+1ms)
+#15 10.88 11:29:28 ▶ src/pages/author/index.astro
+#15 10.88 11:29:28   └─ /author/index.html (+9ms)
+#15 11.04 11:29:29 ▶ src/pages/blog/[slug].astro
+#15 11.04 11:29:29   ├─ /blog/building-in-public/index.html (+28ms)
+#15 11.07 11:29:29   ├─ /blog/focus-as-a-mood/index.html (+12ms)
+#15 11.08 11:29:29   ├─ /blog/hello-world/index.html (+13ms)
+#15 11.09 11:29:29   ├─ /blog/lo-fi-loop/index.html (+16ms)
+#15 11.11 11:29:29   ├─ /blog/now-page/index.html (+16ms)
+#15 11.13 11:29:29   └─ /blog/the-decay-theory/index.html (+10ms)
+#15 11.14 11:29:29 λ src/pages/feed.xml.ts
+#15 11.14 11:29:29   └─ /feed.xml (+4ms)
+#15 11.15 11:29:29 ✓ Completed in 362ms.
+#15 11.15 
+#15 11.15 11:29:29 [build] Rearranging server assets...
+#15 11.15 11:29:29 [build] Server built in 6.35s
+#15 11.15 11:29:29 [build] Complete!
 #15 DONE 11.3s
 
 #16 [server 4/8] COPY --from=builder /app/dist ./dist
@@ -210,12 +207,12 @@ persona-blog-a-sqlite
 
 #21 exporting to image
 #21 exporting layers
-#21 exporting layers 1.3s done
-#21 writing image sha256:68137ba5c31eb5153e51b6a9caa914eaab9d56a8510e27a5539e754264b14aa9 done
+#21 exporting layers 1.4s done
+#21 writing image sha256:5197a2b7634276bffbdd4180a3c23790db6ac0eb3fc55163898b6e946be26adc done
 #21 naming to docker.io/library/persona-blog-a done
 #21 DONE 1.4s
 ==> [deploy] Starting container: persona-blog-a on port 7100
-b06f3d3ba3eea8c7f63b80fa26ef83f7543465cff3ae701b31e460d734e214cb
+72779af36da6ec25635f290adf374267abbdd1372899b69cd22ee33d695028be
 ==> [deploy] Waiting for container to become healthy…
 ==> [deploy] ✓ Container is running
 ==> [deploy] Running deadline sweep…
@@ -224,85 +221,7 @@ b06f3d3ba3eea8c7f63b80fa26ef83f7543465cff3ae701b31e460d734e214cb
 ==> [deploy] OTS upgrade response: {"upgraded":0,"stillPending":1,"failed":0,"errors":[]}
 ==> [deploy] Pruning dangling images…
 Deleted Images:
-deleted: sha256:b91695f33103597c63ec725e660707065ef74e010adcb6a46fa0576b5baece04
-deleted: sha256:817a29dd13453905a7df6bee1aa1253a8dda4a50a033a426fb222f8b862e5070
-deleted: sha256:6858549b0520139a83c0676866bfd84f29939fb548582f3ce4ecd032b22e8557
-deleted: sha256:afe0d0d2487a09c43287737fa38e9c16f2dd4abe2b8c11a07e7bc0a257409f78
-deleted: sha256:84f59269e9a73ab220112b71066a953ec6dfe334b23ae50c8c1347f10a38ced8
-deleted: sha256:dd80f4575c6523c60b1e8c8c4dec8f56ac950cd209fe037eef895b99c3c4cd7d
-deleted: sha256:967fd65a41eb906ab7456ca929499df7dfa032816b1eaf956c7ff32500f08398
-deleted: sha256:30dc874b891eef6437b201566d6ec55f239d5ca8f0685f667ba3069b3b67f01f
-deleted: sha256:05c12fc2cac04dabfb6d6cf622160838c68f9a4148214e6815e65fc97e2d5af4
-deleted: sha256:22869e1e63efd6406cfb5806da10489f940b4dc7ef41b7dc549335b162693a25
-deleted: sha256:b394b8c4571bc2842d09d51020cae8e71e2d8d62da07010617c4a1f30b8b20d4
-deleted: sha256:46e75eab92d818984f8b8a41994f552ab76ae4798d3336e7dce321771c3f7762
-deleted: sha256:ebdbdc0cbb3780f3da32f262fdb8d1429c4b6df67a5447b349fe036d122908ee
-deleted: sha256:cc7a52257823986fc37196e8469b71d4cdcdb7a8692d7f76f5e049fc6df03ac5
-deleted: sha256:86c5a1a2b259754db5e7b02886c7c7de84bfaa4e2a2d2ffa3f1435b1aaffa2ee
-deleted: sha256:49a4fadc6be1c6df11bdacf736edd70cc44c29109cfc11976ed6e0f37bf7eefc
-deleted: sha256:0a678a4228d14fb1a01bcaa18492f9d9dacabbd454fd6c95e734dee82a32eae5
-deleted: sha256:8ba5c2f0f1b12340ec03ff52f590010744d09df003a8a61b780659a8887eba9c
-deleted: sha256:ca8b743cdfac576b059701d0c8c1c0a4acf81c2c0f370a938933731871c7af03
-deleted: sha256:8e2e7828f78a0b3b3c61f7c7d79478f417f95c060b102b8c44b637a0a0c949e8
-deleted: sha256:f38022eeb72e5fed4ea443775f55362eff1b13c7168f23a0adf88ed3378bee08
-deleted: sha256:6de09363ae489c4b2c1dcd7fc5cad90e4f19b496555652592a2aad24a421d6f5
-deleted: sha256:5988d4136b6854e7fa997fba548d7322b80a30ab9e5ea35fe489e7795d68fa7c
-deleted: sha256:56b1597bd91433d4236e7e9e614a3eb1044180a1582fd18d8c43eff2a9b5e207
-deleted: sha256:2787001043d52f8cbc2b170cd4e1761f2f8ee7f11d621da2d160db44d68020aa
-deleted: sha256:f7183a0cfa61d2bdb01dad59375f44a98944dfb1ca8143b50296d5a2f3070e38
-deleted: sha256:8be6962e7dc5c5f3db7dae08319282518effe0dc49cd78fa91301c0fd1706309
-deleted: sha256:702874693eaadf0edad84a669fcfedbb79df69f68706e426aaa371249e3a5490
-deleted: sha256:b7ccb49ef3985c1244f4da76de9c0bb113f96f75247f248aa6f45282584620e9
-deleted: sha256:251a41f89e419da2b67e9f1157079273e61affbb08f3cf083678fccd76d78ebd
-deleted: sha256:86f573ad99544ff1b8ea3e4cfa71aa2cd6d0ead6a3e7feb69e0df69adfaf6788
-deleted: sha256:3efc15f2900626ce37c0e2eaa638232551e20f5cba63b5c92dad464a0b881678
-deleted: sha256:e2724e79e55d1eda1f6a1bf45204e85408dafa9e06b4d4e659df1327f782e107
-deleted: sha256:2e7dd0eec1b2ab7b12d2c28ea76e6795f135b4b0bbb6410dc01958e7c2c7c9af
-deleted: sha256:4af65556d68a9730010cc56bd9028ad45b49a3af117f34868f9b7ba627ff0824
-deleted: sha256:1b42714035fec7f1ad67407c84373550396187ab217813ed6c7d99255133448d
-deleted: sha256:797fa9515963b754c361fbdabd749b1b3c596f115132dff0ef59c4baa24bbb3b
-deleted: sha256:572422a9862d4b87344854c99c07ec8002360de7f03bb83c08bf85a613b2c4d2
-deleted: sha256:92eb85c675e7a5db56ea7fe4d5ce132d365b36b71f237b975949547e43936aeb
-deleted: sha256:1f30477092f29ba8228020033b2cfc6a927613e1af7aacb23dedc559ba737528
-deleted: sha256:d3050947944d7c02666b38d84c9d2ebd34c51556f256919367e074992c8c47fa
-deleted: sha256:9b035e5c89def9b91c64be416af8ddd0bd6ec62115277355b63afe22da22cf9d
-deleted: sha256:b6fae9bf0f1d3233b30b405074d6d10e041a549b01c59bd08fb38a36b26177fd
-deleted: sha256:5b03a20e1a251a8386ee7db21c3ac63173d81eaa4c189b2d252187a6dc0bf8c6
-deleted: sha256:482d9dfc44e8a75595a1aa0c6d014df4fe7108e6ca625b05bb00883c72bd7a16
-deleted: sha256:f107754c58f217be04d1eb9f8a7c3cab70ab75ae4414deb978e73a21f6019605
-untagged: registry.getsven.com/gen-art-bot@sha256:4a95d42e9a9fdd8957ad1acd3419a56a834e5c59aea7c45c704c0069ea959cda
-deleted: sha256:82707eef9548b93bb6d4ee8f8ca3ed4bd3ee5d883f7aeaf3efdf9de6e8d4b0ff
-deleted: sha256:d027bdb18c2f556843829c52bf902bd8b126c507c7a8cbb3444eeb7e9ddc181b
-deleted: sha256:5242f021d9c9251be279d3a43606b7db8f34346bf31f27d2d0b5fe87f4578846
-deleted: sha256:65184811619f09ffda74eae77b8f253c66294478c11e3bc7e650eb0363d43ded
-deleted: sha256:11512302d6921df5e5e71e68f69e6f7db8f8d903c7b336e09df910aec222e810
-deleted: sha256:e897215b8d5cb2364df70a743f64125394c4800e3c1e17e5fc8b0dbcf944cee0
-untagged: registry.getsven.com/gen-art-bot@sha256:3560f3dabf47b161f8099eb649ee46ad46d3247c322f9def5160b7bff64707fb
-deleted: sha256:e61774ec85dd0cbfa407706464c6eb23cc3c61d143f6669aad3e2c81a5b2184c
-deleted: sha256:ea93cdb441b4628300b013d96299d3ccb33ad8c000ca9f846becaf3874f08398
-deleted: sha256:4051066f3102b0425de96f09da84bdb68916559fbbf6d3ca4fb6fd5e3eb41d4c
-deleted: sha256:16dd3783f1c469826ced1a6fa9c950ae056c1df16d9f1d132df00583805ba984
-deleted: sha256:99de56ea10ccad5ac35d857c077c9b1a70ed447b9105f54b3ceb80957cf90e0b
-deleted: sha256:cc0b656888e697361c1c8c05f66ead3ff5f3516f60fb0768a179c9464679b765
-deleted: sha256:ad170fc54a9729ee68e5a4cdc76f6a7f018a55353f6cf2eda6fcc6bd6ae80f04
-deleted: sha256:c7dce5133ff48e076998d338c36d4bcdec88dff20c4dc9b16e3405bfe57d86d8
-deleted: sha256:1505ded404aca217b487f40710958857e2ad33de22ceafeb0f4e1c8d9efcf700
-deleted: sha256:0aab00beab2149b0d23865bbfed6e112d1ec763faca4ae2440a907c11297e2bc
-deleted: sha256:d0336d69d1387d19a04525b88a259e12da48318f77019a2b2ea13ec9d302b4b9
-deleted: sha256:1a2991617320d7b316f605ba5d88ef7a5e2c118554ee59c970eb23d779c8f84f
-deleted: sha256:1248e2a2de5d4720841cd0e0f34734f70920fe2162ed3e21020e0827670e7f74
-deleted: sha256:8eeb5ca590db824a717d5658b212ff318cc8c8d7e692677d715d9eb3ad64afa0
-deleted: sha256:39ff24cade95b1787632137713c56e992147129ffec0c290232539f02698f850
-deleted: sha256:04317481e73f2d3d49ba0307691f9eec08e987eeaca39a684b8f3f90d702b823
-deleted: sha256:4d2a1fd13b254bfbe1ae1a359acac56c41d369e8bb8b019bd29dbd94bc354566
-deleted: sha256:e99223663353bb269d544a712f2ab2435532aa4ca437cbf8177ba7f88da36cae
-deleted: sha256:e86d8789fe976604a26adb23689a9e5cd91a5b6239eb2a03bf1dce897e7eaf83
-deleted: sha256:e8a05fac3834a3c8bbab827ea571d78aed266483dd0918ca90712616aef40630
-deleted: sha256:00c83e965d4b41ee008b5c82d9825b52db11fbba125e0fda779c36bd59f6ec83
-deleted: sha256:5b2f4c93258a1bad56359c4235c923d018f7dd55d8d0d732589d0b685107dd52
-deleted: sha256:47341f67f71abe5aebd20060541e4e3d6d2845bd3a25c5a7249e6b8ad570275b
-deleted: sha256:3b925159f5e18db882caf229575d32661b7a0a96076bbad9ce184280f87e58f3
-deleted: sha256:71eeffa89cd16920cc83792f369f5f0bd3ee9665ce85324d7325db7cc61c4789
+deleted: sha256:68137ba5c31eb5153e51b6a9caa914eaab9d56a8510e27a5539e754264b14aa9
 
-Total reclaimed space: 4.507GB
-==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 11:03:12 AM UTC 2026
+Total reclaimed space: 0B
+==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 11:29:43 AM UTC 2026

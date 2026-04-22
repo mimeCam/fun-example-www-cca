@@ -7,6 +7,7 @@
 // Credits: Tanya (UX spec §20, §SS24), Mike (arch spec — Portability Kit)
 
 import type { BattingAverage, TrophyTier } from '../batting-average';
+import type { RecordStage } from '../record-stage';
 import { COLORS } from '../design-tokens';
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,44 @@ export interface OGAuthor {
   name: string;
   tier: TrophyTier;
   selectivity: number | null;
+  /** Record-age stage — drives the v143 inversion on the OG card too.
+   *  Optional; omission is treated as `'fresh'`. Parity with the live page
+   *  is the whole point (Mike napkin §7.3, Paul polish-ship §7.2). */
+  recordStage?: RecordStage;
+}
+
+// ---------------------------------------------------------------------------
+// Record-age typography — Satori cannot read CSS custom props, so we
+// hard-code the ramps here. Kept next to COLORS for the same reason
+// (see the `C = { ... }` block below). If the HTML side changes the
+// stage table, mirror it here.
+//
+// voice softens → author name opacity drops with age
+// record hardens → pct-number weight climbs with age
+// ---------------------------------------------------------------------------
+
+const WEIGHT_BY_STAGE: Record<RecordStage, number> = {
+  fresh:      600,  // --weight-semibold — paper
+  fading:     700,  // --weight-bold
+  endangered: 700,
+  ghost:      800,  // --weight-extrabold
+  fossil:     800,  // stone
+};
+
+const NAME_OPACITY_BY_STAGE: Record<RecordStage, number> = {
+  fresh:      0.95,
+  fading:     0.85,
+  endangered: 0.75,
+  ghost:      0.60,
+  fossil:     0.50,
+};
+
+function nameColorForStage(stage: RecordStage): string {
+  // Compose on top of white (C.white is rgba(255,255,255,0.88)). Multiplying
+  // its implicit 0.88 by our stage factor keeps the ramp consistent with
+  // the HTML side's --stage-*-text-primary values.
+  const opacity = NAME_OPACITY_BY_STAGE[stage];
+  return `rgba(255,255,255,${(opacity * 0.88).toFixed(3)})`;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,6 +161,9 @@ function headerRow(siteName: string, showBadge: boolean): El {
 function authorNameRow(author: OGAuthor): El {
   const tierColor = TIER_COLOR[author.tier];
   const glyph = TIER_GLYPH[author.tier];
+  const stage: RecordStage = author.recordStage ?? 'fresh';
+  // v143 inversion: author *voice* softens with record age (Mike napkin §7).
+  const nameColor = nameColorForStage(stage);
   const style = {
     display: 'flex', flexDirection: 'row',
     alignItems: 'center', gap: '14px',
@@ -130,7 +172,7 @@ function authorNameRow(author: OGAuthor): El {
     el('div', { fontSize: '14px', color: tierColor }, glyph),
     el('div', {
       fontSize: '28px', fontWeight: 600,
-      color: C.white, letterSpacing: '-0.01em',
+      color: nameColor, letterSpacing: '-0.01em',
     }, author.name),
     tierBadge(author.tier),
   ] } };
@@ -153,11 +195,19 @@ function tierBadge(tier: TrophyTier): El {
 // Hero block: large pct number + subtitle
 // ---------------------------------------------------------------------------
 
-function pctNumber(pct: number, tier?: TrophyTier): El {
+function pctNumber(
+  pct: number, tier?: TrophyTier, stage: RecordStage = 'fresh',
+): El {
   const color = tier ? TIER_COLOR[tier] : C.amber;
+  // v143 inversion: the *record* hardens with age — weight climbs, letter
+  // spacing tightens. Matches the .aph-gauge-pct ramp on the live page.
+  const fontWeight = WEIGHT_BY_STAGE[stage];
+  const letterSpacing = stage === 'fossil' ? '-0.04em'
+                      : stage === 'ghost'  ? '-0.03em'
+                      :                      '-0.02em';
   return el('div', {
-    fontSize: '96px', fontWeight: 700,
-    color, lineHeight: '1', letterSpacing: '-0.02em',
+    fontSize: '96px', fontWeight,
+    color, lineHeight: '1', letterSpacing,
   }, `${pct}%`);
 }
 
@@ -172,11 +222,12 @@ function pctSubtitle(author?: OGAuthor): El {
 
 function pctHero(pct: number, author?: OGAuthor): El {
   const tier = author?.tier;
+  const stage = author?.recordStage ?? 'fresh';
   const style = {
     display: 'flex', flexDirection: 'column', gap: '4px',
   };
   return { type: 'div', props: { style, children: [
-    pctNumber(pct, tier), pctSubtitle(author),
+    pctNumber(pct, tier, stage), pctSubtitle(author),
   ] } };
 }
 

@@ -4,6 +4,53 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v143 — Author Record-Age Grammar (Voice Softens, Record Hardens) (2026-04-22)
+#   Sprint: Apply the five-stage decay ontology to a NEW time axis — author
+#     record age (time since first seal). Same DecayStage vocabulary
+#     (fresh/fading/endangered/ghost/fossil), inverted typography:
+#       voice softens (slug name dims) · record hardens (BA number bolds).
+#     Pure UIX polish — zero infrastructure changes.
+#   Key changes:
+#     src/lib/record-stage.ts (new) — pure stateless classifier:
+#       recordStage(firstSealMs?, now?) → RecordStage. Single source of truth
+#       for the age-band table (RECORD_STAGE_DAYS: 30 / 180 / 365 / 1095 days).
+#       Reuses DecayStage type from decay-engine.ts. Null-safe: brand-new
+#       authors and clock-skewed timestamps render as 'fresh'. No DB access
+#       — callers fetch firstSealDate at the page/API boundary.
+#     src/lib/record-stage.test.ts (new) — boundary tests via node:test.
+#       Dev-only; not part of Docker build/runtime. Run via:
+#         npx tsx --test src/lib/record-stage.test.ts
+#     src/pages/author/[slug].astro — derives `stage = recordStage(track
+#       Data.firstSealDate)` and forwards as `data-record-stage` on the
+#       <main class="ap-page"> root + `recordStage` prop on AuthorProfileHero.
+#     src/components/AuthorProfileHero.astro — new optional `recordStage`
+#       prop (defaults to 'fresh'). Renders `data-record-stage` on .aph-hero.
+#       Scoped CSS: .aph-gauge-pct + .aph-tier-badge gain weight & tighten
+#       letter-spacing per stage (the "record hardens" half).
+#     src/styles/author-profile.css — `.ap-slug` + `.ap-since` opacity &
+#       weight ramps consume existing `--stage-*-text-primary/secondary`
+#       tokens. Transitions via `--motion-duration-deliberate`. The "voice
+#       softens" half. NO new tokens; opacity/weight values pull from
+#       tokens.css's stage table (lines 120–131).
+#     src/pages/api/og/batting-average.png.ts — OG card mirrors the live
+#       page's stage. Computes stage via getSealsByAuthor → buildTrackRecord
+#       → recordStage. Passes through new `OGAuthor.recordStage` field.
+#     src/lib/og/battingAverageLayout.ts — Satori cannot read CSS custom
+#       props, so WEIGHT_BY_STAGE + NAME_OPACITY_BY_STAGE ramps are
+#       hard-coded next to COLORS. Author-name color and pct-number weight/
+#       letter-spacing now stage-driven. Mirror of HTML side; if HTML stage
+#       table changes, mirror here.
+#     AGENTS.md — Core feature description expanded to call out the v143
+#       inversion: "time is typography… voice softens, record hardens".
+#       record-stage.ts added to the lib path index.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies src/ wholesale into the
+#     builder stage, so record-stage.ts (and its dev-only test) ship without
+#     any Dockerfile edits — but the test is never executed at build or
+#     runtime. deploy.sh startup sequence (steps 1–8) identical to v142.
+#
 # Architecture v142 — DecayStage API Parity, Headstone Date Ramp & Dev Test Hygiene (2026-04-22)
 #   Sprint: Pure UIX polish + dev-only test-hygiene pass. Zero infrastructure
 #     changes — all deploy.sh steps (1–8) identical to v141.
