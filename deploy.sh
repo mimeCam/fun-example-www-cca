@@ -4,6 +4,60 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v144 — Stage-Token Codegen (CSS → TS, Move A) (2026-04-22)
+#   Sprint: Cut the hard-coded duplication between `tokens.css` (CSS truth) and
+#     the Satori OG layout by introducing a codegen artefact sourced from CSS.
+#     Move A (Mike's napkin §2/§5): presentational atoms only — text-primary
+#     opacity + title weight. Decay OKLCH, Satori 0.88 composite, and API
+#     `stage` field stay in place (YAGNI / surface-transform / Move C deferred).
+#   Key changes:
+#     scripts/generate-stage-tokens.ts (new) — pure parser+formatter codegen.
+#       Reads `src/styles/tokens.css` (the single source of truth), emits
+#       `src/lib/stage-tokens.generated.ts` with a DO-NOT-EDIT header and a
+#       compile-time assertion that StageKey ≡ DecayStage. Exposes
+#       `parseStageTokens()` + `formatStageTokensFile()` for reuse by the
+#       compliance guard. Invoked via: `npm run generate:stage-tokens`.
+#     scripts/generate-stage-tokens.test.ts (new) — dev-only unit tests for
+#       the parser + formatter (golden fixture, missing-key throw, idempotent
+#       output, DO-NOT-EDIT header, DecayStage assertion, STAGE_KEYS coverage).
+#       Run via: `npm run test:stage-tokens`. Not executed at build or runtime.
+#     src/lib/stage-tokens.generated.ts (new, tracked-via-.gitattributes-as-
+#       generated) — auto-generated artefact. Exports STAGE_KEYS, StageKey,
+#       STAGE_TEXT_PRIMARY_OPACITY, STAGE_TITLE_WEIGHT. Imported by Satori
+#       (non-CSS) surfaces; CSS side continues reading --stage-* directly.
+#     scripts/check-token-compliance.ts — prebuild guard extended: regenerates
+#       stage-tokens in-memory from tokens.css and diffs against the committed
+#       artefact. Teaching error message tells the dev exactly what to run
+#       (`npm run generate:stage-tokens && git add …`). Runs as part of
+#       `npm run prebuild` → blocks build if tokens.css was edited without
+#       regenerating the TS mirror. No impact on deploy if the artefact is
+#       fresh (which it is — verified against tokens.css lines 120-124 + 837-841).
+#     src/lib/og/battingAverageLayout.ts — removed hard-coded
+#       WEIGHT_BY_STAGE / NAME_OPACITY_BY_STAGE tables; now imports
+#       STAGE_TEXT_PRIMARY_OPACITY + STAGE_TITLE_WEIGHT from the generated
+#       file. Kept the Satori-only 0.88 composite multiplier locally as
+#       SATORI_TEXT_PRIMARY_ALPHA — it is a surface transform, not a grammar
+#       value (Mike §6.3 / Elon §5). `nameColorForStage` composites opacity
+#       onto the :root --text-primary alpha; `pctNumber` reads weight from
+#       the generated table. One stage table, every surface.
+#     package.json — new scripts: `generate:stage-tokens` (codegen runner),
+#       `test:stage-tokens` (dev-only unit tests). Zero new dependencies.
+#     AGENTS.md — documents the codegen artefact path, the "edit tokens.css
+#       → regen → stage" workflow, and the prebuild guard contract.
+#     .gitattributes (new) — marks `*.generated.ts` as linguist-generated so
+#       GitHub collapses the diff view. Editor signal; zero runtime impact.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `scripts/` and `src/`
+#     wholesale into the builder stage, so the new codegen script, its test,
+#     and the generated artefact all ship without any Dockerfile edits.
+#     The prebuild compliance guard runs inside `npm run build` during the
+#     Docker builder stage and will fail fast (non-zero) if the committed
+#     stage-tokens.generated.ts has drifted from tokens.css. The `.test.ts`
+#     file is never executed at build or runtime (dev-only). deploy.sh
+#     startup sequence (steps 1–8) identical to v143.
+#
 # Architecture v143 — Author Record-Age Grammar (Voice Softens, Record Hardens) (2026-04-22)
 #   Sprint: Apply the five-stage decay ontology to a NEW time axis — author
 #     record age (time since first seal). Same DecayStage vocabulary

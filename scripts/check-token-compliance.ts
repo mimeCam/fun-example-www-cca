@@ -26,6 +26,9 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import {
+  parseStageTokens, formatStageTokensFile,
+} from "./generate-stage-tokens.ts";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -686,6 +689,38 @@ function filterUnguarded(violations: Violation[]): Violation[] {
   return violations.filter((v) => !GUARD_FILES.has(v.file));
 }
 
+// ── Stage-tokens generated-file staleness check (Mike napkin §6.5) ─────────
+// Regenerate in-memory from tokens.css, diff against the committed file.
+// Fails with a teaching message telling the dev exactly what to run.
+
+const STAGE_TOKENS_CSS = path.resolve(process.cwd(), "src/styles/tokens.css");
+const STAGE_TOKENS_TS = path.resolve(process.cwd(), "src/lib/stage-tokens.generated.ts");
+
+function regeneratedStageTokens(): string {
+  const css = fs.readFileSync(STAGE_TOKENS_CSS, "utf-8");
+  return formatStageTokensFile(parseStageTokens(css));
+}
+
+function committedStageTokens(): string {
+  if (!fs.existsSync(STAGE_TOKENS_TS)) return "";
+  return fs.readFileSync(STAGE_TOKENS_TS, "utf-8");
+}
+
+function stageTokensStaleMessage(): string {
+  return [
+    "❌  src/lib/stage-tokens.generated.ts is stale vs src/styles/tokens.css.",
+    "    Run:  npm run generate:stage-tokens && git add src/lib/stage-tokens.generated.ts",
+  ].join("\n");
+}
+
+function checkStageTokensFreshness(): boolean {
+  const fresh = regeneratedStageTokens();
+  const committed = committedStageTokens();
+  if (fresh === committed) return true;
+  console.log(stageTokensStaleMessage());
+  return false;
+}
+
 // ── Entry ──────────────────────────────────────────────────────────────────
 
 function main(): void {
@@ -718,13 +753,17 @@ function main(): void {
     const errorTotal = allErrors.length - guardTotal;
     const warnTotal = allWarns.length;
 
-    if (guardTotal > 0) {
-      printReport(guardCss, guardAstro);
-      console.log(`  (${errorTotal} errors + ${warnTotal} warns in unguarded files)\n`);
+    const stageTokensFresh = checkStageTokensFreshness();
+
+    if (guardTotal > 0 || !stageTokensFresh) {
+      if (guardTotal > 0) {
+        printReport(guardCss, guardAstro);
+        console.log(`  (${errorTotal} errors + ${warnTotal} warns in unguarded files)\n`);
+      }
       process.exit(1);
     }
 
-    console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean.`);
+    console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean. stage-tokens.generated.ts current.`);
     if (errorTotal > 0 || warnTotal > 0) {
       console.log(`   \u26a0\ufe0f  ${errorTotal} errors + ${warnTotal} typography warnings remain in unguarded files.\n`);
     }

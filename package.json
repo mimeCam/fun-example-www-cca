@@ -9,8 +9,10 @@
     "preview": "astro preview",
     "whisper": "node cli/whisper.mjs",
     "lint:tokens": "npx tsx scripts/check-token-compliance.ts",
+    "generate:stage-tokens": "npx tsx scripts/generate-stage-tokens.ts",
     "test:ceremony": "node --test --import=tsx/esm src/lib/seal-ceremony.test.ts",
-    "test:dates": "npx tsx scripts/test-dates.ts"
+    "test:dates": "npx tsx scripts/test-dates.ts",
+    "test:stage-tokens": "npx tsx --test scripts/generate-stage-tokens.test.ts"
   },
   "dependencies": {
     "@astrojs/node": "^8.3.4",

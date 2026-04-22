@@ -9,6 +9,10 @@
 import type { BattingAverage, TrophyTier } from '../batting-average';
 import type { RecordStage } from '../record-stage';
 import { COLORS } from '../design-tokens';
+import {
+  STAGE_TEXT_PRIMARY_OPACITY,
+  STAGE_TITLE_WEIGHT,
+} from '../stage-tokens.generated';
 
 // ---------------------------------------------------------------------------
 // Author identity — optional context for per-author OG cards
@@ -26,37 +30,26 @@ export interface OGAuthor {
 }
 
 // ---------------------------------------------------------------------------
-// Record-age typography — Satori cannot read CSS custom props, so we
-// hard-code the ramps here. Kept next to COLORS for the same reason
-// (see the `C = { ... }` block below). If the HTML side changes the
-// stage table, mirror it here.
+// Record-age typography — Satori cannot read CSS custom props, so the two
+// stage tables ship via codegen in `stage-tokens.generated.ts` (sourced
+// from `src/styles/tokens.css`). Editing the TS mirror is forbidden; the
+// guard fails the build if it drifts from the CSS truth.
 //
-// voice softens → author name opacity drops with age
-// record hardens → pct-number weight climbs with age
+// Surface transform: the OG card is rgba-over-dark, so stage opacity is
+// composited with 0.88 (= --text-primary base alpha). Cap at 0.88 = the
+// endangered ceiling; DOM does not need this because CSS opacity applies
+// post-paint on top of the :root text-primary ramp. Keep the multiplier
+// out of the generated file (Mike §6.3 / Elon §5) — it is a surface
+// transform, not a grammar value.
 // ---------------------------------------------------------------------------
 
-const WEIGHT_BY_STAGE: Record<RecordStage, number> = {
-  fresh:      600,  // --weight-semibold — paper
-  fading:     700,  // --weight-bold
-  endangered: 700,
-  ghost:      800,  // --weight-extrabold
-  fossil:     800,  // stone
-};
-
-const NAME_OPACITY_BY_STAGE: Record<RecordStage, number> = {
-  fresh:      0.95,
-  fading:     0.85,
-  endangered: 0.75,
-  ghost:      0.60,
-  fossil:     0.50,
-};
+/** Satori composite max: the :root `--text-primary` alpha. */
+const SATORI_TEXT_PRIMARY_ALPHA = 0.88;
 
 function nameColorForStage(stage: RecordStage): string {
-  // Compose on top of white (C.white is rgba(255,255,255,0.88)). Multiplying
-  // its implicit 0.88 by our stage factor keeps the ramp consistent with
-  // the HTML side's --stage-*-text-primary values.
-  const opacity = NAME_OPACITY_BY_STAGE[stage];
-  return `rgba(255,255,255,${(opacity * 0.88).toFixed(3)})`;
+  const opacity = STAGE_TEXT_PRIMARY_OPACITY[stage];
+  const composite = Math.min(opacity, 1) * SATORI_TEXT_PRIMARY_ALPHA;
+  return `rgba(255,255,255,${composite.toFixed(3)})`;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,9 +192,9 @@ function pctNumber(
   pct: number, tier?: TrophyTier, stage: RecordStage = 'fresh',
 ): El {
   const color = tier ? TIER_COLOR[tier] : C.amber;
-  // v143 inversion: the *record* hardens with age — weight climbs, letter
-  // spacing tightens. Matches the .aph-gauge-pct ramp on the live page.
-  const fontWeight = WEIGHT_BY_STAGE[stage];
+  // Weight now reads from the generated STAGE_TITLE_WEIGHT (sourced from
+  // --stage-*-title-weight in tokens.css). One table, every surface.
+  const fontWeight = STAGE_TITLE_WEIGHT[stage];
   const letterSpacing = stage === 'fossil' ? '-0.04em'
                       : stage === 'ghost'  ? '-0.03em'
                       :                      '-0.02em';

@@ -1,0 +1,5 @@
+# Collapse codegen artefacts in GitHub diff views (Mike napkin §6.8).
+# These files are deterministic outputs of scripts/generate-*.ts — edit the
+# source (e.g. src/styles/tokens.css), not the artefact. Guard in prebuild
+# fails the build if the committed artefact drifts from its source.
+*.generated.ts linguist-generated=true
