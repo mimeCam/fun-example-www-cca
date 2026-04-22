@@ -18,6 +18,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { DECAY_STAGES } from '../../lib/decay-engine';
 import type { DecayStage } from '../../lib/decay-engine';
 import { STAGE_TRANSITION_DURATION_MS } from '../../lib/stage-tokens.generated';
+import {
+  STAGE_AXES,
+  cellAnchorId,
+  rowAnchorId,
+  stageAnchorId,
+} from '../../lib/stage-axes';
 
 // v146: is the row a real value, or does it alias another profile? Anything
 // that starts with `var(…)` is an alias — the grammar's shape exists but the
@@ -78,7 +84,7 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
 
       <dl class="api-docs__stages">
         {DECAY_STAGES.map((stage) => (
-          <div class="api-docs__row" data-stage={stage}>
+          <div class="api-docs__row" data-stage={stage} id={stageAnchorId(stage)}>
             <dt class="api-docs__word">{stage}</dt>
             <dd class="api-docs__def"><span class="api-docs__dash" aria-hidden="true">—</span>{STAGE_MEANING[stage]}</dd>
           </div>
@@ -107,6 +113,67 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
           </div>
         ))}
       </dl>
+    </section>
+
+    {/* v150a — Mike napkin §1 / Tanya §3. Seven axes, five stages, rendered
+       with the exact CSS each cell documents. Not a new page, not a new
+       route, not a content-negotiated JSON contract: an appendix, anchored. */}
+    <section class="api-docs__section api-docs__matrix-section" aria-labelledby="matrix-heading">
+      <h2 id="matrix-heading" class="api-docs__h2">The grammar, whole.</h2>
+      <p class="api-docs__lede">
+        Seven axes, five stages. Each cell below is rendered with the exact
+        CSS it documents — if a cell looks wrong, the axis is wrong, not the
+        page.
+      </p>
+
+      <div class="api-docs__matrix" role="table" aria-labelledby="matrix-heading">
+        <div class="api-docs__matrix-row api-docs__matrix-row--head" role="row">
+          <div class="api-docs__matrix-rowhead api-docs__matrix-corner" role="columnheader" aria-hidden="true"></div>
+          {DECAY_STAGES.map((stage) => (
+            <div class="api-docs__matrix-colhead" role="columnheader" data-stage={stage}>
+              <span class="api-docs__word">{stage}</span>
+            </div>
+          ))}
+        </div>
+
+        {STAGE_AXES.map((axis) => (
+          <div class="api-docs__matrix-row" role="row" id={rowAnchorId(axis)}>
+            <div class="api-docs__matrix-rowhead" role="rowheader">{axis}</div>
+            {DECAY_STAGES.map((stage) => (
+              <div
+                class="api-docs__matrix-cell"
+                role="cell"
+                id={cellAnchorId(axis, stage)}
+                data-axis={axis}
+                data-decay-stage={stage}
+                aria-label={`${axis} at ${stage}`}
+              >
+                {axis === 'typography' && (
+                  <span class="mx-demo mx-demo--typo" aria-hidden="true">Aa</span>
+                )}
+                {axis === 'border' && (
+                  <div class="mx-demo mx-demo--border" aria-hidden="true"></div>
+                )}
+                {axis === 'tempo' && (
+                  <span class="mx-demo mx-demo--tempo" aria-hidden="true"></span>
+                )}
+                {axis === 'selection' && (
+                  <span class="mx-demo mx-demo--selection" aria-hidden="true">text</span>
+                )}
+                {axis === 'drag-highlight' && (
+                  <div class="mx-demo mx-demo--drag" aria-hidden="true">drop</div>
+                )}
+                {axis === 'focus' && (
+                  <button class="mx-demo mx-demo--focus" type="button">tab</button>
+                )}
+                {axis === 'underline' && (
+                  <p class="mx-demo mx-demo--under"><a href={`#${rowAnchorId(axis)}`}>link</a></p>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </section>
 
     <section class="api-docs__section" aria-labelledby="tone-heading">
@@ -287,8 +354,241 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
     letter-spacing: var(--tracking-snug);
   }
 
+  /* ── v150a — Grammar matrix appendix (Mike napkin §1 / Tanya §3) ──────
+     7 axes × 5 stages, inline reading-column, zero new tokens. Each cell
+     wears the real stage CSS via [data-decay-stage] on the cell itself —
+     the page self-monitors the axes it documents.                        */
+
+  .api-docs__matrix-section { margin-bottom: var(--space-10); }
+
+  .api-docs__matrix {
+    display: grid;
+    grid-template-columns: minmax(10ch, auto) repeat(5, minmax(0, 1fr));
+    margin-top: var(--space-5);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Each row "dissolves" — its cells participate in the parent grid. Keeps
+     per-stage wrapping (data-decay-stage is on the cell), not per-row.  */
+  .api-docs__matrix-row { display: contents; }
+
+  .api-docs__matrix-colhead {
+    padding: var(--space-3) var(--space-2) var(--space-2);
+    text-align: center;
+  }
+  .api-docs__matrix-colhead .api-docs__word {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-normal);
+  }
+
+  .api-docs__matrix-rowhead {
+    padding: var(--space-3) var(--space-2);
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+    letter-spacing: var(--tracking-normal);
+    align-self: center;
+  }
+  .api-docs__matrix-corner { border-top: 0; }
+
+  .api-docs__matrix-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64px;
+    padding: var(--space-3) var(--space-2);
+    border-top: 1px solid var(--border-subtle);
+    border-radius: var(--radius-detail);
+    scroll-margin-top: var(--space-8);
+  }
+
+  /* Tinted top edge — one color cue per cell (Tanya §3.4). The mix lifts
+     the subtle-border toward the stage hue without shouting; ghost/fossil
+     lean darker, which is itself the signal.                              */
+  .api-docs__matrix-cell[data-decay-stage="fresh"]      { border-top-color: color-mix(in oklch, var(--color-decay-fresh) 28%, var(--border-subtle)); }
+  .api-docs__matrix-cell[data-decay-stage="fading"]     { border-top-color: color-mix(in oklch, var(--color-decay-fading) 28%, var(--border-subtle)); }
+  .api-docs__matrix-cell[data-decay-stage="endangered"] { border-top-color: color-mix(in oklch, var(--color-decay-endangered) 28%, var(--border-subtle)); }
+  .api-docs__matrix-cell[data-decay-stage="ghost"]      { border-top-color: color-mix(in oklch, var(--color-decay-ghost) 28%, var(--border-subtle)); }
+  .api-docs__matrix-cell[data-decay-stage="fossil"]     { border-top-color: color-mix(in oklch, var(--color-decay-fossil) 28%, var(--border-subtle)); }
+
+  /* :target — the fragment-anchor ring (Tanya §3.5). Once, not a pulse. */
+  .api-docs__matrix-cell:target {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+    animation: mx-target-in var(--motion-duration-base) ease-out;
+  }
+  .api-docs__matrix-cell[data-decay-stage="fresh"]:target      { outline-color: color-mix(in oklch, var(--color-decay-fresh) 60%, transparent); }
+  .api-docs__matrix-cell[data-decay-stage="fading"]:target     { outline-color: color-mix(in oklch, var(--color-decay-fading) 60%, transparent); }
+  .api-docs__matrix-cell[data-decay-stage="endangered"]:target { outline-color: color-mix(in oklch, var(--color-decay-endangered) 60%, transparent); }
+  /* dim stages freeze at endangered — same color-floor reasoning as v149 */
+  .api-docs__matrix-cell[data-decay-stage="ghost"]:target      { outline-color: var(--stage-endangered-border); }
+  .api-docs__matrix-cell[data-decay-stage="fossil"]:target     { outline-color: var(--stage-endangered-border); }
+
+  @keyframes mx-target-in {
+    from { outline-color: transparent; }
+  }
+
+  /* ── Per-axis demo rules — reuse stage tokens, zero net-new tokens ──── */
+
+  .mx-demo {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+  }
+
+  /* typography: mono "Aa", weight + opacity ramp from the identity tokens */
+  .mx-demo--typo {
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
+    letter-spacing: var(--tracking-normal);
+  }
+  [data-decay-stage="fresh"]      .mx-demo--typo { font-weight: var(--stage-fresh-title-weight);      opacity: var(--stage-fresh-text-primary); }
+  [data-decay-stage="fading"]     .mx-demo--typo { font-weight: var(--stage-fading-title-weight);     opacity: var(--stage-fading-text-primary); }
+  [data-decay-stage="endangered"] .mx-demo--typo { font-weight: var(--stage-endangered-title-weight); opacity: var(--stage-endangered-text-primary); }
+  [data-decay-stage="ghost"]      .mx-demo--typo { font-weight: var(--stage-ghost-title-weight);      opacity: var(--stage-ghost-text-primary); }
+  [data-decay-stage="fossil"]     .mx-demo--typo { font-weight: var(--stage-fossil-title-weight);     opacity: var(--stage-fossil-text-primary); }
+
+  /* border: a 28×16 pill, real stage border token + structural style */
+  .mx-demo--border {
+    width: 28px;
+    height: 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-detail);
+  }
+  [data-decay-stage="fresh"]      .mx-demo--border { border-color: var(--stage-fresh-border); }
+  [data-decay-stage="fading"]     .mx-demo--border { border-color: var(--stage-fading-border); }
+  [data-decay-stage="endangered"] .mx-demo--border { border-color: var(--stage-endangered-border); }
+  [data-decay-stage="ghost"]      .mx-demo--border { border-color: var(--stage-ghost-border); border-style: var(--stage-ghost-border-style); }
+  [data-decay-stage="fossil"]     .mx-demo--border { border-color: var(--stage-fossil-border); border-style: var(--stage-fossil-border-style); }
+
+  /* tempo: a hairline that plays the real per-stage duration once on load.
+     stage-motion.css already binds --stage-transition-{duration,ease} for
+     each data-decay-stage — the animation reads those directly. Reduced
+     motion keeps the hairline visible at its final width.                */
+  .mx-demo--tempo {
+    display: block;
+    width: 48px;
+    height: 2px;
+    background: var(--stage-endangered-border);
+    transform-origin: left;
+    animation: mx-tempo-tick var(--stage-transition-duration) var(--stage-transition-ease) both;
+  }
+  [data-decay-stage="fresh"]      .mx-demo--tempo { background: var(--stage-fresh-border); }
+  [data-decay-stage="fading"]     .mx-demo--tempo { background: var(--stage-fading-border); }
+  [data-decay-stage="endangered"] .mx-demo--tempo { background: var(--stage-endangered-border); }
+  [data-decay-stage="ghost"]      .mx-demo--tempo { background: var(--stage-ghost-border); }
+  [data-decay-stage="fossil"]     .mx-demo--tempo { background: var(--stage-fossil-border); }
+
+  @keyframes mx-tempo-tick {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+
+  /* selection: a pre-painted span that mirrors stage-selection.css's rule
+     (fresh/fading/endangered → surface-base ink; ghost/fossil → primary). */
+  .mx-demo--selection {
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-detail);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+  }
+  [data-decay-stage="fresh"]      .mx-demo--selection { background: var(--stage-fresh-border);      color: var(--surface-base); }
+  [data-decay-stage="fading"]     .mx-demo--selection { background: var(--stage-fading-border);     color: var(--surface-base); }
+  [data-decay-stage="endangered"] .mx-demo--selection { background: var(--stage-endangered-border); color: var(--surface-base); }
+  [data-decay-stage="ghost"]      .mx-demo--selection { background: var(--stage-ghost-border);      color: var(--text-primary); }
+  [data-decay-stage="fossil"]     .mx-demo--selection { background: var(--stage-fossil-border);     color: var(--text-primary); }
+
+  /* drag-highlight: a dashed drop-zone; shares the border axis tokens */
+  .mx-demo--drag {
+    width: 48px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-detail);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+  }
+  [data-decay-stage="fresh"]      .mx-demo--drag { border-color: var(--stage-fresh-border); }
+  [data-decay-stage="fading"]     .mx-demo--drag { border-color: var(--stage-fading-border); }
+  [data-decay-stage="endangered"] .mx-demo--drag { border-color: var(--stage-endangered-border); }
+  [data-decay-stage="ghost"]      .mx-demo--drag { border-color: var(--stage-ghost-border); }
+  [data-decay-stage="fossil"]     .mx-demo--drag { border-color: var(--stage-fossil-border); }
+
+  /* focus: a real tabbable button — stage-focus.css paints the ring when
+     the button receives :focus-visible (tab lands; click does not ring). */
+  .mx-demo--focus {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-normal);
+    padding: var(--space-1) var(--space-2);
+    background: var(--surface-inset);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-detail);
+  }
+
+  /* underline: a prose paragraph with a real anchor —
+     stage-underline.css paints the decoration automatically.              */
+  .mx-demo--under {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+  }
+  .mx-demo--under a { color: var(--text-primary); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mx-demo--tempo { animation: none; transform: scaleX(1); }
+    .api-docs__matrix-cell:target { animation: none; }
+  }
+
   /* ── Mobile: 360px wide, no horizontal layout scroll (Tanya §5.7) ────── */
   @media (max-width: 480px) {
     .api-docs__row { grid-template-columns: 10ch 1fr; }
+
+    /* Matrix collapses: one card per axis, five-cell strip inside it.
+       No horizontal page scroll; the strip scrolls inside its container. */
+    .api-docs__matrix { display: block; border-top: 0; }
+    .api-docs__matrix-row--head { display: none; }
+    .api-docs__matrix-row {
+      display: block;
+      margin-bottom: var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+      border-radius: var(--radius-detail);
+      padding: var(--space-2);
+    }
+    .api-docs__matrix-rowhead {
+      display: block;
+      border-top: 0;
+      padding: var(--space-2) var(--space-1) var(--space-1);
+      font-size: var(--text-xs);
+      color: var(--text-primary);
+    }
+    .api-docs__matrix-row .api-docs__matrix-cell {
+      display: inline-flex;
+      min-width: 64px;
+      margin-right: var(--space-2);
+      border-top: 0;
+      border-left: 2px solid var(--border-subtle);
+      padding: var(--space-2);
+    }
+    /* Restack tinted edge as a left keyline in the collapsed strip */
+    .api-docs__matrix-cell[data-decay-stage="fresh"]      { border-left-color: color-mix(in oklch, var(--color-decay-fresh) 28%, var(--border-subtle)); }
+    .api-docs__matrix-cell[data-decay-stage="fading"]     { border-left-color: color-mix(in oklch, var(--color-decay-fading) 28%, var(--border-subtle)); }
+    .api-docs__matrix-cell[data-decay-stage="endangered"] { border-left-color: color-mix(in oklch, var(--color-decay-endangered) 28%, var(--border-subtle)); }
+    .api-docs__matrix-cell[data-decay-stage="ghost"]      { border-left-color: color-mix(in oklch, var(--color-decay-ghost) 28%, var(--border-subtle)); }
+    .api-docs__matrix-cell[data-decay-stage="fossil"]     { border-left-color: color-mix(in oklch, var(--color-decay-fossil) 28%, var(--border-subtle)); }
+  }
+
+  @media (forced-colors: active) {
+    .api-docs__matrix-cell { border-top-color: CanvasText; }
+    .api-docs__matrix-cell:target { outline-color: Highlight; }
   }
 </style>

@@ -767,6 +767,106 @@ function checkStageTokensFreshness(): boolean {
   return false;
 }
 
+// ── Stage-axis inventory guard (Mike napkin v150a §3) ─────────────────────
+// Rule: every axis in STAGE_AXES maps to a file that exists on disk, AND
+// every non-exempt src/styles/stage-*.css file corresponds to at least one
+// axis in AXIS_TO_CSS_FILE. Drift either direction → breaking freeze
+// violation (AGENTS.md "axis count frozen — no 8th axis"). Failing the
+// build is how that freeze becomes executable policy.
+
+const STAGE_AXES_TS = path.resolve(process.cwd(), "src/lib/stage-axes.ts");
+
+function parseStageAxesTuple(source: string): string[] | null {
+  const re = /export\s+const\s+STAGE_AXES\s*=\s*\[([\s\S]+?)\]\s*as\s+const/;
+  const match = re.exec(source);
+  if (!match) return null;
+  return match[1]
+    .split(",")
+    .map(s => s.trim().replace(/^['"]|['"]$/g, ""))
+    .filter(s => /^[a-z][a-z-]*$/.test(s));
+}
+
+function parseAxisFileMap(source: string): Record<string, string> | null {
+  const re = /AXIS_TO_CSS_FILE:\s*Record<Axis,\s*string>\s*=\s*\{([\s\S]+?)\}/;
+  const match = re.exec(source);
+  if (!match) return null;
+  const map: Record<string, string> = {};
+  for (const line of match[1].split("\n")) {
+    const m = /['"]([^'"]+)['"]\s*:\s*['"]([^'"]+)['"]/.exec(line);
+    if (m) map[m[1]] = m[2];
+  }
+  return map;
+}
+
+function parseExemptFiles(source: string): string[] {
+  const re = /STAGE_FILE_EXEMPT:\s*readonly\s+string\[\]\s*=\s*\[([\s\S]+?)\]/;
+  const match = re.exec(source);
+  if (!match) return [];
+  return match[1]
+    .split(",")
+    .map(s => s.trim().replace(/^['"]|['"]$/g, ""))
+    .filter(Boolean);
+}
+
+function stageCssFilesOnDisk(exempt: Set<string>): string[] {
+  return fs.readdirSync(STYLES_DIR)
+    .filter(f => /^stage-[a-z-]+\.css$/.test(f))
+    .filter(f => !exempt.has(f));
+}
+
+function axisForwardErrors(axes: string[], map: Record<string, string>): string[] {
+  const errors: string[] = [];
+  for (const axis of axes) {
+    const rel = map[axis];
+    if (!rel) { errors.push(`    axis "${axis}" has no AXIS_TO_CSS_FILE entry`); continue; }
+    if (!fs.existsSync(path.resolve(process.cwd(), rel))) {
+      errors.push(`    axis "${axis}" → missing file: ${rel}`);
+    }
+  }
+  return errors;
+}
+
+function axisReverseErrors(files: string[], map: Record<string, string>): string[] {
+  const mapped = new Set(Object.values(map));
+  const errors: string[] = [];
+  for (const f of files) {
+    const rel = `src/styles/${f}`;
+    if (!mapped.has(rel)) {
+      errors.push(`    ${rel} is not mapped by any axis — update STAGE_AXES or exempt the file`);
+    }
+  }
+  return errors;
+}
+
+function axisInventoryGuardMessage(errors: string[]): string {
+  return [
+    "❌  STAGE_AXES ⇄ stage-*.css inventory drifted.",
+    ...errors,
+    "    Source of truth: src/lib/stage-axes.ts (STAGE_AXES + AXIS_TO_CSS_FILE).",
+    "    Add the axis, update the map, or add the file to STAGE_FILE_EXEMPT.",
+  ].join("\n");
+}
+
+function checkStageAxisInventory(): boolean {
+  if (!fs.existsSync(STAGE_AXES_TS)) {
+    console.log("❌  src/lib/stage-axes.ts is missing — required by v150a.");
+    return false;
+  }
+  const src = fs.readFileSync(STAGE_AXES_TS, "utf-8");
+  const axes = parseStageAxesTuple(src);
+  const map  = parseAxisFileMap(src);
+  const exempt = new Set(parseExemptFiles(src));
+  if (!axes || !map) {
+    console.log("❌  Could not parse STAGE_AXES or AXIS_TO_CSS_FILE from stage-axes.ts.");
+    return false;
+  }
+  const files = stageCssFilesOnDisk(exempt);
+  const errors = [...axisForwardErrors(axes, map), ...axisReverseErrors(files, map)];
+  if (errors.length === 0) return true;
+  console.log(axisInventoryGuardMessage(errors));
+  return false;
+}
+
 // ── Entry ──────────────────────────────────────────────────────────────────
 
 function main(): void {
@@ -801,8 +901,9 @@ function main(): void {
 
     const stageTokensFresh = checkStageTokensFreshness();
     const decayStagesOk = checkDecayStagesLiteralSet();
+    const axisInventoryOk = checkStageAxisInventory();
 
-    if (guardTotal > 0 || !stageTokensFresh || !decayStagesOk) {
+    if (guardTotal > 0 || !stageTokensFresh || !decayStagesOk || !axisInventoryOk) {
       if (guardTotal > 0) {
         printReport(guardCss, guardAstro);
         console.log(`  (${errorTotal} errors + ${warnTotal} warns in unguarded files)\n`);
@@ -810,7 +911,7 @@ function main(): void {
       process.exit(1);
     }
 
-    console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable.`);
+    console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable. STAGE_AXES inventory clean.`);
     if (errorTotal > 0 || warnTotal > 0) {
       console.log(`   \u26a0\ufe0f  ${errorTotal} errors + ${warnTotal} typography warnings remain in unguarded files.\n`);
     }

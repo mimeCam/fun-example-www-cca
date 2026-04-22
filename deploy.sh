@@ -4,6 +4,80 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v150a — Canonical Axis Literal & Grammar-Matrix Appendix (2026-04-22)
+#   Sprint: Close the seven-axis grammar on a single, executable source of
+#     truth. One literal (`STAGE_AXES`) now governs every reader of the
+#     axis vocabulary — the `/api/docs` page, the prebuild compliance
+#     guard, and the dev-only textual-parity tests. The freeze declared
+#     in v149 ("no 8th axis") becomes executable policy: drift between
+#     the axis tuple and the `src/styles/stage-*.css` files on disk
+#     fails the Docker builder stage at prebuild. Pure code-quality +
+#     UIX-surface polish — zero infrastructure changes.
+#   Key changes:
+#     src/lib/stage-axes.ts (new) — canonical `STAGE_AXES` as-const tuple
+#       (seven literals: typography, border, tempo, selection,
+#       drag-highlight, focus, underline) + `AXIS_TO_CSS_FILE` map +
+#       `STAGE_FILE_EXEMPT` list (stage-transitions.css is crossing
+#       orchestrator, not an axis). Exports `axisStageExample(axis,
+#       stage)` → `{ tokenRefs, exampleElement }` for the docs matrix;
+#       `stageAxisGrid()` enumerates the full 7 × 5 = 35-cell grid;
+#       `cellAnchorId` / `rowAnchorId` / `stageAnchorId` emit stable
+#       URL fragments for deep links. Pure stateless module — safe for
+#       SSR, tests, and the guard. Mike §napkin single-literal rule.
+#     src/lib/stage-axes.test.ts (new, dev-only) — `node:test` textual +
+#       shape parity suite. Asserts: STAGE_AXES.length === 7,
+#       DECAY_STAGES.length === 5 (re-assertion of engine freeze), every
+#       axis maps to a file that exists on disk, every (axis, stage)
+#       cell has non-empty token refs + an example element, no dupes/
+#       gaps across the 35 combinations, and the `STAGE_AXES` tuple can
+#       be extracted with the exact regex the guard uses. Run via:
+#         `npx tsx --test src/lib/stage-axes.test.ts`
+#       NOT executed at Docker build or runtime.
+#     scripts/check-token-compliance.ts — new `checkStageAxisInventory()`
+#       guard. Parses `src/lib/stage-axes.ts` at prebuild time, extracts
+#       the `STAGE_AXES` tuple + `AXIS_TO_CSS_FILE` + `STAGE_FILE_EXEMPT`,
+#       then enforces bi-directional inventory parity: (forward) every
+#       axis maps to a file that exists on disk; (reverse) every non-
+#       exempt `src/styles/stage-*.css` file is referenced by at least
+#       one axis. Teaching error tells the dev exactly which file/axis
+#       drifted and how to fix it ("update STAGE_AXES, AXIS_TO_CSS_FILE,
+#       or STAGE_FILE_EXEMPT"). Runs as part of `npm run prebuild` → any
+#       drift fails the Docker builder stage.
+#     src/pages/api/docs.astro — new grammar-matrix appendix section
+#       ("The grammar, whole."). 7 × 5 = 35 cells rendered with the
+#       exact CSS they document — each cell wears `[data-decay-stage]`
+#       on itself, so if a cell looks wrong, the axis is wrong, not the
+#       page. Per-axis mini-demos: typography (mono "Aa" with stage
+#       weight + opacity), border (pill with stage border), tempo
+#       (hairline animated at per-stage duration), selection (pre-
+#       painted span mirroring stage-selection.css), drag-highlight
+#       (dashed drop-zone), focus (real tabbable <button>),
+#       underline (prose paragraph with real anchor). Deep-linkable via
+#       `cellAnchorId` / `rowAnchorId` / `stageAnchorId` — :target paints
+#       a one-shot focus ring (dim stages floor at endangered border per
+#       v149 color-floor reasoning). 480px mobile: matrix collapses to
+#       one card per axis with a five-cell inline strip. `forced-colors:
+#       active` + `prefers-reduced-motion: reduce` sanctuaries honored.
+#       API enum + JSON sample + stage definition list UNCHANGED — the
+#       matrix is an appendix, not a wire contract (Elon §4).
+#     AGENTS.md — stage-axes paragraph reorganised to point at the one
+#       literal in `src/lib/stage-axes.ts` as the source of truth for
+#       the axis/file inventory; freeze language retained verbatim.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `src/` and `scripts/`
+#     wholesale into the builder stage, so the new `stage-axes.ts` module,
+#     the new dev-only test file, the extended compliance guard, and the
+#     docs.astro matrix appendix all ship without any Dockerfile edits.
+#     The prebuild compliance guard now runs THREE checks inside
+#     `npm run build` during the Docker builder stage: (1) token drift,
+#     (2) DECAY_STAGES literal-set immutability, (3) STAGE_AXES ⇄ file
+#     inventory — any of them failing aborts the Docker build with a
+#     teaching error. The `.test.ts` file is never executed at build or
+#     runtime (dev-only). deploy.sh startup sequence (steps 1–8)
+#     identical to v149.
+#
 # Architecture v149 — Stage-Keyed Prose Underline (Seventh & Final Axis) (2026-04-22)
 #   Sprint: Close the decay grammar on the reader's *archival cue* — the
 #     underline under every prose anchor now reflects the post's stage.
