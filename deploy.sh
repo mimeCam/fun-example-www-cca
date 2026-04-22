@@ -11,57 +11,58 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v155 (2026-04-22) — Citation Golden (static parity witness) ────
+# ── Sprint v156 (2026-04-22) — Duration Reason Ledger ───────────────────────
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • scripts/check-citation-delegation.ts (NEW) — prebuild guard.
-#       Static-time witness that the three files that touch the citation
-#       ritual (cell-cite.ts, matrix-keynav.ts, api/docs.astro) all
-#       delegate to the oracle (`cellCitationPayload` /
-#       `cellCitationLabel` / `cellAnchorId` in `src/lib/stage-axes.ts`)
-#       and none re-implement the payload template (markers: `× `,
-#       ` · `, `#axis-`). Zero deps, regex + split only. Replaces Mike's
-#       v48 postbuild harness (spawn `astro preview`, curl three
-#       endpoints, diff) with a static equivalent — the three-mouth
-#       parity is a tautology once the single import is proven.
-#     • scripts/check-citation-delegation.test.ts (NEW) — unit test for
-#       the guard's pure helpers (`scanImports`, `scanReimplementation`,
-#       `stripLineComment`, `codeOnly`) across clean / reimpl /
-#       missing-import fixtures. Defence-in-depth: the guard that
-#       watches the contract now has its own tests.
-#     • src/lib/citation-golden.ts (NEW) — frozen 35-row witness. Pure
-#       producer: for every (axis, stage) in STAGE_AXES × DECAY_STAGES,
-#       `cellCitationPayload(axis, stage, SENTINEL_ORIGIN)` is byte-
-#       stable. Sentinel origin `https://a.test` (RFC 6761 reserved) —
-#       never the production host, so a silent "regenerate on deploy"
-#       can't rewrite the contract unnoticed. Five ref-fixture strings
-#       exercise `encodeURIComponent(ref)` round-trip across URL-
-#       reserved character classes (plain / `#` / `&` / `%` / space).
-#     • src/lib/citation-golden.test.ts (NEW) — byte-exact assertion of
-#       the 35-row inline literal + row count + sentinel-origin
-#       coverage + ref-fixture round-trip. Drift shows up in `git diff`,
-#       not in a silently-regenerated fixture file.
-#     • package.json — `prebuild` now chains (v155 additions in bold):
-#       check-token-compliance --guard → check-motion-sanctuary →
-#       check-ds-kbd → check-no-chip-lit-in-arrival →
-#       **check-citation-delegation** → test:keep-hotkey →
-#       test:keep-legend → test:chip-lit → test:arrival →
-#       **test:citation-golden** → **test:citation-delegation** →
-#       astro build. Zero new npm deps (`tsx` already pulled in).
-#     • AGENTS.md — Build-time guards sentence extended with
-#       citation-delegation + citation-golden; "Contracts to preserve"
-#       grows the cellCitationPayload-as-single-source line; the
-#       Deferred block retires (the static witness replaces Mike's
-#       blocked postbuild harness in a different shape).
+#     • scripts/lib/duration-reasons.ts (NEW) — shared ledger module.
+#       Single source of truth for the closed vocabulary of legal
+#       `/* reason: <label> */` comments that must accompany every
+#       literal `ms` / `s` token in `src/styles/tokens.css`. Exports
+#       `LEGAL_REASONS`, `LEGAL_REASONS_SET`, `REASON_COMMENT_RE`,
+#       `isAliasValue`, `isLiteralDurationDecl`, `parseLiteralDuration`,
+#       `parseReasonComment` — the pure helpers that both the guard
+#       and its test import from. Aliases (`var(--foo-duration)`) are
+#       exempt; they inherit the referenced token's reason.
+#     • scripts/check-duration-reasons.ts (NEW) — prebuild guard. Scans
+#       `src/styles/tokens.css` and fails the build if any literal-ms
+#       / literal-s token declaration lacks a reason comment, or cites
+#       a label outside the closed vocabulary. Same error-UX shape as
+#       the sibling guards (file:line:col rule match context) — flat CI
+#       skim-time. Zero new deps (regex + line-scanner).
+#     • scripts/check-duration-reasons.test.ts (NEW) — node:test unit
+#       tests for the pure scanner + helper surface: clean fixture,
+#       missing-reason fixture, unknown-label fixture, alias-inheritance
+#       fixture. Defence-in-depth: the guard has its own tests, the
+#       guard IS the second call-site for the shared extraction.
+#     • src/styles/tokens.css — every literal-ms / literal-s token
+#       annotated with `/* reason: <label> */` (motion, heartbeat,
+#       ceremony, sympathetic, urgency, stage-transition, flash, seal,
+#       presence, tombstone, endangered-pulse, verdict, sound, hb-bar,
+#       score-dot). Legal labels: micro-feedback · ceremony-phase ·
+#       ceremony-dwell · doherty · heartbeat-bpm · snap · ambient-pulse ·
+#       linger · stage-identity. No new tokens, only annotations.
+#     • package.json — `prebuild` extended with **check-duration-reasons**
+#       (after check-citation-delegation) and **test:duration-reasons**
+#       (after test:citation-delegation). Two new convenience npm scripts:
+#       `check:duration-reasons` and `test:duration-reasons`. Zero new
+#       npm deps (`tsx` already pulled in).
+#     • AGENTS.md — refreshed (compressed) with the `duration-reasons`
+#       guard in the Prebuild guards line and a new Contracts sentence:
+#       "every `ms`/`s` in tokens.css cites a legal label from
+#       `scripts/lib/duration-reasons.ts` (aliases inherit)".
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, volumes, or docker networks.
 #     Dockerfile already COPY-s `scripts/` and `src/` wholesale into the
-#     builder stage, so the two new guard scripts, the two new test
-#     files, and the `package.json` chain extension all ship without a
-#     single Dockerfile edit or docker-run-flag edit. `.test.ts` files
-#     remain dev-only and never run at runtime — the production image
-#     stays lean. All three new prebuild links run automatically via
-#     `npm run build` inside the builder stage.
+#     builder stage, so the new library (`scripts/lib/duration-reasons.ts`),
+#     the new guard script, the new test file, and the `package.json`
+#     chain extension all ship without a single Dockerfile edit or
+#     docker-run-flag edit. `.test.ts` files remain dev-only and never
+#     run at runtime — the production image stays lean. The new prebuild
+#     link (`check-duration-reasons`) and new unit-test link
+#     (`test:duration-reasons`) run automatically via `npm run build`
+#     inside the builder stage, so drift in tokens.css fails the image
+#     build, fails this script, and leaves the previous container
+#     already-stopped — operator re-runs after the fix.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -110,9 +111,10 @@ docker volume create "${SQLITE_VOLUME}" || true
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival (v154)  →
-#   check-citation-delegation (v155)  →  test:keep-hotkey  →
-#   test:keep-legend  →  test:chip-lit (v153)  →  test:arrival (v154)  →
-#   test:citation-golden (v155)  →  test:citation-delegation (v155)  →
+#   check-citation-delegation (v155)  →  check-duration-reasons (v156)  →
+#   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit (v153)  →
+#   test:arrival (v154)  →  test:citation-golden (v155)  →
+#   test:citation-delegation (v155)  →  test:duration-reasons (v156)  →
 #   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
@@ -215,10 +217,13 @@ fi
 #       server-render mouth of the citation ritual on the oracle's
 #       `cellCitationLabel` + `cellAnchorId` (prebuild-enforced, so
 #       warming this route is ALSO the smoke-test that the three-mouth
-#       parity held through the build). All static assets baked into
-#       dist/client/ at build time, no runtime cost to warming. The
-#       arrival beat only paints when a visitor lands via `?r=<nonce>`,
-#       so this warm-up exercises the SSR path only.
+#       parity held through the build); v156 adds the duration-reason
+#       ledger — every literal-ms / literal-s token in tokens.css now
+#       cites a label from the closed vocabulary, also prebuild-enforced.
+#       All static assets baked into dist/client/ at build time, no
+#       runtime cost to warming. The arrival beat only paints when a
+#       visitor lands via `?r=<nonce>`, so this warm-up exercises the
+#       SSR path only.
 #
 #   (b) GET /api/metrics/cited-cells — read-only, unauthenticated; same
 #       single producer (`heatedGrid()`) the SSR page uses. Forces

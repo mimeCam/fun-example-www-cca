@@ -1,4 +1,4 @@
-==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 08:47:19 PM UTC 2026
+==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 09:19:01 PM UTC 2026
 ==> [deploy] Stopping existing container: persona-blog-a
 persona-blog-a
 ==> [deploy] Removing existing container: persona-blog-a
@@ -28,77 +28,77 @@ persona-blog-a-sqlite
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 114.94kB 0.3s done
+#6 transferring context: 105.65kB 0.3s done
 #6 DONE 0.3s
 
 #7 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
-#7 1.110 ( 1/10) Installing libexpat (2.7.5-r0)
-#7 1.133 ( 2/10) Installing brotli-libs (1.2.0-r0)
-#7 1.162 ( 3/10) Installing libbz2 (1.0.8-r6)
-#7 1.185 ( 4/10) Installing libpng (1.6.57-r0)
-#7 1.209 ( 5/10) Installing freetype (2.14.1-r0)
-#7 1.238 ( 6/10) Installing fontconfig (2.17.1-r0)
-#7 1.280 ( 7/10) Installing encodings (1.1.0-r0)
-#7 1.313 ( 8/10) Installing libfontenc (1.1.8-r0)
-#7 1.332 ( 9/10) Installing mkfontscale (1.2.3-r1)
-#7 1.351 (10/10) Installing font-dejavu (2.37-r6)
-#7 1.475 Executing busybox-1.37.0-r30.trigger
-#7 1.486 Executing fontconfig-2.17.1-r0.trigger
-#7 1.536 Executing mkfontscale-1.2.3-r1.trigger
-#7 1.587 OK: 23.8 MiB in 28 packages
-#7 DONE 1.7s
+#7 0.782 ( 1/10) Installing libexpat (2.7.5-r0)
+#7 0.805 ( 2/10) Installing brotli-libs (1.2.0-r0)
+#7 0.830 ( 3/10) Installing libbz2 (1.0.8-r6)
+#7 0.849 ( 4/10) Installing libpng (1.6.57-r0)
+#7 0.869 ( 5/10) Installing freetype (2.14.1-r0)
+#7 0.897 ( 6/10) Installing fontconfig (2.17.1-r0)
+#7 0.934 ( 7/10) Installing encodings (1.1.0-r0)
+#7 0.966 ( 8/10) Installing libfontenc (1.1.8-r0)
+#7 0.984 ( 9/10) Installing mkfontscale (1.2.3-r1)
+#7 1.004 (10/10) Installing font-dejavu (2.37-r6)
+#7 1.095 Executing busybox-1.37.0-r30.trigger
+#7 1.102 Executing fontconfig-2.17.1-r0.trigger
+#7 1.138 Executing mkfontscale-1.2.3-r1.trigger
+#7 1.177 OK: 23.8 MiB in 28 packages
+#7 DONE 1.3s
 
 #8 [builder  3/10] RUN apk add --no-cache python3 make g++
-#8 1.116 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
-#8 1.358 ( 2/29) Installing jansson (2.14.1-r0)
-#8 1.379 ( 3/29) Installing zstd-libs (1.5.7-r2)
-#8 1.404 ( 4/29) Installing binutils (2.45.1-r0)
-#8 1.533 ( 5/29) Installing libgomp (15.2.0-r2)
-#8 1.558 ( 6/29) Installing libatomic (15.2.0-r2)
-#8 1.580 ( 7/29) Installing gmp (6.3.0-r4)
-#8 1.606 ( 8/29) Installing isl26 (0.26-r1)
-#8 1.660 ( 9/29) Installing mpfr4 (4.2.2-r0)
-#8 1.687 (10/29) Installing mpc1 (1.3.1-r1)
-#8 1.709 (11/29) Installing gcc (15.2.0-r2)
-#8 2.758 (12/29) Installing musl-dev (1.2.5-r23)
-#8 2.846 (13/29) Installing g++ (15.2.0-r2)
-#8 3.133 (14/29) Installing make (4.4.1-r3)
-#8 3.155 (15/29) Installing libbz2 (1.0.8-r6)
-#8 3.174 (16/29) Installing libexpat (2.7.5-r0)
-#8 3.194 (17/29) Installing libffi (3.5.2-r0)
-#8 3.213 (18/29) Installing gdbm (1.26-r0)
-#8 3.235 (19/29) Installing xz-libs (5.8.2-r0)
-#8 3.262 (20/29) Installing mpdecimal (4.0.1-r0)
-#8 3.299 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
-#8 3.323 (22/29) Installing libncursesw (6.5_p20251123-r0)
-#8 3.350 (23/29) Installing libpanelw (6.5_p20251123-r0)
-#8 3.369 (24/29) Installing readline (8.3.1-r0)
-#8 3.390 (25/29) Installing sqlite-libs (3.51.2-r0)
-#8 3.428 (26/29) Installing python3 (3.12.13-r0)
-#8 3.672 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
-#8 3.821 (28/29) Installing pyc (3.12.13-r0)
-#8 3.821 (29/29) Installing python3-pyc (3.12.13-r0)
-#8 3.821 Executing busybox-1.37.0-r30.trigger
-#8 3.833 OK: 301.2 MiB in 47 packages
-#8 DONE 4.1s
+#8 0.803 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
+#8 1.000 ( 2/29) Installing jansson (2.14.1-r0)
+#8 1.022 ( 3/29) Installing zstd-libs (1.5.7-r2)
+#8 1.045 ( 4/29) Installing binutils (2.45.1-r0)
+#8 1.136 ( 5/29) Installing libgomp (15.2.0-r2)
+#8 1.157 ( 6/29) Installing libatomic (15.2.0-r2)
+#8 1.176 ( 7/29) Installing gmp (6.3.0-r4)
+#8 1.198 ( 8/29) Installing isl26 (0.26-r1)
+#8 1.240 ( 9/29) Installing mpfr4 (4.2.2-r0)
+#8 1.264 (10/29) Installing mpc1 (1.3.1-r1)
+#8 1.287 (11/29) Installing gcc (15.2.0-r2)
+#8 2.285 (12/29) Installing musl-dev (1.2.5-r23)
+#8 2.363 (13/29) Installing g++ (15.2.0-r2)
+#8 2.679 (14/29) Installing make (4.4.1-r3)
+#8 2.699 (15/29) Installing libbz2 (1.0.8-r6)
+#8 2.719 (16/29) Installing libexpat (2.7.5-r0)
+#8 2.738 (17/29) Installing libffi (3.5.2-r0)
+#8 2.757 (18/29) Installing gdbm (1.26-r0)
+#8 2.776 (19/29) Installing xz-libs (5.8.2-r0)
+#8 2.800 (20/29) Installing mpdecimal (4.0.1-r0)
+#8 2.824 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+#8 2.852 (22/29) Installing libncursesw (6.5_p20251123-r0)
+#8 2.873 (23/29) Installing libpanelw (6.5_p20251123-r0)
+#8 2.892 (24/29) Installing readline (8.3.1-r0)
+#8 2.913 (25/29) Installing sqlite-libs (3.51.2-r0)
+#8 2.956 (26/29) Installing python3 (3.12.13-r0)
+#8 3.171 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
+#8 3.317 (28/29) Installing pyc (3.12.13-r0)
+#8 3.317 (29/29) Installing python3-pyc (3.12.13-r0)
+#8 3.318 Executing busybox-1.37.0-r30.trigger
+#8 3.331 OK: 301.2 MiB in 47 packages
+#8 DONE 3.6s
 
 #9 [builder  4/10] COPY package.json package-lock.json* ./
 #9 DONE 0.0s
 
 #10 [builder  5/10] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#10 9.094 
-#10 9.094 added 447 packages, and audited 448 packages in 9s
-#10 9.094 
-#10 9.094 173 packages are looking for funding
-#10 9.094   run `npm fund` for details
-#10 9.142 
-#10 9.142 4 vulnerabilities (2 moderate, 2 high)
-#10 9.142 
-#10 9.142 To address all issues (including breaking changes), run:
-#10 9.142   npm audit fix --force
-#10 9.142 
-#10 9.142 Run `npm audit` for details.
-#10 DONE 9.6s
+#10 8.920 
+#10 8.920 added 447 packages, and audited 448 packages in 9s
+#10 8.920 
+#10 8.920 173 packages are looking for funding
+#10 8.920   run `npm fund` for details
+#10 8.961 
+#10 8.961 4 vulnerabilities (2 moderate, 2 high)
+#10 8.961 
+#10 8.961 To address all issues (including breaking changes), run:
+#10 8.961   npm audit fix --force
+#10 8.961 
+#10 8.961 Run `npm audit` for details.
+#10 DONE 9.4s
 
 #11 [builder  6/10] COPY astro.config.mjs tsconfig.json ./
 #11 DONE 0.0s
@@ -113,996 +113,1191 @@ persona-blog-a-sqlite
 #14 DONE 0.0s
 
 #15 [builder 10/10] RUN npm run build
-#15 0.360 
-#15 0.360 > persona-blog@0.1.0 prebuild
-#15 0.360 > npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx scripts/check-no-chip-lit-in-arrival.ts && npx tsx scripts/check-citation-delegation.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts && npx tsx --test src/lib/client/ds-kbd-lit.test.ts && npx tsx --test src/lib/client/arrival.test.ts && npx tsx --test src/lib/citation-golden.test.ts && npx tsx --test scripts/check-citation-delegation.test.ts
-#15 0.360 
-#15 1.437 npm warn exec The following package was not found and will be installed: tsx@4.21.0
-#15 3.440 ✅  Guard check: 137 guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable. STAGE_AXES inventory clean.
-#15 3.441    ⚠️  0 errors + 2 typography warnings remain in unguarded files.
-#15 3.441 
-#15 4.877 ✅  motion-sanctuary: 144 scannable files clean (0 hits).
-#15 6.268 ✅  check-ds-kbd: zero api-docs__kbd stragglers; .ds-kbd live in 3 sites.
-#15 7.623 ✅  check-no-chip-lit-in-arrival: src/lib/client/arrival.ts is clean.
-#15 9.009 ✅  check-citation-delegation: 3 target(s) delegate to stage-axes; no re-implementation.
-#15 10.18 TAP version 13
-#15 10.52 # Subtest: isKeepKey — bare letter, no modifiers
-#15 10.52     # Subtest: `k` (lowercase) is a keep
-#15 10.52     ok 1 - `k` (lowercase) is a keep
-#15 10.52       ---
-#15 10.52       duration_ms: 0.947122
-#15 10.52       ...
-#15 10.52     # Subtest: `K` (capital — caps-lock or shift-held) is a keep
-#15 10.52     ok 2 - `K` (capital — caps-lock or shift-held) is a keep
-#15 10.52       ---
-#15 10.52       duration_ms: 0.168367
-#15 10.52       ...
-#15 10.52     1..2
-#15 10.52 ok 1 - isKeepKey — bare letter, no modifiers
-#15 10.52   ---
-#15 10.52   duration_ms: 2.574591
-#15 10.52   type: 'suite'
-#15 10.52   ...
-#15 10.53 # Subtest: isKeepKey — Shift is transparent; capital K still keeps
-#15 10.53     # Subtest: Shift+k still keeps (native `event.key` lowers when Shift flips caps)
-#15 10.53     ok 1 - Shift+k still keeps (native `event.key` lowers when Shift flips caps)
-#15 10.53       ---
-#15 10.53       duration_ms: 0.467118
-#15 10.53       ...
-#15 10.53     # Subtest: Shift+K still keeps (caps-lock on + Shift held → capital)
-#15 10.53     ok 2 - Shift+K still keeps (caps-lock on + Shift held → capital)
-#15 10.53       ---
-#15 10.53       duration_ms: 0.150572
-#15 10.53       ...
-#15 10.53     1..2
-#15 10.53 ok 2 - isKeepKey — Shift is transparent; capital K still keeps
-#15 10.53   ---
-#15 10.53   duration_ms: 0.836824
-#15 10.53   type: 'suite'
-#15 10.53   ...
-#15 10.53 # Subtest: isKeepKey — Cmd / Ctrl / Alt drop the keep (native chords win)
-#15 10.53     # Subtest: Cmd+k → false (let native Cmd+K through — browser search)
-#15 10.53     ok 1 - Cmd+k → false (let native Cmd+K through — browser search)
-#15 10.53       ---
-#15 10.53       duration_ms: 1.074451
-#15 10.53       ...
-#15 10.53     # Subtest: Ctrl+k → false (Ctrl+K = search/omnibox on many browsers)
-#15 10.53     ok 2 - Ctrl+k → false (Ctrl+K = search/omnibox on many browsers)
-#15 10.53       ---
-#15 10.53       duration_ms: 0.204255
-#15 10.53       ...
-#15 10.53     # Subtest: Alt+k → false (Alt-chords own by platform)
-#15 10.53     ok 3 - Alt+k → false (Alt-chords own by platform)
-#15 10.53       ---
-#15 10.53       duration_ms: 0.214645
-#15 10.53       ...
-#15 10.53     # Subtest: Cmd+K (capital) → false
-#15 10.53     ok 4 - Cmd+K (capital) → false
-#15 10.53       ---
-#15 10.53       duration_ms: 0.250971
-#15 10.53       ...
-#15 10.53     1..4
-#15 10.53 ok 3 - isKeepKey — Cmd / Ctrl / Alt drop the keep (native chords win)
-#15 10.53   ---
-#15 10.53   duration_ms: 2.236726
-#15 10.53   type: 'suite'
-#15 10.53   ...
-#15 10.53 # Subtest: isKeepKey — everything else is NOT a keep
-#15 10.53     # Subtest: "a" is not a keep
-#15 10.53     ok 1 - "a" is not a keep
-#15 10.53       ---
-#15 10.53       duration_ms: 0.261151
-#15 10.53       ...
-#15 10.53     # Subtest: "c" is not a keep
-#15 10.53     ok 2 - "c" is not a keep
-#15 10.53       ---
-#15 10.53       duration_ms: 0.211038
-#15 10.53       ...
-#15 10.53     # Subtest: "j" is not a keep
-#15 10.53     ok 3 - "j" is not a keep
-#15 10.54       ---
-#15 10.54       duration_ms: 0.130145
-#15 10.54       ...
-#15 10.54     # Subtest: "l" is not a keep
-#15 10.54     ok 4 - "l" is not a keep
-#15 10.54       ---
-#15 10.54       duration_ms: 0.261141
-#15 10.54       ...
-#15 10.54     # Subtest: "x" is not a keep
-#15 10.54     ok 5 - "x" is not a keep
-#15 10.54       ---
-#15 10.54       duration_ms: 0.167826
-#15 10.54       ...
-#15 10.54     # Subtest: "Escape" is not a keep
-#15 10.54     ok 6 - "Escape" is not a keep
-#15 10.54       ---
-#15 10.54       duration_ms: 0.195399
-#15 10.54       ...
-#15 10.54     # Subtest: "Tab" is not a keep
-#15 10.54     ok 7 - "Tab" is not a keep
-#15 10.54       ---
-#15 10.54       duration_ms: 0.145233
-#15 10.54       ...
-#15 10.55     # Subtest: "Enter" is not a keep
-#15 10.55     ok 8 - "Enter" is not a keep
-#15 10.55       ---
-#15 10.55       duration_ms: 0.179017
-#15 10.55       ...
-#15 10.55     # Subtest: " " is not a keep
-#15 10.55     ok 9 - " " is not a keep
-#15 10.55       ---
-#15 10.55       duration_ms: 0.174288
-#15 10.55       ...
-#15 10.55     # Subtest: "ArrowUp" is not a keep
-#15 10.55     ok 10 - "ArrowUp" is not a keep
-#15 10.55       ---
-#15 10.55       duration_ms: 0.583779
-#15 10.55       ...
-#15 10.55     # Subtest: "ArrowDown" is not a keep
-#15 10.55     ok 11 - "ArrowDown" is not a keep
-#15 10.55       ---
-#15 10.55       duration_ms: 0.221376
-#15 10.55       ...
-#15 10.55     # Subtest: "ArrowLeft" is not a keep
-#15 10.55     ok 12 - "ArrowLeft" is not a keep
-#15 10.55       ---
-#15 10.55       duration_ms: 0.956329
-#15 10.55       ...
-#15 10.55     # Subtest: "ArrowRight" is not a keep
-#15 10.55     ok 13 - "ArrowRight" is not a keep
-#15 10.55       ---
-#15 10.55       duration_ms: 0.113482
-#15 10.55       ...
-#15 10.55     # Subtest: "Home" is not a keep
-#15 10.55     ok 14 - "Home" is not a keep
-#15 10.56       ---
-#15 10.56       duration_ms: 0.098054
-#15 10.56       ...
-#15 10.56     # Subtest: "End" is not a keep
-#15 10.56     ok 15 - "End" is not a keep
-#15 10.56       ---
-#15 10.56       duration_ms: 0.141075
-#15 10.56       ...
-#15 10.56     # Subtest: "PageUp" is not a keep
-#15 10.56     ok 16 - "PageUp" is not a keep
-#15 10.56       ---
-#15 10.56       duration_ms: 0.094689
-#15 10.56       ...
-#15 10.56     # Subtest: "PageDown" is not a keep
-#15 10.56     ok 17 - "PageDown" is not a keep
-#15 10.56       ---
-#15 10.56       duration_ms: 0.08586
-#15 10.56       ...
-#15 10.56     # Subtest: "0" is not a keep
-#15 10.56     ok 18 - "0" is not a keep
-#15 10.56       ---
-#15 10.56       duration_ms: 0.136076
-#15 10.56       ...
-#15 10.56     1..18
-#15 10.56 ok 4 - isKeepKey — everything else is NOT a keep
-#15 10.56   ---
-#15 10.56   duration_ms: 4.978292
-#15 10.56   type: 'suite'
-#15 10.56   ...
-#15 10.56 # Subtest: isKeepKey — any Cmd/Ctrl/Alt combo suppresses both K forms
-#15 10.56     # Subtest: every combo × every keep key → false
-#15 10.56     ok 1 - every combo × every keep key → false
-#15 10.56       ---
-#15 10.56       duration_ms: 0.266601
-#15 10.56       ...
-#15 10.56     1..1
-#15 10.56 ok 5 - isKeepKey — any Cmd/Ctrl/Alt combo suppresses both K forms
-#15 10.56   ---
-#15 10.56   duration_ms: 0.392878
-#15 10.56   type: 'suite'
-#15 10.56   ...
-#15 10.56 # Subtest: isKeepKey — disjoint from cite and nav keys
-#15 10.56     # Subtest: none of the cite keys are keep keys
-#15 10.56     ok 1 - none of the cite keys are keep keys
-#15 10.56       ---
-#15 10.56       duration_ms: 0.232187
-#15 10.56       ...
-#15 10.56     # Subtest: none of the nav keys are keep keys
-#15 10.56     ok 2 - none of the nav keys are keep keys
-#15 10.56       ---
-#15 10.56       duration_ms: 0.174908
-#15 10.56       ...
-#15 10.56     1..2
-#15 10.56 ok 6 - isKeepKey — disjoint from cite and nav keys
-#15 10.56   ---
-#15 10.56   duration_ms: 0.532983
-#15 10.56   type: 'suite'
-#15 10.56   ...
-#15 10.58 1..6
-#15 10.58 # tests 29
-#15 10.58 # suites 6
-#15 10.58 # pass 29
-#15 10.58 # fail 0
-#15 10.58 # cancelled 0
-#15 10.58 # skipped 0
-#15 10.58 # todo 0
-#15 10.58 # duration_ms 421.135944
-#15 11.85 TAP version 13
-#15 12.18 # Subtest: v152 — keep-legend ↔ isKeepKey parity
-#15 12.18     # Subtest: legend block exists in FloatingKeepButton.astro
-#15 12.18     ok 1 - legend block exists in FloatingKeepButton.astro
-#15 12.18       ---
-#15 12.18       duration_ms: 1.575564
-#15 12.18       ...
-#15 12.18     # Subtest: legend contains at least one <kbd> chip
-#15 12.18     ok 2 - legend contains at least one <kbd> chip
-#15 12.18       ---
-#15 12.18       duration_ms: 0.383672
-#15 12.18       ...
-#15 12.18     # Subtest: every chip label maps to a real key the handler accepts
-#15 12.18     ok 3 - every chip label maps to a real key the handler accepts
-#15 12.18       ---
-#15 12.18       duration_ms: 0.322276
-#15 12.18       ...
-#15 12.18     # Subtest: every keep key the handler accepts is taught by the legend
-#15 12.18     ok 4 - every keep key the handler accepts is taught by the legend
-#15 12.18       ---
-#15 12.18       duration_ms: 0.256753
-#15 12.18       ...
-#15 12.19     # Subtest: no legend chip teaches a key the handler ignores (stale-key guard)
-#15 12.19     ok 5 - no legend chip teaches a key the handler ignores (stale-key guard)
-#15 12.19       ---
-#15 12.19       duration_ms: 0.210677
-#15 12.19       ...
-#15 12.19     # Subtest: no empty <kbd> chips (broken-icon guard, Tanya §2b mirror)
-#15 12.19     ok 6 - no empty <kbd> chips (broken-icon guard, Tanya §2b mirror)
-#15 12.19       ---
-#15 12.19       duration_ms: 0.390735
-#15 12.19       ...
-#15 12.19     # Subtest: modifier chords (Ctrl/Cmd/Alt + K) fall through to browser
-#15 12.19     ok 7 - modifier chords (Ctrl/Cmd/Alt + K) fall through to browser
-#15 12.19       ---
-#15 12.19       duration_ms: 0.203663
-#15 12.19       ...
-#15 12.19     # Subtest: keep legend sits inside the floating-keep scope (not a run-on paragraph)
-#15 12.19     ok 8 - keep legend sits inside the floating-keep scope (not a run-on paragraph)
-#15 12.19       ---
-#15 12.19       duration_ms: 0.267412
-#15 12.19       ...
-#15 12.19     1..8
-#15 12.19 ok 1 - v152 — keep-legend ↔ isKeepKey parity
-#15 12.19   ---
-#15 12.19   duration_ms: 5.581717
-#15 12.19   type: 'suite'
-#15 12.19   ...
-#15 12.21 1..1
-#15 12.21 # tests 8
-#15 12.21 # suites 1
-#15 12.21 # pass 8
-#15 12.21 # fail 0
-#15 12.21 # cancelled 0
-#15 12.21 # skipped 0
-#15 12.21 # todo 0
-#15 12.21 # duration_ms 379.615495
-#15 13.42 TAP version 13
-#15 13.73 # Subtest: v153 — keyToChipLabels pure normaliser
-#15 13.74     # Subtest: Space bar (" ") maps to the word "Space", never a literal blank
-#15 13.74     ok 1 - Space bar (" ") maps to the word "Space", never a literal blank
-#15 13.74       ---
-#15 13.74       duration_ms: 2.080934
-#15 13.74       ...
-#15 13.74     # Subtest: cite keys → cite-legend labels
-#15 13.74     ok 2 - cite keys → cite-legend labels
-#15 13.74       ---
-#15 13.74       duration_ms: 0.226765
-#15 13.74       ...
-#15 13.74     # Subtest: nav keys → identity (no transform)
-#15 13.74     ok 3 - nav keys → identity (no transform)
-#15 13.74       ---
-#15 13.74       duration_ms: 0.237457
-#15 13.74       ...
-#15 13.74     # Subtest: keep key — both `k` and `K` emit the same two-label set
-#15 13.74     ok 4 - keep key — both `k` and `K` emit the same two-label set
-#15 13.74       ---
-#15 13.74       duration_ms: 0.273805
-#15 13.74       ...
-#15 13.74     # Subtest: single non-letter char → single-element label set
-#15 13.74     ok 5 - single non-letter char → single-element label set
-#15 13.74       ---
-#15 13.74       duration_ms: 0.156265
-#15 13.74       ...
-#15 13.74     # Subtest: multi-char named keys → identity
-#15 13.74     ok 6 - multi-char named keys → identity
-#15 13.74       ---
-#15 13.74       duration_ms: 0.190117
-#15 13.74       ...
-#15 13.74     # Subtest: empty key string → single-element empty set
-#15 13.74     ok 7 - empty key string → single-element empty set
-#15 13.74       ---
-#15 13.74       duration_ms: 0.144612
-#15 13.74       ...
-#15 13.74     1..7
-#15 13.74 ok 1 - v153 — keyToChipLabels pure normaliser
-#15 13.74   ---
-#15 13.74   duration_ms: 5.069073
-#15 13.74   type: 'suite'
-#15 13.74   ...
-#15 13.75 # Subtest: v153 — legend labels ⊆ image(keyToChipLabels)
-#15 13.75     # Subtest: every legend chip label is producible by some KeyboardEvent.key
-#15 13.75     ok 1 - every legend chip label is producible by some KeyboardEvent.key
-#15 13.75       ---
-#15 13.75       duration_ms: 0.690408
-#15 13.75       ...
-#15 13.75     1..1
-#15 13.75 ok 2 - v153 — legend labels ⊆ image(keyToChipLabels)
-#15 13.75   ---
-#15 13.75   duration_ms: 1.098235
-#15 13.75   type: 'suite'
-#15 13.75   ...
-#15 13.77 1..2
-#15 13.77 # tests 8
-#15 13.77 # suites 2
-#15 13.77 # pass 8
-#15 13.77 # fail 0
-#15 13.77 # cancelled 0
-#15 13.77 # skipped 0
-#15 13.77 # todo 0
-#15 13.77 # duration_ms 374.520353
-#15 14.98 TAP version 13
-#15 15.37 # Subtest: v154 — arrival.ts invariant fence (no chip-lit vocabulary)
-#15 15.37     # Subtest: arrival.ts code must NOT reference "ds-kbd-lit"
-#15 15.38     ok 1 - arrival.ts code must NOT reference "ds-kbd-lit"
-#15 15.38       ---
-#15 15.38       duration_ms: 1.084961
-#15 15.38       ...
-#15 15.38     # Subtest: arrival.ts code must NOT reference "lightForKey"
-#15 15.38     ok 2 - arrival.ts code must NOT reference "lightForKey"
-#15 15.38       ---
-#15 15.38       duration_ms: 0.155292
-#15 15.38       ...
-#15 15.38     # Subtest: arrival.ts code must NOT reference "unlightForKey"
-#15 15.38     ok 3 - arrival.ts code must NOT reference "unlightForKey"
-#15 15.38       ---
-#15 15.38       duration_ms: 0.147498
-#15 15.38       ...
-#15 15.38     1..3
-#15 15.39 ok 1 - v154 — arrival.ts invariant fence (no chip-lit vocabulary)
-#15 15.39   ---
-#15 15.39   duration_ms: 3.204367
-#15 15.39   type: 'suite'
-#15 15.39   ...
-#15 15.39 # Subtest: v154 — isValidRef (pure REF_RE gate)
-#15 15.39     # Subtest: accepts typical crypto.randomUUID() 36-char output
-#15 15.39     ok 1 - accepts typical crypto.randomUUID() 36-char output
-#15 15.39       ---
-#15 15.39       duration_ms: 0.271149
-#15 15.39       ...
-#15 15.39     # Subtest: accepts legacy 16-hex fallback (Math.random form)
-#15 15.39     ok 2 - accepts legacy 16-hex fallback (Math.random form)
-#15 15.39       ---
-#15 15.39       duration_ms: 0.178996
-#15 15.39       ...
-#15 15.39     # Subtest: accepts the 8-char lower bound
-#15 15.39     ok 3 - accepts the 8-char lower bound
-#15 15.39       ---
-#15 15.39       duration_ms: 0.138259
-#15 15.39       ...
-#15 15.39     # Subtest: accepts the 64-char upper bound
-#15 15.39     ok 4 - accepts the 64-char upper bound
-#15 15.39       ---
-#15 15.39       duration_ms: 0.192973
-#15 15.39       ...
-#15 15.39     1..4
-#15 15.39 ok 2 - v154 — isValidRef (pure REF_RE gate)
-#15 15.39   ---
-#15 15.39   duration_ms: 1.193865
-#15 15.39   type: 'suite'
-#15 15.39   ...
-#15 15.40 # Subtest: v154 — isValidRef rejects malformed nonces
-#15 15.40     # Subtest: rejects null (absent)
-#15 15.40     ok 1 - rejects null (absent)
-#15 15.40       ---
-#15 15.40       duration_ms: 0.305064
-#15 15.40       ...
-#15 15.40     # Subtest: rejects undefined (absent)
-#15 15.40     ok 2 - rejects undefined (absent)
-#15 15.40       ---
-#15 15.40       duration_ms: 0.152196
-#15 15.40       ...
-#15 15.40     # Subtest: rejects the empty string
-#15 15.40     ok 3 - rejects the empty string
-#15 15.40       ---
-#15 15.40       duration_ms: 0.20177
-#15 15.40       ...
-#15 15.40     # Subtest: rejects 7 chars (one below the lower bound)
-#15 15.40     ok 4 - rejects 7 chars (one below the lower bound)
-#15 15.40       ---
-#15 15.40       duration_ms: 0.205275
-#15 15.40       ...
-#15 15.40     # Subtest: rejects 65 chars (one above the upper bound)
-#15 15.40     ok 5 - rejects 65 chars (one above the upper bound)
-#15 15.40       ---
-#15 15.40       duration_ms: 0.174268
-#15 15.40       ...
-#15 15.40     # Subtest: rejects characters outside [A-Za-z0-9-]
-#15 15.40     ok 6 - rejects characters outside [A-Za-z0-9-]
-#15 15.40       ---
-#15 15.40       duration_ms: 0.181121
-#15 15.40       ...
-#15 15.40     1..6
-#15 15.40 ok 3 - v154 — isValidRef rejects malformed nonces
-#15 15.40   ---
-#15 15.40   duration_ms: 1.565363
-#15 15.40   type: 'suite'
-#15 15.40   ...
-#15 15.40 # Subtest: v154 — ARRIVAL_MS beat (single-source)
-#15 15.40     # Subtest: ARRIVAL_MS is a positive integer in ms
-#15 15.40     ok 1 - ARRIVAL_MS is a positive integer in ms
-#15 15.40       ---
-#15 15.40       duration_ms: 0.320573
-#15 15.40       ...
-#15 15.40     # Subtest: ARRIVAL_MS equals the v150b beat (1200 ms)
-#15 15.40     ok 2 - ARRIVAL_MS equals the v150b beat (1200 ms)
-#15 15.40       ---
-#15 15.40       duration_ms: 0.196609
-#15 15.40       ...
-#15 15.41     # Subtest: cell-cite.ts re-exports ARRIVAL_MS byte-identically
-#15 15.41     ok 3 - cell-cite.ts re-exports ARRIVAL_MS byte-identically
-#15 15.41       ---
-#15 15.41       duration_ms: 0.128933
-#15 15.41       ...
-#15 15.41     1..3
-#15 15.41 ok 4 - v154 — ARRIVAL_MS beat (single-source)
-#15 15.41   ---
-#15 15.41   duration_ms: 0.907748
-#15 15.41   type: 'suite'
-#15 15.41   ...
-#15 15.41 # Subtest: v154 — arrival.ts public API shape
-#15 15.41     # Subtest: arrival.ts exports `ARRIVAL_MS`
-#15 15.41     ok 1 - arrival.ts exports `ARRIVAL_MS`
-#15 15.41       ---
-#15 15.41       duration_ms: 0.240742
-#15 15.41       ...
-#15 15.41     # Subtest: arrival.ts exports `readRef`
-#15 15.41     ok 2 - arrival.ts exports `readRef`
-#15 15.41       ---
-#15 15.41       duration_ms: 0.291128
-#15 15.41       ...
-#15 15.42     # Subtest: arrival.ts exports `isValidRef`
-#15 15.42     ok 3 - arrival.ts exports `isValidRef`
-#15 15.42       ---
-#15 15.42       duration_ms: 0.160812
-#15 15.42       ...
-#15 15.42     # Subtest: arrival.ts exports `retireCompetingGlows`
-#15 15.42     ok 4 - arrival.ts exports `retireCompetingGlows`
-#15 15.42       ---
-#15 15.42       duration_ms: 0.143581
-#15 15.42       ...
-#15 15.42     # Subtest: arrival.ts exports `triggerArrival`
-#15 15.42     ok 5 - arrival.ts exports `triggerArrival`
-#15 15.42       ---
-#15 15.42       duration_ms: 0.136948
-#15 15.42       ...
-#15 15.42     # Subtest: arrival.ts exports `markShared`
-#15 15.42     ok 6 - arrival.ts exports `markShared`
-#15 15.42       ---
-#15 15.42       duration_ms: 0.096701
-#15 15.42       ...
-#15 15.42     # Subtest: arrival.ts exports `paintArrival`
-#15 15.42     ok 7 - arrival.ts exports `paintArrival`
-#15 15.42       ---
-#15 15.42       duration_ms: 0.093515
-#15 15.42       ...
-#15 15.42     1..7
-#15 15.42 ok 5 - v154 — arrival.ts public API shape
-#15 15.42   ---
-#15 15.42   duration_ms: 1.476076
-#15 15.42   type: 'suite'
-#15 15.42   ...
-#15 15.44 1..5
-#15 15.44 # tests 23
-#15 15.44 # suites 5
-#15 15.44 # pass 23
-#15 15.44 # fail 0
-#15 15.44 # cancelled 0
-#15 15.44 # skipped 0
-#15 15.44 # todo 0
-#15 15.44 # duration_ms 479.518424
-#15 16.62 TAP version 13
-#15 16.97 # Subtest: citation-golden — row count matches STAGE_AXES × DECAY_STAGES
-#15 16.97     # Subtest: GOLDEN_ROW_COUNT equals 7 × 5 = 35
-#15 16.97     ok 1 - GOLDEN_ROW_COUNT equals 7 × 5 = 35
-#15 16.97       ---
-#15 16.97       duration_ms: 1.155363
-#15 16.97       ...
-#15 16.97     # Subtest: inline literal has exactly GOLDEN_ROW_COUNT rows
-#15 16.97     ok 2 - inline literal has exactly GOLDEN_ROW_COUNT rows
-#15 16.97       ---
-#15 16.97       duration_ms: 0.197551
-#15 16.97       ...
-#15 16.97     # Subtest: producer emits exactly GOLDEN_ROW_COUNT rows
-#15 16.97     ok 3 - producer emits exactly GOLDEN_ROW_COUNT rows
-#15 16.97       ---
-#15 16.97       duration_ms: 0.275539
-#15 16.97       ...
-#15 16.97     1..3
-#15 16.97 ok 1 - citation-golden — row count matches STAGE_AXES × DECAY_STAGES
-#15 16.97   ---
-#15 16.97   duration_ms: 3.352986
-#15 16.97   type: 'suite'
-#15 16.97   ...
-#15 16.98 # Subtest: citation-golden — every row byte-exact against the oracle
-#15 16.98     # Subtest: [0] typography × fresh — byte-exact
-#15 16.98     ok 1 - [0] typography × fresh — byte-exact
-#15 16.98       ---
-#15 16.98       duration_ms: 0.589971
-#15 16.98       ...
-#15 16.98     # Subtest: [1] typography × fading — byte-exact
-#15 16.98     ok 2 - [1] typography × fading — byte-exact
-#15 16.98       ---
-#15 16.98       duration_ms: 0.37248
-#15 16.98       ...
-#15 16.98     # Subtest: [2] typography × endangered — byte-exact
-#15 16.98     ok 3 - [2] typography × endangered — byte-exact
-#15 16.98       ---
-#15 16.98       duration_ms: 0.126238
-#15 16.98       ...
-#15 16.98     # Subtest: [3] typography × ghost — byte-exact
-#15 16.98     ok 4 - [3] typography × ghost — byte-exact
-#15 16.98       ---
-#15 16.98       duration_ms: 0.112822
-#15 16.98       ...
-#15 16.98     # Subtest: [4] typography × fossil — byte-exact
-#15 16.98     ok 5 - [4] typography × fossil — byte-exact
-#15 16.98       ---
-#15 16.98       duration_ms: 0.262064
-#15 16.98       ...
-#15 16.98     # Subtest: [5] border × fresh — byte-exact
-#15 16.98     ok 6 - [5] border × fresh — byte-exact
-#15 16.98       ---
-#15 16.98       duration_ms: 0.240712
-#15 16.98       ...
-#15 16.99     # Subtest: [6] border × fading — byte-exact
-#15 16.99     ok 7 - [6] border × fading — byte-exact
-#15 16.99       ---
-#15 16.99       duration_ms: 0.160911
-#15 16.99       ...
-#15 16.99     # Subtest: [7] border × endangered — byte-exact
-#15 16.99     ok 8 - [7] border × endangered — byte-exact
-#15 16.99       ---
-#15 16.99       duration_ms: 0.119063
-#15 16.99       ...
-#15 16.99     # Subtest: [8] border × ghost — byte-exact
-#15 16.99     ok 9 - [8] border × ghost — byte-exact
-#15 16.99       ---
-#15 16.99       duration_ms: 0.249981
-#15 16.99       ...
-#15 16.99     # Subtest: [9] border × fossil — byte-exact
-#15 16.99     ok 10 - [9] border × fossil — byte-exact
-#15 16.99       ---
-#15 16.99       duration_ms: 0.130916
-#15 16.99       ...
-#15 16.99     # Subtest: [10] tempo × fresh — byte-exact
-#15 16.99     ok 11 - [10] tempo × fresh — byte-exact
-#15 16.99       ---
-#15 16.99       duration_ms: 0.110197
-#15 16.99       ...
-#15 17.00     # Subtest: [11] tempo × fading — byte-exact
-#15 17.00     ok 12 - [11] tempo × fading — byte-exact
-#15 17.00       ---
-#15 17.00       duration_ms: 0.107151
-#15 17.00       ...
-#15 17.00     # Subtest: [12] tempo × endangered — byte-exact
-#15 17.00     ok 13 - [12] tempo × endangered — byte-exact
-#15 17.00       ---
-#15 17.00       duration_ms: 0.184807
-#15 17.00       ...
-#15 17.00     # Subtest: [13] tempo × ghost — byte-exact
-#15 17.00     ok 14 - [13] tempo × ghost — byte-exact
-#15 17.00       ---
-#15 17.00       duration_ms: 0.117702
-#15 17.00       ...
-#15 17.00     # Subtest: [14] tempo × fossil — byte-exact
-#15 17.00     ok 15 - [14] tempo × fossil — byte-exact
-#15 17.00       ---
-#15 17.00       duration_ms: 0.31397
-#15 17.00       ...
-#15 17.00     # Subtest: [15] selection × fresh — byte-exact
-#15 17.00     ok 16 - [15] selection × fresh — byte-exact
-#15 17.00       ---
-#15 17.00       duration_ms: 0.11208
-#15 17.00       ...
-#15 17.00     # Subtest: [16] selection × fading — byte-exact
-#15 17.00     ok 17 - [16] selection × fading — byte-exact
-#15 17.00       ---
-#15 17.00       duration_ms: 0.113383
-#15 17.00       ...
-#15 17.01     # Subtest: [17] selection × endangered — byte-exact
-#15 17.01     ok 18 - [17] selection × endangered — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.100309
-#15 17.01       ...
-#15 17.01     # Subtest: [18] selection × ghost — byte-exact
-#15 17.01     ok 19 - [18] selection × ghost — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.090672
-#15 17.01       ...
-#15 17.01     # Subtest: [19] selection × fossil — byte-exact
-#15 17.01     ok 20 - [19] selection × fossil — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.108583
-#15 17.01       ...
-#15 17.01     # Subtest: [20] drag-highlight × fresh — byte-exact
-#15 17.01     ok 21 - [20] drag-highlight × fresh — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.093525
-#15 17.01       ...
-#15 17.01     # Subtest: [21] drag-highlight × fading — byte-exact
-#15 17.01     ok 22 - [21] drag-highlight × fading — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.086142
-#15 17.01       ...
-#15 17.01     # Subtest: [22] drag-highlight × endangered — byte-exact
-#15 17.01     ok 23 - [22] drag-highlight × endangered — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.08499
-#15 17.01       ...
-#15 17.01     # Subtest: [23] drag-highlight × ghost — byte-exact
-#15 17.01     ok 24 - [23] drag-highlight × ghost — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.080923
-#15 17.01       ...
-#15 17.01     # Subtest: [24] drag-highlight × fossil — byte-exact
-#15 17.01     ok 25 - [24] drag-highlight × fossil — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.097052
-#15 17.01       ...
-#15 17.01     # Subtest: [25] focus × fresh — byte-exact
-#15 17.01     ok 26 - [25] focus × fresh — byte-exact
-#15 17.01       ---
-#15 17.01       duration_ms: 0.082665
-#15 17.01       ...
-#15 17.02     # Subtest: [26] focus × fading — byte-exact
-#15 17.02     ok 27 - [26] focus × fading — byte-exact
-#15 17.02       ---
-#15 17.02       duration_ms: 0.082706
-#15 17.02       ...
-#15 17.02     # Subtest: [27] focus × endangered — byte-exact
-#15 17.02     ok 28 - [27] focus × endangered — byte-exact
-#15 17.02       ---
-#15 17.02       duration_ms: 0.081393
-#15 17.02       ...
-#15 17.02     # Subtest: [28] focus × ghost — byte-exact
-#15 17.02     ok 29 - [28] focus × ghost — byte-exact
-#15 17.02       ---
-#15 17.02       duration_ms: 0.118424
-#15 17.02       ...
-#15 17.02     # Subtest: [29] focus × fossil — byte-exact
-#15 17.02     ok 30 - [29] focus × fossil — byte-exact
-#15 17.02       ---
-#15 17.02       duration_ms: 0.175471
-#15 17.02       ...
-#15 17.02     # Subtest: [30] underline × fresh — byte-exact
-#15 17.02     ok 31 - [30] underline × fresh — byte-exact
-#15 17.02       ---
-#15 17.02       duration_ms: 0.090551
-#15 17.02       ...
-#15 17.02     # Subtest: [31] underline × fading — byte-exact
-#15 17.02     ok 32 - [31] underline × fading — byte-exact
-#15 17.02       ---
-#15 17.02       duration_ms: 0.079239
-#15 17.02       ...
-#15 17.03     # Subtest: [32] underline × endangered — byte-exact
-#15 17.03     ok 33 - [32] underline × endangered — byte-exact
-#15 17.03       ---
-#15 17.03       duration_ms: 0.10127
-#15 17.03       ...
-#15 17.03     # Subtest: [33] underline × ghost — byte-exact
-#15 17.03     ok 34 - [33] underline × ghost — byte-exact
-#15 17.03       ---
-#15 17.03       duration_ms: 0.171051
-#15 17.03       ...
-#15 17.03     # Subtest: [34] underline × fossil — byte-exact
-#15 17.03     ok 35 - [34] underline × fossil — byte-exact
-#15 17.03       ---
-#15 17.03       duration_ms: 0.08993
-#15 17.03       ...
-#15 17.03     1..35
-#15 17.03 ok 2 - citation-golden — every row byte-exact against the oracle
-#15 17.03   ---
-#15 17.03   duration_ms: 6.659734
-#15 17.03   type: 'suite'
-#15 17.03   ...
-#15 17.03 # Subtest: citation-golden — sentinel-origin discipline
-#15 17.03     # Subtest: every golden payload embeds SENTINEL_ORIGIN verbatim
-#15 17.03     ok 1 - every golden payload embeds SENTINEL_ORIGIN verbatim
-#15 17.03       ---
-#15 17.03       duration_ms: 0.339288
-#15 17.03       ...
-#15 17.03     # Subtest: no golden payload contains a real deploy host fragment
-#15 17.03     ok 2 - no golden payload contains a real deploy host fragment
-#15 17.03       ---
-#15 17.03       duration_ms: 1.779938
-#15 17.03       ...
-#15 17.03     # Subtest: sentinel origin resolves to an RFC-6761 `.test` host (unroutable)
-#15 17.03     ok 3 - sentinel origin resolves to an RFC-6761 `.test` host (unroutable)
-#15 17.03       ---
-#15 17.03       duration_ms: 0.55292
-#15 17.03       ...
-#15 17.03     1..3
-#15 17.04 ok 3 - citation-golden — sentinel-origin discipline
-#15 17.04   ---
-#15 17.04   duration_ms: 2.968963
-#15 17.04   type: 'suite'
-#15 17.04   ...
-#15 17.04 # Subtest: citation-golden — ref variant round-trips through encodeURIComponent
-#15 17.04     # Subtest: ref="plain-abc" → byte-exact
-#15 17.04     ok 1 - ref="plain-abc" → byte-exact
-#15 17.04       ---
-#15 17.04       duration_ms: 0.26077
-#15 17.04       ...
-#15 17.04     # Subtest: ref="hash\#frag" → byte-exact
-#15 17.04     ok 2 - ref="hash\#frag" → byte-exact
-#15 17.04       ---
-#15 17.04       duration_ms: 0.081382
-#15 17.04       ...
-#15 17.04     # Subtest: ref="amp&ersand" → byte-exact
-#15 17.04     ok 3 - ref="amp&ersand" → byte-exact
-#15 17.04       ---
-#15 17.04       duration_ms: 0.07364
-#15 17.04       ...
-#15 17.04     # Subtest: ref="pct%25" → byte-exact
-#15 17.04     ok 4 - ref="pct%25" → byte-exact
-#15 17.04       ---
-#15 17.04       duration_ms: 0.144281
-#15 17.04       ...
-#15 17.04     # Subtest: ref="space bar" → byte-exact
-#15 17.04     ok 5 - ref="space bar" → byte-exact
-#15 17.04       ---
-#15 17.04       duration_ms: 0.167755
-#15 17.04       ...
-#15 17.04     # Subtest: every ref fixture is single-line (no CR/LF)
-#15 17.04     ok 6 - every ref fixture is single-line (no CR/LF)
-#15 17.04       ---
-#15 17.04       duration_ms: 0.280077
-#15 17.04       ...
-#15 17.04     1..6
-#15 17.04 ok 4 - citation-golden — ref variant round-trips through encodeURIComponent
-#15 17.04   ---
-#15 17.04   duration_ms: 1.275518
-#15 17.04   type: 'suite'
-#15 17.04   ...
-#15 17.06 1..4
-#15 17.06 # tests 47
-#15 17.06 # suites 4
-#15 17.06 # pass 47
-#15 17.06 # fail 0
-#15 17.06 # cancelled 0
-#15 17.06 # skipped 0
-#15 17.06 # todo 0
-#15 17.07 # duration_ms 460.080021
-#15 18.27 TAP version 13
-#15 18.59 # Subtest: stripLineComment — drops // to EOL
-#15 18.59     # Subtest: removes trailing single-line comment
-#15 18.60     ok 1 - removes trailing single-line comment
-#15 18.60       ---
-#15 18.60       duration_ms: 0.88825
-#15 18.60       ...
-#15 18.60     # Subtest: leaves comment-free line untouched
-#15 18.60     ok 2 - leaves comment-free line untouched
-#15 18.60       ---
-#15 18.60       duration_ms: 0.178776
-#15 18.60       ...
-#15 18.60     # Subtest: handles an all-comment line
-#15 18.60     ok 3 - handles an all-comment line
-#15 18.60       ---
-#15 18.60       duration_ms: 0.40367
-#15 18.60       ...
-#15 18.60     1..3
-#15 18.60 ok 1 - stripLineComment — drops // to EOL
-#15 18.60   ---
-#15 18.60   duration_ms: 2.977378
-#15 18.60   type: 'suite'
-#15 18.60   ...
-#15 18.60 # Subtest: codeOnly — strips line comments from every line
-#15 18.60     # Subtest: empties a file of pure comments
-#15 18.60     ok 1 - empties a file of pure comments
-#15 18.60       ---
-#15 18.60       duration_ms: 0.231044
-#15 18.60       ...
-#15 18.60     # Subtest: preserves non-comment code verbatim
-#15 18.60     ok 2 - preserves non-comment code verbatim
-#15 18.60       ---
-#15 18.60       duration_ms: 0.132438
-#15 18.60       ...
-#15 18.60     1..2
-#15 18.60 ok 2 - codeOnly — strips line comments from every line
-#15 18.60   ---
-#15 18.60   duration_ms: 0.524646
-#15 18.60   type: 'suite'
-#15 18.60   ...
-#15 18.60 # Subtest: scanImports — true iff any required symbol is imported from stage-axes
-#15 18.60     # Subtest: FIXTURE_CLEAN imports cellCitationPayload → true
-#15 18.60     ok 1 - FIXTURE_CLEAN imports cellCitationPayload → true
-#15 18.60       ---
-#15 18.60       duration_ms: 1.396286
-#15 18.60       ...
-#15 18.61     # Subtest: FIXTURE_MISSING does NOT import cellCitationPayload → false
-#15 18.61     ok 2 - FIXTURE_MISSING does NOT import cellCitationPayload → false
-#15 18.61       ---
-#15 18.61       duration_ms: 0.161845
-#15 18.61       ...
-#15 18.61     # Subtest: any-of-set semantics: second symbol satisfies when first is absent
-#15 18.61     ok 3 - any-of-set semantics: second symbol satisfies when first is absent
-#15 18.61       ---
-#15 18.61       duration_ms: 0.246054
-#15 18.61       ...
-#15 18.61     # Subtest: aliased `as` rename counts as imported
-#15 18.61     ok 4 - aliased `as` rename counts as imported
-#15 18.61       ---
-#15 18.61       duration_ms: 0.185749
-#15 18.61       ...
-#15 18.61     # Subtest: different module path does not satisfy
-#15 18.61     ok 5 - different module path does not satisfy
-#15 18.61       ---
-#15 18.61       duration_ms: 0.162115
-#15 18.61       ...
-#15 18.61     # Subtest: multiple import statements from stage-axes union-merge
-#15 18.61     ok 6 - multiple import statements from stage-axes union-merge
-#15 18.61       ---
-#15 18.61       duration_ms: 0.245312
-#15 18.61       ...
-#15 18.61     1..6
-#15 18.61 ok 3 - scanImports — true iff any required symbol is imported from stage-axes
-#15 18.61   ---
-#15 18.61   duration_ms: 2.838557
-#15 18.61   type: 'suite'
-#15 18.61   ...
-#15 18.61 # Subtest: scanReimplementation — true iff ALL three markers present
-#15 18.61     # Subtest: FIXTURE_CLEAN → false (no re-impl)
-#15 18.61     ok 1 - FIXTURE_CLEAN → false (no re-impl)
-#15 18.61       ---
-#15 18.61       duration_ms: 0.294324
-#15 18.61       ...
-#15 18.61     # Subtest: FIXTURE_REIMPL → true (template spelled out)
-#15 18.61     ok 2 - FIXTURE_REIMPL → true (template spelled out)
-#15 18.61       ---
-#15 18.61       duration_ms: 0.14918
-#15 18.61       ...
-#15 18.62     # Subtest: FIXTURE_MISSING → false
-#15 18.62     ok 3 - FIXTURE_MISSING → false
-#15 18.62       ---
-#15 18.62       duration_ms: 0.205667
-#15 18.62       ...
-#15 18.62     # Subtest: markers only in comments → false (codeOnly strips them)
-#15 18.62     ok 4 - markers only in comments → false (codeOnly strips them)
-#15 18.62       ---
-#15 18.62       duration_ms: 0.193324
-#15 18.62       ...
-#15 18.62     # Subtest: two of three markers → false (needs all three)
-#15 18.62     ok 5 - two of three markers → false (needs all three)
-#15 18.62       ---
-#15 18.62       duration_ms: 0.168848
-#15 18.62       ...
-#15 18.62     # Subtest: marker list is exactly [`× `, ` · `, `\#axis-`] — the v155 contract
-#15 18.62     ok 6 - marker list is exactly [`× `, ` · `, `\#axis-`] — the v155 contract
-#15 18.62       ---
-#15 18.62       duration_ms: 0.666173
-#15 18.62       ...
-#15 18.62     1..6
-#15 18.63 ok 4 - scanReimplementation — true iff ALL three markers present
-#15 18.63   ---
-#15 18.63   duration_ms: 2.083217
-#15 18.63   type: 'suite'
-#15 18.63   ...
-#15 18.63 # Subtest: TARGETS — three files, each with at least one required symbol
-#15 18.63     # Subtest: exactly three targets (click+keystroke, keynav, server render)
-#15 18.63     ok 1 - exactly three targets (click+keystroke, keynav, server render)
-#15 18.63       ---
-#15 18.63       duration_ms: 0.388521
-#15 18.63       ...
-#15 18.63     # Subtest: every target declares at least one required oracle symbol
-#15 18.63     ok 2 - every target declares at least one required oracle symbol
-#15 18.63       ---
-#15 18.63       duration_ms: 0.230753
-#15 18.63       ...
-#15 18.63     # Subtest: every target names a non-empty mouth label
-#15 18.63     ok 3 - every target names a non-empty mouth label
-#15 18.63       ---
-#15 18.63       duration_ms: 0.153758
-#15 18.63       ...
-#15 18.63     # Subtest: target paths are unique
-#15 18.63     ok 4 - target paths are unique
-#15 18.63       ---
-#15 18.63       duration_ms: 0.235322
-#15 18.63       ...
-#15 18.63     1..4
-#15 18.63 ok 5 - TARGETS — three files, each with at least one required symbol
-#15 18.63   ---
-#15 18.63   duration_ms: 1.241395
-#15 18.63   type: 'suite'
-#15 18.63   ...
-#15 18.65 1..5
-#15 18.65 # tests 21
-#15 18.65 # suites 5
-#15 18.65 # pass 21
-#15 18.65 # fail 0
-#15 18.65 # cancelled 0
-#15 18.65 # skipped 0
-#15 18.65 # todo 0
-#15 18.65 # duration_ms 408.109257
-#15 18.68 
-#15 18.68 > persona-blog@0.1.0 build
-#15 18.68 > astro build
-#15 18.68 
-#15 19.37 ▶ Astro collects anonymous usage data.
-#15 19.37   This information helps us improve Astro.
-#15 19.37   Run "astro telemetry disable" to opt-out.
-#15 19.37   https://astro.build/telemetry
-#15 19.37 
-#15 20.72 20:47:55 [types] Generated 485ms
-#15 20.72 20:47:55 [build] output: "hybrid"
-#15 20.72 20:47:55 [build] directory: /app/dist/
-#15 20.72 20:47:55 [build] adapter: @astrojs/node
-#15 20.72 20:47:55 [build] Collecting build info...
-#15 20.72 20:47:55 [build] ✓ Completed in 527ms.
-#15 20.73 20:47:55 [build] Building hybrid entrypoints...
-#15 25.91 20:48:00 [vite] ✓ built in 5.12s
-#15 25.91 20:48:00 [build] ✓ Completed in 5.18s.
-#15 25.91 
-#15 25.91  building client (vite) 
-#15 25.92 20:48:00 [vite] transforming...
-#15 26.30 20:48:00 [vite] ✓ 78 modules transformed.
-#15 26.33 20:48:00 [vite] rendering chunks...
-#15 26.36 20:48:00 [vite] computing gzip size...
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/clipboard.TJO71FjA.js                                               0.46 kB │ gzip: 0.30 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/ds-kbd-lit.BmpNX-9I.js                                              0.72 kB │ gzip: 0.42 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.DgV-i7gH.js                                                 1.33 kB │ gzip: 0.72 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.DVP5K3fI.js    3.81 kB │ gzip: 1.57 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.BGX_bt_j.js                                                 4.48 kB │ gzip: 1.83 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.D2qnmWAa.js                                                 6.25 kB │ gzip: 2.47 kB
-#15 26.37 20:48:00 [vite] dist/client/_astro/hoisted.Qdgm8xZp.js                                                 8.28 kB │ gzip: 3.04 kB
-#15 26.38 20:48:00 [vite] dist/client/_astro/hoisted.Cf7TjDpN.js                                                 9.19 kB │ gzip: 3.46 kB
-#15 26.38 20:48:00 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
-#15 26.38 20:48:00 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CTw20Qv1.js       12.14 kB │ gzip: 4.27 kB
-#15 26.38 20:48:00 [vite] ✓ built in 466ms
-#15 26.41 
-#15 26.41  prerendering static routes 
-#15 26.44 20:48:00 λ src/pages/api/graveyard-stats.ts
-#15 26.44 20:48:00   └─ /api/graveyard-stats (+23ms)
-#15 26.48 20:48:00 λ src/pages/api/ingest/cell-event.ts
-#15 26.48 20:48:00   └─ /api/ingest/cell-event (+1ms)
-#15 26.49 20:48:00 λ src/pages/api/metrics/cited-cells.ts
-#15 26.49 20:48:00   └─ /api/metrics/cited-cells (+3ms)
-#15 26.49 20:48:00 λ src/pages/api/reading-pulse.ts
-#15 26.49 20:48:00   └─ /api/reading-pulse (+1ms)
-#15 26.50 20:48:00 ▶ src/pages/author/index.astro
-#15 26.50 20:48:00   └─ /author/index.html (+11ms)
-#15 26.66 20:48:00 ▶ src/pages/blog/[slug].astro
-#15 26.66 20:48:00   ├─ /blog/building-in-public/index.html (+28ms)
-#15 26.69 20:48:01   ├─ /blog/focus-as-a-mood/index.html (+16ms)
-#15 26.70 20:48:01   ├─ /blog/hello-world/index.html (+11ms)
-#15 26.71 20:48:01   ├─ /blog/lo-fi-loop/index.html (+10ms)
-#15 26.72 20:48:01   ├─ /blog/now-page/index.html (+23ms)
-#15 26.75 20:48:01   └─ /blog/the-decay-theory/index.html (+22ms)
-#15 26.77 20:48:01 λ src/pages/feed.xml.ts
-#15 26.77 20:48:01   └─ /feed.xml (+2ms)
-#15 26.78 20:48:01 ✓ Completed in 388ms.
-#15 26.78 
-#15 26.78 20:48:01 [build] Rearranging server assets...
-#15 26.78 20:48:01 [build] Server built in 6.59s
-#15 26.78 20:48:01 [build] Complete!
-#15 DONE 26.9s
+#15 0.341 
+#15 0.341 > persona-blog@0.1.0 prebuild
+#15 0.341 > npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx scripts/check-no-chip-lit-in-arrival.ts && npx tsx scripts/check-citation-delegation.ts && npx tsx scripts/check-duration-reasons.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts && npx tsx --test src/lib/client/ds-kbd-lit.test.ts && npx tsx --test src/lib/client/arrival.test.ts && npx tsx --test src/lib/citation-golden.test.ts && npx tsx --test scripts/check-citation-delegation.test.ts && npx tsx --test scripts/check-duration-reasons.test.ts
+#15 0.341 
+#15 1.381 npm warn exec The following package was not found and will be installed: tsx@4.21.0
+#15 3.271 ✅  Guard check: 137 guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable. STAGE_AXES inventory clean.
+#15 3.271    ⚠️  0 errors + 2 typography warnings remain in unguarded files.
+#15 3.271 
+#15 4.746 ✅  motion-sanctuary: 144 scannable files clean (0 hits).
+#15 6.155 ✅  check-ds-kbd: zero api-docs__kbd stragglers; .ds-kbd live in 3 sites.
+#15 7.563 ✅  check-no-chip-lit-in-arrival: src/lib/client/arrival.ts is clean.
+#15 8.998 ✅  check-citation-delegation: 3 target(s) delegate to stage-axes; no re-implementation.
+#15 10.38 ✅  check-duration-reasons: 1 file(s) clean · 9 legal labels.
+#15 11.58 TAP version 13
+#15 11.93 # Subtest: isKeepKey — bare letter, no modifiers
+#15 11.93     # Subtest: `k` (lowercase) is a keep
+#15 11.93     ok 1 - `k` (lowercase) is a keep
+#15 11.93       ---
+#15 11.93       duration_ms: 1.282113
+#15 11.93       ...
+#15 11.93     # Subtest: `K` (capital — caps-lock or shift-held) is a keep
+#15 11.93     ok 2 - `K` (capital — caps-lock or shift-held) is a keep
+#15 11.93       ---
+#15 11.93       duration_ms: 0.189796
+#15 11.93       ...
+#15 11.93     1..2
+#15 11.93 ok 1 - isKeepKey — bare letter, no modifiers
+#15 11.93   ---
+#15 11.93   duration_ms: 3.101506
+#15 11.93   type: 'suite'
+#15 11.93   ...
+#15 11.93 # Subtest: isKeepKey — Shift is transparent; capital K still keeps
+#15 11.93     # Subtest: Shift+k still keeps (native `event.key` lowers when Shift flips caps)
+#15 11.93     ok 1 - Shift+k still keeps (native `event.key` lowers when Shift flips caps)
+#15 11.93       ---
+#15 11.93       duration_ms: 0.388402
+#15 11.93       ...
+#15 11.93     # Subtest: Shift+K still keeps (caps-lock on + Shift held → capital)
+#15 11.93     ok 2 - Shift+K still keeps (caps-lock on + Shift held → capital)
+#15 11.94       ---
+#15 11.94       duration_ms: 1.131129
+#15 11.94       ...
+#15 11.94     1..2
+#15 11.94 ok 2 - isKeepKey — Shift is transparent; capital K still keeps
+#15 11.94   ---
+#15 11.94   duration_ms: 1.706581
+#15 11.94   type: 'suite'
+#15 11.94   ...
+#15 11.94 # Subtest: isKeepKey — Cmd / Ctrl / Alt drop the keep (native chords win)
+#15 11.94     # Subtest: Cmd+k → false (let native Cmd+K through — browser search)
+#15 11.94     ok 1 - Cmd+k → false (let native Cmd+K through — browser search)
+#15 11.94       ---
+#15 11.94       duration_ms: 0.214723
+#15 11.94       ...
+#15 11.94     # Subtest: Ctrl+k → false (Ctrl+K = search/omnibox on many browsers)
+#15 11.94     ok 2 - Ctrl+k → false (Ctrl+K = search/omnibox on many browsers)
+#15 11.94       ---
+#15 11.94       duration_ms: 0.266963
+#15 11.94       ...
+#15 11.94     # Subtest: Alt+k → false (Alt-chords own by platform)
+#15 11.94     ok 3 - Alt+k → false (Alt-chords own by platform)
+#15 11.94       ---
+#15 11.94       duration_ms: 0.146095
+#15 11.94       ...
+#15 11.94     # Subtest: Cmd+K (capital) → false
+#15 11.94     ok 4 - Cmd+K (capital) → false
+#15 11.94       ---
+#15 11.94       duration_ms: 0.462581
+#15 11.94       ...
+#15 11.94     1..4
+#15 11.94 ok 3 - isKeepKey — Cmd / Ctrl / Alt drop the keep (native chords win)
+#15 11.94   ---
+#15 11.94   duration_ms: 1.657279
+#15 11.94   type: 'suite'
+#15 11.94   ...
+#15 11.94 # Subtest: isKeepKey — everything else is NOT a keep
+#15 11.94     # Subtest: "a" is not a keep
+#15 11.94     ok 1 - "a" is not a keep
+#15 11.94       ---
+#15 11.94       duration_ms: 0.263606
+#15 11.94       ...
+#15 11.94     # Subtest: "c" is not a keep
+#15 11.94     ok 2 - "c" is not a keep
+#15 11.94       ---
+#15 11.94       duration_ms: 0.36071
+#15 11.94       ...
+#15 11.94     # Subtest: "j" is not a keep
+#15 11.94     ok 3 - "j" is not a keep
+#15 11.94       ---
+#15 11.94       duration_ms: 0.12237
+#15 11.94       ...
+#15 11.95     # Subtest: "l" is not a keep
+#15 11.95     ok 4 - "l" is not a keep
+#15 11.95       ---
+#15 11.95       duration_ms: 0.273815
+#15 11.95       ...
+#15 11.95     # Subtest: "x" is not a keep
+#15 11.95     ok 5 - "x" is not a keep
+#15 11.95       ---
+#15 11.95       duration_ms: 0.103334
+#15 11.95       ...
+#15 11.95     # Subtest: "Escape" is not a keep
+#15 11.95     ok 6 - "Escape" is not a keep
+#15 11.95       ---
+#15 11.95       duration_ms: 0.107701
+#15 11.95       ...
+#15 11.95     # Subtest: "Tab" is not a keep
+#15 11.95     ok 7 - "Tab" is not a keep
+#15 11.95       ---
+#15 11.95       duration_ms: 0.129774
+#15 11.95       ...
+#15 11.95     # Subtest: "Enter" is not a keep
+#15 11.95     ok 8 - "Enter" is not a keep
+#15 11.95       ---
+#15 11.95       duration_ms: 0.114196
+#15 11.95       ...
+#15 11.95     # Subtest: " " is not a keep
+#15 11.95     ok 9 - " " is not a keep
+#15 11.95       ---
+#15 11.95       duration_ms: 0.09568
+#15 11.95       ...
+#15 11.95     # Subtest: "ArrowUp" is not a keep
+#15 11.95     ok 10 - "ArrowUp" is not a keep
+#15 11.95       ---
+#15 11.95       duration_ms: 0.284225
+#15 11.95       ...
+#15 11.96     # Subtest: "ArrowDown" is not a keep
+#15 11.96     ok 11 - "ArrowDown" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.112472
+#15 11.96       ...
+#15 11.96     # Subtest: "ArrowLeft" is not a keep
+#15 11.96     ok 12 - "ArrowLeft" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.119996
+#15 11.96       ...
+#15 11.96     # Subtest: "ArrowRight" is not a keep
+#15 11.96     ok 13 - "ArrowRight" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.141577
+#15 11.96       ...
+#15 11.96     # Subtest: "Home" is not a keep
+#15 11.96     ok 14 - "Home" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.09583
+#15 11.96       ...
+#15 11.96     # Subtest: "End" is not a keep
+#15 11.96     ok 15 - "End" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.091072
+#15 11.96       ...
+#15 11.96     # Subtest: "PageUp" is not a keep
+#15 11.96     ok 16 - "PageUp" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.088376
+#15 11.96       ...
+#15 11.96     # Subtest: "PageDown" is not a keep
+#15 11.96     ok 17 - "PageDown" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.085119
+#15 11.96       ...
+#15 11.96     # Subtest: "0" is not a keep
+#15 11.96     ok 18 - "0" is not a keep
+#15 11.96       ---
+#15 11.96       duration_ms: 0.093646
+#15 11.96       ...
+#15 11.96     1..18
+#15 11.96 ok 4 - isKeepKey — everything else is NOT a keep
+#15 11.96   ---
+#15 11.96   duration_ms: 3.382454
+#15 11.96   type: 'suite'
+#15 11.96   ...
+#15 11.97 # Subtest: isKeepKey — any Cmd/Ctrl/Alt combo suppresses both K forms
+#15 11.97     # Subtest: every combo × every keep key → false
+#15 11.97     ok 1 - every combo × every keep key → false
+#15 11.97       ---
+#15 11.97       duration_ms: 0.267805
+#15 11.97       ...
+#15 11.97     1..1
+#15 11.97 ok 5 - isKeepKey — any Cmd/Ctrl/Alt combo suppresses both K forms
+#15 11.97   ---
+#15 11.97   duration_ms: 0.388761
+#15 11.97   type: 'suite'
+#15 11.97   ...
+#15 11.97 # Subtest: isKeepKey — disjoint from cite and nav keys
+#15 11.97     # Subtest: none of the cite keys are keep keys
+#15 11.97     ok 1 - none of the cite keys are keep keys
+#15 11.97       ---
+#15 11.97       duration_ms: 0.18128
+#15 11.97       ...
+#15 11.97     # Subtest: none of the nav keys are keep keys
+#15 11.97     ok 2 - none of the nav keys are keep keys
+#15 11.97       ---
+#15 11.97       duration_ms: 0.143019
+#15 11.97       ...
+#15 11.97     1..2
+#15 11.97 ok 6 - isKeepKey — disjoint from cite and nav keys
+#15 11.97   ---
+#15 11.97   duration_ms: 0.446982
+#15 11.97   type: 'suite'
+#15 11.97   ...
+#15 11.99 1..6
+#15 11.99 # tests 29
+#15 11.99 # suites 6
+#15 11.99 # pass 29
+#15 11.99 # fail 0
+#15 11.99 # cancelled 0
+#15 11.99 # skipped 0
+#15 11.99 # todo 0
+#15 11.99 # duration_ms 426.870632
+#15 13.19 TAP version 13
+#15 13.52 # Subtest: v152 — keep-legend ↔ isKeepKey parity
+#15 13.52     # Subtest: legend block exists in FloatingKeepButton.astro
+#15 13.52     ok 1 - legend block exists in FloatingKeepButton.astro
+#15 13.52       ---
+#15 13.52       duration_ms: 1.597516
+#15 13.52       ...
+#15 13.53     # Subtest: legend contains at least one <kbd> chip
+#15 13.53     ok 2 - legend contains at least one <kbd> chip
+#15 13.53       ---
+#15 13.53       duration_ms: 0.386056
+#15 13.53       ...
+#15 13.53     # Subtest: every chip label maps to a real key the handler accepts
+#15 13.53     ok 3 - every chip label maps to a real key the handler accepts
+#15 13.53       ---
+#15 13.53       duration_ms: 0.400073
+#15 13.53       ...
+#15 13.53     # Subtest: every keep key the handler accepts is taught by the legend
+#15 13.53     ok 4 - every keep key the handler accepts is taught by the legend
+#15 13.53       ---
+#15 13.53       duration_ms: 0.338387
+#15 13.53       ...
+#15 13.53     # Subtest: no legend chip teaches a key the handler ignores (stale-key guard)
+#15 13.53     ok 5 - no legend chip teaches a key the handler ignores (stale-key guard)
+#15 13.53       ---
+#15 13.53       duration_ms: 0.222439
+#15 13.53       ...
+#15 13.53     # Subtest: no empty <kbd> chips (broken-icon guard, Tanya §2b mirror)
+#15 13.53     ok 6 - no empty <kbd> chips (broken-icon guard, Tanya §2b mirror)
+#15 13.53       ---
+#15 13.53       duration_ms: 0.359246
+#15 13.53       ...
+#15 13.53     # Subtest: modifier chords (Ctrl/Cmd/Alt + K) fall through to browser
+#15 13.53     ok 7 - modifier chords (Ctrl/Cmd/Alt + K) fall through to browser
+#15 13.53       ---
+#15 13.53       duration_ms: 0.213622
+#15 13.53       ...
+#15 13.53     # Subtest: keep legend sits inside the floating-keep scope (not a run-on paragraph)
+#15 13.53     ok 8 - keep legend sits inside the floating-keep scope (not a run-on paragraph)
+#15 13.53       ---
+#15 13.53       duration_ms: 0.241634
+#15 13.53       ...
+#15 13.53     1..8
+#15 13.53 ok 1 - v152 — keep-legend ↔ isKeepKey parity
+#15 13.53   ---
+#15 13.53   duration_ms: 5.830562
+#15 13.53   type: 'suite'
+#15 13.53   ...
+#15 13.55 1..1
+#15 13.55 # tests 8
+#15 13.55 # suites 1
+#15 13.55 # pass 8
+#15 13.55 # fail 0
+#15 13.55 # cancelled 0
+#15 13.55 # skipped 0
+#15 13.55 # todo 0
+#15 13.55 # duration_ms 387.13092
+#15 14.71 TAP version 13
+#15 15.03 # Subtest: v153 — keyToChipLabels pure normaliser
+#15 15.03     # Subtest: Space bar (" ") maps to the word "Space", never a literal blank
+#15 15.03     ok 1 - Space bar (" ") maps to the word "Space", never a literal blank
+#15 15.03       ---
+#15 15.03       duration_ms: 2.286713
+#15 15.03       ...
+#15 15.03     # Subtest: cite keys → cite-legend labels
+#15 15.03     ok 2 - cite keys → cite-legend labels
+#15 15.03       ---
+#15 15.03       duration_ms: 0.22343
+#15 15.03       ...
+#15 15.03     # Subtest: nav keys → identity (no transform)
+#15 15.03     ok 3 - nav keys → identity (no transform)
+#15 15.03       ---
+#15 15.03       duration_ms: 0.226999
+#15 15.03       ...
+#15 15.03     # Subtest: keep key — both `k` and `K` emit the same two-label set
+#15 15.03     ok 4 - keep key — both `k` and `K` emit the same two-label set
+#15 15.03       ---
+#15 15.03       duration_ms: 0.252285
+#15 15.03       ...
+#15 15.03     # Subtest: single non-letter char → single-element label set
+#15 15.03     ok 5 - single non-letter char → single-element label set
+#15 15.03       ---
+#15 15.03       duration_ms: 0.160231
+#15 15.03       ...
+#15 15.03     # Subtest: multi-char named keys → identity
+#15 15.04     ok 6 - multi-char named keys → identity
+#15 15.04       ---
+#15 15.04       duration_ms: 0.220836
+#15 15.04       ...
+#15 15.04     # Subtest: empty key string → single-element empty set
+#15 15.04     ok 7 - empty key string → single-element empty set
+#15 15.04       ---
+#15 15.04       duration_ms: 0.261602
+#15 15.04       ...
+#15 15.04     1..7
+#15 15.04 ok 1 - v153 — keyToChipLabels pure normaliser
+#15 15.04   ---
+#15 15.04   duration_ms: 5.485232
+#15 15.04   type: 'suite'
+#15 15.04   ...
+#15 15.04 # Subtest: v153 — legend labels ⊆ image(keyToChipLabels)
+#15 15.04     # Subtest: every legend chip label is producible by some KeyboardEvent.key
+#15 15.04     ok 1 - every legend chip label is producible by some KeyboardEvent.key
+#15 15.04       ---
+#15 15.04       duration_ms: 0.538683
+#15 15.04       ...
+#15 15.04     1..1
+#15 15.04 ok 2 - v153 — legend labels ⊆ image(keyToChipLabels)
+#15 15.04   ---
+#15 15.04   duration_ms: 0.88206
+#15 15.04   type: 'suite'
+#15 15.04   ...
+#15 15.06 1..2
+#15 15.06 # tests 8
+#15 15.06 # suites 2
+#15 15.06 # pass 8
+#15 15.06 # fail 0
+#15 15.06 # cancelled 0
+#15 15.06 # skipped 0
+#15 15.06 # todo 0
+#15 15.06 # duration_ms 370.678723
+#15 16.24 TAP version 13
+#15 16.63 # Subtest: v154 — arrival.ts invariant fence (no chip-lit vocabulary)
+#15 16.63     # Subtest: arrival.ts code must NOT reference "ds-kbd-lit"
+#15 16.64     ok 1 - arrival.ts code must NOT reference "ds-kbd-lit"
+#15 16.64       ---
+#15 16.64       duration_ms: 0.834811
+#15 16.64       ...
+#15 16.64     # Subtest: arrival.ts code must NOT reference "lightForKey"
+#15 16.64     ok 2 - arrival.ts code must NOT reference "lightForKey"
+#15 16.64       ---
+#15 16.64       duration_ms: 0.137118
+#15 16.64       ...
+#15 16.64     # Subtest: arrival.ts code must NOT reference "unlightForKey"
+#15 16.64     ok 3 - arrival.ts code must NOT reference "unlightForKey"
+#15 16.64       ---
+#15 16.64       duration_ms: 0.137329
+#15 16.64       ...
+#15 16.64     1..3
+#15 16.64 ok 1 - v154 — arrival.ts invariant fence (no chip-lit vocabulary)
+#15 16.64   ---
+#15 16.64   duration_ms: 2.758761
+#15 16.64   type: 'suite'
+#15 16.64   ...
+#15 16.64 # Subtest: v154 — isValidRef (pure REF_RE gate)
+#15 16.64     # Subtest: accepts typical crypto.randomUUID() 36-char output
+#15 16.64     ok 1 - accepts typical crypto.randomUUID() 36-char output
+#15 16.64       ---
+#15 16.64       duration_ms: 0.255661
+#15 16.64       ...
+#15 16.65     # Subtest: accepts legacy 16-hex fallback (Math.random form)
+#15 16.65     ok 2 - accepts legacy 16-hex fallback (Math.random form)
+#15 16.65       ---
+#15 16.65       duration_ms: 0.157226
+#15 16.65       ...
+#15 16.65     # Subtest: accepts the 8-char lower bound
+#15 16.65     ok 3 - accepts the 8-char lower bound
+#15 16.65       ---
+#15 16.65       duration_ms: 0.143691
+#15 16.65       ...
+#15 16.65     # Subtest: accepts the 64-char upper bound
+#15 16.65     ok 4 - accepts the 64-char upper bound
+#15 16.65       ---
+#15 16.65       duration_ms: 0.20188
+#15 16.65       ...
+#15 16.65     1..4
+#15 16.65 ok 2 - v154 — isValidRef (pure REF_RE gate)
+#15 16.65   ---
+#15 16.65   duration_ms: 1.136079
+#15 16.65   type: 'suite'
+#15 16.65   ...
+#15 16.65 # Subtest: v154 — isValidRef rejects malformed nonces
+#15 16.65     # Subtest: rejects null (absent)
+#15 16.65     ok 1 - rejects null (absent)
+#15 16.65       ---
+#15 16.65       duration_ms: 0.277253
+#15 16.65       ...
+#15 16.65     # Subtest: rejects undefined (absent)
+#15 16.65     ok 2 - rejects undefined (absent)
+#15 16.65       ---
+#15 16.65       duration_ms: 0.165532
+#15 16.65       ...
+#15 16.65     # Subtest: rejects the empty string
+#15 16.65     ok 3 - rejects the empty string
+#15 16.65       ---
+#15 16.65       duration_ms: 0.197281
+#15 16.65       ...
+#15 16.65     # Subtest: rejects 7 chars (one below the lower bound)
+#15 16.65     ok 4 - rejects 7 chars (one below the lower bound)
+#15 16.65       ---
+#15 16.65       duration_ms: 0.200086
+#15 16.65       ...
+#15 16.65     # Subtest: rejects 65 chars (one above the upper bound)
+#15 16.65     ok 5 - rejects 65 chars (one above the upper bound)
+#15 16.65       ---
+#15 16.65       duration_ms: 0.157606
+#15 16.65       ...
+#15 16.65     # Subtest: rejects characters outside [A-Za-z0-9-]
+#15 16.65     ok 6 - rejects characters outside [A-Za-z0-9-]
+#15 16.65       ---
+#15 16.65       duration_ms: 0.192432
+#15 16.65       ...
+#15 16.65     1..6
+#15 16.65 ok 3 - v154 — isValidRef rejects malformed nonces
+#15 16.65   ---
+#15 16.65   duration_ms: 1.542212
+#15 16.65   type: 'suite'
+#15 16.65   ...
+#15 16.65 # Subtest: v154 — ARRIVAL_MS beat (single-source)
+#15 16.65     # Subtest: ARRIVAL_MS is a positive integer in ms
+#15 16.65     ok 1 - ARRIVAL_MS is a positive integer in ms
+#15 16.65       ---
+#15 16.65       duration_ms: 0.254449
+#15 16.65       ...
+#15 16.65     # Subtest: ARRIVAL_MS equals the v150b beat (1200 ms)
+#15 16.65     ok 2 - ARRIVAL_MS equals the v150b beat (1200 ms)
+#15 16.65       ---
+#15 16.65       duration_ms: 0.148369
+#15 16.65       ...
+#15 16.66     # Subtest: cell-cite.ts re-exports ARRIVAL_MS byte-identically
+#15 16.66     ok 3 - cell-cite.ts re-exports ARRIVAL_MS byte-identically
+#15 16.66       ---
+#15 16.66       duration_ms: 0.1276
+#15 16.66       ...
+#15 16.66     1..3
+#15 16.66 ok 4 - v154 — ARRIVAL_MS beat (single-source)
+#15 16.66   ---
+#15 16.66   duration_ms: 0.804273
+#15 16.66   type: 'suite'
+#15 16.66   ...
+#15 16.67 # Subtest: v154 — arrival.ts public API shape
+#15 16.67     # Subtest: arrival.ts exports `ARRIVAL_MS`
+#15 16.67     ok 1 - arrival.ts exports `ARRIVAL_MS`
+#15 16.67       ---
+#15 16.67       duration_ms: 0.237677
+#15 16.67       ...
+#15 16.67     # Subtest: arrival.ts exports `readRef`
+#15 16.67     ok 2 - arrival.ts exports `readRef`
+#15 16.67       ---
+#15 16.67       duration_ms: 0.292961
+#15 16.67       ...
+#15 16.67     # Subtest: arrival.ts exports `isValidRef`
+#15 16.67     ok 3 - arrival.ts exports `isValidRef`
+#15 16.67       ---
+#15 16.67       duration_ms: 0.113864
+#15 16.67       ...
+#15 16.67     # Subtest: arrival.ts exports `retireCompetingGlows`
+#15 16.67     ok 4 - arrival.ts exports `retireCompetingGlows`
+#15 16.67       ---
+#15 16.67       duration_ms: 0.102301
+#15 16.67       ...
+#15 16.67     # Subtest: arrival.ts exports `triggerArrival`
+#15 16.67     ok 5 - arrival.ts exports `triggerArrival`
+#15 16.67       ---
+#15 16.67       duration_ms: 0.102373
+#15 16.67       ...
+#15 16.67     # Subtest: arrival.ts exports `markShared`
+#15 16.67     ok 6 - arrival.ts exports `markShared`
+#15 16.67       ---
+#15 16.67       duration_ms: 0.10115
+#15 16.67       ...
+#15 16.67     # Subtest: arrival.ts exports `paintArrival`
+#15 16.67     ok 7 - arrival.ts exports `paintArrival`
+#15 16.67       ---
+#15 16.67       duration_ms: 0.092583
+#15 16.67       ...
+#15 16.67     1..7
+#15 16.67 ok 5 - v154 — arrival.ts public API shape
+#15 16.67   ---
+#15 16.67   duration_ms: 1.350311
+#15 16.67   type: 'suite'
+#15 16.67   ...
+#15 16.69 1..5
+#15 16.69 # tests 23
+#15 16.69 # suites 5
+#15 16.69 # pass 23
+#15 16.69 # fail 0
+#15 16.69 # cancelled 0
+#15 16.69 # skipped 0
+#15 16.69 # todo 0
+#15 16.69 # duration_ms 476.107166
+#15 17.87 TAP version 13
+#15 18.20 # Subtest: citation-golden — row count matches STAGE_AXES × DECAY_STAGES
+#15 18.21     # Subtest: GOLDEN_ROW_COUNT equals 7 × 5 = 35
+#15 18.21     ok 1 - GOLDEN_ROW_COUNT equals 7 × 5 = 35
+#15 18.21       ---
+#15 18.21       duration_ms: 0.851292
+#15 18.21       ...
+#15 18.21     # Subtest: inline literal has exactly GOLDEN_ROW_COUNT rows
+#15 18.21     ok 2 - inline literal has exactly GOLDEN_ROW_COUNT rows
+#15 18.21       ---
+#15 18.21       duration_ms: 0.155493
+#15 18.21       ...
+#15 18.21     # Subtest: producer emits exactly GOLDEN_ROW_COUNT rows
+#15 18.21     ok 3 - producer emits exactly GOLDEN_ROW_COUNT rows
+#15 18.21       ---
+#15 18.21       duration_ms: 0.180669
+#15 18.21       ...
+#15 18.21     1..3
+#15 18.21 ok 1 - citation-golden — row count matches STAGE_AXES × DECAY_STAGES
+#15 18.21   ---
+#15 18.21   duration_ms: 2.527345
+#15 18.21   type: 'suite'
+#15 18.21   ...
+#15 18.22 # Subtest: citation-golden — every row byte-exact against the oracle
+#15 18.22     # Subtest: [0] typography × fresh — byte-exact
+#15 18.22     ok 1 - [0] typography × fresh — byte-exact
+#15 18.22       ---
+#15 18.22       duration_ms: 0.598335
+#15 18.22       ...
+#15 18.22     # Subtest: [1] typography × fading — byte-exact
+#15 18.22     ok 2 - [1] typography × fading — byte-exact
+#15 18.22       ---
+#15 18.22       duration_ms: 0.387048
+#15 18.22       ...
+#15 18.22     # Subtest: [2] typography × endangered — byte-exact
+#15 18.22     ok 3 - [2] typography × endangered — byte-exact
+#15 18.22       ---
+#15 18.22       duration_ms: 0.120437
+#15 18.22       ...
+#15 18.22     # Subtest: [3] typography × ghost — byte-exact
+#15 18.22     ok 4 - [3] typography × ghost — byte-exact
+#15 18.22       ---
+#15 18.22       duration_ms: 0.125936
+#15 18.22       ...
+#15 18.22     # Subtest: [4] typography × fossil — byte-exact
+#15 18.22     ok 5 - [4] typography × fossil — byte-exact
+#15 18.22       ---
+#15 18.22       duration_ms: 0.222598
+#15 18.22       ...
+#15 18.22     # Subtest: [5] border × fresh — byte-exact
+#15 18.22     ok 6 - [5] border × fresh — byte-exact
+#15 18.22       ---
+#15 18.22       duration_ms: 0.217138
+#15 18.22       ...
+#15 18.23     # Subtest: [6] border × fading — byte-exact
+#15 18.23     ok 7 - [6] border × fading — byte-exact
+#15 18.23       ---
+#15 18.23       duration_ms: 0.148359
+#15 18.23       ...
+#15 18.23     # Subtest: [7] border × endangered — byte-exact
+#15 18.23     ok 8 - [7] border × endangered — byte-exact
+#15 18.23       ---
+#15 18.23       duration_ms: 0.127751
+#15 18.23       ...
+#15 18.23     # Subtest: [8] border × ghost — byte-exact
+#15 18.23     ok 9 - [8] border × ghost — byte-exact
+#15 18.23       ---
+#15 18.23       duration_ms: 0.237657
+#15 18.23       ...
+#15 18.23     # Subtest: [9] border × fossil — byte-exact
+#15 18.23     ok 10 - [9] border × fossil — byte-exact
+#15 18.23       ---
+#15 18.23       duration_ms: 0.143901
+#15 18.23       ...
+#15 18.23     # Subtest: [10] tempo × fresh — byte-exact
+#15 18.23     ok 11 - [10] tempo × fresh — byte-exact
+#15 18.23       ---
+#15 18.23       duration_ms: 0.124274
+#15 18.23       ...
+#15 18.23     # Subtest: [11] tempo × fading — byte-exact
+#15 18.23     ok 12 - [11] tempo × fading — byte-exact
+#15 18.23       ---
+#15 18.23       duration_ms: 0.134814
+#15 18.23       ...
+#15 18.23     # Subtest: [12] tempo × endangered — byte-exact
+#15 18.23     ok 13 - [12] tempo × endangered — byte-exact
+#15 18.23       ---
+#15 18.23       duration_ms: 0.119605
+#15 18.23       ...
+#15 18.24     # Subtest: [13] tempo × ghost — byte-exact
+#15 18.24     ok 14 - [13] tempo × ghost — byte-exact
+#15 18.24       ---
+#15 18.24       duration_ms: 0.134192
+#15 18.24       ...
+#15 18.24     # Subtest: [14] tempo × fossil — byte-exact
+#15 18.24     ok 15 - [14] tempo × fossil — byte-exact
+#15 18.24       ---
+#15 18.24       duration_ms: 0.324009
+#15 18.24       ...
+#15 18.24     # Subtest: [15] selection × fresh — byte-exact
+#15 18.24     ok 16 - [15] selection × fresh — byte-exact
+#15 18.24       ---
+#15 18.24       duration_ms: 0.123613
+#15 18.24       ...
+#15 18.24     # Subtest: [16] selection × fading — byte-exact
+#15 18.25     ok 17 - [16] selection × fading — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.106571
+#15 18.25       ...
+#15 18.25     # Subtest: [17] selection × endangered — byte-exact
+#15 18.25     ok 18 - [17] selection × endangered — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.101642
+#15 18.25       ...
+#15 18.25     # Subtest: [18] selection × ghost — byte-exact
+#15 18.25     ok 19 - [18] selection × ghost — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.116921
+#15 18.25       ...
+#15 18.25     # Subtest: [19] selection × fossil — byte-exact
+#15 18.25     ok 20 - [19] selection × fossil — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.118103
+#15 18.25       ...
+#15 18.25     # Subtest: [20] drag-highlight × fresh — byte-exact
+#15 18.25     ok 21 - [20] drag-highlight × fresh — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.094809
+#15 18.25       ...
+#15 18.25     # Subtest: [21] drag-highlight × fading — byte-exact
+#15 18.25     ok 22 - [21] drag-highlight × fading — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.091762
+#15 18.25       ...
+#15 18.25     # Subtest: [22] drag-highlight × endangered — byte-exact
+#15 18.25     ok 23 - [22] drag-highlight × endangered — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.087464
+#15 18.25       ...
+#15 18.25     # Subtest: [23] drag-highlight × ghost — byte-exact
+#15 18.25     ok 24 - [23] drag-highlight × ghost — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.087466
+#15 18.25       ...
+#15 18.25     # Subtest: [24] drag-highlight × fossil — byte-exact
+#15 18.25     ok 25 - [24] drag-highlight × fossil — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.115837
+#15 18.25       ...
+#15 18.25     # Subtest: [25] focus × fresh — byte-exact
+#15 18.25     ok 26 - [25] focus × fresh — byte-exact
+#15 18.25       ---
+#15 18.25       duration_ms: 0.089339
+#15 18.25       ...
+#15 18.25     # Subtest: [26] focus × fading — byte-exact
+#15 18.26     ok 27 - [26] focus × fading — byte-exact
+#15 18.26       ---
+#15 18.26       duration_ms: 0.1009
+#15 18.26       ...
+#15 18.26     # Subtest: [27] focus × endangered — byte-exact
+#15 18.26     ok 28 - [27] focus × endangered — byte-exact
+#15 18.26       ---
+#15 18.26       duration_ms: 0.154019
+#15 18.26       ...
+#15 18.26     # Subtest: [28] focus × ghost — byte-exact
+#15 18.26     ok 29 - [28] focus × ghost — byte-exact
+#15 18.26       ---
+#15 18.26       duration_ms: 0.103536
+#15 18.26       ...
+#15 18.26     # Subtest: [29] focus × fossil — byte-exact
+#15 18.26     ok 30 - [29] focus × fossil — byte-exact
+#15 18.26       ---
+#15 18.26       duration_ms: 0.187653
+#15 18.26       ...
+#15 18.26     # Subtest: [30] underline × fresh — byte-exact
+#15 18.26     ok 31 - [30] underline × fresh — byte-exact
+#15 18.26       ---
+#15 18.26       duration_ms: 0.099638
+#15 18.26       ...
+#15 18.26     # Subtest: [31] underline × fading — byte-exact
+#15 18.27     ok 32 - [31] underline × fading — byte-exact
+#15 18.27       ---
+#15 18.27       duration_ms: 0.083979
+#15 18.27       ...
+#15 18.27     # Subtest: [32] underline × endangered — byte-exact
+#15 18.27     ok 33 - [32] underline × endangered — byte-exact
+#15 18.27       ---
+#15 18.27       duration_ms: 0.093006
+#15 18.27       ...
+#15 18.27     # Subtest: [33] underline × ghost — byte-exact
+#15 18.27     ok 34 - [33] underline × ghost — byte-exact
+#15 18.27       ---
+#15 18.27       duration_ms: 0.194035
+#15 18.27       ...
+#15 18.27     # Subtest: [34] underline × fossil — byte-exact
+#15 18.27     ok 35 - [34] underline × fossil — byte-exact
+#15 18.27       ---
+#15 18.27       duration_ms: 0.102854
+#15 18.27       ...
+#15 18.27     1..35
+#15 18.27 ok 2 - citation-golden — every row byte-exact against the oracle
+#15 18.27   ---
+#15 18.27   duration_ms: 6.863835
+#15 18.27   type: 'suite'
+#15 18.27   ...
+#15 18.27 # Subtest: citation-golden — sentinel-origin discipline
+#15 18.27     # Subtest: every golden payload embeds SENTINEL_ORIGIN verbatim
+#15 18.27     ok 1 - every golden payload embeds SENTINEL_ORIGIN verbatim
+#15 18.27       ---
+#15 18.27       duration_ms: 0.357773
+#15 18.27       ...
+#15 18.27     # Subtest: no golden payload contains a real deploy host fragment
+#15 18.27     ok 2 - no golden payload contains a real deploy host fragment
+#15 18.27       ---
+#15 18.27       duration_ms: 0.423568
+#15 18.27       ...
+#15 18.27     # Subtest: sentinel origin resolves to an RFC-6761 `.test` host (unroutable)
+#15 18.27     ok 3 - sentinel origin resolves to an RFC-6761 `.test` host (unroutable)
+#15 18.27       ---
+#15 18.27       duration_ms: 0.341593
+#15 18.27       ...
+#15 18.27     1..3
+#15 18.27 ok 3 - citation-golden — sentinel-origin discipline
+#15 18.28   ---
+#15 18.28   duration_ms: 2.670015
+#15 18.28   type: 'suite'
+#15 18.28   ...
+#15 18.28 # Subtest: citation-golden — ref variant round-trips through encodeURIComponent
+#15 18.28     # Subtest: ref="plain-abc" → byte-exact
+#15 18.28     ok 1 - ref="plain-abc" → byte-exact
+#15 18.28       ---
+#15 18.28       duration_ms: 0.187734
+#15 18.28       ...
+#15 18.28     # Subtest: ref="hash\#frag" → byte-exact
+#15 18.28     ok 2 - ref="hash\#frag" → byte-exact
+#15 18.28       ---
+#15 18.28       duration_ms: 0.07973
+#15 18.28       ...
+#15 18.28     # Subtest: ref="amp&ersand" → byte-exact
+#15 18.28     ok 3 - ref="amp&ersand" → byte-exact
+#15 18.28       ---
+#15 18.28       duration_ms: 0.072044
+#15 18.28       ...
+#15 18.28     # Subtest: ref="pct%25" → byte-exact
+#15 18.28     ok 4 - ref="pct%25" → byte-exact
+#15 18.28       ---
+#15 18.28       duration_ms: 0.120547
+#15 18.28       ...
+#15 18.28     # Subtest: ref="space bar" → byte-exact
+#15 18.28     ok 5 - ref="space bar" → byte-exact
+#15 18.28       ---
+#15 18.28       duration_ms: 0.075653
+#15 18.28       ...
+#15 18.28     # Subtest: every ref fixture is single-line (no CR/LF)
+#15 18.28     ok 6 - every ref fixture is single-line (no CR/LF)
+#15 18.28       ---
+#15 18.28       duration_ms: 0.249771
+#15 18.28       ...
+#15 18.28     1..6
+#15 18.28 ok 4 - citation-golden — ref variant round-trips through encodeURIComponent
+#15 18.28   ---
+#15 18.28   duration_ms: 0.977339
+#15 18.28   type: 'suite'
+#15 18.28   ...
+#15 18.29 1..4
+#15 18.29 # tests 47
+#15 18.29 # suites 4
+#15 18.29 # pass 47
+#15 18.29 # fail 0
+#15 18.29 # cancelled 0
+#15 18.29 # skipped 0
+#15 18.29 # todo 0
+#15 18.29 # duration_ms 448.169805
+#15 19.47 TAP version 13
+#15 19.79 # Subtest: stripLineComment — drops // to EOL
+#15 19.79     # Subtest: removes trailing single-line comment
+#15 19.80     ok 1 - removes trailing single-line comment
+#15 19.80       ---
+#15 19.80       duration_ms: 0.835281
+#15 19.80       ...
+#15 19.80     # Subtest: leaves comment-free line untouched
+#15 19.80     ok 2 - leaves comment-free line untouched
+#15 19.80       ---
+#15 19.80       duration_ms: 0.199886
+#15 19.80       ...
+#15 19.80     # Subtest: handles an all-comment line
+#15 19.80     ok 3 - handles an all-comment line
+#15 19.80       ---
+#15 19.80       duration_ms: 0.361841
+#15 19.80       ...
+#15 19.80     1..3
+#15 19.80 ok 1 - stripLineComment — drops // to EOL
+#15 19.80   ---
+#15 19.80   duration_ms: 2.89099
+#15 19.80   type: 'suite'
+#15 19.80   ...
+#15 19.80 # Subtest: codeOnly — strips line comments from every line
+#15 19.80     # Subtest: empties a file of pure comments
+#15 19.80     ok 1 - empties a file of pure comments
+#15 19.80       ---
+#15 19.80       duration_ms: 0.253217
+#15 19.80       ...
+#15 19.80     # Subtest: preserves non-comment code verbatim
+#15 19.80     ok 2 - preserves non-comment code verbatim
+#15 19.80       ---
+#15 19.80       duration_ms: 0.122751
+#15 19.80       ...
+#15 19.80     1..2
+#15 19.80 ok 2 - codeOnly — strips line comments from every line
+#15 19.80   ---
+#15 19.80   duration_ms: 0.535547
+#15 19.80   type: 'suite'
+#15 19.80   ...
+#15 19.80 # Subtest: scanImports — true iff any required symbol is imported from stage-axes
+#15 19.80     # Subtest: FIXTURE_CLEAN imports cellCitationPayload → true
+#15 19.80     ok 1 - FIXTURE_CLEAN imports cellCitationPayload → true
+#15 19.81       ---
+#15 19.81       duration_ms: 1.30153
+#15 19.81       ...
+#15 19.81     # Subtest: FIXTURE_MISSING does NOT import cellCitationPayload → false
+#15 19.81     ok 2 - FIXTURE_MISSING does NOT import cellCitationPayload → false
+#15 19.81       ---
+#15 19.81       duration_ms: 0.160632
+#15 19.81       ...
+#15 19.81     # Subtest: any-of-set semantics: second symbol satisfies when first is absent
+#15 19.81     ok 3 - any-of-set semantics: second symbol satisfies when first is absent
+#15 19.81       ---
+#15 19.81       duration_ms: 0.254059
+#15 19.81       ...
+#15 19.81     # Subtest: aliased `as` rename counts as imported
+#15 19.81     ok 4 - aliased `as` rename counts as imported
+#15 19.81       ---
+#15 19.81       duration_ms: 0.150534
+#15 19.81       ...
+#15 19.81     # Subtest: different module path does not satisfy
+#15 19.81     ok 5 - different module path does not satisfy
+#15 19.81       ---
+#15 19.81       duration_ms: 0.143971
+#15 19.81       ...
+#15 19.81     # Subtest: multiple import statements from stage-axes union-merge
+#15 19.81     ok 6 - multiple import statements from stage-axes union-merge
+#15 19.81       ---
+#15 19.81       duration_ms: 0.230544
+#15 19.81       ...
+#15 19.81     1..6
+#15 19.81 ok 3 - scanImports — true iff any required symbol is imported from stage-axes
+#15 19.81   ---
+#15 19.81   duration_ms: 2.686785
+#15 19.81   type: 'suite'
+#15 19.81   ...
+#15 19.81 # Subtest: scanReimplementation — true iff ALL three markers present
+#15 19.81     # Subtest: FIXTURE_CLEAN → false (no re-impl)
+#15 19.81     ok 1 - FIXTURE_CLEAN → false (no re-impl)
+#15 19.81       ---
+#15 19.81       duration_ms: 0.23422
+#15 19.81       ...
+#15 19.82     # Subtest: FIXTURE_REIMPL → true (template spelled out)
+#15 19.82     ok 2 - FIXTURE_REIMPL → true (template spelled out)
+#15 19.82       ---
+#15 19.82       duration_ms: 0.131669
+#15 19.82       ...
+#15 19.82     # Subtest: FIXTURE_MISSING → false
+#15 19.82     ok 3 - FIXTURE_MISSING → false
+#15 19.82       ---
+#15 19.82       duration_ms: 0.134543
+#15 19.82       ...
+#15 19.82     # Subtest: markers only in comments → false (codeOnly strips them)
+#15 19.82     ok 4 - markers only in comments → false (codeOnly strips them)
+#15 19.82       ---
+#15 19.82       duration_ms: 0.139422
+#15 19.82       ...
+#15 19.82     # Subtest: two of three markers → false (needs all three)
+#15 19.82     ok 5 - two of three markers → false (needs all three)
+#15 19.82       ---
+#15 19.82       duration_ms: 0.152557
+#15 19.82       ...
+#15 19.82     # Subtest: marker list is exactly [`× `, ` · `, `\#axis-`] — the v155 contract
+#15 19.83     ok 6 - marker list is exactly [`× `, ` · `, `\#axis-`] — the v155 contract
+#15 19.83       ---
+#15 19.83       duration_ms: 0.866841
+#15 19.83       ...
+#15 19.83     1..6
+#15 19.83 ok 4 - scanReimplementation — true iff ALL three markers present
+#15 19.83   ---
+#15 19.83   duration_ms: 2.022055
+#15 19.83   type: 'suite'
+#15 19.83   ...
+#15 19.83 # Subtest: TARGETS — three files, each with at least one required symbol
+#15 19.83     # Subtest: exactly three targets (click+keystroke, keynav, server render)
+#15 19.83     ok 1 - exactly three targets (click+keystroke, keynav, server render)
+#15 19.83       ---
+#15 19.83       duration_ms: 0.54198
+#15 19.83       ...
+#15 19.83     # Subtest: every target declares at least one required oracle symbol
+#15 19.83     ok 2 - every target declares at least one required oracle symbol
+#15 19.83       ---
+#15 19.83       duration_ms: 0.237517
+#15 19.83       ...
+#15 19.83     # Subtest: every target names a non-empty mouth label
+#15 19.83     ok 3 - every target names a non-empty mouth label
+#15 19.83       ---
+#15 19.83       duration_ms: 0.156895
+#15 19.83       ...
+#15 19.83     # Subtest: target paths are unique
+#15 19.83     ok 4 - target paths are unique
+#15 19.83       ---
+#15 19.83       duration_ms: 0.157566
+#15 19.83       ...
+#15 19.83     1..4
+#15 19.83 ok 5 - TARGETS — three files, each with at least one required symbol
+#15 19.83   ---
+#15 19.83   duration_ms: 1.37128
+#15 19.83   type: 'suite'
+#15 19.83   ...
+#15 19.85 1..5
+#15 19.85 # tests 21
+#15 19.85 # suites 5
+#15 19.85 # pass 21
+#15 19.85 # fail 0
+#15 19.85 # cancelled 0
+#15 19.85 # skipped 0
+#15 19.85 # todo 0
+#15 19.85 # duration_ms 402.744848
+#15 21.06 TAP version 13
+#15 21.42 # Subtest: LEGAL_REASONS — closed vocabulary
+#15 21.43     # Subtest: every label is kebab-case lowercase
+#15 21.43     ok 1 - every label is kebab-case lowercase
+#15 21.43       ---
+#15 21.43       duration_ms: 2.539387
+#15 21.43       ...
+#15 21.43     # Subtest: no duplicates
+#15 21.43     ok 2 - no duplicates
+#15 21.43       ---
+#15 21.43       duration_ms: 0.185589
+#15 21.43       ...
+#15 21.43     # Subtest: set membership matches array entries
+#15 21.43     ok 3 - set membership matches array entries
+#15 21.43       ---
+#15 21.43       duration_ms: 0.194597
+#15 21.43       ...
+#15 21.43     # Subtest: non-empty — the ledger has at least 5 labels
+#15 21.43     ok 4 - non-empty — the ledger has at least 5 labels
+#15 21.43       ---
+#15 21.43       duration_ms: 0.149863
+#15 21.43       ...
+#15 21.43     1..4
+#15 21.43 ok 1 - LEGAL_REASONS — closed vocabulary
+#15 21.43   ---
+#15 21.43   duration_ms: 4.603032
+#15 21.43   type: 'suite'
+#15 21.43   ...
+#15 21.43 # Subtest: parseReasonComment — extract legal label from /* reason: X */
+#15 21.44     # Subtest: returns the label when legal
+#15 21.44     ok 1 - returns the label when legal
+#15 21.44       ---
+#15 21.44       duration_ms: 0.259728
+#15 21.44       ...
+#15 21.44     # Subtest: returns null when label is unknown
+#15 21.44     ok 2 - returns null when label is unknown
+#15 21.44       ---
+#15 21.44       duration_ms: 0.195559
+#15 21.44       ...
+#15 21.44     # Subtest: returns null when there is no reason comment
+#15 21.44     ok 3 - returns null when there is no reason comment
+#15 21.44       ---
+#15 21.44       duration_ms: 0.152877
+#15 21.44       ...
+#15 21.44     # Subtest: tolerates extra whitespace inside the comment
+#15 21.44     ok 4 - tolerates extra whitespace inside the comment
+#15 21.44       ---
+#15 21.44       duration_ms: 0.209424
+#15 21.44       ...
+#15 21.44     1..4
+#15 21.44 ok 2 - parseReasonComment — extract legal label from /* reason: X */
+#15 21.44   ---
+#15 21.44   duration_ms: 1.476739
+#15 21.44   type: 'suite'
+#15 21.44   ...
+#15 21.44 # Subtest: isAliasValue — var(--x) assignments are aliases
+#15 21.44     # Subtest: true for `--a: var(--b);`
+#15 21.44     ok 1 - true for `--a: var(--b);`
+#15 21.44       ---
+#15 21.44       duration_ms: 0.331555
+#15 21.44       ...
+#15 21.44     # Subtest: false for `--a: 300ms;`
+#15 21.44     ok 2 - false for `--a: 300ms;`
+#15 21.44       ---
+#15 21.44       duration_ms: 0.204916
+#15 21.44       ...
+#15 21.45     # Subtest: false for mixed expressions containing var()
+#15 21.45     ok 3 - false for mixed expressions containing var()
+#15 21.45       ---
+#15 21.45       duration_ms: 0.203894
+#15 21.45       ...
+#15 21.45     1..3
+#15 21.45 ok 3 - isAliasValue — var(--x) assignments are aliases
+#15 21.45   ---
+#15 21.45   duration_ms: 0.968693
+#15 21.45   type: 'suite'
+#15 21.45   ...
+#15 21.45 # Subtest: isLiteralDurationDecl / parseLiteralDuration
+#15 21.45     # Subtest: matches `--foo: 150ms;`
+#15 21.45     ok 1 - matches `--foo: 150ms;`
+#15 21.45       ---
+#15 21.45       duration_ms: 0.939939
+#15 21.45       ...
+#15 21.45     # Subtest: matches `--foo: 0.4s;`
+#15 21.45     ok 2 - matches `--foo: 0.4s;`
+#15 21.45       ---
+#15 21.45       duration_ms: 0.182503
+#15 21.45       ...
+#15 21.45     # Subtest: does NOT match alias `--foo: var(--bar);`
+#15 21.45     ok 3 - does NOT match alias `--foo: var(--bar);`
+#15 21.45       ---
+#15 21.45       duration_ms: 0.185409
+#15 21.45       ...
+#15 21.46     # Subtest: does NOT match non-duration `--foo: 12px;`
+#15 21.46     ok 4 - does NOT match non-duration `--foo: 12px;`
+#15 21.46       ---
+#15 21.46       duration_ms: 0.155903
+#15 21.46       ...
+#15 21.46     # Subtest: parseLiteralDuration returns null for non-matches
+#15 21.46     ok 5 - parseLiteralDuration returns null for non-matches
+#15 21.46       ---
+#15 21.46       duration_ms: 0.125086
+#15 21.46       ...
+#15 21.46     1..5
+#15 21.46 ok 4 - isLiteralDurationDecl / parseLiteralDuration
+#15 21.46   ---
+#15 21.46   duration_ms: 1.92412
+#15 21.46   type: 'suite'
+#15 21.46   ...
+#15 21.46 # Subtest: scanDurationReasons — fixture coverage
+#15 21.46     # Subtest: FIXTURE_CLEAN_SAME_LINE → zero violations
+#15 21.46     ok 1 - FIXTURE_CLEAN_SAME_LINE → zero violations
+#15 21.46       ---
+#15 21.46       duration_ms: 0.408528
+#15 21.46       ...
+#15 21.47     # Subtest: FIXTURE_CLEAN_PREV_LINE → zero violations
+#15 21.47     ok 2 - FIXTURE_CLEAN_PREV_LINE → zero violations
+#15 21.47       ---
+#15 21.47       duration_ms: 0.405222
+#15 21.47       ...
+#15 21.47     # Subtest: FIXTURE_ALIAS → zero violations (alias exempt)
+#15 21.47     ok 3 - FIXTURE_ALIAS → zero violations (alias exempt)
+#15 21.47       ---
+#15 21.47       duration_ms: 0.173346
+#15 21.47       ...
+#15 21.47     # Subtest: FIXTURE_MISSING → one violation, rule duration-reason-missing
+#15 21.47     ok 4 - FIXTURE_MISSING → one violation, rule duration-reason-missing
+#15 21.47       ---
+#15 21.47       duration_ms: 0.350098
+#15 21.47       ...
+#15 21.47     # Subtest: FIXTURE_UNKNOWN → one violation, rule duration-reason-unknown, label surfaced
+#15 21.47     ok 5 - FIXTURE_UNKNOWN → one violation, rule duration-reason-unknown, label surfaced
+#15 21.47       ---
+#15 21.47       duration_ms: 0.187123
+#15 21.47       ...
+#15 21.47     # Subtest: FIXTURE_MULTI_MISSING → exactly 2 violations (one per bad line)
+#15 21.47     ok 6 - FIXTURE_MULTI_MISSING → exactly 2 violations (one per bad line)
+#15 21.47       ---
+#15 21.47       duration_ms: 0.264318
+#15 21.47       ...
+#15 21.47     # Subtest: violation carries file, line, column from the source position
+#15 21.47     ok 7 - violation carries file, line, column from the source position
+#15 21.47       ---
+#15 21.47       duration_ms: 0.189947
+#15 21.47       ...
+#15 21.47     1..7
+#15 21.47 ok 5 - scanDurationReasons — fixture coverage
+#15 21.47   ---
+#15 21.47   duration_ms: 2.281804
+#15 21.47   type: 'suite'
+#15 21.47   ...
+#15 21.47 # Subtest: TARGET_FILES — guard scope is explicit and non-empty
+#15 21.47     # Subtest: at least one target file
+#15 21.47     ok 1 - at least one target file
+#15 21.48       ---
+#15 21.48       duration_ms: 0.173396
+#15 21.48       ...
+#15 21.48     # Subtest: tokens.css is the primary target
+#15 21.48     ok 2 - tokens.css is the primary target
+#15 21.48       ---
+#15 21.48       duration_ms: 0.182543
+#15 21.48       ...
+#15 21.48     # Subtest: every entry is a .css file inside src/styles/
+#15 21.48     ok 3 - every entry is a .css file inside src/styles/
+#15 21.48       ---
+#15 21.48       duration_ms: 0.432334
+#15 21.48       ...
+#15 21.48     1..3
+#15 21.48 ok 6 - TARGET_FILES — guard scope is explicit and non-empty
+#15 21.48   ---
+#15 21.48   duration_ms: 1.05717
+#15 21.48   type: 'suite'
+#15 21.48   ...
+#15 21.48 # Subtest: regression — live src/styles/tokens.css passes the guard
+#15 21.48     # Subtest: zero violations on the current tokens.css
+#15 21.48     ok 1 - zero violations on the current tokens.css
+#15 21.48       ---
+#15 21.48       duration_ms: 1.054915
+#15 21.48       ...
+#15 21.48     1..1
+#15 21.48 ok 7 - regression — live src/styles/tokens.css passes the guard
+#15 21.48   ---
+#15 21.48   duration_ms: 1.159532
+#15 21.48   type: 'suite'
+#15 21.48   ...
+#15 21.49 1..7
+#15 21.49 # tests 27
+#15 21.49 # suites 7
+#15 21.49 # pass 27
+#15 21.49 # fail 0
+#15 21.49 # cancelled 0
+#15 21.49 # skipped 0
+#15 21.49 # todo 0
+#15 21.49 # duration_ms 461.955383
+#15 21.52 
+#15 21.52 > persona-blog@0.1.0 build
+#15 21.52 > astro build
+#15 21.52 
+#15 22.23 ▶ Astro collects anonymous usage data.
+#15 22.23   This information helps us improve Astro.
+#15 22.23   Run "astro telemetry disable" to opt-out.
+#15 22.23   https://astro.build/telemetry
+#15 22.23 
+#15 23.65 21:19:38 [types] Generated 481ms
+#15 23.65 21:19:38 [build] output: "hybrid"
+#15 23.65 21:19:38 [build] directory: /app/dist/
+#15 23.65 21:19:38 [build] adapter: @astrojs/node
+#15 23.65 21:19:38 [build] Collecting build info...
+#15 23.65 21:19:38 [build] ✓ Completed in 525ms.
+#15 23.66 21:19:38 [build] Building hybrid entrypoints...
+#15 29.02 21:19:44 [vite] ✓ built in 5.30s
+#15 29.02 21:19:44 [build] ✓ Completed in 5.37s.
+#15 29.02 
+#15 29.02  building client (vite) 
+#15 29.04 21:19:44 [vite] transforming...
+#15 29.39 21:19:44 [vite] ✓ 78 modules transformed.
+#15 29.43 21:19:44 [vite] rendering chunks...
+#15 29.47 21:19:44 [vite] computing gzip size...
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/clipboard.TJO71FjA.js                                               0.46 kB │ gzip: 0.30 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/ds-kbd-lit.BmpNX-9I.js                                              0.72 kB │ gzip: 0.42 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.DgV-i7gH.js                                                 1.33 kB │ gzip: 0.72 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.DVP5K3fI.js    3.81 kB │ gzip: 1.57 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.BGX_bt_j.js                                                 4.48 kB │ gzip: 1.83 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.D2qnmWAa.js                                                 6.25 kB │ gzip: 2.47 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.Qdgm8xZp.js                                                 8.28 kB │ gzip: 3.04 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/hoisted.Cf7TjDpN.js                                                 9.19 kB │ gzip: 3.46 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
+#15 29.48 21:19:44 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CTw20Qv1.js       12.14 kB │ gzip: 4.27 kB
+#15 29.48 21:19:44 [vite] ✓ built in 450ms
+#15 29.51 
+#15 29.51  prerendering static routes 
+#15 29.54 21:19:44 λ src/pages/api/graveyard-stats.ts
+#15 29.54 21:19:44   └─ /api/graveyard-stats (+33ms)
+#15 29.58 21:19:44 λ src/pages/api/ingest/cell-event.ts
+#15 29.58 21:19:44   └─ /api/ingest/cell-event (+1ms)
+#15 29.58 21:19:44 λ src/pages/api/metrics/cited-cells.ts
+#15 29.58 21:19:44   └─ /api/metrics/cited-cells (+3ms)
+#15 29.58 21:19:44 λ src/pages/api/reading-pulse.ts
+#15 29.58 21:19:44   └─ /api/reading-pulse (+1ms)
+#15 29.60 21:19:44 ▶ src/pages/author/index.astro
+#15 29.60 21:19:44   └─ /author/index.html (+9ms)
+#15 29.74 21:19:44 ▶ src/pages/blog/[slug].astro
+#15 29.75 21:19:44   ├─ /blog/building-in-public/index.html (+29ms)
+#15 29.77 21:19:44   ├─ /blog/focus-as-a-mood/index.html (+16ms)
+#15 29.79 21:19:44   ├─ /blog/hello-world/index.html (+11ms)
+#15 29.80 21:19:44   ├─ /blog/lo-fi-loop/index.html (+12ms)
+#15 29.81 21:19:44   ├─ /blog/now-page/index.html (+17ms)
+#15 29.83 21:19:44   └─ /blog/the-decay-theory/index.html (+13ms)
+#15 29.85 21:19:44 λ src/pages/feed.xml.ts
+#15 29.85 21:19:44   └─ /feed.xml (+2ms)
+#15 29.85 21:19:44 ✓ Completed in 360ms.
+#15 29.85 
+#15 29.85 21:19:44 [build] Rearranging server assets...
+#15 29.85 21:19:44 [build] Server built in 6.73s
+#15 29.85 21:19:44 [build] Complete!
+#15 DONE 30.0s
 
 #16 [server 4/8] COPY --from=builder /app/dist ./dist
 #16 DONE 0.1s
@@ -1122,11 +1317,11 @@ persona-blog-a-sqlite
 #21 exporting to image
 #21 exporting layers
 #21 exporting layers 1.4s done
-#21 writing image sha256:4d31b464d915c6354b02dc6a13ab5a6f645628e768427e595c234b294c4ec40d done
+#21 writing image sha256:dc15536eb215522b62037caf897e0f2cb72fe11e223d16007f0c2836d5bf526d done
 #21 naming to docker.io/library/persona-blog-a done
 #21 DONE 1.4s
 ==> [deploy] Starting container: persona-blog-a on port 7100
-13931b63cf11b54851b977568b6d97687a0cb60db9822fb38ff94064df96a2b7
+2b894c58c7d2ee1cd13da39a688448688c60efd4acf9077da5d462df9aedad8a
 ==> [deploy] Waiting for container to become healthy…
 ==> [deploy] ✓ Container is running
 ==> [deploy] Running deadline sweep…
@@ -1136,10 +1331,10 @@ persona-blog-a-sqlite
 ==> [deploy] Warming up /api/docs SSR (cited-cell heat + legend stack)…
 ==> [deploy] /api/docs SSR warm-up: HTTP 200
 ==> [deploy] Warming up cell-metrics endpoint…
-==> [deploy] Cell-metrics baseline: {"window":{"days":1,"since":"2026-04-21T20:48:00.808Z"},"copies":0,"arrivals":0,"roundTripRatio":0,"byCell":[],"heatByCell":[{"axis":"typography","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0}],"ledger":{"ready":false,"ageDays":0,"coldStartDays":7,"warmDays":7}}
+==> [deploy] Cell-metrics baseline: {"window":{"days":1,"since":"2026-04-21T21:19:44.599Z"},"copies":0,"arrivals":0,"roundTripRatio":0,"byCell":[],"heatByCell":[{"axis":"typography","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0}],"ledger":{"ready":false,"ageDays":0,"coldStartDays":7,"warmDays":7}}
 ==> [deploy] Pruning dangling images…
 Deleted Images:
-deleted: sha256:15a8e56d77e875ec29c6809ff025f1d662e3b148517836069ec5f1675703708b
+deleted: sha256:4d31b464d915c6354b02dc6a13ab5a6f645628e768427e595c234b294c4ec40d
 
 Total reclaimed space: 0B
-==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 08:48:14 PM UTC 2026
+==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 09:19:56 PM UTC 2026

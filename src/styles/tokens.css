@@ -381,9 +381,9 @@
   --shadow-fresh-alpha:  0.22;
 
   /* ── Motion Tokens (seal ceremony + microinteractions) ─────────────── */
-  --motion-duration-fast:      150ms;  /* micro feedback: dot fill, button state */
-  --motion-duration-base:      300ms;  /* ceremony phases: stamp, meter */
-  --motion-duration-deliberate: 500ms; /* lock + receipt entrance */
+  --motion-duration-fast:      150ms;  /* reason: micro-feedback */
+  --motion-duration-base:      300ms;  /* reason: ceremony-phase */
+  --motion-duration-deliberate: 500ms; /* reason: ceremony-phase */
   --motion-easing-spring:      cubic-bezier(0.34, 1.56, 0.64, 1);  /* overshoot — weight */
   --motion-easing-standard:    ease-in-out;
 
@@ -443,14 +443,14 @@
   /* Surface tints per thermal state */
   --ba-thermal-cold-surface:    color-mix(in oklch, var(--clr-slate-400) 4%, transparent);
   --ba-thermal-cold-text:       var(--text-disabled);
-  --ba-thermal-cold-ring-speed: 10s;
+  --ba-thermal-cold-ring-speed: 10s;  /* reason: ambient-pulse */
 
   --ba-thermal-warming-surface:  color-mix(in oklch, var(--clr-amber-400) 5%, transparent);
   --ba-thermal-warming-text:     var(--text-tertiary);
-  --ba-thermal-warming-ring-speed: 6s;
+  --ba-thermal-warming-ring-speed: 6s;  /* reason: ambient-pulse */
 
   --ba-thermal-hot-surface:     color-mix(in oklch, var(--ba-tier-color, var(--gold)) 6%, transparent);
-  --ba-thermal-hot-ring-speed:   3s;
+  --ba-thermal-hot-ring-speed:   3s;  /* reason: ambient-pulse */
 
   /* Ember dot opacity ramp — 1 dot per resolved verdict (1–4) */
   --ba-ember-1: 0.90;
@@ -506,12 +506,12 @@
   /* ── Tombstone Grid Tokens — Tanya §7 ─────────────────────────────────── */
   --tombstone-card-width:    180px;
   --tombstone-card-height:   240px;
-  --tombstone-entomb-delay:  60ms;  /* stagger multiplier per card */
+  --tombstone-entomb-delay:  60ms;  /* reason: micro-feedback */
 
   /* ── Presence Dot Tokens — Tanya §5 ───────────────────────────────────── */
   --presence-dot-size:    6px;
   --presence-pulse-scale: 1.3;
-  --presence-pulse-dur:   3s;
+  --presence-pulse-dur:   3s;  /* reason: ambient-pulse */
 
   /* ── Crystallized Card Tokens (shimmer ceremony — Tanya §Crystallized) ── */
   /* Temperature contrast is the emotional message:                          */
@@ -557,9 +557,9 @@
   --urgency-critical-color:       oklch(67% 0.185 55);  /* deep amber-orange */
   --urgency-final-color:          var(--clr-red-500);
   /* Pulse animation speed per tier — faster = more urgent */
-  --urgency-pulse-speed-warning:  2s;
-  --urgency-pulse-speed-critical: 1s;
-  --urgency-pulse-speed-final:    0.4s;
+  --urgency-pulse-speed-warning:  2s;    /* reason: ambient-pulse */
+  --urgency-pulse-speed-critical: 1s;    /* reason: ambient-pulse */
+  --urgency-pulse-speed-final:    0.4s;  /* reason: ambient-pulse */
   /* Glow opacity per tier */
   --urgency-glow-warning:         0.15;
   --urgency-glow-critical:        0.25;
@@ -571,8 +571,8 @@
   --sympathetic-opacity-lift:      0.15;
   --sympathetic-shadow-lift:       4px;
   --sympathetic-shadow-alpha-lift: 0.06;
-  --sympathetic-duration:          1000ms;
-  --sympathetic-settle-duration:   1000ms;
+  --sympathetic-duration:          1000ms;  /* reason: linger */
+  --sympathetic-settle-duration:   1000ms;  /* reason: linger */
   --sympathetic-lift-y:            -1.5px;
 
   /* ── Interaction State Tokens (Tanya §8 — Addition 1) ──────────────── */
@@ -701,11 +701,11 @@
   /* ── Heartbeat Motion Profiles (3 stage-driven rhythms for DecayClock) ── */
   /* Fresh = 72bpm steady · Fading = 55bpm hesitant · Critical = 38bpm erratic */
   /* Spec: Mike §3 heartbeat profiles; Tanya §4.3 clock visibility rules.       */
-  --motion-heartbeat-fresh-duration:    833ms;  /* 72bpm   */
+  --motion-heartbeat-fresh-duration:    833ms;  /* reason: heartbeat-bpm */
   --motion-heartbeat-fresh-easing:      ease-in-out;
-  --motion-heartbeat-fading-duration:   1090ms; /* 55bpm — slight hesitation */
+  --motion-heartbeat-fading-duration:   1090ms; /* reason: heartbeat-bpm */
   --motion-heartbeat-fading-easing:     ease-in-out;
-  --motion-heartbeat-critical-duration: 1578ms; /* 38bpm — erratic, no spring */
+  --motion-heartbeat-critical-duration: 1578ms; /* reason: heartbeat-bpm */
   --motion-heartbeat-critical-easing:   linear;
 
   /* ── Atmosphere Tokens — stage-scoped page surface layer ─────────────── */
@@ -757,7 +757,7 @@
   --notarize-mark-size:      2.4rem;                /* ⬡ seal mark in bloom           */
   --receipt-watermark-size:  4.5rem;                /* ⬡ background ghost watermark in receipt (larger, 0.12 opacity) */
   --notarize-bloom-duration: var(--motion-duration-deliberate); /* 500ms primary     */
-  --notarize-pause-duration: 800ms;                 /* ceremonial pause — do not change */
+  --notarize-pause-duration: 800ms;                 /* reason: ceremony-dwell */
   --notarize-shadow:
     0 0 40px oklch(78% 0.14 68 / 18%),
     0 8px 32px oklch(0 0 0 / 0.40);
@@ -791,7 +791,7 @@
   /* Fix: Tanya §8 motion token conflict audit · Sid 2026-04-14               */
 
   /* ── Score Dot Click Timing (Tanya §10.1 — spring fill on click) ──────────── */
-  --motion-duration-dot-click: 200ms;          /* spring fill; upgrades fast(150ms) */
+  --motion-duration-dot-click: 200ms;          /* reason: micro-feedback */
 
   /* ── Seal Score Tier Tokens (Mike §ScoreTierColors, Tanya §ScoreDots) ──────── */
   /* Escalate from cool caution → warm confidence → conviction gold.             */
@@ -804,14 +804,14 @@
   /* ── Verdict Seal Ceremony Tokens (Mike §napkin — 3-phase ceremony) ────── */
   /* Phase timing: dwell → hesitation → counter animation.                   */
   /* Rule: two ceremonies, two components — no shared base.                  */
-  --verdict-ceremony-dwell:      2000ms;   /* Phase 1 minimum read time      */
-  --verdict-ceremony-hesitation: 400ms;    /* Phase 2 Doherty threshold      */
-  --verdict-ceremony-counter:    800ms;    /* Phase 3 BA counter animation   */
+  --verdict-ceremony-dwell:      2000ms;   /* reason: ceremony-dwell */
+  --verdict-ceremony-hesitation: 400ms;    /* reason: doherty */
+  --verdict-ceremony-counter:    800ms;    /* reason: ceremony-dwell */
   --verdict-seal-bg:             var(--surface-deep);  /* Ceremony container  */
 
   /* ── Hesitation Beat Token (Mike §HesitationBeat) ───────────────────────── */
   /* 400ms = Doherty threshold; author feels the weight before proceeding.      */
-  --seal-hesitation-duration: 400ms;
+  --seal-hesitation-duration: 400ms;  /* reason: doherty */
 
   /* ── Sound Toggle Tokens (SealSoundToggle.astro) ─────────────────────────── */
   /* Isolated: only SealSoundToggle reads these. Pull from existing primitives.  */
@@ -836,7 +836,7 @@
   --hb-opacity:      0.45;
   --hb-shadow-alpha: 0;
   --hb-bpm:          72;
-  --hb-bar-duration: 833ms;
+  --hb-bar-duration: 833ms;  /* reason: heartbeat-bpm */
   /* Color channel defaults match --clr-green-400 (fresh stage). */
   --hb-color-l: 64%;
   --hb-color-c: 0.190;
@@ -884,7 +884,7 @@
   --stage-endangered-saturation:       0.3;
 
   /* Endangered pulse timing — 0.5 Hz (2s period): visible urgency, not alarm */
-  --stage-endangered-pulse-dur:        2s;
+  --stage-endangered-pulse-dur:        2s;      /* reason: stage-identity */
   --stage-endangered-pulse-ease:       ease-in-out;
 
   /* Urgency glow intensity — urgency via brightness, not speed (Mike §3) */
@@ -915,14 +915,14 @@
   /* ── Stage Transition Motion Tokens (Mike §Orchestrator, Tanya §3) ───────── */
   /* Base duration for stage boundary crossing choreography.                   */
   /* Consumed by stage-transitions.css keyframes — zero raw durations there.   */
-  --motion-stage-transition:       800ms;   /* base: fresh→fading warm glow retreat */
-  --motion-stage-transition-fast:  600ms;   /* revival bloom, endangered ignition   */
-  --motion-stage-transition-slow: 1200ms;   /* ghost chroma drain — deliberate      */
+  --motion-stage-transition:       800ms;   /* reason: snap */
+  --motion-stage-transition-fast:  600ms;   /* reason: snap */
+  --motion-stage-transition-slow: 1200ms;   /* reason: snap */
   --motion-easing-stage: cubic-bezier(0.22, 1, 0.36, 1);  /* ease-out-quint   */
 
   /* Endangered Ambient Pulse — urgency-mapped oscillation period              */
-  --endangered-pulse-min-period:   0.8s;    /* critical: pulse fast             */
-  --endangered-pulse-max-period:   8s;      /* early endangered: pulse slow     */
+  --endangered-pulse-min-period:   0.8s;    /* reason: stage-identity */
+  --endangered-pulse-max-period:   8s;      /* reason: stage-identity */
   --endangered-pulse-shadow-scale: 1.15;    /* shadow grows 15% on pulse peak   */
 
   /* Ghost Chroma Targets (OKLCH perceptual interpolation)                     */
@@ -939,7 +939,7 @@
   /* fresh-* carry new spring values — every other stage aliases to the snap    */
   /* profile so its interactions feel identical to today. Tune the ramp from    */
   /* data, not from an architect's hunch.                                       */
-  --stage-fresh-duration:       120ms;
+  --stage-fresh-duration:       120ms;  /* reason: stage-identity */
   --stage-fresh-ease:           var(--motion-easing-spring);
   --stage-fading-duration:      var(--motion-snap-duration);
   --stage-fading-ease:          var(--motion-snap-easing);
@@ -969,10 +969,10 @@
   --flash-tint-opacity-endangered:  0.16;   /* cover tint peak  — fading→endangered  */
   --flash-tint-opacity-ghost:       0.08;   /* cover tint peak  — endangered→ghost   */
   --flash-tint-opacity-fossil:      0.05;   /* cover tint peak  — ghost→fossil       */
-  --flash-duration-fading:          480ms;  /* asymmetric: fast in, slow out         */
-  --flash-duration-endangered:      600ms;  /* longest — urgency deserves full weight */
-  --flash-duration-ghost:           400ms;
-  --flash-duration-fossil:          300ms;  /* near-silent — barely noticed           */
+  --flash-duration-fading:          480ms;  /* reason: stage-identity */
+  --flash-duration-endangered:      600ms;  /* reason: stage-identity */
+  --flash-duration-ghost:           400ms;  /* reason: stage-identity */
+  --flash-duration-fossil:          300ms;  /* reason: stage-identity */
 }
 
 /* ── @property typed registrations ──────────────────────────────────────── */
