@@ -4,6 +4,73 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v148 — Stage-Keyed :focus-visible (Focus Ring, Sixth Axis) (2026-04-22)
+#   Sprint: Close the decay grammar on the keyboard contact event. The tab key
+#     is now a full stage axis — `:focus-visible` on prose-interactive
+#     descendants of `[data-decay-stage]` inherits the post's weather, painting
+#     the ring with the same `--stage-{s}-border` token that drives the other
+#     five axes (typography, border, tempo, selection, drag-highlight). Pure
+#     UIX polish — zero infrastructure changes, zero new tokens, zero new
+#     codegen, zero new guards. Six axes, one token family, one grammar.
+#   Key changes:
+#     src/styles/stage-focus.css (new) — five `[data-decay-stage="…"]` blocks
+#       paint `:focus-visible` on prose-interactive targets
+#       (`a, button, summary, [tabindex="0"]`). Bright stages (fresh / fading
+#       / endangered) use a 2px outline on their own border color; dim stages
+#       (ghost / fossil) add `box-shadow: inset 0 0 0 1px var(--surface-base)`
+#       as a keyline that forces 3:1 non-text contrast (WCAG 2.4.11) against
+#       low-L card grounds without inventing a halo token (Tanya §2a). Tempo
+#       borrows from v146 stage-motion — `transition` reads each stage's own
+#       `--stage-{s}-duration` / `--stage-{s}-ease`, so the ring feels faster
+#       on fresh posts and heavier on fossils without any new timing token.
+#       `forced-colors: active` sanctuary yields `outline-color: Highlight`
+#       and drops the keyline; `prefers-reduced-motion: reduce` drops the
+#       transition, keeping color. Native form fields (input / textarea /
+#       pre / code / [contenteditable]) are deliberately OUT of scope —
+#       decay-weather on a form field is a metaphor inversion (Elon §2a,
+#       Tanya §4). Site chrome outside any [data-decay-stage] subtree
+#       continues to use the global gold `*:focus-visible` ring.
+#     src/styles/global.css — imports `./stage-focus.css` right after
+#       `./stage-selection.css` so both reader-contact axes sit adjacent in
+#       cascade order. The universal `*:focus-visible` rule is kept verbatim
+#       as the chrome fallback half of the scope fence — its header comment
+#       is updated to point at stage-focus.css so future edits don't delete
+#       the fallback by accident.
+#     scripts/check-token-compliance.ts — adds `src/styles/stage-focus.css`
+#       to `GUARD_FILES` (count: 135 → 136). The prebuild token-compliance
+#       guard now fails fast if any raw hex / rgb / hsl / duration slips
+#       into the new file. Same ratchet v147 used.
+#     src/lib/stage-focus.test.ts (new) — `node:test` textual-parity suite
+#       (28 tests across 7 describe blocks). Reads the CSS file as text and
+#       asserts: every DecayStage appears exactly once, every rule cites the
+#       matching `--stage-{s}-border` token, every rule consumes the stage's
+#       own tempo tokens, dim stages carry the keyline and bright stages do
+#       not, forced-colors + reduced-motion sanctuaries exist, scope fence
+#       is never widened (no input/textarea/pre/code/[contenteditable]),
+#       and no raw color / duration literals leak. Pure parser check — no
+#       JSDOM, no Puppeteer, same shape as decay-wire.test.ts and
+#       generate-stage-tokens.test.ts. Run: `npx tsx --test src/lib/stage-focus.test.ts`.
+#     src/pages/api/docs.astro — one prose sentence in the "How the five
+#       stages feel" section names the six axes the reader touches
+#       (typography, border, tempo, selection, drag-highlight, focus-ring).
+#       The API enum and the JSON sample are untouched per Elon §4 — the
+#       axis list is prose, not contract.
+#     AGENTS.md — axis list extended from "typography, border, tempo,
+#       drag-highlight" to "typography, border, tempo, drag-highlight,
+#       focus-ring". Stage-axes paragraph names stage-focus.css and its
+#       prose-interactive scope fence. Well under the 100-word cap.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `src/` and `scripts/`
+#     wholesale into the builder stage, so the new CSS file, the extended
+#     GUARD_FILES set, the new test file, the docs.astro sentence, and the
+#     refreshed AGENTS.md all ship without any Dockerfile edits. The
+#     prebuild compliance guard continues to run inside `npm run build`
+#     during the Docker builder stage and will fail fast if the new file
+#     introduces raw-value drift. deploy.sh startup sequence (steps 1–8)
+#     identical to v146 / v147.
+#
 # Architecture v147 — Stage-Keyed ::selection (Drag-Highlight Axis) (2026-04-22)
 #   Sprint: Add the reader's *own brush* to the decay grammar — drag-highlight
 #     color on blog prose now reflects the post's decay temperature. Same five-

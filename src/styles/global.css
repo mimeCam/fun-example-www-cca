@@ -13,12 +13,16 @@
 @import "./motion.css";
 @import "./stage-motion.css";
 @import "./stage-selection.css";
+@import "./stage-focus.css";
 @import "./card-base.css";
 @import "./death-clock.css";
 @import "./trust-badge.css";
 
-/* ── Focus ring — one token, zero per-component color values (Tanya §8.2) ──
-   All interactive elements inherit this. No per-component overrides needed.
+/* ── Focus ring — chrome fallback (v148 sixth axis, see stage-focus.css) ───
+   Site chrome outside any [data-decay-stage] subtree (nav, footer, /api/docs,
+   /community/submit, admin) uses this gold ring. Inside decay-stamped prose
+   the stage-keyed rules in stage-focus.css win by selector specificity.
+   Never remove this rule — it is the fallback half of the scope fence.
    --border-focus = rgba(245, 166, 35, 0.60) — conviction gold at 60% opacity. */
 *:focus-visible {
   outline: 2px solid var(--border-focus);

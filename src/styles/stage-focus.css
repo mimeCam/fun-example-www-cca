@@ -1,0 +1,101 @@
+/* src/styles/stage-focus.css
+ * Stage-keyed :focus-visible — the reader's keyboard contact (v148).
+ *
+ * The tab key is a contact event. The ring learns the post's weather,
+ * reusing --stage-{s}-border verbatim — one grammar, six axes, zero new
+ * tokens, zero new codegen, zero new guards.
+ *
+ *   bright stages (fresh / fading / endangered) → saturated outline.
+ *   dim stages    (ghost / fossil)              → same outline + inset keyline
+ *     against --surface-base so the ring clears 3:1 non-text contrast
+ *     (WCAG 2.4.11) on low-L card grounds without inventing a halo token.
+ *
+ * Scope fence (Tanya §4, mirrors stage-selection.css): prose-interactive only.
+ *   paint:  a, button, summary, [tabindex="0"]
+ *   leave:  input, textarea, pre, code, [contenteditable] → inherit the
+ *           gold `*:focus-visible` fallback defined in global.css. Native form
+ *           fields stay neutral — "this field is decaying" is a metaphor
+ *           inversion (Elon §2a).
+ *
+ * Tempo (Tanya §2c): outline-color + outline-offset transition on the same
+ * per-stage duration already defined for v146 motion. Fresh feels faster,
+ * fossil feels heavier — same metronome the hover/drag axes already follow.
+ * No entrance flourish. The ring appears, lingers, leaves.
+ *
+ * Firefox parity (Mike §4): :focus-visible is a modern standard pseudo-class
+ * with no -moz variant required. One rule per stage — unlike ::selection.
+ *
+ * Credits: Tanya (§2 visual spec + §4 scope fence + §2c tempo borrow),
+ *          Mike (§napkin file shape — mirrors stage-selection.css verbatim,
+ *          §PoI cascade story), Elon (reuse --stage-{s}-border, no
+ *          speculative tokens), Paul (P0 — ≤100ms, zero layout shift),
+ *          AGENTS.md ("polish what we have — AAA"). Sid — 2026-04-22.
+ */
+
+/* ── Prose-interactive selector fragment — repeated per stage, kept legible
+ *    on purpose. DO NOT abbreviate via a shared variable; specificity would
+ *    drift and the scope fence would silently widen.                       */
+
+/* ── Bright stages: saturated outline, no keyline needed ────────────────── */
+
+[data-decay-stage="fresh"] :is(a, button, summary, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--stage-fresh-border);
+  outline-offset: 3px;
+  transition:
+    outline-color  var(--stage-fresh-duration) var(--stage-fresh-ease),
+    outline-offset var(--stage-fresh-duration) var(--stage-fresh-ease);
+}
+
+[data-decay-stage="fading"] :is(a, button, summary, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--stage-fading-border);
+  outline-offset: 3px;
+  transition:
+    outline-color  var(--stage-fading-duration) var(--stage-fading-ease),
+    outline-offset var(--stage-fading-duration) var(--stage-fading-ease);
+}
+
+[data-decay-stage="endangered"] :is(a, button, summary, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--stage-endangered-border);
+  outline-offset: 3px;
+  transition:
+    outline-color  var(--stage-endangered-duration) var(--stage-endangered-ease),
+    outline-offset var(--stage-endangered-duration) var(--stage-endangered-ease);
+}
+
+/* ── Dim stages: inset keyline forces 3:1 non-text contrast on low-L bg ─── */
+
+[data-decay-stage="ghost"] :is(a, button, summary, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--stage-ghost-border);
+  outline-offset: 3px;
+  box-shadow: inset 0 0 0 1px var(--surface-base);
+  transition:
+    outline-color  var(--stage-ghost-duration) var(--stage-ghost-ease),
+    outline-offset var(--stage-ghost-duration) var(--stage-ghost-ease);
+}
+
+[data-decay-stage="fossil"] :is(a, button, summary, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--stage-fossil-border);
+  outline-offset: 3px;
+  box-shadow: inset 0 0 0 1px var(--surface-base);
+  transition:
+    outline-color  var(--stage-fossil-duration) var(--stage-fossil-ease),
+    outline-offset var(--stage-fossil-duration) var(--stage-fossil-ease);
+}
+
+/* ── Accessibility sanctuary — yield to OS-controlled contrast (Mike §5,
+ *    Tanya §2d). Mirrors stage-selection.css precedent: user preference
+ *    wins, stage paint steps aside without exception.                    */
+@media (forced-colors: active) {
+  [data-decay-stage] :is(a, button, summary, [tabindex="0"]):focus-visible {
+    outline-color: Highlight;
+    box-shadow: none;
+  }
+}
+
+/* ── Reduced motion — keep the color, drop the transition (Tanya §2d).
+ *    The ring must still be stage-colored; it simply appears instantly.    */
+@media (prefers-reduced-motion: reduce) {
+  [data-decay-stage] :is(a, button, summary, [tabindex="0"]):focus-visible {
+    transition: none;
+  }
+}

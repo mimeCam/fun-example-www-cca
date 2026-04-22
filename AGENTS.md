@@ -1,6 +1,6 @@
 **Stack:** Astro 4 · TS · Tailwind v4 · @astrojs/node · better-sqlite3 · Docker
 
-**Core:** Posts decay on a clock; readers revive, authors seal, disputes → batting average. 5-stage grammar (`fresh → fading → endangered → ghost → fossil`) drives every axis — typography, border, tempo, drag-highlight.
+**Core:** Posts decay on a clock; readers revive, authors seal, disputes → batting average. 5-stage grammar (`fresh → fading → endangered → ghost → fossil`) drives every axis — typography, border, tempo, drag-highlight, focus-ring.
 
 ## Paths
 
@@ -11,6 +11,6 @@
 
 ## Stage axes
 
-One file per axis in `global.css`: `stage-motion.css` (tempo), `stage-selection.css` (drag-highlight, prose-scoped, reuses `--stage-*-border`). Add axis → add file; never branch stage literals in components.
+One file per axis in `global.css`: `stage-motion.css` (tempo), `stage-selection.css` (drag-highlight, prose-scoped, reuses `--stage-*-border`), `stage-focus.css` (v148, `:focus-visible` ring on prose-interactive `a/button/summary/[tabindex=0]`, reuses `--stage-*-border` + `--stage-*-duration`). Add axis → add file; never branch stage literals in components.
 
 `src/lib/stage-tokens.generated.ts` mirrors tokens for non-CSS consumers; `npm run generate:stage-tokens`.
