@@ -263,6 +263,11 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
 </style>
 
 <script>
+  // v150b — clipboard fallback now lives in src/lib/client/clipboard.ts.
+  // One copyText() for both the share card and the docs citation ritual;
+  // the legacy execCommand branch is a single source of truth.
+  import { copyText } from '../lib/client/clipboard';
+
   function initShareCard(card: HTMLElement): void {
     const copyBtn     = card.querySelector<HTMLButtonElement>('[data-share-copy]')!;
     const copyLabel   = card.querySelector<HTMLElement>('[data-copy-label]')!;
@@ -277,14 +282,8 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
     confirm: HTMLElement, slug: string,
   ): Promise<void> {
     const url = `${window.location.origin}/blog/${slug}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      showCopied(btn, label, confirm);
-    } catch {
-      // Fallback: execCommand (legacy browsers)
-      legacyCopy(url);
-      showCopied(btn, label, confirm);
-    }
+    const ok = await copyText(url);
+    if (ok) showCopied(btn, label, confirm);
   }
 
   function showCopied(btn: HTMLButtonElement, label: HTMLElement, confirm: HTMLElement): void {
@@ -293,14 +292,6 @@ const truncated = title.length > 60 ? `${title.slice(0, 59)}\u2026` : title;
     btn.classList.add('is-copied');
     btn.addEventListener('animationend', () => btn.classList.remove('is-copied'), { once: true });
     setTimeout(() => { label.textContent = 'Copy share link'; confirm.textContent = ''; }, 2500);
-  }
-
-  function legacyCopy(text: string): void {
-    const ta = Object.assign(document.createElement('textarea'), { value: text });
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
   }
 
   document.querySelectorAll<HTMLElement>('[data-share-card]').forEach(initShareCard);

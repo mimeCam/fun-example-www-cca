@@ -4,6 +4,96 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v150b — Copy-Cell-Anchor Citation Ritual (2026-04-22)
+#   Sprint: Make every cell of the 7×5 grammar matrix citable. Hover/focus
+#     a cell → a top-right ⌗ button reveals; click → single-line clipboard
+#     payload (`{axis} × {stage} · {origin}/api/docs#{anchor}`) plus an
+#     aria-live toast. Land on a deep-link → the matched cell paints a
+#     stage-keyed arrival bloom (fresh/fading: bloom; endangered: pulse;
+#     ghost: outline; fossil: still 800ms hold). Pure UIX polish + code-
+#     quality dedupe — zero infrastructure changes. The clipboard *string*
+#     is the product (Paul §non-negotiable); the toast and bloom make the
+#     string believable.
+#   Key changes:
+#     src/lib/client/clipboard.ts (new) — extracted `copyText(text)` async
+#       helper from ShareSealButton.astro. Modern `navigator.clipboard`
+#       primary path with `document.execCommand('copy')` legacy fallback
+#       on hostile contexts (older browsers, non-secure origins, iframes).
+#       Returns boolean — never throws — caller owns user-facing failure.
+#       One source of truth for both share-card and docs-citation paths.
+#     src/lib/client/cell-cite.ts (new) — citation ritual module. One
+#       delegated click listener on `.api-docs__matrix`, one hashchange
+#       handler for arrival bloom, one shared aria-live toast. Reads
+#       `data-cell-axis` + `data-cell-stage` off the SSR button, builds
+#       the payload at copy time via `cellCitationPayload()` so prerendered
+#       HTML never bakes in a build-time host. Optional `navigator.sendBeacon`
+#       analytics no-op (TODO: wire `/api/ingest/copy-cell` ingest endpoint).
+#       Auto-boots on DOMContentLoaded; safe on pages without the matrix.
+#     src/lib/stage-axes.ts — two new pure SSR-safe helpers:
+#       `cellCitationLabel(axis, stage)` → `${axis} × ${stage}` (uses
+#         U+00D7 multiplication sign, never `x` / `*` — renders identically
+#         in Slack, Discord, GitHub, iMessage, terminal).
+#       `cellCitationPayload(axis, stage, origin)` →
+#         `{label} · {origin}/api/docs#{cellAnchorId(axis, stage)}` (uses
+#         U+00B7 middle dot separator; single-line per Elon §4.1 — newlines
+#         break Slack's Enter-to-send and URL-bar paste).
+#       Reuses existing `cellAnchorId()` verbatim — one anchor source.
+#       Pure stateless module — no DOM, no `window`, no `import.meta.env`;
+#       safe for SSR, tests, and a future `/api/docs.json` endpoint.
+#     src/lib/stage-axes.test.ts — describe block 6b adds 7 new test cases
+#       covering character-for-character payload format, dashed axis names,
+#       middle-dot separator, anchor reuse, and no-double-slash invariant.
+#       Loops over all 35 (axis, stage) combinations. Run via:
+#         `npx tsx --test src/lib/stage-axes.test.ts`
+#       NOT executed at Docker build or runtime (dev-only).
+#     src/components/ShareSealButton.astro — clipboard inline copy/legacyCopy
+#       deleted; now imports `copyText` from `../lib/client/clipboard`.
+#       Tighter call-site, identical behaviour. Mike §6 anti-pattern
+#       (duplicate clipboard path) eliminated.
+#     src/pages/api/docs.astro — every matrix cell gains a `<button data-
+#       cell-copy>` (top-right, 28×28 visual / 44×44 effective hit, hidden
+#       at rest, revealed on `:hover` / `:focus-within`). One shared
+#       `<div data-cell-toast role="status" aria-live="polite">` lives
+#       outside the matrix grid (clean table semantics for screen readers).
+#       Single `<script>import '../../lib/client/cell-cite';</script>` boot.
+#       New CSS scoped to `.cell-copy` + `.cell-toast`: per-stage hover
+#       lift, mono ⌗→✓ icon swap on confirm, touch-device dim-but-visible
+#       affordance, `prefers-reduced-motion` + `forced-colors` sanctuaries.
+#       Zero net-new tokens — every value pulled from existing tokens.css.
+#     src/styles/stage-focus.css — arrival bloom rule block appended.
+#       `.api-docs__matrix-cell.cell--arrived[data-decay-stage="…"]` selectors
+#       drive five `@keyframes`: cell-arrive-bloom (fresh/fading), cell-
+#       arrive-pulse (endangered, with outline-offset 2→5→2px), cell-
+#       arrive-quiet (ghost: outline only), cell-arrive-still (fossil:
+#       static outline 800ms hold — stillness as signal per Elon §4.2).
+#       Each rule consumes the stage's own `--stage-{s}-duration` /
+#       `--stage-{s}-ease` so the bloom inherits the v146 motion grammar.
+#       `prefers-reduced-motion` collapses to static outline; `forced-
+#       colors: active` yields to `Highlight`. Lives inside stage-focus.css
+#       (the canonical focus axis file) — inherits compliance-guard parity
+#       without a new file (axis count still 7, frozen per v149).
+#     AGENTS.md — new "Shared helpers — reuse, don't duplicate" section
+#       lists `clipboard.ts`, `stage-axes.ts` citation helpers, and
+#       `cell-cite.ts` as canonical reuse anchors. Stage grammar paragraph
+#       trimmed for density. Well under the 100-word cap.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `src/` wholesale into the
+#     builder stage, so the new `src/lib/client/clipboard.ts`, the new
+#     `src/lib/client/cell-cite.ts`, the extended `src/lib/stage-axes.ts`
+#     citation helpers, the new dev-only test cases, the refactored
+#     ShareSealButton.astro, the docs.astro copy buttons + toast, the
+#     stage-focus.css arrival bloom, and the refreshed AGENTS.md all ship
+#     without any Dockerfile edits. The prebuild compliance guard continues
+#     to run inside `npm run build` during the Docker builder stage and
+#     enforces the seven-axis freeze + token compliance + DECAY_STAGES
+#     literal-set immutability + STAGE_AXES ⇄ file inventory parity. The
+#     `.test.ts` file is never executed at build or runtime (dev-only).
+#     The TODO `/api/ingest/copy-cell` analytics endpoint is a deliberate
+#     no-op today (sendBeacon to a 404 is silent — safe). deploy.sh
+#     startup sequence (steps 1–8) identical to v150a.
+#
 # Architecture v150a — Canonical Axis Literal & Grammar-Matrix Appendix (2026-04-22)
 #   Sprint: Close the seven-axis grammar on a single, executable source of
 #     truth. One literal (`STAGE_AXES`) now governs every reader of the

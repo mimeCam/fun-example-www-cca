@@ -23,7 +23,14 @@ import {
   cellAnchorId,
   rowAnchorId,
   stageAnchorId,
+  cellCitationLabel,
 } from '../../lib/stage-axes';
+
+// NOTE: the clipboard payload is built CLIENT-SIDE from window.location.origin
+// so prerendered HTML never bakes in a build-time host (Paul §non-negotiable —
+// the string is the product). The human label is SSR-stable; the URL is
+// resolved at copy time by cell-cite.ts using the same cellCitationPayload()
+// pure helper — one source of truth, no host drift.
 
 // v146: is the row a real value, or does it alias another profile? Anything
 // that starts with `var(…)` is an alias — the grammar's shape exists but the
@@ -148,6 +155,25 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
                 data-decay-stage={stage}
                 aria-label={`${axis} at ${stage}`}
               >
+                {/* v150b — copy-cell-anchor. Top-right affordance revealed on
+                   hover/focus-within; the clipboard payload + human label
+                   come straight off the SSR literal, so non-JS readers see
+                   nothing broken and the button works without JS hydration
+                   other than the single delegated listener. */}
+                <button
+                  type="button"
+                  class="cell-copy"
+                  data-cell-copy
+                  data-cell-axis={axis}
+                  data-cell-stage={stage}
+                  data-cell-citation={cellCitationLabel(axis, stage)}
+                  data-analytics="copy-cell"
+                  aria-label={`copy citation for ${axis} at ${stage}`}
+                >
+                  <span class="cell-copy__glyph cell-copy__glyph--rest" aria-hidden="true">⌗</span>
+                  <span class="cell-copy__glyph cell-copy__glyph--done" aria-hidden="true">✓</span>
+                </button>
+
                 {axis === 'typography' && (
                   <span class="mx-demo mx-demo--typo" aria-hidden="true">Aa</span>
                 )}
@@ -174,6 +200,18 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
           </div>
         ))}
       </div>
+
+      {/* v150b — shared aria-live toast. One node per page; text replaced
+         on each copy (Tanya §4b, §8). Lives outside the role="table" matrix
+         so screen-reader table semantics stay clean. Client module hooks
+         it via [data-cell-toast]. */}
+      <div
+        class="cell-toast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-cell-toast
+      ></div>
     </section>
 
     <section class="api-docs__section" aria-labelledby="tone-heading">
@@ -194,6 +232,12 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
 
   </main>
 </BaseLayout>
+
+{/* v150b — client-side citation ritual. One module, one delegated
+   listener, one arrival handler. See src/lib/client/cell-cite.ts. */}
+<script>
+  import '../../lib/client/cell-cite';
+</script>
 
 <style>
   /* ── Reading column — same width as the post body ─────────────────────────
@@ -395,6 +439,7 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
   .api-docs__matrix-corner { border-top: 0; }
 
   .api-docs__matrix-cell {
+    position: relative;             /* v150b anchor for the copy affordance */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -403,6 +448,134 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
     border-top: 1px solid var(--border-subtle);
     border-radius: var(--radius-detail);
     scroll-margin-top: var(--space-8);
+  }
+
+  /* ── v150b — copy affordance per cell (Tanya §3) ─────────────────────────
+     Sits top-right, out of flow, 28×28 visual / 44×44 effective hit area.
+     Hidden at rest; revealed on cell:hover, cell:focus-within, or when the
+     button itself receives :focus-visible (keyboard tab). All tokens from
+     tokens.css — zero net-new tokens.                                      */
+  .cell-copy {
+    position: absolute;
+    top: var(--space-1);
+    right: var(--space-1);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;                   /* widens hit target to 44×44 */
+    box-sizing: content-box;
+    margin: -8px;                   /* keeps visual bounds at 28×28 */
+    background: transparent;
+    color: var(--text-tertiary);
+    border: 1px solid transparent;
+    border-radius: var(--radius-detail);
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      opacity   var(--motion-duration-fast) ease-out,
+      color     var(--motion-duration-fast) ease-out,
+      background var(--motion-duration-fast) ease-out;
+  }
+  .api-docs__matrix-cell:hover .cell-copy,
+  .api-docs__matrix-cell:focus-within .cell-copy,
+  .cell-copy:focus-visible {
+    opacity: 1;
+  }
+  .cell-copy:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Icon swap — ⌗ at rest, ✓ on confirmed. Two stacked glyphs, no
+     asset, no font-loading cost.                                           */
+  .cell-copy__glyph {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1;
+    pointer-events: none;
+    transition: opacity var(--motion-duration-fast) ease-out;
+  }
+  .cell-copy__glyph--done {
+    position: absolute;
+    opacity: 0;
+    color: var(--gold);
+  }
+  .cell-copy--confirmed { background: var(--gold-bg); color: var(--gold); }
+  .cell-copy--confirmed .cell-copy__glyph--rest { opacity: 0; }
+  .cell-copy--confirmed .cell-copy__glyph--done { opacity: 1; }
+
+  /* Touch devices have no hover — affordance stays visible but dimmed
+     (Tanya §9). Tap target remains 44×44.                                  */
+  @media (hover: none) {
+    .cell-copy { opacity: 0.55; }
+    .cell-copy:hover { box-shadow: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell-copy, .cell-copy__glyph { transition: none; }
+  }
+
+  @media (forced-colors: active) {
+    .cell-copy {
+      color: ButtonText;
+      border-color: ButtonText;
+      background: Canvas;
+    }
+    .cell-copy--confirmed { color: Highlight; }
+  }
+
+  /* ── v150b — citation toast (Tanya §4b) ──────────────────────────────────
+     Fixed, lower-left, mono text, 4% surface — no translucency. The toast
+     carries text that must stay legible. Hidden until a copy succeeds,
+     text replaced in place (no queue, no stack).                           */
+  .cell-toast {
+    position: fixed;
+    bottom: var(--space-6);
+    left: var(--space-6);
+    max-width: 36ch;
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: var(--tracking-normal);
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    z-index: 50;
+    transition:
+      opacity   var(--motion-duration-fast) ease-out,
+      transform var(--motion-duration-fast) ease-out;
+  }
+  .cell-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @media (max-width: 480px) {
+    .cell-toast {
+      bottom: auto;
+      top: var(--space-3);
+      left: 50%;
+      transform: translate(-50%, -4px);
+    }
+    .cell-toast.is-visible { transform: translate(-50%, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cell-toast { transition: opacity var(--motion-duration-fast) linear; transform: none; }
+    .cell-toast.is-visible { transform: none; }
+  }
+  @media (forced-colors: active) {
+    .cell-toast {
+      background: Canvas;
+      color: CanvasText;
+      border-color: CanvasText;
+    }
   }
 
   /* Tinted top edge — one color cue per cell (Tanya §3.4). The mix lifts

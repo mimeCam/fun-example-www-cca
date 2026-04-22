@@ -36,6 +36,8 @@ import {
   cellAnchorId,
   rowAnchorId,
   stageAnchorId,
+  cellCitationLabel,
+  cellCitationPayload,
 } from './stage-axes.js';
 import type { Axis } from './stage-axes.js';
 import { DECAY_STAGES } from './decay-engine.js';
@@ -158,6 +160,67 @@ describe('stage-axes — anchor helpers produce stable ids', () => {
 
   test('stageAnchorId(stage) format', () => {
     assert.equal(stageAnchorId('endangered'), 'stages-endangered');
+  });
+});
+
+// ── 6b · Citation helpers (v150b, copy-cell-anchor) ────────────────────────
+
+describe('stage-axes — cellCitationLabel is a stable human-readable tag', () => {
+  test('uses U+00D7 multiplication sign (not "x" or "*")', () => {
+    const label = cellCitationLabel('typography', 'endangered');
+    assert.equal(label, 'typography × endangered');
+    assert.ok(label.includes('×'), 'must contain U+00D7');
+    assert.ok(!/[x*]/.test(label), 'must not contain x or *');
+  });
+
+  test('renders dashed axis names verbatim', () => {
+    assert.equal(cellCitationLabel('drag-highlight', 'fresh'), 'drag-highlight × fresh');
+  });
+
+  test('every (axis, stage) produces a non-empty single-line label', () => {
+    for (const axis of STAGE_AXES) {
+      for (const stage of DECAY_STAGES) {
+        const label = cellCitationLabel(axis as Axis, stage);
+        assert.ok(label.length > 0, `empty label for ${axis}:${stage}`);
+        assert.ok(!label.includes('\n'), `newline in label for ${axis}:${stage}`);
+      }
+    }
+  });
+});
+
+describe('stage-axes — cellCitationPayload is the single-line clipboard string', () => {
+  const ORIGIN = 'https://a.getsven.com';
+
+  test('format is `label · origin/api/docs#cellAnchorId` (single line)', () => {
+    const out = cellCitationPayload('typography', 'endangered', ORIGIN);
+    assert.equal(
+      out,
+      'typography × endangered · https://a.getsven.com/api/docs#axis-typography-stage-endangered',
+    );
+    assert.ok(!out.includes('\n'), 'payload must be single line (Elon §4.1)');
+  });
+
+  test('uses U+00B7 middle dot as separator', () => {
+    const out = cellCitationPayload('border', 'fresh', ORIGIN);
+    assert.ok(out.includes(' · '), 'must use " · " separator');
+  });
+
+  test('reuses cellAnchorId verbatim (one source of truth)', () => {
+    for (const axis of STAGE_AXES) {
+      for (const stage of DECAY_STAGES) {
+        const out = cellCitationPayload(axis as Axis, stage, ORIGIN);
+        assert.ok(
+          out.endsWith(`#${cellAnchorId(axis as Axis, stage)}`),
+          `payload must end with #${cellAnchorId(axis as Axis, stage)}`,
+        );
+      }
+    }
+  });
+
+  test('does not duplicate the trailing slash of origin', () => {
+    // Callers pass window.location.origin — no trailing slash by spec.
+    const out = cellCitationPayload('focus', 'fossil', ORIGIN);
+    assert.ok(!out.includes('//api/docs'), 'no double slash in path');
   });
 });
 

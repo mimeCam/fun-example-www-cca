@@ -99,3 +99,84 @@
     transition: none;
   }
 }
+
+/* ── v150b — Citation arrival bloom (.cell--arrived) ──────────────────────
+ *    One cycle on #hash land. The JS flips the class; the CSS paints the
+ *    gesture. Focus is one of the canonical seven axes — this rule block
+ *    inherits the compliance guard's blessing without a new file.
+ *
+ *    Stage grammar (Tanya §5, Elon §4.2):
+ *      fresh / fading     → outline + soft bloom (box-shadow spread 0→10px→0)
+ *      endangered         → outline + sharper bloom
+ *      ghost              → outline only, no bloom
+ *      fossil             → STATIC outline, 800ms hold, no motion
+ *
+ *    Sanctuaries: reduced-motion → static outline; forced-colors → Highlight.
+ *    Credits: Mike napkin §2, Tanya §5, Elon §4.2, Paul §non-negotiable.   */
+
+.api-docs__matrix-cell.cell--arrived {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  border-radius: var(--radius-detail);
+}
+
+.api-docs__matrix-cell[data-decay-stage="fresh"].cell--arrived {
+  animation: cell-arrive-bloom var(--stage-fresh-duration) var(--stage-fresh-ease) 1 forwards;
+  --cell-arrival-ring: var(--stage-fresh-border);
+  --cell-arrival-glow: color-mix(in oklch, var(--color-decay-fresh) 28%, transparent);
+}
+.api-docs__matrix-cell[data-decay-stage="fading"].cell--arrived {
+  animation: cell-arrive-bloom var(--stage-fading-duration) var(--stage-fading-ease) 1 forwards;
+  --cell-arrival-ring: var(--stage-fading-border);
+  --cell-arrival-glow: color-mix(in oklch, var(--color-decay-fading) 28%, transparent);
+}
+.api-docs__matrix-cell[data-decay-stage="endangered"].cell--arrived {
+  animation: cell-arrive-pulse var(--stage-endangered-duration) var(--stage-endangered-ease) 1 forwards;
+  --cell-arrival-ring: var(--stage-endangered-border);
+  --cell-arrival-glow: color-mix(in oklch, var(--color-decay-endangered) 28%, transparent);
+}
+.api-docs__matrix-cell[data-decay-stage="ghost"].cell--arrived {
+  animation: cell-arrive-quiet var(--stage-ghost-duration) var(--stage-ghost-ease) 1 forwards;
+  --cell-arrival-ring: var(--stage-ghost-border);
+}
+/* Fossil: static outline held 800ms — stillness as signal (Elon §4.2). */
+.api-docs__matrix-cell[data-decay-stage="fossil"].cell--arrived {
+  animation: cell-arrive-still var(--stage-fossil-duration) linear 1 forwards;
+  --cell-arrival-ring: var(--stage-fossil-border);
+}
+
+@keyframes cell-arrive-bloom {
+  0%   { outline-color: transparent; box-shadow: 0 0 0 0 var(--cell-arrival-glow); }
+  40%  { outline-color: var(--cell-arrival-ring); box-shadow: 0 0 10px 0 var(--cell-arrival-glow); }
+  100% { outline-color: var(--cell-arrival-ring); box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes cell-arrive-pulse {
+  0%   { outline-color: transparent; outline-offset: 2px; box-shadow: 0 0 0 0 var(--cell-arrival-glow); }
+  30%  { outline-color: var(--cell-arrival-ring); outline-offset: 5px; box-shadow: 0 0 8px 0 var(--cell-arrival-glow); }
+  60%  { outline-offset: 3px; }
+  100% { outline-color: var(--cell-arrival-ring); outline-offset: 2px; box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes cell-arrive-quiet {
+  0%   { outline-color: transparent; }
+  100% { outline-color: var(--cell-arrival-ring); }
+}
+
+@keyframes cell-arrive-still {
+  0%, 100% { outline-color: var(--cell-arrival-ring); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .api-docs__matrix-cell.cell--arrived {
+    animation: none;
+    outline-color: var(--cell-arrival-ring, var(--border-focus));
+  }
+}
+
+@media (forced-colors: active) {
+  .api-docs__matrix-cell.cell--arrived {
+    animation: none;
+    outline: 2px solid Highlight;
+  }
+}
