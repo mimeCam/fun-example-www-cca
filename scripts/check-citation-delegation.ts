@@ -76,12 +76,19 @@ export const TARGETS: readonly Target[] = [
   { rel: 'src/pages/api/docs.astro',
     requiredSymbols: ['cellCitationLabel', 'cellAnchorId'],
     mouth: 'server render' },
+  // v156 "Third Mouth" — terminal/`curl` citer. Same oracle, new verb.
+  // Required symbol is the producer itself: the route's whole purpose
+  // is to return `cellCitationPayload()` output byte-for-byte, so an
+  // import of the producer is the minimum delegation proof.
+  { rel: 'src/pages/api/docs/cite.ts',
+    requiredSymbols: ['cellCitationPayload'],
+    mouth: 'curl (terminal)' },
 ];
 
 // The oracle module path fragment each import statement must reference.
-// Accepts both `../stage-axes` (client modules) and `../../lib/stage-axes`
-// (the Astro page). Anchored with a closing quote so `stage-axes-foo`
-// cannot satisfy the check.
+// Accepts `../stage-axes` (client), `../../lib/stage-axes` (Astro page),
+// and `../../../lib/stage-axes` (v156 terminal route — one level deeper).
+// Anchored with a closing quote so `stage-axes-foo` cannot satisfy.
 const ORACLE_PATH_RE = /from\s+['"][.\/a-z-]*stage-axes['"]/;
 
 // The three re-implementation markers. Per Mike §5.3, each is cheap to

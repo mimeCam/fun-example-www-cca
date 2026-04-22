@@ -331,18 +331,34 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
       ></div>
     </section>
 
-    {/* v150c — Mike napkin §1 (endpoint documentation). Two endpoints,
-       one paragraph each. API parity vow: every public verb appears
-       in this appendix alongside the vocabulary it uses. */}
+    {/* v150c — Mike napkin §1 (endpoint documentation).
+       v156 — Three endpoints: the terminal/`curl` mouth of the citation
+       trilogy joins the ingest beacon and the metrics snapshot. One
+       paragraph each. API parity vow: every public verb appears in
+       this appendix alongside the vocabulary it uses. */}
     <section class="api-docs__section" aria-labelledby="endpoints-heading">
-      <h2 id="endpoints-heading" class="api-docs__h2">Two endpoints.</h2>
+      <h2 id="endpoints-heading" class="api-docs__h2">Three endpoints.</h2>
       <p class="api-docs__lede">
         The cell-citation ritual is a loop: a reader copies a cell, pastes
         a URL elsewhere, and — if the grammar worked — someone clicks back.
-        Two endpoints close that loop without a login, a cookie wall, or
-        any third party.
+        Three endpoints close that loop without a login, a cookie wall, or
+        any third party. The same bytes reach you by click, key, or
+        <code class="api-docs__inline">curl</code>.
       </p>
       <dl class="api-docs__stages">
+        <div class="api-docs__row">
+          <dt class="api-docs__word">GET /api/docs/cite</dt>
+          <dd class="api-docs__def">
+            <span class="api-docs__dash" aria-hidden="true">—</span>
+            terminal mouth. Query:
+            <code class="api-docs__inline">?axis=&amp;stage=&amp;r=</code>.
+            Returns the citation payload as
+            <code class="api-docs__inline">text/plain</code> (default) or
+            <code class="api-docs__inline">application/json</code> (via
+            <code class="api-docs__inline">Accept</code>). Byte-identical to
+            what the click and keystroke mouths place on the clipboard.
+          </dd>
+        </div>
         <div class="api-docs__row">
           <dt class="api-docs__word">POST /api/ingest/cell-event</dt>
           <dd class="api-docs__def">

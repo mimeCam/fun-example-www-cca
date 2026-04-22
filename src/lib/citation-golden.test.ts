@@ -29,13 +29,20 @@ import assert from 'node:assert/strict';
 import {
   citationGolden,
   citationForRef,
+  curlMouthPayload,
+  curlMouthResponse,
   GOLDEN_ROW_COUNT,
   REF_FIXTURES,
+  VALID_REF_FIXTURES,
+  REF_FIXTURE_AXIS,
+  REF_FIXTURE_STAGE,
   SENTINEL_ORIGIN,
 } from './citation-golden.js';
 import type { GoldenRow } from './citation-golden.js';
 import { STAGE_AXES } from './stage-axes.js';
 import { DECAY_STAGES } from './decay-engine.js';
+import { cellCitationPayload } from './stage-axes.js';
+import { isValidRef } from './citation-ref.js';
 
 // ── The golden table — inline literal, byte-exact, frozen ─────────────────
 //
@@ -161,5 +168,151 @@ describe('citation-golden — ref variant round-trips through encodeURIComponent
     for (const fix of REF_FIXTURES) {
       assert.doesNotMatch(fix.expected, /[\r\n]/);
     }
+  });
+});
+
+// ── 5 · Third mouth — `curl` handler body byte-matches the oracle ─────────
+//
+// v156 "Third Mouth" (Mike napkin §3 / §6, Paul §7 ship criteria):
+// until this block landed, the click and keystroke mouths were two
+// aliases for one import; no runtime witness proved the terminal mouth
+// returned the same bytes. These tests dispatch a synthetic GET through
+// the handler and assert the body === cellCitationPayload(...) for all
+// 35 rows AND all 5 ref fixtures. The tautology becomes an invariant
+// because the handler's Response construction is *separate code* being
+// asserted against the pure producer.
+
+describe('citation-golden — v156 third mouth (GET /api/docs/cite) parity', () => {
+  for (let i = 0; i < GOLDEN.length; i++) {
+    const g = GOLDEN[i];
+    test(`[${i}] ${g.axis} × ${g.stage} — handler body == oracle`, async () => {
+      const body = await curlMouthPayload(g.axis, g.stage, SENTINEL_ORIGIN);
+      assert.equal(body, g.payload);
+    });
+  }
+
+  test('handler body has no trailing newline (clipboard parity)', async () => {
+    const body = await curlMouthPayload('typography', 'fresh', SENTINEL_ORIGIN);
+    assert.equal(body.endsWith('\n'), false);
+    assert.equal(body.endsWith('\r'), false);
+  });
+
+  test('handler body is single-line for every cell', async () => {
+    const sample = await curlMouthPayload('focus', 'ghost', SENTINEL_ORIGIN);
+    assert.doesNotMatch(sample, /[\r\n]/);
+  });
+});
+
+describe('citation-golden — v156 third mouth, valid refs byte-exact', () => {
+  // Every entry in VALID_REF_FIXTURES is REF_RE-valid so the handler
+  // passes the nonce straight to cellCitationPayload. The assertion is
+  // symmetric: the handler's body is exactly what the oracle emits for
+  // the same (axis, stage, origin, ref) tuple. One symbol, three mouths.
+  for (const ref of VALID_REF_FIXTURES) {
+    test(`valid ref=${ref.length > 12 ? ref.slice(0, 12) + '…' : ref} → handler body == oracle`, async () => {
+      const body = await curlMouthPayload(
+        REF_FIXTURE_AXIS, REF_FIXTURE_STAGE, SENTINEL_ORIGIN, ref,
+      );
+      const expected = cellCitationPayload(
+        REF_FIXTURE_AXIS, REF_FIXTURE_STAGE, SENTINEL_ORIGIN, ref,
+      );
+      assert.equal(body, expected);
+    });
+  }
+});
+
+// ── 6 · Third mouth — wire-contract error surface (§4 spec) ───────────────
+//
+// The wire contract promises 422 on invalid ref. REF_FIXTURES carries
+// adversarial (URL-reserved-character) nonces; the oracle accepts them
+// because it runs encodeURIComponent on anything, but the read handler
+// rejects them so the ingest endpoint's REF_RE is honoured at the
+// boundary. Without this block, the 422 clause is unwitnessed.
+
+describe('citation-golden — v156 third mouth rejects invalid refs (422)', () => {
+  // REF_FIXTURES exists to exercise the ORACLE'S encodeURIComponent via
+  // `citationForRef` — its nonces intentionally carry URL-reserved chars
+  // (# & % ' '), which REF_RE rejects. One of them (`plain-abc`) is
+  // REF_RE-valid and lives on the happy path via VALID_REF_FIXTURES.
+  // Filter to the adversarial set for the handler's 422 clause.
+  const invalid = REF_FIXTURES.filter((f) => !isValidRef(f.ref));
+  for (const fix of invalid) {
+    test(`ref=${JSON.stringify(fix.ref)} → 422 (invalid parameter: r)`, async () => {
+      const res = await curlMouthResponse(
+        REF_FIXTURE_AXIS, REF_FIXTURE_STAGE, SENTINEL_ORIGIN, fix.ref,
+      );
+      assert.equal(res.status, 422);
+      const body = await res.text();
+      assert.match(body, /invalid parameter: r/);
+    });
+  }
+});
+
+// ── 7 · Third mouth — missing / invalid axis & stage ──────────────────────
+
+describe('citation-golden — v156 third mouth validates axis + stage', () => {
+  test('missing axis → 400', async () => {
+    // Simulate a URL without the `axis` param by passing "" which the
+    // handler treats as absent — the helper always sets a string, so we
+    // reach into curlMouthResponse with a no-op rebuild: easiest is to
+    // call the handler through the shortcut that omits `axis` entirely.
+    const { buildCiteUrl } = await import('./citation-golden.js');
+    const url = buildCiteUrl('typography', 'fresh', SENTINEL_ORIGIN);
+    url.searchParams.delete('axis');
+    const mod = await import('../pages/api/docs/cite.js');
+    const res = await (mod.GET as (ctx: { url: URL; request: Request }) => Response | Promise<Response>)(
+      { url, request: new Request(url.toString()) },
+    );
+    assert.equal(res.status, 400);
+  });
+
+  test('invalid axis → 422', async () => {
+    const { buildCiteUrl } = await import('./citation-golden.js');
+    const url = buildCiteUrl('typography', 'fresh', SENTINEL_ORIGIN);
+    url.searchParams.set('axis', 'not-an-axis');
+    const mod = await import('../pages/api/docs/cite.js');
+    const res = await (mod.GET as (ctx: { url: URL; request: Request }) => Response | Promise<Response>)(
+      { url, request: new Request(url.toString()) },
+    );
+    assert.equal(res.status, 422);
+  });
+
+  test('invalid stage → 422', async () => {
+    const { buildCiteUrl } = await import('./citation-golden.js');
+    const url = buildCiteUrl('typography', 'fresh', SENTINEL_ORIGIN);
+    url.searchParams.set('stage', 'not-a-stage');
+    const mod = await import('../pages/api/docs/cite.js');
+    const res = await (mod.GET as (ctx: { url: URL; request: Request }) => Response | Promise<Response>)(
+      { url, request: new Request(url.toString()) },
+    );
+    assert.equal(res.status, 422);
+  });
+
+  test('Accept: application/json → payload field equals text/plain body', async () => {
+    // API parity: the JSON mouth's `payload` is the canonical product;
+    // the other fields are convenience. This pins the one-oracle rule
+    // across both content-negotiated shapes.
+    const { buildCiteUrl } = await import('./citation-golden.js');
+    const url = buildCiteUrl('typography', 'fresh', SENTINEL_ORIGIN);
+    const mod = await import('../pages/api/docs/cite.js');
+    const req = new Request(url.toString(), { headers: { accept: 'application/json' } });
+    const res = await (mod.GET as (ctx: { url: URL; request: Request }) => Response | Promise<Response>)(
+      { url, request: req },
+    );
+    assert.equal(res.status, 200);
+    const body = JSON.parse(await res.text());
+    assert.equal(body.payload, cellCitationPayload('typography', 'fresh', SENTINEL_ORIGIN));
+  });
+
+  test('non-GET verb → 405 Allow: GET', async () => {
+    const { buildCiteUrl } = await import('./citation-golden.js');
+    const url = buildCiteUrl('typography', 'fresh', SENTINEL_ORIGIN);
+    const mod = await import('../pages/api/docs/cite.js');
+    const req = new Request(url.toString(), { method: 'POST' });
+    const res = await (mod.POST as (ctx: { url: URL; request: Request }) => Response | Promise<Response>)(
+      { url, request: req },
+    );
+    assert.equal(res.status, 405);
+    assert.equal(res.headers.get('allow'), 'GET');
   });
 });

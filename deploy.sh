@@ -11,65 +11,86 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v160 (2026-04-22) — Duration Reasons: seal-ceremony joins ──────
+# ── Sprint v156 (2026-04-22) — "Third Mouth" joins the citation trilogy ──
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • scripts/check-duration-reasons.ts (UPDATED) — `TARGET_FILES`
-#       widened from `[tokens.css, motion.css, verdict-ceremony.css]` to
-#       `[tokens.css, motion.css, verdict-ceremony.css, seal-ceremony.css]`
-#       (Mike napkin v160, Krystle sprint). The ledger now enforces the
-#       reason-citation rule across all four design-system CSS sources;
-#       every literal `ms`/`s` in any of them must cite a label from
-#       `scripts/lib/duration-reasons.ts` (aliases inherit; the
-#       reduced-motion mask from v158 still exempts `0.01ms !important`
-#       accessibility overrides). Header docblock extended to name
-#       seal-ceremony.css and note Mike §3's polymorphic win — literals
-#       there were collapsed into aliases to motion.css/tokens.css so the
-#       widened fence is clean out of the gate.
-#     • scripts/check-duration-reasons.test.ts (UPDATED) — six new
-#       assertions covering seal-ceremony shapes:
-#         (1) `TARGET_FILES` ledger test locking in
-#             `src/styles/seal-ceremony.css` as a tracked scope entry;
-#         (2) new "no duplicate entries — fence is a set" invariant;
-#         (3) FIXTURE_SEAL_ANIMATION_ALIAS — `animation:` shorthand with
-#             `var()` tokens never fires the literal-ms decl rule;
-#         (4) FIXTURE_SEAL_CALC_ALIAS — `calc(var(--row-index) *
-#             var(--duration-instant))` counts as alias, zero violations;
-#         (5) FIXTURE_SEAL_REDUCED_MOTION — canonical `0.01ms !important`
-#             policy-zero pattern inside prefers-reduced-motion is exempt;
-#         (6) FIXTURE_SEAL_KEYFRAME_BODY — `@keyframes` stop percentages
-#             (`0%`, `40%`, `70%`, `100%`) are NOT duration declarations;
-#       plus a new describe block running the guard against the live
-#       `src/styles/seal-ceremony.css` and asserting zero violations
-#       (same `assertLiveFileClean()` helper from v158).
-#     • src/styles/seal-ceremony.css (UPDATED) — defensive fallback
-#       literals were collapsed into pure aliases. `var(--motion-
-#       heartbeat-fresh-duration, 833ms)` → `var(--motion-heartbeat-
-#       fresh-duration)`; `var(--motion-duration-dot-click, 200ms)` →
-#       `var(--motion-duration-dot-click)`; `var(--seal-hesitation-
-#       duration, 400ms)` → `var(--seal-hesitation-duration)`. The
-#       stagger `80ms` per-row literal in `.sr-root > *` was replaced
-#       with `var(--duration-instant)` (ledgered in motion.css, reason:
-#       micro-feedback). A header duration ledger docblock was added
-#       explaining the citation contract. No new tokens, no new
-#       timings — pure alias-over-literal discipline.
-#     • AGENTS.md (UPDATED) — Contracts line widened: the parenthetical
-#       now reads "tokens.css · motion.css · verdict-ceremony.css ·
-#       seal-ceremony.css". Guard line unchanged (`duration-reasons`
-#       already on the list since v156); scope is what moved, again.
+#     • src/lib/citation-ref.ts (NEW) — single-source nonce grammar.
+#       Exports `REF_RE`, `REF_PARAM`, `isValidRef(raw)`. Before v156 the
+#       `/^[a-zA-Z0-9-]{8,64}$/` regex lived *identically* inside
+#       arrival.ts AND cell-event-ledger.ts — two copies, two places to
+#       drift. Promoting it to a shared module closes the polymorphism
+#       back-door (Mike §6.1 "one regex, one place"). Pure functions; no
+#       DOM, no URL parsing, no fs, no fetch.
+#     • src/pages/api/docs/cite.ts (NEW) — the TERMINAL/`curl` mouth.
+#       `GET /api/docs/cite?axis=<axis>&stage=<stage>[&r=<nonce>]` returns
+#       `cellCitationPayload()` bytes verbatim. Content-negotiated:
+#       text/plain (default) OR application/json (when Accept:
+#       application/json). Wire contract: 200 on success, 400 on missing
+#       param, 422 on invalid axis/stage/ref, 405 Allow: GET on any other
+#       verb. `export const prerender = false` — SSR at request time so
+#       `url.origin` is trusted server-side (never spoofable Host header,
+#       never undefined `import.meta.env.SITE`). Read-only — zero ledger
+#       writes, zero cookies, zero rate-limit touch. `/api/ingest/cell-
+#       event` remains the one writer.
+#     • src/lib/cell-event-ledger.ts (UPDATED) — `REF_RE` literal removed;
+#       imports `isValidRef` from the new shared module. `isValidEventRow`
+#       now calls `isValidRef(row.ref)` instead of inlining the regex.
+#       One validator, three mouths — the server accepts and rejects the
+#       exact same shapes the client parser and the curl handler do.
+#     • src/lib/client/arrival.ts (UPDATED) — `REF_PARAM` and `REF_RE`
+#       constants deleted; imports `isValidRef` + `REF_PARAM` from the
+#       shared module. `readRef()` now delegates shape-validation to
+#       `isValidRef`. `isValidRef` is RE-EXPORTED so arrival.test.ts's
+#       existing call sites stay byte-stable (Mike §10 "delete without
+#       breaking callers").
+#     • src/lib/citation-golden.ts (UPDATED) — new exports for third-mouth
+#       witnessing: `buildCiteUrl()`, `curlMouthResponse()`,
+#       `curlMouthPayload()`, `VALID_REF_FIXTURES`. The fixtures cover
+#       REF_RE's full shape (8-char lower bound, 64-char upper bound,
+#       UUID shape, internal-hyphen nonce). Helpers dispatch a synthetic
+#       GET through the handler's APIRoute directly — no HTTP server,
+#       no socket.
+#     • src/lib/citation-golden.test.ts (UPDATED) — three new describe
+#       blocks witness the tautology-break (Elon §4 "prove polish by
+#       subtraction"): (a) handler body === oracle payload for all 35
+#       cells; (b) handler body === oracle payload for all valid refs;
+#       (c) adversarial URL-reserved-char refs → 422 "invalid parameter:
+#       r"; (d) missing axis → 400, invalid axis/stage → 422, non-GET →
+#       405 Allow: GET, Accept: application/json → payload field ===
+#       text/plain body.
+#     • scripts/check-citation-delegation.ts (UPDATED) — `TARGETS` widened
+#       from three entries to FOUR. The new fourth target is
+#       `src/pages/api/docs/cite.ts` with required symbol
+#       `cellCitationPayload`. The ORACLE_PATH_RE comment now accepts
+#       `../../../lib/stage-axes` (one level deeper for the terminal
+#       route). Same grep, one new file.
+#     • scripts/check-citation-delegation.test.ts (UPDATED) — the
+#       "exactly three targets" assertion flipped to "exactly four" with
+#       a docblock explaining the trilogy close. A new test locks in
+#       `src/pages/api/docs/cite.ts` by path.
+#     • src/pages/api/docs.astro (UPDATED) — the endpoints appendix now
+#       documents THREE endpoints (was two). A new `<dt>/<dd>` row
+#       describes `GET /api/docs/cite` — query shape, MIME negotiation,
+#       byte-identity vow. The section heading flipped from "Two
+#       endpoints." to "Three endpoints." The lede extended: "The same
+#       bytes reach you by click, key, or `curl`."
+#     • AGENTS.md (UPDATED) — Killer-feature line extended to name the
+#       third mouth. Paths line names `src/lib/citation-ref.ts` and
+#       `src/pages/api/docs/cite.ts`. Prebuild-guards line now reads
+#       "citation-delegation (4 targets as of v156)". Contracts line
+#       extends with the `REF_RE` home + the "/api/docs/cite is
+#       pure-read (no ledger writes)" invariant.
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, volumes, or docker networks.
-#     Dockerfile already COPY-s `scripts/` and `src/` wholesale into the
-#     builder stage, so the widened guard (extended `TARGET_FILES`
-#     array, six new test assertions, and the alias-collapsed
-#     `src/styles/seal-ceremony.css`) all ship without a single
-#     Dockerfile edit or docker-run-flag edit. `package.json` was
-#     untouched — the prebuild chain link added in v156
-#     (`check-duration-reasons`) automatically runs the widened guard.
-#     Drift in tokens.css OR motion.css OR verdict-ceremony.css OR
-#     seal-ceremony.css fails the image build, fails this script, and
-#     leaves the previous container already-stopped — operator re-runs
-#     after the fix.
+#     The new files (`src/lib/citation-ref.ts`, `src/pages/api/docs/
+#     cite.ts`) land inside paths the Dockerfile already COPY-s wholesale
+#     (`COPY src/ ./src/` + `COPY scripts/ ./scripts/`) — no Dockerfile
+#     edit. `package.json` was untouched — the prebuild chain link
+#     `check-citation-delegation` automatically picks up the widened
+#     `TARGETS` array (3 → 4), and `test:citation-golden` automatically
+#     picks up the new third-mouth describe blocks. Drift fails the
+#     image build, fails this script, and leaves the previous container
+#     already-stopped — operator re-runs after the fix.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -79,8 +100,9 @@
 #   5. Start the new container on 7100, wiring secrets from .env.
 #   6. Poll until Docker reports the container as running.
 #   7. Post-boot admin sweeps (deadline + OTS upgrade), if ADMIN_SECRET set.
-#   8. Warm the /api/docs SSR route + /api/metrics/cited-cells so the
-#      first real visitor never pays a cold-start cost.
+#   8. Warm the citation trilogy — /api/docs SSR, /api/docs/cite terminal
+#      mouth (v156 NEW), and /api/metrics/cited-cells — so the first
+#      real visitor (or curl) never pays a cold-start cost.
 #   9. Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -118,17 +140,19 @@ docker volume create "${SQLITE_VOLUME}" || true
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival (v154)  →
-#   check-citation-delegation (v155)  →  check-duration-reasons
-#   (v156 tokens.css · v158 + motion.css · v158 reduced-motion exempt ·
-#    v159 + verdict-ceremony.css · v160 + seal-ceremony.css)  →
+#   check-citation-delegation (v155 · v156 widened TARGETS 3 → 4 with
+#     src/pages/api/docs/cite.ts as the terminal mouth)  →
+#   check-duration-reasons  →
 #   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit (v153)  →
-#   test:arrival (v154)  →  test:citation-golden (v155)  →
-#   test:citation-delegation (v155)  →  test:duration-reasons
-#   (v158 — three new fixtures + live motion.css regression ·
-#    v159 + live verdict-ceremony.css regression ·
-#    v160 + four seal-ceremony fixtures + live seal-ceremony.css
-#    regression + TARGET_FILES-is-a-set invariant)  →
-#   astro build.
+#   test:arrival (v154 · v156 re-exports isValidRef from shared module) →
+#   test:citation-golden (v155 · v156 third-mouth parity: 35 cell-body
+#     equality tests + 4 valid-ref equality tests + wire-contract error-
+#     surface tests — 422 on invalid r, 400 on missing axis, 422 on
+#     invalid axis/stage, 405 Allow: GET on non-GET, JSON payload ===
+#     text/plain body)  →
+#   test:citation-delegation (v155 · v156 asserts TARGETS.length === 4
+#     and locks in src/pages/api/docs/cite.ts by path)  →
+#   test:duration-reasons  →  astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
@@ -215,32 +239,36 @@ else
   echo "==> [deploy] Skipping OTS upgrade (ADMIN_SECRET not set in .env)"
 fi
 
-# ── 8. Cited-cell warm-up — SSR page + metrics endpoint ────────────────────
-# Warms BOTH surfaces of the cited-cell story so the first real visitor
-# never pays a cold-start cost AND the ledger schema is eager-created
-# before the first beacon arrives:
+# ── 8. Cited-cell warm-up — SSR page + metrics endpoint + terminal mouth ──
+# Warms ALL THREE surfaces of the cited-cell story so the first real
+# visitor (browser OR terminal) never pays a cold-start cost AND the
+# ledger schema is eager-created before the first beacon arrives:
 #
 #   (a) GET /api/docs — SSR on demand (`export const prerender = false`).
 #       The first render hydrates @astrojs/node's route handler, reads
 #       `lifetimeByCell()` + `ledgerMaturity()` + `baseline()`, and tints
-#       all 35 grammar-matrix cells with `data-heat`. v153 ships the
-#       `.ds-kbd[data-lit]` crossfade rule + Legend voice tokens;
-#       v154 adds the `.cell--arrived-shared::after` `↙` glyph rule +
-#       the extracted `arrival.ts` client module; v155 fences the
+#       all 35 grammar-matrix cells with `data-heat`. v155 fences the
 #       server-render mouth of the citation ritual on the oracle's
 #       `cellCitationLabel` + `cellAnchorId` (prebuild-enforced, so
-#       warming this route is ALSO the smoke-test that the three-mouth
-#       parity held through the build); v156 adds the duration-reason
-#       ledger — every literal-ms / literal-s token in tokens.css now
-#       cites a label from the closed vocabulary, also prebuild-enforced;
-#       v160 widens that fence to seal-ceremony.css (four CSS sources
-#       now policed — tokens · motion · verdict-ceremony · seal-ceremony).
-#       All static assets baked into dist/client/ at build time, no
-#       runtime cost to warming. The arrival beat only paints when a
-#       visitor lands via `?r=<nonce>`, so this warm-up exercises the
-#       SSR path only.
+#       warming this route is ALSO the smoke-test that the now-four-
+#       mouth parity held through the build). v156 adds the shared
+#       `src/lib/citation-ref.ts` validator read by every mouth (click,
+#       keystroke, curl, ingest) so the three mouths accept/reject the
+#       exact same shapes.
 #
-#   (b) GET /api/metrics/cited-cells — read-only, unauthenticated; same
+#   (b) GET /api/docs/cite — v156 NEW terminal/`curl` mouth. Sends a
+#       hand-shaped (axis, stage) pair and asserts a 200 response with
+#       a non-empty body. This warms the route's import graph and
+#       proves, one redeploy at a time, that the wire contract holds
+#       end-to-end: the Node entry hydrates, `cellCitationPayload()`
+#       emits bytes, and the HTTP surface agrees with the SSR mouth.
+#       Byte-identical to what the click and keystroke mouths place on
+#       the clipboard. Query shape: `?axis=typography&stage=fresh` —
+#       a real valid cell from the 7×5 product so the happy path
+#       really is exercised (never a 4xx). No ref passed — the ref-less
+#       format is the legacy pathway this smoke-tests.
+#
+#   (c) GET /api/metrics/cited-cells — read-only, unauthenticated; same
 #       single producer (`heatedGrid()`) the SSR page uses. Forces
 #       `ensureSchema()` on the ledger module, creating `cell_events`
 #       + indexes on the SQLite volume the very first deploy.
@@ -251,6 +279,26 @@ DOCS_STATUS=$(curl --silent --show-error --output /dev/null \
   "http://localhost:${HOST_PORT}/api/docs" \
   || echo '000')
 echo "==> [deploy] /api/docs SSR warm-up: HTTP ${DOCS_STATUS}"
+
+# v156 — Third Mouth smoke-test. A real (axis, stage) pair from the 7×5
+# product exercises the happy path (200 text/plain, non-empty body).
+# `typography × fresh` is a canonical pairing used elsewhere in the test
+# suite (REF_FIXTURE_AXIS/STAGE in citation-golden.ts), so the curl
+# output is predictable for post-mortem inspection of deployment.log.
+echo "==> [deploy] Warming up /api/docs/cite terminal mouth (v156)…"
+CITE_BODY_FILE="$(mktemp)"
+CITE_STATUS=$(curl --silent --show-error --output "${CITE_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: text/plain" \
+  "http://localhost:${HOST_PORT}/api/docs/cite?axis=typography&stage=fresh" \
+  || echo '000')
+CITE_BODY_LEN=$(wc -c < "${CITE_BODY_FILE}" | tr -d ' ')
+CITE_BODY_PREVIEW=$(head -c 160 "${CITE_BODY_FILE}" | tr '\n' ' ')
+rm -f "${CITE_BODY_FILE}"
+echo "==> [deploy] /api/docs/cite warm-up: HTTP ${CITE_STATUS} · body=${CITE_BODY_LEN}B · preview=\"${CITE_BODY_PREVIEW}\""
+if [ "${CITE_STATUS}" != "200" ] || [ "${CITE_BODY_LEN}" = "0" ]; then
+  echo "==> [deploy] ⚠ Terminal mouth did not respond 200 with a body — investigate (container still up)." >&2
+fi
 
 echo "==> [deploy] Warming up cell-metrics endpoint…"
 METRICS_RESPONSE=$(curl --silent --show-error --max-time 10 \

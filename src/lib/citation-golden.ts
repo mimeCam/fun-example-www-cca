@@ -134,3 +134,69 @@ export const REF_FIXTURES: readonly RefFixture[] = [
 export function citationForRef(ref: string): string {
   return cellCitationPayload(REF_FIXTURE_AXIS, REF_FIXTURE_STAGE, SENTINEL_ORIGIN, ref);
 }
+
+// ── Third-mouth fixture (v156, Mike napkin §3 / §6) ───────────────────────
+//
+// The click mouth (cell-cite.ts) and the keystroke mouth (cell-cite.ts)
+// route clipboard bytes through `cellCitationPayload()`. The terminal
+// mouth (src/pages/api/docs/cite.ts) routes HTTP body through the same
+// function. The golden test now asserts the THIRD body-production path —
+// separate code, same string — byte-for-byte against the oracle.
+//
+// `curlMouthPayload()` invokes the handler's APIRoute directly (no HTTP
+// server, no socket). It is pure-fetch-API in, pure-fetch-API out:
+//   URL → handler.GET({ url, request, … }) → Response → await .text()
+//
+// Keeping it async lets the test await the body without a runner spawn.
+
+/** Assemble the request shape the handler's GET expects. Pure + small. */
+export function buildCiteUrl(
+  axis: Axis, stage: DecayStage, origin: string, ref?: string,
+): URL {
+  const u = new URL(`${origin}/api/docs/cite`);
+  u.searchParams.set('axis', axis);
+  u.searchParams.set('stage', stage);
+  if (ref !== undefined) u.searchParams.set('r', ref);
+  return u;
+}
+
+/**
+ * Dispatch a synthetic GET through the handler and return the Response.
+ *
+ * The handler signature is `APIRoute` — `{ url, request, … }`. We pass
+ * only `url` and `request`; the Astro typing is permissive here because
+ * the handler never reaches for cookies, params, etc. This IS the tautol-
+ * ogy-breaker (Elon §4): three mouths, one oracle, asserted at runtime.
+ */
+export async function curlMouthResponse(
+  axis: Axis, stage: DecayStage, origin: string, ref?: string,
+): Promise<Response> {
+  const mod = await import('../pages/api/docs/cite');
+  const url = buildCiteUrl(axis, stage, origin, ref);
+  const request = new Request(url.toString(), { method: 'GET' });
+  const handler = mod.GET as (ctx: { url: URL; request: Request }) => Response | Promise<Response>;
+  return handler({ url, request });
+}
+
+/** Convenience: fetch the handler's body string only. Happy-path shape. */
+export async function curlMouthPayload(
+  axis: Axis, stage: DecayStage, origin: string, ref?: string,
+): Promise<string> {
+  const res = await curlMouthResponse(axis, stage, origin, ref);
+  return res.text();
+}
+
+// ── Valid-ref fixtures — third-mouth happy path ───────────────────────────
+//
+// These exercise the handler's pass-through behaviour across the full REF_RE
+// shape: both length bounds (8, 64), a UUID, and an internal-hyphen nonce.
+// The test asserts handler body === cellCitationPayload(..., ref) for each.
+// Every entry is REF_RE-valid; adversarial refs (URL-reserved chars) live
+// in REF_FIXTURES and exercise the oracle's encodeURIComponent directly.
+
+export const VALID_REF_FIXTURES: readonly string[] = [
+  'abcdefgh',                                          // 8-char lower bound
+  'a'.repeat(64),                                      // 64-char upper bound
+  '550e8400-e29b-41d4-a716-446655440000',             // crypto.randomUUID shape
+  'plain-abc-123',                                     // internal hyphens
+] as const;

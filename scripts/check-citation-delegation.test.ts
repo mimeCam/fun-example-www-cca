@@ -167,9 +167,18 @@ describe('scanReimplementation — true iff ALL three markers present', () => {
 
 // ── Target configuration sanity ───────────────────────────────────────────
 
-describe('TARGETS — three files, each with at least one required symbol', () => {
-  test('exactly three targets (click+keystroke, keynav, server render)', () => {
-    assert.equal(TARGETS.length, 3);
+describe('TARGETS — four files, each with at least one required symbol', () => {
+  test('exactly four targets (click+keystroke, keynav, server render, curl)', () => {
+    // v156 "Third Mouth": the terminal/`curl` citer joins the trilogy.
+    // If this number changes, the addition (or removal) must appear in
+    // AGENTS.md and in the /api/docs page's "endpoints" section.
+    assert.equal(TARGETS.length, 4);
+  });
+
+  test('v156 — the terminal mouth is registered by path', () => {
+    const rels = TARGETS.map((t) => t.rel);
+    assert.ok(rels.includes('src/pages/api/docs/cite.ts'),
+      'terminal mouth (src/pages/api/docs/cite.ts) not in TARGETS');
   });
 
   test('every target declares at least one required oracle symbol', () => {

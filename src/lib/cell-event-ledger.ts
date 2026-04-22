@@ -25,6 +25,8 @@ import { STAGE_AXES } from './stage-axes';
 import type { Axis } from './stage-axes';
 import { DECAY_STAGES } from './decay-engine';
 import type { DecayStage } from './decay-engine';
+// v156 — shared nonce grammar. One REF_RE, one place (Mike §6.1).
+import { isValidRef } from './citation-ref';
 
 // ── Public contract ───────────────────────────────────────────────────────
 
@@ -119,7 +121,9 @@ export function __resetSchemaFlagForTests(): void {
 const AXIS_SET: ReadonlySet<string> = new Set(STAGE_AXES);
 const STAGE_SET: ReadonlySet<string> = new Set(DECAY_STAGES);
 const EVENT_SET: ReadonlySet<string> = new Set(['copy', 'arrive']);
-const REF_RE = /^[a-zA-Z0-9-]{8,64}$/;
+// v156 — REF_RE promoted to src/lib/citation-ref.ts. Validator is shared
+// with arrival.ts and /api/docs/cite so the three mouths accept and
+// reject the exact same shapes. One regex, one place.
 const MAX_SKEW_MS = 3_600_000;  // server clamps client wall-clock to ±1h
 
 /** True if (axis, stage) is inside the 7×5 product. No 36th cell. */
@@ -131,7 +135,7 @@ export function isValidCell(axis: string, stage: string): boolean {
 export function isValidEventRow(row: Partial<CellEventRow>): boolean {
   if (!row.event || !EVENT_SET.has(row.event)) return false;
   if (!isValidCell(row.axis ?? '', row.stage ?? '')) return false;
-  if (!row.ref || !REF_RE.test(row.ref)) return false;
+  if (!isValidRef(row.ref)) return false;
   return typeof row.ts === 'number' && Number.isFinite(row.ts);
 }
 

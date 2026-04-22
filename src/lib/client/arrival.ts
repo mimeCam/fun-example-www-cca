@@ -54,10 +54,14 @@ const ARRIVED_SHARED = 'cell--arrived-shared';     // v154 — Tanya §2.1
 const CONFIRMING    = 'cell--confirming';          // v152
 const HASH_RE       = /^#axis-[a-z-]+-stage-[a-z-]+$/;
 
-// ── Ref (nonce) constants — frozen by cell-cite.test.ts ─────────────────
+// ── Ref (nonce) grammar — promoted to src/lib/citation-ref.ts in v156 ────
+// arrival.ts no longer owns the regex literal; the shared module is the
+// single source every mouth (click, keystroke, curl, ingest) validates
+// against. Re-exporting `isValidRef` keeps arrival.test.ts's existing
+// imports byte-stable (Mike §10 "delete without breaking callers").
 
-const REF_PARAM = 'r';                             // ?r=<nonce>
-const REF_RE    = /^[a-zA-Z0-9-]{8,64}$/;
+import { REF_PARAM, isValidRef } from '../citation-ref';
+export { isValidRef };
 
 // ── Beat — owned here; cell-cite.ts re-exports for snapshot tests ───────
 
@@ -72,21 +76,16 @@ const INGEST_URL = '/api/ingest/cell-event';
 
 // ── Pure helpers (each ≤ 10 lines, one responsibility) ──────────────────
 
-/** Parse `?r=<ref>` off location.search; null if malformed or absent. */
+/** Parse `?r=<ref>` off location.search; null if malformed or absent.
+ *  Delegates shape validation to `isValidRef` (src/lib/citation-ref.ts)
+ *  so the browser parser and the server validator can never drift.   */
 export function readRef(): string | null {
   try {
     const ref = new URL(window.location.href).searchParams.get(REF_PARAM);
-    return ref && REF_RE.test(ref) ? ref : null;
+    return isValidRef(ref) ? ref : null;
   } catch {
     return null;
   }
-}
-
-/** Validate a raw ref string against REF_RE. Pure; no window access.
- *  Unit-tested in arrival.test.ts. Exposed so callers (and tests) can
- *  probe the regex without mocking URL. */
-export function isValidRef(raw: string | null | undefined): boolean {
-  return typeof raw === 'string' && REF_RE.test(raw);
 }
 
 /** Extract (axis, stage) from a cell element's dataset. */

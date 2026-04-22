@@ -135,20 +135,25 @@ describe('v154 — ARRIVAL_MS beat (single-source)', () => {
 // source-grep on the export list makes the rename loud.
 
 describe('v154 — arrival.ts public API shape', () => {
-  const EXPECTED_EXPORTS: readonly string[] = [
+  // v156 — `isValidRef` migrated to src/lib/citation-ref.ts and is now
+  // re-exported from arrival.ts for back-compat. The expected signature
+  // therefore allows either form (function declaration OR `export {`).
+  const EXPECTED_EXPORTS: readonly Array<string | readonly string[]> = [
     'export const ARRIVAL_MS',
     'export function readRef',
-    'export function isValidRef',
+    ['export function isValidRef', 'export { isValidRef }'],
     'export function retireCompetingGlows',
     'export function triggerArrival',
     'export function markShared',
     'export function paintArrival',
   ];
   for (const sig of EXPECTED_EXPORTS) {
-    test(`arrival.ts exports \`${sig.replace('export ', '').split(/\s/)[1] ?? sig}\``, () => {
+    const forms  = Array.isArray(sig) ? sig : [sig];
+    const label  = forms[0].replace('export ', '').split(/\s/)[1] ?? forms[0];
+    test(`arrival.ts exports \`${label}\``, () => {
       assert.ok(
-        ARRIVAL_SRC.includes(sig),
-        `public API drift: arrival.ts no longer declares "${sig}"`,
+        forms.some((f) => ARRIVAL_SRC.includes(f)),
+        `public API drift: arrival.ts no longer declares any of [${forms.join(', ')}]`,
       );
     });
   }
