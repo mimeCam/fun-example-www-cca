@@ -4,6 +4,80 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v151 — Linkable Gaze: keyboard-grid + hash-seeded focus (2026-04-22)
+#   Sprint: Close the citation loop on the keyboard. v150b–d gave every
+#     (axis × stage) cell a deep-link anchor, a heat tint, and a round-trip
+#     ledger. v151 makes the cells themselves first-class keyboard objects:
+#     land on `/api/docs#axis-<axis>-stage-<stage>` and the destination cell
+#     is programmatically focused while the browser's own `:target` scroll
+#     + `scroll-margin-top` takes the user there (no JS scroll — Mike §7.2).
+#     Once the matrix has focus, Arrow / Home / End / PageUp / PageDown
+#     rove over the 7×5 grid with clamp-not-wrap semantics; the roving
+#     tabindex keeps exactly one cell at `tabindex=0` so Tab-out of the
+#     matrix lands somewhere sane. Pure UIX + code-quality polish — zero
+#     infrastructure changes.
+#   Key changes (all under active git area this cycle):
+#     src/lib/client/matrix-keynav.ts (new) — two jobs, one module, zero
+#       polymorphism: (1) arrow/home/end/pageup/pagedown roving tabindex
+#       over 7×5, and (2) on boot, seed the roving tabindex (and program-
+#       matic focus) from the incoming URL fragment via `cellIdFromHash()`.
+#       Deliberate non-duties: NO writes to `location.hash` (Elon §3.1 URL
+#       thrash, §3.2 back-button erosion), NO second `hashchange` listener
+#       (cell-cite.ts still owns the arrival bloom — shared contract is the
+#       DOM), NO beacons (keynav is not a "cited cell" signal — Mike §7.6),
+#       NO JS scroll (`focus({preventScroll:true})` lets native `:target`
+#       + `scroll-margin-top` do the work). All bounds come from
+#       `STAGE_AXES.length` / `DECAY_STAGES.length` — never hard-coded 7/5.
+#       Each helper ≤ 10 lines (Sid). Auto-boots on DOMContentLoaded,
+#       SSR-safe (only runs in a browser).
+#     src/lib/client/matrix-keynav.test.ts (new, dev-only) — node:test
+#       suite. Unit-tests the pure `nextIndex()` math (clamp-not-wrap,
+#       every key moves the correct axis, home/end/pageup/pagedown jumps)
+#       without JSDOM. NOT executed at Docker build or runtime.
+#     src/lib/stage-axes.ts — new `cellIdFromHash(hash)` pure function:
+#       symmetric inverse of `cellAnchorId`. Parses
+#       `#axis-<axis>-stage-<stage>` back to `{axis, stage}` using the
+#       EXACT literals in `STAGE_AXES × DECAY_STAGES`; unknown input
+#       returns `null`; never throws; SSR-safe (no DOM, no `window`,
+#       no `import.meta.env`). One grammar, one parser — both the keynav
+#       seed and any future server validator share this source.
+#     src/lib/stage-axes.test.ts — describe block 6c adds 5 new test
+#       cases covering round-trip over all 35 cells, raw-id tolerance,
+#       dashed-axis parse, malformed-input rejection, and non-string
+#       robustness. Loops over the full STAGE_AXES × DECAY_STAGES grid.
+#       Dev-only; NOT part of Docker build or runtime.
+#     src/pages/api/docs.astro — every `.api-docs__matrix-cell` gains
+#       `tabindex="-1"` (matrix-keynav flips exactly one to `0` on boot
+#       so Tab semantics behave). New `<script>` block adds one import:
+#       `../../lib/client/matrix-keynav`. Two modules, zero overlap —
+#       cell-cite owns citation, matrix-keynav owns navigation.
+#     src/styles/stage-focus.css — copy-glyph arrival choreography rule.
+#       When matrix-keynav programmatically focuses the destination cell
+#       on arrival, `:focus-within` flips true at t=16ms. Without this
+#       rule the copy glyph ⌗ would pop into the top-right corner *during*
+#       the bloom, creating "two gestures competing for the eye." Fix:
+#       hold the glyph back until the bloom peaks (≈400ms Doherty beat),
+#       then let normal focus-within behavior paint it. After
+#       `.cell--arrived` is removed at t=1200ms this override lapses on
+#       its own. `prefers-reduced-motion` drops the delay to 0s explicitly.
+#       Zero net-new tokens — the 400ms is an inline var() fallback per
+#       the compliance-guard whitelist.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm
+#     packages. CONTAINER still exposes 7100 for external Caddy.
+#     DATA_VOLUME and SQLITE_VOLUME unchanged. ADMIN_SECRET, HMAC_SECRET,
+#     GITHUB_PAT, DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already
+#     copies `src/` wholesale into the builder stage — the new
+#     `matrix-keynav.ts`, updated `stage-axes.ts`, `docs.astro`,
+#     `stage-focus.css`, and the dev-only `.test.ts` files all ship
+#     without any Dockerfile edits. The prebuild compliance guard (token
+#     drift + DECAY_STAGES immutability + STAGE_AXES ⇄ file inventory
+#     parity) is unchanged and still runs inside `npm run build` during
+#     the Docker builder stage. `.test.ts` files are never executed at
+#     build or runtime. deploy.sh startup sequence (1–9) unchanged; step
+#     8 continues to warm BOTH `/api/docs` SSR and the cell-metrics
+#     endpoint so the first real visitor never sees cold SSR and the
+#     cited-cell ledger is eager-created.
+#
 # Architecture v150d — Cited-Cell Heat on /api/docs (2026-04-22)
 #   Sprint: Turn the v150c ledger into a visible, glanceable surface on the
 #     vocabulary page itself. Every one of the 35 (axis × stage) matrix

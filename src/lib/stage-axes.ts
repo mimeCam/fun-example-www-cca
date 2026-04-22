@@ -159,6 +159,31 @@ export function rowAnchorId(axis: Axis): string {
   return `axis-${axis}`;
 }
 
+/**
+ * v151 "Linkable Gaze" — symmetric inverse of `cellAnchorId`.
+ * Parse `#axis-<axis>-stage-<stage>` back to `{axis, stage}` using the
+ * EXACT literals in `STAGE_AXES` × `DECAY_STAGES`. Unknown input returns
+ * `null`; never throws; SSR-safe (no DOM, no `window`).
+ *
+ * One grammar, one parser — both the keynav seed and any future server
+ * validator share this source (AGENTS.md "polymorphism is a killer").
+ *
+ * Credits: Mike (napkin §6.1), Elon (ruthless-diff §5), Tanya (§5 silent
+ *          fallback on invalid hash), AGENTS.md freeze. Sid — 2026-04-22.
+ */
+export function cellIdFromHash(
+  hash: string,
+): { axis: Axis; stage: DecayStage } | null {
+  if (typeof hash !== 'string' || hash.length === 0) return null;
+  const id = hash.startsWith('#') ? hash.slice(1) : hash;
+  for (const axis of STAGE_AXES) {
+    for (const stage of DECAY_STAGES) {
+      if (cellAnchorId(axis, stage) === id) return { axis, stage };
+    }
+  }
+  return null;
+}
+
 /** URL-fragment id for a stage row in the existing `<dl>` definition list. */
 export function stageAnchorId(stage: DecayStage): string {
   return `stages-${stage}`;

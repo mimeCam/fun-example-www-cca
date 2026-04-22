@@ -180,3 +180,27 @@
     outline: 2px solid Highlight;
   }
 }
+
+/* ── v151 "Linkable Gaze" — copy-glyph arrival choreography (Tanya §6) ────
+ *    When matrix-keynav programmatically focuses the destination cell on
+ *    arrival, `:focus-within` flips true at t=16ms. Without this rule the
+ *    copy glyph ⌗ would pop into the top-right corner *during* the bloom,
+ *    creating "two gestures competing for the eye." Fix: hold the glyph
+ *    back until the bloom peaks (≈400ms — the Doherty perception beat),
+ *    then let normal focus-within behavior paint it. After `.cell--arrived`
+ *    is removed at t=1200ms this override lapses on its own; no JS, zero
+ *    net-new tokens (Tanya §8 reuse inventory — the 400ms is inline as a
+ *    defensive var() fallback per the compliance-guard whitelist).      */
+.api-docs__matrix-cell.cell--arrived:focus-within .cell-copy {
+  transition-delay: var(--cell-arrival-copy-hold, 400ms);
+}
+
+/* Reduced-motion already disables .cell-copy transitions entirely (see
+ * docs.astro rule block). The delay is therefore a no-op under that
+ * preference — the glyph snaps to its resting state with the rest of
+ * the page. Explicit zero here keeps the intent legible.                 */
+@media (prefers-reduced-motion: reduce) {
+  .api-docs__matrix-cell.cell--arrived:focus-within .cell-copy {
+    transition-delay: 0s;
+  }
+}

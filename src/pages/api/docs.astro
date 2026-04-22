@@ -213,6 +213,7 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
                 data-axis={axis}
                 data-decay-stage={stage}
                 data-heat={heatFor(axis, stage).heat}
+                tabindex="-1"
                 aria-label={`${axis} at ${stage}`}
                 aria-describedby={heatSrId(axis, stage)}
               >
@@ -335,9 +336,13 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
 </BaseLayout>
 
 {/* v150b — client-side citation ritual. One module, one delegated
-   listener, one arrival handler. See src/lib/client/cell-cite.ts. */}
+   listener, one arrival handler. See src/lib/client/cell-cite.ts.
+   v151 "Linkable Gaze" — sibling module owning keyboard grid + hash-seed.
+   Two modules, zero overlap: cell-cite owns citation, matrix-keynav owns
+   navigation. The shared contract is the DOM. See matrix-keynav.ts. */}
 <script>
   import '../../lib/client/cell-cite';
+  import '../../lib/client/matrix-keynav';
 </script>
 
 <style>

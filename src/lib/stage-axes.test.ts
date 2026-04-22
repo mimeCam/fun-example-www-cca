@@ -38,6 +38,7 @@ import {
   stageAnchorId,
   cellCitationLabel,
   cellCitationPayload,
+  cellIdFromHash,
 } from './stage-axes.js';
 import type { Axis } from './stage-axes.js';
 import { DECAY_STAGES } from './decay-engine.js';
@@ -221,6 +222,57 @@ describe('stage-axes — cellCitationPayload is the single-line clipboard string
     // Callers pass window.location.origin — no trailing slash by spec.
     const out = cellCitationPayload('focus', 'fossil', ORIGIN);
     assert.ok(!out.includes('//api/docs'), 'no double slash in path');
+  });
+});
+
+// ── 6c · cellIdFromHash — symmetric inverse of cellAnchorId (v151) ─────────
+
+describe('stage-axes — cellIdFromHash parses every valid anchor, rejects the rest', () => {
+  test('round-trips all 35 cells via cellAnchorId', () => {
+    for (const axis of STAGE_AXES) {
+      for (const stage of DECAY_STAGES) {
+        const hash = `#${cellAnchorId(axis as Axis, stage)}`;
+        assert.deepEqual(cellIdFromHash(hash), { axis, stage });
+      }
+    }
+  });
+
+  test('accepts raw ids without a leading hash', () => {
+    assert.deepEqual(
+      cellIdFromHash('axis-typography-stage-endangered'),
+      { axis: 'typography', stage: 'endangered' },
+    );
+  });
+
+  test('dashed axis names (drag-highlight) survive the parse', () => {
+    assert.deepEqual(
+      cellIdFromHash('#axis-drag-highlight-stage-fresh'),
+      { axis: 'drag-highlight', stage: 'fresh' },
+    );
+  });
+
+  test('returns null for malformed input — never throws', () => {
+    const bad = [
+      '',
+      '#',
+      '#top',
+      '#axis-typography',
+      '#axis-typography-stage-',
+      '#axis--stage-fresh',
+      '#axis-typography-stage-unknown',
+      '#axis-made-up-stage-fresh',
+      '#AXIS-TYPOGRAPHY-STAGE-FRESH', // case-sensitive grammar
+      '#axis-typography-stage-fresh-tail',
+      'random string without structure',
+    ];
+    for (const s of bad) assert.equal(cellIdFromHash(s), null, `should reject: ${s}`);
+  });
+
+  test('tolerates non-string input without throwing', () => {
+    // Belt-and-braces: callers pass `location.hash` which is always a string,
+    // but the helper must be robust for any future server-side use.
+    assert.equal(cellIdFromHash(undefined as unknown as string), null);
+    assert.equal(cellIdFromHash(null as unknown as string), null);
   });
 });
 
