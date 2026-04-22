@@ -11,49 +11,57 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v154 (2026-04-22) — Shared-arrival (the "third mouth") ─────────
+# ── Sprint v155 (2026-04-22) — Citation Golden (static parity witness) ────
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/client/arrival.ts (NEW) — arrival sub-system extracted
-#       from cell-cite.ts. Owns `paintArrival()`, `readRef()`,
-#       `isValidRef()`, `triggerArrival()`, `markShared()`,
-#       `retireCompetingGlows()`, and the `arrive` ingest beacon. One
-#       module, one responsibility: turn `?r=<nonce>` URL landings into
-#       the `.cell--arrived` bloom + `.cell--arrived-shared` badge +
-#       aria-live toast + ledger signal. `ARRIVAL_MS = 1200` lives here
-#       (re-exported by cell-cite.ts for snapshot stability).
-#     • src/lib/client/arrival.test.ts (NEW) — pure-function probes +
-#       structural source-grep that arrival.ts never imports the
-#       chip-lit vocabulary. Wired into `prebuild` as `test:arrival`.
-#     • scripts/check-no-chip-lit-in-arrival.ts (NEW) — invariant fence
-#       guard. Fails the build if `arrival.ts` references `ds-kbd-lit`,
-#       `lightForKey`, or `unlightForKey`. Two mouths, two modules —
-#       the chip-lit contract (v153) stays sacred on keystroke gestures.
-#     • src/lib/client/cell-cite.ts — arrival half extracted. Now
-#       imports `paintArrival`, `retireCompetingGlows`, and
-#       `ARRIVAL_MS` from arrival.ts. Keeps click delegation, keystroke
-#       cite, chip-lit feedback, the cell-confirm ring, and the copy
-#       toast + copy beacon.
-#     • src/styles/stage-focus.css — adds `.cell--arrived-shared::after`
-#       `↙` glyph in the cell's top-left corner (opposite the `⌗`
-#       copy glyph — no corner fights another), with RM + forced-colors
-#       fallbacks. Zero new tokens: re-uses `--cell-arrival-ring`,
-#       `--motion-snap-duration`, `--space-1`, `--radius-detail`,
-#       `--text-2xs`. Parasitic on the 1200 ms bloom envelope.
-#     • package.json — `prebuild` now chains: check-token-compliance →
-#       check-motion-sanctuary → check-ds-kbd → check-no-chip-lit-in-
-#       arrival → test:keep-hotkey → test:keep-legend → test:chip-lit →
-#       test:arrival. All inside the builder stage.
-#     • AGENTS.md — Shared-arrival contract v154 + four-module roster
-#       update (cell-cite + arrival + matrix-keynav + edge-bump).
+#     • scripts/check-citation-delegation.ts (NEW) — prebuild guard.
+#       Static-time witness that the three files that touch the citation
+#       ritual (cell-cite.ts, matrix-keynav.ts, api/docs.astro) all
+#       delegate to the oracle (`cellCitationPayload` /
+#       `cellCitationLabel` / `cellAnchorId` in `src/lib/stage-axes.ts`)
+#       and none re-implement the payload template (markers: `× `,
+#       ` · `, `#axis-`). Zero deps, regex + split only. Replaces Mike's
+#       v48 postbuild harness (spawn `astro preview`, curl three
+#       endpoints, diff) with a static equivalent — the three-mouth
+#       parity is a tautology once the single import is proven.
+#     • scripts/check-citation-delegation.test.ts (NEW) — unit test for
+#       the guard's pure helpers (`scanImports`, `scanReimplementation`,
+#       `stripLineComment`, `codeOnly`) across clean / reimpl /
+#       missing-import fixtures. Defence-in-depth: the guard that
+#       watches the contract now has its own tests.
+#     • src/lib/citation-golden.ts (NEW) — frozen 35-row witness. Pure
+#       producer: for every (axis, stage) in STAGE_AXES × DECAY_STAGES,
+#       `cellCitationPayload(axis, stage, SENTINEL_ORIGIN)` is byte-
+#       stable. Sentinel origin `https://a.test` (RFC 6761 reserved) —
+#       never the production host, so a silent "regenerate on deploy"
+#       can't rewrite the contract unnoticed. Five ref-fixture strings
+#       exercise `encodeURIComponent(ref)` round-trip across URL-
+#       reserved character classes (plain / `#` / `&` / `%` / space).
+#     • src/lib/citation-golden.test.ts (NEW) — byte-exact assertion of
+#       the 35-row inline literal + row count + sentinel-origin
+#       coverage + ref-fixture round-trip. Drift shows up in `git diff`,
+#       not in a silently-regenerated fixture file.
+#     • package.json — `prebuild` now chains (v155 additions in bold):
+#       check-token-compliance --guard → check-motion-sanctuary →
+#       check-ds-kbd → check-no-chip-lit-in-arrival →
+#       **check-citation-delegation** → test:keep-hotkey →
+#       test:keep-legend → test:chip-lit → test:arrival →
+#       **test:citation-golden** → **test:citation-delegation** →
+#       astro build. Zero new npm deps (`tsx` already pulled in).
+#     • AGENTS.md — Build-time guards sentence extended with
+#       citation-delegation + citation-golden; "Contracts to preserve"
+#       grows the cellCitationPayload-as-single-source line; the
+#       Deferred block retires (the static witness replaces Mike's
+#       blocked postbuild harness in a different shape).
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, volumes, or docker networks.
 #     Dockerfile already COPY-s `scripts/` and `src/` wholesale into the
-#     builder stage, so the new arrival module, the new guard, the new
-#     test, and the new CSS selectors all ship without edits to the
-#     Dockerfile or the docker run command below. Both new prebuild
-#     links (`check:no-chip-lit-in-arrival` + `test:arrival`) run
-#     automatically via `npm run build`.
+#     builder stage, so the two new guard scripts, the two new test
+#     files, and the `package.json` chain extension all ship without a
+#     single Dockerfile edit or docker-run-flag edit. `.test.ts` files
+#     remain dev-only and never run at runtime — the production image
+#     stays lean. All three new prebuild links run automatically via
+#     `npm run build` inside the builder stage.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -102,8 +110,10 @@ docker volume create "${SQLITE_VOLUME}" || true
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival (v154)  →
-#   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit (v153)  →
-#   test:arrival (v154)  →  astro build.
+#   check-citation-delegation (v155)  →  test:keep-hotkey  →
+#   test:keep-legend  →  test:chip-lit (v153)  →  test:arrival (v154)  →
+#   test:citation-golden (v155)  →  test:citation-delegation (v155)  →
+#   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
@@ -201,10 +211,14 @@ fi
 #       all 35 grammar-matrix cells with `data-heat`. v153 ships the
 #       `.ds-kbd[data-lit]` crossfade rule + Legend voice tokens;
 #       v154 adds the `.cell--arrived-shared::after` `↙` glyph rule +
-#       the extracted `arrival.ts` client module — all static assets
-#       baked into dist/client/ at build time, no runtime cost to
-#       warming. The arrival beat only paints when a visitor lands via
-#       `?r=<nonce>`, so this warm-up exercises the SSR path only.
+#       the extracted `arrival.ts` client module; v155 fences the
+#       server-render mouth of the citation ritual on the oracle's
+#       `cellCitationLabel` + `cellAnchorId` (prebuild-enforced, so
+#       warming this route is ALSO the smoke-test that the three-mouth
+#       parity held through the build). All static assets baked into
+#       dist/client/ at build time, no runtime cost to warming. The
+#       arrival beat only paints when a visitor lands via `?r=<nonce>`,
+#       so this warm-up exercises the SSR path only.
 #
 #   (b) GET /api/metrics/cited-cells — read-only, unauthenticated; same
 #       single producer (`heatedGrid()`) the SSR page uses. Forces

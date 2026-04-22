@@ -15,10 +15,6 @@
 
 ## Build-time guards
 
-Prebuild chain runs: token compliance (DECAY_STAGES / STAGE_AXES parity), motion sanctuary (`animation:` must neighbor `prefers-reduced-motion`), `.ds-kbd` rule-of-three, chip-lit fence on `arrival.ts`, plus node:test suites for keep-hotkey, legend parity, chip-lit normaliser, and arrival. All chained into `prebuild`, so Docker's `npm run build` fails fast on drift.
+Prebuild chain runs: token compliance (DECAY_STAGES / STAGE_AXES parity), motion sanctuary (`animation:` must neighbor `prefers-reduced-motion`), `.ds-kbd` rule-of-three, chip-lit fence on `arrival.ts`, citation-delegation (every mouth imports the oracle, none re-implements the payload template), plus node:test suites for keep-hotkey, legend parity, chip-lit normaliser, arrival, citation-golden (byte-exact 35-row witness), and check-citation-delegation (unit-tests the guard). All chained into `prebuild`, so Docker's `npm run build` fails fast on drift.
 
-**Contracts to preserve:** legend chips ⇔ `isXKey` predicates · chip-lit fires only on user keystrokes (never on arrival) · `?r=<nonce>` lands a `.cell--arrived-shared` badge · zero new tokens without a PR note.
-
-## Deferred
-
-- **Triple-mode payload parity test** (Mike, `_reports/from-michael-koch-project-architect-48.md`). Architecturally blocked as a prebuild gate: `astro preview` requires `astro build` first. Revisit as a postbuild harness when CI can afford the spawn cost. The oracle (`cellCitationPayload` in `stage-axes.ts`) is already the single source every mouth routes through — the invariant holds even without the executable guard.
+**Contracts to preserve:** legend chips ⇔ `isXKey` predicates · chip-lit fires only on user keystrokes (never on arrival) · `?r=<nonce>` lands a `.cell--arrived-shared` badge · zero new tokens without a PR note · `cellCitationPayload` in `stage-axes.ts` is the single source every mouth routes through (static witness in `src/lib/citation-golden.ts` + `scripts/check-citation-delegation.ts`).

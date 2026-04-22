@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx scripts/check-no-chip-lit-in-arrival.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts && npx tsx --test src/lib/client/ds-kbd-lit.test.ts && npx tsx --test src/lib/client/arrival.test.ts",
+    "prebuild": "npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx scripts/check-no-chip-lit-in-arrival.ts && npx tsx scripts/check-citation-delegation.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts && npx tsx --test src/lib/client/ds-kbd-lit.test.ts && npx tsx --test src/lib/client/arrival.test.ts && npx tsx --test src/lib/citation-golden.test.ts && npx tsx --test scripts/check-citation-delegation.test.ts",
     "build": "astro build",
     "preview": "astro preview",
     "whisper": "node cli/whisper.mjs",
@@ -23,7 +23,10 @@
     "test:keep-hotkey": "npx tsx --test src/lib/client/keep-hotkey.test.ts",
     "test:keep-legend": "npx tsx --test src/lib/client/keep-legend.test.ts",
     "test:chip-lit": "npx tsx --test src/lib/client/ds-kbd-lit.test.ts",
-    "test:arrival": "npx tsx --test src/lib/client/arrival.test.ts"
+    "test:arrival": "npx tsx --test src/lib/client/arrival.test.ts",
+    "check:citation-delegation": "npx tsx scripts/check-citation-delegation.ts",
+    "test:citation-golden": "npx tsx --test src/lib/citation-golden.test.ts",
+    "test:citation-delegation": "npx tsx --test scripts/check-citation-delegation.test.ts"
   },
   "dependencies": {
     "@astrojs/node": "^8.3.4",
