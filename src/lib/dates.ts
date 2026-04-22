@@ -1,7 +1,8 @@
 // src/lib/dates.ts
 // Pure date formatting utilities — no dependencies, no state.
 //
-// TODO: wire _testDates() into build script (see openloop/inplace-testing-howto.md)
+// Isolated-run sanity check: `npm run test:dates`
+// (package.json invokes _testDates via tsx — see openloop/inplace-testing-howto.md)
 
 /** Formats a Date to "Apr 4, 2026" style for display on post pages. */
 export function formatPubDate(date: Date): string {
@@ -16,10 +17,15 @@ export function formatPubDate(date: Date): string {
 // Isolated-run sanity check (leave in place)
 // ---------------------------------------------------------------------------
 
+/** Throws on failure — scripts/test-dates.ts calls this and exits non-zero. */
 export function _testDates(): void {
-  const d = new Date('2026-04-04');
-  const formatted = formatPubDate(d);
-  console.assert(formatted.includes('2026'), `expected year in "${formatted}"`);
-  console.assert(formatted.includes('Apr'), `expected month in "${formatted}"`);
+  assertContains(formatPubDate(new Date('2026-04-04')), '2026', 'year');
+  assertContains(formatPubDate(new Date('2026-04-04')), 'Apr',  'month');
   console.log('[dates] utility OK');
+}
+
+/** Tiny local assert — avoids dragging in node:assert for a 3-line check. */
+function assertContains(actual: string, needle: string, label: string): void {
+  if (actual.includes(needle)) return;
+  throw new Error(`[dates] expected ${label} "${needle}" in "${actual}"`);
 }

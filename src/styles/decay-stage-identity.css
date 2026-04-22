@@ -43,6 +43,10 @@
   opacity: var(--stage-fresh-text-secondary, 0.70);
 }
 
+[data-decay-stage="fresh"] .post-date {
+  --date-opacity: var(--stage-fresh-date-opacity, 0.60);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
  * STAGE: FADING — Wistful. Soft warmth retreating.
  * Factor 0.25–0.50 | BPM 55 | Weight 600 | Shadow: amber pulling back
@@ -67,6 +71,10 @@
 
 [data-decay-stage="fading"] .post-excerpt {
   opacity: var(--stage-fading-text-secondary, 0.60);
+}
+
+[data-decay-stage="fading"] .post-date {
+  --date-opacity: var(--stage-fading-date-opacity, 0.60);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -102,6 +110,10 @@
   opacity: var(--stage-endangered-text-secondary, 0.65);
 }
 
+[data-decay-stage="endangered"] .post-date {
+  --date-opacity: var(--stage-endangered-date-opacity, 0.65);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
  * STAGE: GHOST — Barely there. Lean in to read.
  * Factor 0.75–0.97 | BPM 22 + jitter | Weight 400 | Nearly flat shadow
@@ -132,6 +144,10 @@
   opacity: var(--stage-ghost-text-secondary, 0.40);
 }
 
+[data-decay-stage="ghost"] .post-date {
+  --date-opacity: var(--stage-ghost-date-opacity, 0.70);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
  * STAGE: FOSSIL — Archive. Tombstone. Stone weight, no elevation.
  * Factor 0.97–1.0 | BPM 0 (still) | Weight 400 | No shadow at all
@@ -157,6 +173,13 @@
 
 [data-decay-stage="fossil"] .post-excerpt {
   opacity: var(--stage-fossil-text-secondary, 0.30);
+}
+
+/* Headstone Date: fossil cards firm up to 0.80 — the date becomes the
+   anchor that outweighs the fading title. Capped below body text, never
+   above the title's effective contrast (Tanya §4, Elon §3a). */
+[data-decay-stage="fossil"] .post-date {
+  --date-opacity: var(--stage-fossil-date-opacity, 0.80);
 }
 
 /* Fossil hover override: fossil cards do not lift — stone is heavy.

@@ -162,7 +162,7 @@ export function perceptualFactor(f: number): number {
 
 /**
  * Classify raw decay factor into a discrete stage.
- * Thresholds match DecayCard.astro stageAttr() and heartbeat orchestrator.
+ * Thresholds consumed by DecayCard (via postMeta.decayStage) and heartbeat orchestrator.
  */
 export function stageFromFactor(f: number): DecayStage {
   if (f >= 0.97) return 'fossil';

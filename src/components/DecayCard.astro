@@ -19,7 +19,6 @@ import { formatPubDate } from '../lib/dates';
 import type { PostDisplayData } from '../lib/postMeta';
 import { clockUrgency } from '../lib/death-clock';
 import { convictionMultiplier } from '../lib/decay-engine';
-import type { DecayStage } from '../lib/decay-engine';
 
 // BattingAverageChip removed from card per Tanya §4.2:
 //   "Do not show batting average on the card — too much cognitive load per card."
@@ -52,16 +51,10 @@ function cardAtmosphere(factor: number): string {
 const atmosphere = cardAtmosphere(post.decay);
 
 // Stage identity attribute — drives [data-decay-stage] CSS selectors in decay-stage-identity.css.
-// Thresholds mirror stage-identity.ts stageFor() and heartbeat-orchestrator FOSSIL_THRESHOLD.
-// JS (applyStageTokens) updates this dynamically; SSR sets the initial correct value.
-function stageAttr(factor: number): string {
-  if (factor >= 0.97) return 'fossil';
-  if (factor >= 0.75) return 'ghost';
-  if (factor >= 0.50) return 'endangered';
-  if (factor >= 0.25) return 'fading';
-  return 'fresh';
-}
-const decayStage = stageAttr(post.decay);
+// Sourced from post.decayStage (computed by stageFromFactor() in postMeta.ts).
+// Single source of truth — never re-derive thresholds at the render edge.
+// JS (applyStageTokens) updates data-decay-stage dynamically at runtime.
+const decayStage = post.decayStage;
 ---
 
 <article
@@ -96,10 +89,11 @@ const decayStage = stageAttr(post.decay);
   {post.description && <p class="post-excerpt">{post.description}</p>}
   <div class="card-footer">
     {/* Stage-driven dominant signal (Tanya P1-B, Mike §arch).
-        Fossil: epitaph only — the record is sealed, no clock needed.
+        Fossil: epitaph label only — the date lives once, at the top, as the
+        headstone marker. Tanya §6: no duplicate date in the footer.
         All others: clock communicates urgency, badge adds context. */}
     {decayStage === 'fossil'
-      ? <span class="card-footer-epitaph">Faded {formattedDate}</span>
+      ? <span class="card-footer-epitaph">Faded</span>
       : <DecayClock variant="ring" daysRemaining={daysRemaining} urgency={urgency} compact={true} conviction={conviction} decayFactor={post.decay} verdictModifier={verdictModifier} />
     }
     {/* Single badge slot — priority: risen > tension > revival > empty.
@@ -121,7 +115,7 @@ const decayStage = stageAttr(post.decay);
     {/* Fossil: no KeepButton — a fossil cannot be revived from the feed (Tanya P1-C).
         All others: stage prop gates the button for fresh/fading via data-gated. */}
     {decayStage !== 'fossil' && (
-      <KeepButton slug={post.slug} count={post.revivalCount} urgency={urgency} conviction={conviction} stage={decayStage as DecayStage} />
+      <KeepButton slug={post.slug} count={post.revivalCount} urgency={urgency} conviction={conviction} stage={decayStage} />
     )}
   </div>
 </article>
@@ -203,13 +197,18 @@ const decayStage = stageAttr(post.decay);
     display: block;
   }
 
+  /* "Voice Fades, Date Hardens" (Tanya §4 / Mike §napkin).
+     Per-stage --date-opacity set in decay-stage-identity.css — the date
+     is the only card element that gains authority as the post ages.
+     Fallback 0.60 matches fresh; never drops below the old 0.5 literal. */
   .post-date {
     display: block;
     font-size: var(--text-xs);
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
-    opacity: 0.5;
+    opacity: var(--date-opacity, 0.60);
     margin-bottom: var(--space-1);
+    transition: opacity var(--motion-drift-duration) var(--motion-drift-easing);
   }
 
   .post-title {

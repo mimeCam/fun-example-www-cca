@@ -130,6 +130,17 @@
   --stage-ghost-text-secondary:       0.40;
   --stage-fossil-text-secondary:      0.30;
 
+  /* Date opacity ramp — the ONE inversion (Tanya §4 "Headstone Date").
+     Voice fades (title/excerpt go quieter); date firms up stage by stage.
+     Monotone non-decreasing — at fossil, the date is the anchor, NOT the
+     dominant: capped at 0.80 so it sits below body text, never above title.
+     Replaces hardcoded opacity: 0.5 on .post-date (Krystle's original catch). */
+  --stage-fresh-date-opacity:       0.60;
+  --stage-fading-date-opacity:      0.60;
+  --stage-endangered-date-opacity:  0.65;
+  --stage-ghost-date-opacity:       0.70;
+  --stage-fossil-date-opacity:      0.80;
+
   /* Subtle card scale per stage — fresh is full, fossil shrinks */
   --stage-fresh-card-scale:       1.0;
   --stage-fading-card-scale:      1.0;

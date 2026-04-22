@@ -4,6 +4,42 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v142 — DecayStage API Parity, Headstone Date Ramp & Dev Test Hygiene (2026-04-22)
+#   Sprint: Pure UIX polish + dev-only test-hygiene pass. Zero infrastructure
+#     changes — all deploy.sh steps (1–8) identical to v141.
+#   Key changes:
+#     src/lib/postMeta.ts — PostDisplayData now exposes `decayStage: DecayStage`
+#       (computed by stageFromFactor() in decay-engine.ts). Single source of
+#       truth for stage derivation; API consumers no longer re-derive thresholds.
+#       Tanya §10 / Paul MH-5 — "same five-stage behavior without re-deriving
+#       the 0.25/0.50/0.75/0.97 thresholds at the render edge".
+#     src/components/DecayCard.astro — local stageAttr() removed; reads
+#       post.decayStage directly. Fossil footer text shortened ("Faded" instead
+#       of "Faded {date}") — the date lives once, up top, as the headstone
+#       marker (Tanya §6 no-duplicate-date rule). .post-date now transitions
+#       opacity via var(--date-opacity) with --motion-drift-* timing.
+#     src/lib/decay-engine.ts — docstring clarification on stageFromFactor()
+#       (now consumed via postMeta.decayStage, not duplicated in DecayCard).
+#     src/styles/tokens.css — 5 new tokens: --stage-{fresh,fading,endangered,
+#       ghost,fossil}-date-opacity (0.60 → 0.80 monotone non-decreasing). The
+#       ONE inversion in the design system — "Voice Fades, Date Hardens"
+#       (Tanya §4 / Mike §napkin). Date caps at 0.80 so it stays below body
+#       text, never above title's effective contrast.
+#     src/styles/decay-stage-identity.css — per-stage [data-decay-stage]
+#       selectors set --date-opacity from the new tokens.
+#     src/lib/dates.ts + scripts/test-dates.ts (new) — _testDates() now throws
+#       on failure (was silent console.assert). scripts/test-dates.ts is the
+#       isolated-run entrypoint; invoked via `npm run test:dates`. Dev-only,
+#       not part of Docker build. Follows openloop/inplace-testing-howto.md.
+#     package.json — adds "test:dates" script (dev-only, tsx-based).
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies scripts/ into the builder
+#     stage (prebuild token-compliance guard) so the new test-dates.ts file
+#     ships without any Dockerfile edits — but it is never executed at
+#     build or runtime (dev-only).
+#
 # Architecture v141 — DecayCard Title/Excerpt Saturation & Opacity Decay (2026-04-18)
 #   Sprint: Three targeted bug-fixes in DecayCard.astro — pure UIX/CSS polish,
 #     zero infrastructure changes.

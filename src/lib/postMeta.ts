@@ -6,8 +6,8 @@
 import type { CollectionEntry } from 'astro:content';
 import { canonicalUrl, siteDefaults } from '../config/seo.config';
 import { getReadingTime } from './readingTime';
-import { decayFactor, freshnessTag, decayStyleString, revivalBonus, dominantConviction } from './decay-engine';
-import type { FreshnessTag, ConvictionVerdict } from './decay-engine';
+import { decayFactor, freshnessTag, decayStyleString, revivalBonus, dominantConviction, stageFromFactor } from './decay-engine';
+import type { FreshnessTag, ConvictionVerdict, DecayStage } from './decay-engine';
 import { getRevivalCounts, getRisenTimestamps, getAllReadingSeconds, getEntombedTimestamps, entombPost, getAllCausesOfDeath, getAllVerdicts } from './collectiveMemory';
 import type { VerdictRecord, VerdictOutcome } from './verdict-resolver';
 import type { CauseOfDeath } from './cause-of-death';
@@ -65,6 +65,11 @@ function byNewest(a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>): numbe
 
 export interface PostDisplayData extends PostMeta {
   decay: number;
+  /** Discrete stage derived from decay factor — API parity with the UI
+      (Tanya §10 / Paul MH-5). Consumers render the same five-stage
+      behavior by mapping `decayStage` to their own tokens without
+      re-deriving the thresholds in `stageFromFactor()`. */
+  decayStage: DecayStage;
   freshness: FreshnessTag;
   decayStyle: string;
   revivalCount: number;
@@ -134,6 +139,7 @@ export function getPostDisplayData(
   return {
     ...meta,
     decay: factor,
+    decayStage: stageFromFactor(factor),
     freshness: freshnessTag(factor),
     decayStyle: decayStyleString(factor),
     revivalCount: revivals,
