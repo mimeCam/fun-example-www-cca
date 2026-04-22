@@ -266,3 +266,82 @@
 
 /* No @keyframes = no motion-sanctuary needed. The class flip is the beat,
  * and removal (1200 ms later, JS) is instant. motion-sanctuary: ok       */
+
+/* ── v154 — Shared-arrival badge (.cell--arrived-shared) ──────────────────
+ *    Tanya UX spec §2 "The Third Mouth" + Mike napkin §5.3.
+ *
+ *    When a reader lands via `?r=<nonce>` the arrival sub-system paints
+ *    both `.cell--arrived` (bloom — existing v150b) AND this class. A
+ *    stage-colored `↙` glyph appears in the cell's top-left corner —
+ *    opposite the `.cell-copy ⌗` glyph (top-right) so no corner fights
+ *    another. The badge is parasitic on the bloom's 1200 ms envelope:
+ *    one source of truth, one removal timer in arrival.ts.
+ *
+ *    Semantics (Tanya §3):
+ *      · Badge presence means: "this cell arrived via a shared link."
+ *      · Glyph direction (`↙` into the cell) teaches: "this came TO you."
+ *      · Never fires on hash-only nav — receipt-fidelity (Paul §fence).
+ *
+ *    Zero new tokens (Tanya §5 — the whole point of "new meaning earns
+ *    new pixels" is that the new meaning is CHEAP):
+ *      · --cell-arrival-ring       re-used for color (cascades from
+ *                                  .cell--arrived's stage rules above).
+ *      · --motion-snap-duration    re-used for crossfade (120 ms).
+ *      · --motion-snap-easing      re-used for the easing.
+ *      · --space-1                 re-used for the corner inset.
+ *      · --radius-detail           re-used for corner rounding.
+ *      · --text-2xs                re-used for glyph size parity with
+ *                                  the .cell-copy glyph (top-right).
+ *
+ *    Channel audit (Tanya §4): the badge uses `::after` content + opacity.
+ *    It does not touch `outline` (owned by :focus-visible + .cell--arrived)
+ *    nor `box-shadow` (owned by .cell--confirming). Three channels, three
+ *    layers, no overlap. motion-sanctuary: ok (no keyframes here; the
+ *    class flip IS the beat).
+ *
+ *    Credits: Tanya (UX spec §2.1 anatomy, §2.2 motion, §2.3 a11y reuse,
+ *             §4 channel audit), Mike (napkin §5.3 one-shot pattern, §5.4
+ *             a11y `aria-hidden` on decorative glyphs), Elon (report 32
+ *             "new meaning earns new pixels"), Paul (§fence receipt-
+ *             fidelity). Sid — 2026-04-22.                              */
+
+.api-docs__matrix-cell.cell--arrived-shared {
+  position: relative;     /* anchor for ::after — redundant with v150b rule
+                             but kept explicit; the cascade makes it free */
+}
+
+.api-docs__matrix-cell.cell--arrived-shared::after {
+  content: "↙";
+  position: absolute;
+  top:  var(--space-1);
+  left: var(--space-1);
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1;
+  color: var(--cell-arrival-ring, var(--border-focus));
+  border-radius: var(--radius-detail);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity var(--motion-snap-duration) var(--motion-snap-easing);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Static badge for the same 1200 ms hold, no crossfade (Tanya §2.2). */
+  .api-docs__matrix-cell.cell--arrived-shared::after {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  /* Preserve feedback in forced-colors; one vocabulary with .ds-kbd[data-lit]
+   * and .cell--confirming. Highlight outline + CanvasText glyph. */
+  .api-docs__matrix-cell.cell--arrived-shared::after {
+    color: CanvasText;
+    outline: 1px solid Highlight;
+  }
+}

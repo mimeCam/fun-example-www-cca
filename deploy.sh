@@ -11,44 +11,49 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v153 (2026-04-22) — chip-lit micro-interaction ─────────────────
+# ── Sprint v154 (2026-04-22) — Shared-arrival (the "third mouth") ─────────
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/client/ds-kbd-lit.ts (NEW) — third consumer promote:
-#       one pure `keyToChipLabels()` normaliser + `lightForKey()` /
-#       `unlightForKey()` DOM toggles. Zero listeners, zero module-level
-#       state — the three keystroke modules call it, no new entry points.
-#     • src/lib/client/ds-kbd-lit.test.ts (NEW) — set-equality test that
-#       `keyToChipLabels` mirrors the legend-scrape label vocabulary.
-#       Wired into `prebuild` as `test:chip-lit` so any drift between the
-#       normaliser and the rendered legend chips fails the Docker build.
-#     • src/lib/client/{cell-cite,matrix-keynav,keep-hotkey}.ts — each
-#       now calls `lightForKey(e.key, …)` from its existing keydown
-#       handler; keep-hotkey also calls `unlightForKey` on keyup so the
-#       hold-K arc closes symmetrically.
-#     • src/styles/ds-kbd.css — `.ds-kbd[data-lit]` crossfade to E1 +
-#       RM neighbour + forced-colors outline fallback.
-#     • src/styles/floating-keep.css — legend colour routes through
-#       `--legend-prose-overlay`; line-height through `--legend-leading`;
-#       StickyStanceBar collision fix flips whisper above the FAB when
-#       SSB is present.
-#     • src/styles/tokens.css — four new Legend voice tokens
-#       (--legend-leading, --legend-baseline-nudge, --legend-prose-docs,
-#       --legend-prose-overlay). One `/* Legend voice */` block.
-#     • src/pages/api/docs.astro — legend stack now consumes the four
-#       new tokens; bottom margin bumped --space-3 → --space-4 so the
-#       chip's lifted shadow never touches the matrix breathing band.
+#     • src/lib/client/arrival.ts (NEW) — arrival sub-system extracted
+#       from cell-cite.ts. Owns `paintArrival()`, `readRef()`,
+#       `isValidRef()`, `triggerArrival()`, `markShared()`,
+#       `retireCompetingGlows()`, and the `arrive` ingest beacon. One
+#       module, one responsibility: turn `?r=<nonce>` URL landings into
+#       the `.cell--arrived` bloom + `.cell--arrived-shared` badge +
+#       aria-live toast + ledger signal. `ARRIVAL_MS = 1200` lives here
+#       (re-exported by cell-cite.ts for snapshot stability).
+#     • src/lib/client/arrival.test.ts (NEW) — pure-function probes +
+#       structural source-grep that arrival.ts never imports the
+#       chip-lit vocabulary. Wired into `prebuild` as `test:arrival`.
+#     • scripts/check-no-chip-lit-in-arrival.ts (NEW) — invariant fence
+#       guard. Fails the build if `arrival.ts` references `ds-kbd-lit`,
+#       `lightForKey`, or `unlightForKey`. Two mouths, two modules —
+#       the chip-lit contract (v153) stays sacred on keystroke gestures.
+#     • src/lib/client/cell-cite.ts — arrival half extracted. Now
+#       imports `paintArrival`, `retireCompetingGlows`, and
+#       `ARRIVAL_MS` from arrival.ts. Keeps click delegation, keystroke
+#       cite, chip-lit feedback, the cell-confirm ring, and the copy
+#       toast + copy beacon.
+#     • src/styles/stage-focus.css — adds `.cell--arrived-shared::after`
+#       `↙` glyph in the cell's top-left corner (opposite the `⌗`
+#       copy glyph — no corner fights another), with RM + forced-colors
+#       fallbacks. Zero new tokens: re-uses `--cell-arrival-ring`,
+#       `--motion-snap-duration`, `--space-1`, `--radius-detail`,
+#       `--text-2xs`. Parasitic on the 1200 ms bloom envelope.
 #     • package.json — `prebuild` now chains: check-token-compliance →
-#       check-motion-sanctuary → check-ds-kbd → test:keep-hotkey →
-#       test:keep-legend → test:chip-lit. All inside the builder stage.
-#     • AGENTS.md — Chip-lit contract v153 + deferred-item note.
+#       check-motion-sanctuary → check-ds-kbd → check-no-chip-lit-in-
+#       arrival → test:keep-hotkey → test:keep-legend → test:chip-lit →
+#       test:arrival. All inside the builder stage.
+#     • AGENTS.md — Shared-arrival contract v154 + four-module roster
+#       update (cell-cite + arrival + matrix-keynav + edge-bump).
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, volumes, or docker networks.
 #     Dockerfile already COPY-s `scripts/` and `src/` wholesale into the
-#     builder stage, so the new module, the new test, the new tokens,
-#     and the new CSS selectors all ship without edits to the Dockerfile
-#     or the docker run command below. The `test:chip-lit` prebuild link
-#     runs automatically via `npm run build`.
+#     builder stage, so the new arrival module, the new guard, the new
+#     test, and the new CSS selectors all ship without edits to the
+#     Dockerfile or the docker run command below. Both new prebuild
+#     links (`check:no-chip-lit-in-arrival` + `test:arrival`) run
+#     automatically via `npm run build`.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -96,8 +101,9 @@ docker volume create "${SQLITE_VOLUME}" || true
 # ── 4. Build Docker image ────────────────────────────────────────────────────
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
-#   check-ds-kbd  →  test:keep-hotkey  →  test:keep-legend  →
-#   test:chip-lit (v153)  →  astro build.
+#   check-ds-kbd  →  check-no-chip-lit-in-arrival (v154)  →
+#   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit (v153)  →
+#   test:arrival (v154)  →  astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
 echo "==> [deploy] Building Docker image: ${IMAGE_NAME}"
@@ -192,11 +198,13 @@ fi
 #   (a) GET /api/docs — SSR on demand (`export const prerender = false`).
 #       The first render hydrates @astrojs/node's route handler, reads
 #       `lifetimeByCell()` + `ledgerMaturity()` + `baseline()`, and tints
-#       all 35 grammar-matrix cells with `data-heat`. v153 additionally
-#       ships the `.ds-kbd[data-lit]` crossfade rule + Legend voice
-#       tokens (--legend-leading, --legend-baseline-nudge,
-#       --legend-prose-{docs,overlay}) — all static assets baked into
-#       dist/client/ at build time, no runtime cost to warming.
+#       all 35 grammar-matrix cells with `data-heat`. v153 ships the
+#       `.ds-kbd[data-lit]` crossfade rule + Legend voice tokens;
+#       v154 adds the `.cell--arrived-shared::after` `↙` glyph rule +
+#       the extracted `arrival.ts` client module — all static assets
+#       baked into dist/client/ at build time, no runtime cost to
+#       warming. The arrival beat only paints when a visitor lands via
+#       `?r=<nonce>`, so this warm-up exercises the SSR path only.
 #
 #   (b) GET /api/metrics/cited-cells — read-only, unauthenticated; same
 #       single producer (`heatedGrid()`) the SSR page uses. Forces

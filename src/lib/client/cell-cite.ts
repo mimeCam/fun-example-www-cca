@@ -1,34 +1,39 @@
 // src/lib/client/cell-cite.ts
 // Copy-cell-anchor citation ritual — the 7×5 grammar matrix's outgoing
 // and incoming half. One click → clipboard + toast. One hashchange →
-// stage-keyed arrival bloom. 35 cells, one delegated listener, one
-// aria-live region. Vanilla TS, zero dependencies.
+// stage-keyed arrival bloom (delegated to arrival.ts, v154).
 //
 // Architecture (Mike napkin §2):
 //   · Buttons carry `data-cell-citation` + `data-cell-url` set by SSR.
 //   · Click delegation reads them → clipboard + toast + optional beacon.
-//   · Arrival handler listens to DOMContentLoaded + hashchange — a
-//     cell whose id matches `location.hash` receives .cell--arrived
-//     for the duration of its own stage, then releases.
+//   · Arrival lives in src/lib/client/arrival.ts (v154 extraction —
+//     Mike napkin "New meaning earns new pixels"). This file wires the
+//     `hashchange` listener; the painter is imported.
 //
 // v151b — keystroke cite (Mike napkin §3, Tanya §3/§4): the same
 // .api-docs__matrix delegation also accepts `c` / Enter / Space on a
 // focused cell, routing to the same `handleCopy` as the mouse click.
-// No new module, no new endpoint, no new CSS, no new animation.
 // Cmd/Ctrl/Alt+<key> combos are let through untouched (Tanya §10 —
 // native copy must not be stolen). `e.preventDefault()` stops Space
 // from scrolling and Enter from submitting an enclosing form.
+//
+// v154 — arrival extraction (Mike napkin §2, Tanya UX spec §0):
+// `paintArrival`, `readRef`, `triggerArrival`, `retireCompetingGlows`,
+// `markShared`, and the `arrive`-event beacon moved to arrival.ts. This
+// module KEEPS: click delegation, keystroke cite (chip-lit feedback),
+// the cell-confirm ring on cite, the copy-toast + copy-beacon. The
+// chip-lit contract (v153) is unchanged; arrival.ts is prohibited from
+// importing `ds-kbd-lit` by `check-no-chip-lit-in-arrival.ts`.
 //
 // Non-negotiable (Paul): the clipboard *string* is the product. The
 // toast and the bloom make the string believable.
 //
 // Credits: Mike (napkin §2, §5.8 event delegation, §5.9 dual-trigger
-//          arrival, §3 v151b keybinding), Tanya (§4 sequenced feedback,
-//          §5 stage-keyed arrival, §7 reveal rules, §8 ARIA, v151b
-//          UX spec §3/§4/§6/§10), Elon (§4.1 single-line payload,
-//          §4.2 fossil-still-arrives, §4.4 "at" wording, §4.6 instrument
-//          before celebrate, v151b §10 no new mythology), Paul
-//          (§non-negotiable + CAR metric, v151b string-parity vow),
+//          arrival, §3 v151b keybinding, v154 §2 extraction + invariant
+//          fence), Tanya (§4 sequenced feedback, §5 stage-keyed arrival,
+//          v154 UX spec §2 cell-local badge), Elon (§4.1 single-line
+//          payload, v154 report 32 "new meaning earns new pixels"),
+//          Paul (§non-negotiable + CAR metric, v151b string-parity vow),
 //          Sid (§simplify — one module, ten 10-line fns).
 
 import { cellCitationPayload } from '../stage-axes';
@@ -36,6 +41,13 @@ import type { Axis } from '../stage-axes';
 import type { DecayStage } from '../decay-engine';
 // v153 Tanya §3.3 — chip-lit feedback. Pure helper; does not own listeners.
 import { lightForKey } from './ds-kbd-lit';
+// v154 Mike §2 — arrival sub-system (extracted). Delegation, not reach-in:
+// cell-cite.ts wires the listener; arrival.ts owns every paint + beacon.
+import {
+  paintArrival,
+  retireCompetingGlows,
+  ARRIVAL_MS as ARRIVAL_MS_BEAT,
+} from './arrival';
 
 // ── Selectors & keys ─────────────────────────────────────────────────────
 
@@ -43,15 +55,15 @@ const MATRIX_SEL  = '.api-docs__matrix';
 const CELL_SEL    = '.api-docs__matrix-cell';
 const BTN_SEL     = '[data-cell-copy]';
 const TOAST_SEL   = '[data-cell-toast]';
-const ARRIVED     = 'cell--arrived';
 const CONFIRMING  = 'cell--confirming';   // v152 Mike §A — foveal confirm
 const CONFIRMED   = 'cell-copy--confirmed';
 const TOAST_VIS   = 'is-visible';
-const HASH_RE     = /^#axis-[a-z-]+-stage-[a-z-]+$/;
 
 // Timing constants — snapshotted in cell-confirm.test.ts. Do not tune
 // one without documenting the perceptual reason in the PR body (Mike §6).
-export const ARRIVAL_MS       = 1200;   // stage-keyed bloom hold (incl. fossil)
+// ARRIVAL_MS is re-exported from arrival.ts so cell-confirm.test.ts keeps
+// its byte-stable import path (v154 extraction — single source, one beat).
+export const ARRIVAL_MS       = ARRIVAL_MS_BEAT;
 export const TOAST_MS         = 1800;   // Tanya §4b linger window
 export const CONFIRM_MS       = 1200;   // Tanya §4a button icon-swap duration
 export const CITE_CONFIRM_MS  = 1200;   // v152 Mike §A — cell confirm ring
@@ -66,9 +78,9 @@ export const CHIP_LIT_MS      = 120;
 const CITE_KEYS: ReadonlySet<string> = new Set<string>(['c', 'Enter', ' ']);
 
 // v150c — cell-event ledger wire. Mike napkin §3: event-shape frozen.
+// The arrive beacon moved to arrival.ts (v154); the copy beacon stays
+// here because it fires from handleCopy, not paintArrival.
 const INGEST_URL  = '/api/ingest/cell-event';
-const REF_PARAM   = 'r';          // ?r=<nonce> in the pasted URL
-const REF_RE      = /^[a-zA-Z0-9-]{8,64}$/;
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 
@@ -138,7 +150,7 @@ async function handleCopy(btn: HTMLButtonElement, toast: HTMLElement | null): Pr
   confirmButton(btn);
   announce(toast, axis, stage);
   markConfirmingForBtn(btn);                  // v152 Mike §A — foveal ring
-  beacon('copy', axis, stage, ref);
+  beaconCopy(axis, stage, ref);
 }
 
 /** v152 Mike §A — resolve the btn's owning cell, then paint the confirm ring. */
@@ -179,76 +191,16 @@ function scheduleToastHide(toast: HTMLElement): void {
   toast.dataset.hideTimer = String(id);
 }
 
-// ── Arrival (Tanya §5, Mike §5.9, Elon §6) ────────────────────────────────
-
-function paintArrival(): void {
-  const hash = window.location.hash;
-  if (!HASH_RE.test(hash)) return;
-  const cell = document.getElementById(hash.slice(1));
-  if (!cell) return;
-  retireCompetingGlows(cell);                 // v152 Mike §B — one glow at a time
-  triggerArrival(cell);
-  reportArrival(cell);
-}
-
-/** Parse `?r=<ref>` off location.search; null if malformed or absent. */
-function readRef(): string | null {
-  try {
-    const ref = new URL(window.location.href).searchParams.get(REF_PARAM);
-    return ref && REF_RE.test(ref) ? ref : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Extract (axis, stage) from a data-cell-cell target element. */
-function readCellCoord(cell: HTMLElement): { axis: string; stage: string } | null {
-  const axis = cell.dataset.axis ?? '';
-  const stage = cell.dataset.decayStage ?? '';
-  if (!axis || !stage) return null;
-  return { axis, stage };
-}
-
-/** Fire the arrive beacon when the hash+ref combo is complete. */
-function reportArrival(cell: HTMLElement): void {
-  const ref = readRef();
-  const coord = readCellCoord(cell);
-  if (!ref || !coord) return;
-  beacon('arrive', coord.axis, coord.stage, ref);
-}
-
-function retireOthers(keep: HTMLElement): void {
-  document
-    .querySelectorAll<HTMLElement>(`.${ARRIVED}`)
-    .forEach((el) => { if (el !== keep) el.classList.remove(ARRIVED); });
-}
-
-/** v152 Mike §B — superset of retireOthers; also clears `.cell--confirming`
- *  from every other cell so rapid-fire c-c-c-c coalesces cleanly. Old call
- *  sites of `retireOthers` stay untouched (Mike risk register row #3).     */
-function retireCompetingGlows(keep: HTMLElement): void {
-  retireOthers(keep);
-  retireConfirmingExcept(keep);
-}
-
-function retireConfirmingExcept(keep: HTMLElement): void {
-  document
-    .querySelectorAll<HTMLElement>(`.${CONFIRMING}`)
-    .forEach((el) => { if (el !== keep) el.classList.remove(CONFIRMING); });
-}
-
-function triggerArrival(cell: HTMLElement): void {
-  // Restart the animation cleanly: remove, reflow, re-add.
-  cell.classList.remove(ARRIVED);
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  void cell.offsetWidth;
-  cell.classList.add(ARRIVED);
-  window.setTimeout(() => cell.classList.remove(ARRIVED), ARRIVAL_MS);
-}
+// ── Cell confirm ring (v152 Mike §A) ─────────────────────────────────────
+// Arrival (bloom, shared badge, beacon) lives in arrival.ts now. This
+// block keeps ONLY the foveal confirm ring — the receipt the user sees
+// when THEY cite (mouse or keystroke). Arrival is a separate voice
+// (v154), painted by paintArrival() from arrival.ts.
 
 /** v152 Mike §A — paint the foveal confirm ring on the focused cell.
- *  Retires competing glows first, then schedules its own removal. On
- *  rapid-fire cites, a second call on the SAME cell resets the timer. */
+ *  On rapid-fire cites, a second call on the SAME cell resets the timer.
+ *  `retireCompetingGlows` is imported from arrival.ts — one implementation
+ *  of the cleanup pass, reused by both mouths (cite + arrival).          */
 function markConfirming(cell: HTMLElement): void {
   retireCompetingGlows(cell);
   cell.classList.add(CONFIRMING);
@@ -265,7 +217,10 @@ function scheduleConfirmRemoval(cell: HTMLElement): void {
   cell.dataset.confirmTimer = String(id);
 }
 
-// ── Ingest beacon (v150c — Mike napkin §2/§4, Paul round-trip) ────────────
+// ── Copy ingest beacon (v150c — Mike napkin §2/§4, Paul round-trip) ──────
+// The arrive beacon lives in arrival.ts (v154). This module keeps the
+// copy-side twin because it fires from handleCopy — keystroke or click
+// both route here and feed the ledger's other leg.
 
 /** Client-generated nonce that joins copy→arrive without a login. */
 function mintRef(): string {
@@ -277,11 +232,10 @@ function mintRef(): string {
 }
 
 /** Fire-and-forget POST to the ingest endpoint. Must never throw. */
-function beacon(event: 'copy' | 'arrive', axis: string, stage: string, ref: string): void {
+function beaconCopy(axis: string, stage: string, ref: string): void {
   if (!axis || !stage || !ref) return;
   try {
-    const body = JSON.stringify({ event, axis, stage, ref, ts: Date.now() });
-    sendIngest(body);
+    sendIngest(JSON.stringify({ event: 'copy', axis, stage, ref, ts: Date.now() }));
   } catch {
     // Intentional no-op: analytics must never block the citation ritual.
   }
