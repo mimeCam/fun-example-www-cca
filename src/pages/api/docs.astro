@@ -1,0 +1,291 @@
+---
+// src/pages/api/docs.astro
+// API reference — the single page that hosts the published `decayStage` vocabulary.
+//
+// One page. Three sections. Five words. Zero new components.
+//
+// The vocabulary itself (the five DecayStage literals) is sourced from
+// decay-engine.ts via DECAY_STAGES — there is no hand-typed list here, so
+// the page can never drift from the wire.
+//
+// Credits: Tanya Donska (UX spec §1 — page layout, lede, list, tone, footer),
+//          Mike Koch (napkin §3 — endpoint scope, response shape),
+//          Paul Kim (immutability commitment, self-selection paragraph),
+//          Krystle (response-layer derivation pattern).
+//          AGENTS.md ("polish what we have — AAA").
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { DECAY_STAGES } from '../../lib/decay-engine';
+import type { DecayStage } from '../../lib/decay-engine';
+import { STAGE_TRANSITION_DURATION_MS } from '../../lib/stage-tokens.generated';
+
+// v146: is the row a real value, or does it alias another profile? Anything
+// that starts with `var(…)` is an alias — the grammar's shape exists but the
+// number is inherited from `--motion-snap-duration`. Only `fresh` is populated.
+function motionValueLabel(stage: DecayStage): string {
+  const value = STAGE_TRANSITION_DURATION_MS[stage];
+  return value.startsWith('var(') ? 'aliased to snap (today)' : value;
+}
+
+// ── Vocabulary copy — kept in this file only, beside the live tuple ─────────
+// One short clause per stage. Casing: lowercase, identical to the wire string.
+// Tanya §2.2: capitalisation rewrites belong in microcopy, not in this list.
+const STAGE_MEANING: Record<DecayStage, string> = {
+  fresh:      'the post is new; people are reading it.',
+  fading:     'interest is cooling.',
+  endangered: 'the clock is loud now.',
+  ghost:      'the post has aged out; revival is still possible.',
+  fossil:     'the post is sealed into the record.',
+};
+
+const PAGE_TITLE = 'API — Octopoid';
+const REVIEWED_ON = '2026-04-22';
+
+// JSON sample shown in the code block — small enough to read in one breath,
+// representative enough that a builder can predict the rest. The `decayStage`
+// line is highlighted via `data-line-stage` and styled in the <style> block.
+const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
+  { text: '{' },
+  { text: '  "slug":         "the-decay-theory",' },
+  { text: '  "title":        "the decay theory",' },
+  { text: '  "decay":        0.62,' },
+  { text: '  "decayStage":   "endangered",', stage: true },
+  { text: '  "daysLeft":     21,' },
+  { text: '  "urgency":      "warning",' },
+  { text: '  "revivalCount": 3,' },
+  { text: '  "pubDate":      "2025-08-14T09:00:00.000Z"' },
+  { text: '}' },
+];
+---
+
+<BaseLayout title={PAGE_TITLE} description="The five-name vocabulary the JSON uses for every post.">
+  <main class="api-docs">
+
+    <header class="api-docs__head">
+      <h1 class="api-docs__h1">What posts look like, in JSON.</h1>
+      <p class="api-docs__lede">
+        Every post on this site has a clock. The clock has five names. Here is
+        how the JSON says them.
+      </p>
+    </header>
+
+    <pre class="api-docs__code" aria-label="Sample post response shape" tabindex="0"><code>{SAMPLE_JSON_LINES.map((l) => (
+  <span class="api-docs__code-line" data-line-stage={l.stage ? 'true' : undefined}>{l.text + '\n'}</span>
+))}</code></pre>
+
+    <section class="api-docs__section" aria-labelledby="stages-heading">
+      <h2 id="stages-heading" class="api-docs__h2">The five stages.</h2>
+
+      <dl class="api-docs__stages">
+        {DECAY_STAGES.map((stage) => (
+          <div class="api-docs__row" data-stage={stage}>
+            <dt class="api-docs__word">{stage}</dt>
+            <dd class="api-docs__def"><span class="api-docs__dash" aria-hidden="true">—</span>{STAGE_MEANING[stage]}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <section class="api-docs__section" aria-labelledby="motion-heading">
+      <h2 id="motion-heading" class="api-docs__h2">How the five stages feel.</h2>
+      <p class="api-docs__lede">
+        Each stage has its own interaction timing. The grammar is five rows;
+        today only <code class="api-docs__inline">fresh</code> carries a bespoke
+        value — every other stage aliases to the snap profile so it feels
+        exactly like today. The table shape is public so the ramp can expand
+        from data, not guesswork.
+      </p>
+
+      <dl class="api-docs__stages api-docs__stages--motion">
+        {DECAY_STAGES.map((stage) => (
+          <div class="api-docs__row" data-stage={stage}>
+            <dt class="api-docs__word">{stage}</dt>
+            <dd class="api-docs__def"><span class="api-docs__dash" aria-hidden="true">—</span>{motionValueLabel(stage)}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <section class="api-docs__section" aria-labelledby="tone-heading">
+      <h2 id="tone-heading" class="api-docs__h2">Tone.</h2>
+      <p class="api-docs__tone">
+        This site commits to the grammar of mortality. The five words above
+        don't move. If labelling a post <code class="api-docs__inline">fossil</code>
+        strikes you as morbid — this API is not for you. If it strikes you as
+        honest, build something.
+      </p>
+    </section>
+
+    <p class="api-docs__footnote">
+      <span>last reviewed: {REVIEWED_ON}</span>
+      <span aria-hidden="true">·</span>
+      <span>these five words don't change</span>
+    </p>
+
+  </main>
+</BaseLayout>
+
+<style>
+  /* ── Reading column — same width as the post body ─────────────────────────
+     One column, no card shell, no panel. Tanya §1.3 / §1.4.                  */
+  .api-docs {
+    max-width: var(--container-read);
+    margin: 0 auto;
+    padding: var(--space-8) var(--gutter) var(--space-16);
+    color: var(--text-primary);
+  }
+
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  .api-docs__head { margin-bottom: var(--space-8); }
+
+  .api-docs__h1 {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-primary);
+    line-height: var(--leading-tight);
+  }
+
+  /* Lede: prose-size, secondary tone, generous breathing room before code.
+     Tanya §1.5 type spec. */
+  .api-docs__lede {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-prose);
+    line-height: var(--leading-prose);
+    color: var(--text-secondary);
+    letter-spacing: var(--tracking-normal);
+  }
+
+  /* ── JSON code block ──────────────────────────────────────────────────── */
+  .api-docs__code {
+    margin: 0 0 var(--space-10);
+    padding: var(--space-4) var(--space-5);
+    background: var(--surface-inset-deep);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    tab-size: 2;
+    color: var(--text-secondary);
+    overflow-x: auto;       /* mobile: horizontal scroll inside the block */
+  }
+
+  .api-docs__code:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  /* Each line is a span — the highlight uses both color (gold) AND a left
+     border accent. Two cues for one signal — Tanya §1.7 (color alone violates
+     principle §7). */
+  .api-docs__code-line {
+    display: block;
+    padding-left: var(--space-3);
+    border-left: 2px solid transparent;
+  }
+  .api-docs__code-line[data-line-stage='true'] {
+    color: var(--gold);
+    border-left-color: var(--gold-mid);
+  }
+
+  /* ── Sections ─────────────────────────────────────────────────────────── */
+  .api-docs__section { margin-bottom: var(--space-10); }
+
+  .api-docs__h2 {
+    margin: 0 0 var(--space-5);
+    font-family: var(--font-sans);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-primary);
+  }
+
+  /* ── Five-stage list ──────────────────────────────────────────────────── */
+  .api-docs__stages { margin: 0; padding: 0; }
+
+  /* Definition row: stage word right-aligned in a 12ch column, em-dash,
+     description left-aligned. Spacing-only relationship cue. Tanya §1.6. */
+  .api-docs__row {
+    display: grid;
+    grid-template-columns: 12ch 1fr;
+    gap: var(--space-3);
+    align-items: baseline;
+    margin: 0 0 var(--space-4);
+  }
+
+  .api-docs__word {
+    margin: 0;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-normal);
+  }
+
+  /* The almost-imperceptible glow uses the existing decay color tokens —
+     vocabulary + visual identity, single source. Tanya §1.6.                */
+  [data-stage='fresh']      .api-docs__word { color: var(--color-decay-fresh);
+    text-shadow: 0 0 8px color-mix(in oklch, var(--color-decay-fresh) 18%, transparent); }
+  [data-stage='fading']     .api-docs__word { color: var(--color-decay-fading);
+    text-shadow: 0 0 8px color-mix(in oklch, var(--color-decay-fading) 18%, transparent); }
+  [data-stage='endangered'] .api-docs__word { color: var(--color-decay-endangered);
+    text-shadow: 0 0 8px color-mix(in oklch, var(--color-decay-endangered) 18%, transparent); }
+  [data-stage='ghost']      .api-docs__word { color: var(--color-decay-ghost);
+    text-shadow: 0 0 8px color-mix(in oklch, var(--color-decay-ghost) 18%, transparent); }
+  [data-stage='fossil']     .api-docs__word { color: var(--color-decay-fossil);
+    text-shadow: 0 0 8px color-mix(in oklch, var(--color-decay-fossil) 18%, transparent); }
+
+  .api-docs__def {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+    line-height: var(--leading-snug);
+  }
+
+  .api-docs__dash {
+    display: inline-block;
+    margin-right: var(--space-2);
+    color: var(--text-tertiary);
+  }
+
+  /* ── Tone paragraph (self-selection) ──────────────────────────────────── */
+  .api-docs__tone {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-prose);
+    line-height: var(--leading-prose);
+    color: var(--text-secondary);
+  }
+
+  .api-docs__inline {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    padding: 0 var(--space-1);
+    background: var(--surface-inset);
+    border-radius: var(--radius-detail);
+  }
+
+  /* ── Footnote ─────────────────────────────────────────────────────────── */
+  .api-docs__footnote {
+    margin: var(--space-12) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-ghost);
+    letter-spacing: var(--tracking-snug);
+  }
+
+  /* ── Mobile: 360px wide, no horizontal layout scroll (Tanya §5.7) ────── */
+  @media (max-width: 480px) {
+    .api-docs__row { grid-template-columns: 10ch 1fr; }
+  }
+</style>

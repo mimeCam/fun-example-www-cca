@@ -8,7 +8,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
-import { decayFactor, dominantConviction } from '../../lib/decay-engine';
+import { decayFactor, dominantConviction, wireDecayStage } from '../../lib/decay-engine';
 import type { ConvictionVerdict } from '../../lib/decay-engine';
 import {
   daysUntilEntombment, clockUrgency, deathClockLabel,
@@ -47,9 +47,14 @@ function buildClockData(
   const factor        = decayFactor(pubDateISO, CLOCK_MAX_DAYS, now, revivalCount, readingSeconds, conviction);
   const daysRemaining = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS, now, conviction);
   const urgency       = clockUrgency(daysRemaining);
+  // decayStage — sole-producer wire helper. Same `(pubDate, revivals, reading,
+  // conviction, maxDays, now)` tuple as the factor above so the JSON stage
+  // string never disagrees with the UI card. Mike §7.1 / §7.2.
+  const decayStage    = wireDecayStage(pubDateISO, revivalCount, readingSeconds, conviction, CLOCK_MAX_DAYS, now);
   const body = JSON.stringify({
     slug, daysRemaining, urgencyLevel: urgency,
     decayFactor: +factor.toFixed(4),
+    decayStage,
     conviction,
     label:    deathClockLabel(daysRemaining, urgency),
     a11yLabel: deathClockA11yLabel(daysRemaining),

@@ -13,6 +13,7 @@
 //          Tanya (UX spec §3.2B — endangered surface)
 
 import { ENTOMB_THRESHOLD } from './decay-engine';
+import type { DecayStage } from './decay-engine';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -127,6 +128,10 @@ export interface EndangeredPost {
   urgency:      UrgencyLevel; // 'warning' | 'critical' | 'final'
   revivalCount: number;
   pubDate:      string;       // ISO 8601
+  /** Discrete five-stage label — API parity with the UI card.
+   *  Always populated by the wire helper; never re-derived at the call site.
+   *  See `wireDecayStage` (decay-engine.ts) and `/api/docs` (the contract). */
+  decayStage:   DecayStage;
 }
 
 /** Rank posts by urgency: soonest death first; break ties by urgency tier (final > critical > warning). */

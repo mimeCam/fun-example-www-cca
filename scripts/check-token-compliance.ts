@@ -98,6 +98,7 @@ const GUARD_FILES = new Set([
   "src/styles/seal-ceremony.css",
   "src/styles/seal-receipt.css",
   "src/styles/seal-sound-toggle.css",
+  "src/styles/stage-motion.css",
   "src/styles/stage-transitions.css",
   "src/styles/surfaces.css",
   "src/styles/trust-badge.css",
@@ -179,6 +180,7 @@ const GUARD_FILES = new Set([
   "src/components/VerdictReveal.astro",
   // ── Pages (17 .astro files) ───────────────────────────────────────────────
   "src/pages/admin.astro",
+  "src/pages/api/docs.astro",
   "src/pages/audit/[slug].astro",
   "src/pages/author/[slug].astro",
   "src/pages/author/index.astro",
@@ -689,6 +691,47 @@ function filterUnguarded(violations: Violation[]): Violation[] {
   return violations.filter((v) => !GUARD_FILES.has(v.file));
 }
 
+// ── DecayStage literal-set guard (Mike §7.6, Paul immutability commitment) ──
+// The five wire strings are the published API vocabulary. Renaming, reordering,
+// or adding to them is a breaking change — fail the build the moment that set
+// drifts so the change is forced through review and the docs page in lockstep.
+
+const DECAY_ENGINE_TS = path.resolve(process.cwd(), "src/lib/decay-engine.ts");
+const CANONICAL_DECAY_STAGES = ["fresh", "fading", "endangered", "ghost", "fossil"];
+
+function parseDecayStagesTuple(source: string): string[] | null {
+  const re = /export\s+const\s+DECAY_STAGES\s*=\s*\[([^\]]+)\]\s*as\s+const/;
+  const match = re.exec(source);
+  if (!match) return null;
+  return match[1]
+    .split(",")
+    .map(s => s.trim().replace(/^['"]|['"]$/g, ""))
+    .filter(Boolean);
+}
+
+function decayStagesGuardMessage(found: string[] | null): string {
+  const want = JSON.stringify(CANONICAL_DECAY_STAGES);
+  const got  = JSON.stringify(found ?? []);
+  return [
+    "❌  DECAY_STAGES literal set drifted in src/lib/decay-engine.ts.",
+    `    expected: ${want}`,
+    `    found:    ${got}`,
+    "    These five strings are the published API vocabulary (see /api/docs).",
+    "    Renaming or reordering them is a breaking change — revert or rev the docs.",
+  ].join("\n");
+}
+
+function checkDecayStagesLiteralSet(): boolean {
+  const src = fs.readFileSync(DECAY_ENGINE_TS, "utf-8");
+  const tuple = parseDecayStagesTuple(src);
+  if (tuple && tuple.length === CANONICAL_DECAY_STAGES.length &&
+      tuple.every((s, i) => s === CANONICAL_DECAY_STAGES[i])) {
+    return true;
+  }
+  console.log(decayStagesGuardMessage(tuple));
+  return false;
+}
+
 // ── Stage-tokens generated-file staleness check (Mike napkin §6.5) ─────────
 // Regenerate in-memory from tokens.css, diff against the committed file.
 // Fails with a teaching message telling the dev exactly what to run.
@@ -754,8 +797,9 @@ function main(): void {
     const warnTotal = allWarns.length;
 
     const stageTokensFresh = checkStageTokensFreshness();
+    const decayStagesOk = checkDecayStagesLiteralSet();
 
-    if (guardTotal > 0 || !stageTokensFresh) {
+    if (guardTotal > 0 || !stageTokensFresh || !decayStagesOk) {
       if (guardTotal > 0) {
         printReport(guardCss, guardAstro);
         console.log(`  (${errorTotal} errors + ${warnTotal} warns in unguarded files)\n`);
@@ -763,7 +807,7 @@ function main(): void {
       process.exit(1);
     }
 
-    console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean. stage-tokens.generated.ts current.`);
+    console.log(`\u2705  Guard check: ${GUARD_FILES.size} guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable.`);
     if (errorTotal > 0 || warnTotal > 0) {
       console.log(`   \u26a0\ufe0f  ${errorTotal} errors + ${warnTotal} typography warnings remain in unguarded files.\n`);
     }

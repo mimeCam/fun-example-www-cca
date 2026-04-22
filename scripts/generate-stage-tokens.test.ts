@@ -33,6 +33,17 @@ const GOLDEN_CSS = `
   --stage-endangered-title-weight:  600;
   --stage-ghost-title-weight:       400;
   --stage-fossil-title-weight:      400;
+
+  --stage-fresh-duration:           120ms;
+  --stage-fresh-ease:               var(--motion-easing-spring);
+  --stage-fading-duration:          var(--motion-snap-duration);
+  --stage-fading-ease:              var(--motion-snap-easing);
+  --stage-endangered-duration:      var(--motion-snap-duration);
+  --stage-endangered-ease:          var(--motion-snap-easing);
+  --stage-ghost-duration:           var(--motion-snap-duration);
+  --stage-ghost-ease:               var(--motion-snap-easing);
+  --stage-fossil-duration:          var(--motion-snap-duration);
+  --stage-fossil-ease:              var(--motion-snap-easing);
 }
 `;
 
@@ -65,6 +76,38 @@ describe('parseStageTokens — missing key', () => {
   });
 });
 
+// ── parseStageTokens — v146 stage-keyed motion extension ───────────────────
+
+describe('parseStageTokens — transition duration (string passthrough)', () => {
+  test('captures fresh row verbatim (real spring value)', () => {
+    const t = parseStageTokens(GOLDEN_CSS);
+    assert.equal(t.transitionDuration.fresh, '120ms');
+  });
+
+  test('captures every other stage as var() alias — no coercion', () => {
+    const t = parseStageTokens(GOLDEN_CSS);
+    for (const k of ['fading', 'endangered', 'ghost', 'fossil'] as const) {
+      assert.equal(t.transitionDuration[k], 'var(--motion-snap-duration)');
+    }
+  });
+
+  test('captures easing strings verbatim including var() aliases', () => {
+    const t = parseStageTokens(GOLDEN_CSS);
+    assert.equal(t.transitionEase.fresh, 'var(--motion-easing-spring)');
+    assert.equal(t.transitionEase.fossil, 'var(--motion-snap-easing)');
+  });
+
+  test('throws when any --stage-*-duration row is missing', () => {
+    const broken = GOLDEN_CSS.replace(/--stage-endangered-duration:.*\n/, '');
+    assert.throws(() => parseStageTokens(broken), /missing --stage-endangered-duration/);
+  });
+
+  test('throws when any --stage-*-ease row is missing', () => {
+    const broken = GOLDEN_CSS.replace(/--stage-ghost-ease:.*\n/, '');
+    assert.throws(() => parseStageTokens(broken), /missing --stage-ghost-ease/);
+  });
+});
+
 // ── formatStageTokensFile — idempotency ───────────────────────────────────
 
 describe('formatStageTokensFile — deterministic output', () => {
@@ -86,6 +129,19 @@ describe('formatStageTokensFile — deterministic output', () => {
     for (const k of STAGE_KEYS) {
       assert.match(out, new RegExp(`${k}: `));
     }
+  });
+
+  test('emits STAGE_TRANSITION_DURATION_MS record with quoted string values', () => {
+    const out = formatStageTokensFile(parseStageTokens(GOLDEN_CSS));
+    assert.match(out, /STAGE_TRANSITION_DURATION_MS: Record<StageKey, string>/);
+    assert.match(out, /fresh: "120ms"/);
+    assert.match(out, /fading: "var\(--motion-snap-duration\)"/);
+  });
+
+  test('emits STAGE_TRANSITION_EASE record with quoted string values', () => {
+    const out = formatStageTokensFile(parseStageTokens(GOLDEN_CSS));
+    assert.match(out, /STAGE_TRANSITION_EASE: Record<StageKey, string>/);
+    assert.match(out, /fresh: "var\(--motion-easing-spring\)"/);
   });
 
   test('carries the DecayStage compile-time assertion', () => {

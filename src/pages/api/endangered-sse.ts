@@ -12,7 +12,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { getLivePosts, COMMUNITY_MAX_DAYS } from '../../lib/communityPosts';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
-import { decayFactor } from '../../lib/decay-engine';
+import { decayFactor, wireDecayStage } from '../../lib/decay-engine';
 import {
   isEndangered,
   urgencyLevel,
@@ -57,7 +57,9 @@ function buildEntry(
   const revivalCount   = getRevivalCount(slug);
   const readingSeconds = getReadingSeconds(slug);
   const decay = decayFactor(pubDate, maxDays, undefined, revivalCount, readingSeconds);
-  return { slug, title, decay, daysLeft: daysUntilEntomb(decay, maxDays), urgency: urgencyLevel(decay), revivalCount, pubDate };
+  // SSE frame is the wire contract too (Mike §7.5) — same wire helper as GET.
+  const decayStage = wireDecayStage(pubDate, revivalCount, readingSeconds, null, maxDays);
+  return { slug, title, decay, daysLeft: daysUntilEntomb(decay, maxDays), urgency: urgencyLevel(decay), revivalCount, pubDate, decayStage };
 }
 
 async function snapshot(): Promise<EndangeredPost[]> {

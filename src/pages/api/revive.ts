@@ -22,7 +22,7 @@ import { isEndangered, urgencyLevel } from '../../lib/endangered';
 import { getConstellation } from '../../lib/constellationLookup';
 import { checkRevival } from '../../lib/revivalGuard';
 import { FP_HEADER } from '../../lib/visitorFingerprint';
-import { decayFactorWithCount, stageFromFactor, decayFactor } from '../../lib/decay-engine';
+import { decayFactorWithCount, stageFromFactor, decayFactor, wireDecayStage } from '../../lib/decay-engine';
 import { canRevive as stageCanRevive, gateReason } from '../../lib/revival-gate';
 import { appendResonance } from '../../lib/conviction-ledger';
 import { getReadingSeconds } from '../../lib/collectiveMemory';
@@ -102,6 +102,11 @@ export const POST: APIRoute = async ({ request }) => {
   const decayAfterRevival  = decayFactorWithCount(pubDateISO, count);
   const decayBeforeRevival = decayFactorWithCount(pubDateISO, count - 1);
   const decayPct = Math.round(decayAfterRevival * 100);
+  // Post-revival wire stage — uses the *post-increment* count so the string
+  // matches `decayAfterRevival` the client already reads. Mike §7.3 — clients
+  // dismiss endangered cards off the float; a mismatched stage would flicker.
+  const readerSecondsForStage = (() => { try { return getReadingSeconds(slug); } catch { return 0; } })();
+  const decayStage = wireDecayStage(pubDateISO, count, readerSecondsForStage);
 
   // nowSafe: revival crossed post out of the danger zone (was endangered, now isn't)
   const nowSafe: boolean = isEndangered(decayBeforeRevival) && !isEndangered(decayAfterRevival);
@@ -135,6 +140,7 @@ export const POST: APIRoute = async ({ request }) => {
     relatedSlugs,                      // slugs for cascade bloom in cascade-bloom.ts
     decayAfterRevival,
     decayPct,
+    decayStage,                        // post-revival 5-stage label — agrees with decayAfterRevival
     monthlyCount,
     survivorRank:        survivorRank(slug, count), // percentile vs all posts
     resonance:           resonance ?? [],

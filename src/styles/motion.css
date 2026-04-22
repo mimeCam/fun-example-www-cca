@@ -130,6 +130,12 @@
     --motion-cycle-long:        0ms;
     --motion-cycle-breath:      0ms;
     --motion-cycle-glacial:     0ms;
+
+    /* Stage-keyed motion (v146) — fresh is the only stage carrying a real     */
+    /* spring timing; every other stage already aliases to --motion-snap-      */
+    /* duration, which is set to 0ms above. Fresh gets its own override here.  */
+    --stage-fresh-duration:     0ms;
+    --stage-transition-duration: 0ms;
   }
 }
 

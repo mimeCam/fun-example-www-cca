@@ -36,6 +36,19 @@
   --keep-arc-hot:    var(--gold);
 }
 
+/* Press-in / release-out timing is stage-keyed (v146, Mike §napkin + Tanya
+   §3.2). Fresh posts: the Keep button feels eager — spring overshoot on the
+   color shift from cool → warm. Every other stage aliases to today's snap
+   profile — revive-on-ghost stays ceremonial exactly like today.
+   Consumer never names a stage: the cascade dispatches via the card's
+   `[data-decay-stage]` / `[data-stage]` stamp. */
+.keep-btn {
+  transition:
+    color        var(--stage-transition-duration) var(--stage-transition-ease),
+    border-color var(--stage-transition-duration) var(--stage-transition-ease),
+    box-shadow   var(--stage-transition-duration) var(--stage-transition-ease);
+}
+
 /* ── Temperature-driven color (oklch avoids yellow mudpatch) ── */
 
 .keep-btn[data-keep-state="holding"],

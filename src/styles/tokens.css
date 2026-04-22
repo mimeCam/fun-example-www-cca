@@ -915,6 +915,30 @@
   --radius-alive:  var(--radius-stage-alive);  /* 14px — soft = alive          */
   --radius-fossil: var(--radius-stage-fossil); /*  8px — sharp = calcified     */
 
+  /* ── Stage Motion Tokens — interaction duration+easing, per stage (v146) ── */
+  /* Mike §napkin, Tanya §5: the motion axis of the decay grammar.              */
+  /* Grammar is closed on paper; physics is respected in values. Only --stage-  */
+  /* fresh-* carry new spring values — every other stage aliases to the snap    */
+  /* profile so its interactions feel identical to today. Tune the ramp from    */
+  /* data, not from an architect's hunch.                                       */
+  --stage-fresh-duration:       120ms;
+  --stage-fresh-ease:           var(--motion-easing-spring);
+  --stage-fading-duration:      var(--motion-snap-duration);
+  --stage-fading-ease:          var(--motion-snap-easing);
+  --stage-endangered-duration:  var(--motion-snap-duration);
+  --stage-endangered-ease:      var(--motion-snap-easing);
+  --stage-ghost-duration:       var(--motion-snap-duration);
+  --stage-ghost-ease:           var(--motion-snap-easing);
+  --stage-fossil-duration:      var(--motion-snap-duration);
+  --stage-fossil-ease:           var(--motion-snap-easing);
+
+  /* Resolver aliases consumed by stage-aware components — never branch on the  */
+  /* stage in component CSS; read these and let the cascade dispatch. Defaults  */
+  /* alias to snap so that non-stage-aware elements keep today's feel. Overrides*/
+  /* live in stage-motion.css, keyed off [data-decay-stage] / [data-stage].     */
+  --stage-transition-duration:  var(--motion-snap-duration);
+  --stage-transition-ease:      var(--motion-snap-easing);
+
   /* ── Stage-Crossing Flash Tokens (Tanya §3 — decay:stage-change visual flinch) ── */
   /* Flash color comes from --color-decay-* ramp — no new hex values.               */
   /* Ring opacity = border glow peak; tint opacity = cover image overlay peak.       */

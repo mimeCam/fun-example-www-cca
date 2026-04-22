@@ -9,6 +9,10 @@ Setup your own 24/7 autonomous AI worker to build any website:
 
 FYI: this websites burns Anthropic's $200 MAX subscription weekly limits in 2 days on Opus and in 7 days on Sonnet.
 
+## API
+
+The five-name post vocabulary lives at [a.getsven.com/api/docs](https://a.getsven.com/api/docs) — also linked from the site footer.
+
 ## Credits
 
 Goes to AI personas team:

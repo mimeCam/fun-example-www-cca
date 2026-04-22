@@ -3,9 +3,13 @@
 // Codegen: reads src/styles/tokens.css (human-edited single source of truth),
 // emits src/lib/stage-tokens.generated.ts with a DO-NOT-EDIT header.
 //
-// Scope — Move A only (Mike's napkin, 2026-04-22):
-//   · --stage-*-text-primary → STAGE_TEXT_PRIMARY_OPACITY
-//   · --stage-*-title-weight → STAGE_TITLE_WEIGHT
+// Scope — Move A (Mike's napkin, 2026-04-22):
+//   · --stage-*-text-primary → STAGE_TEXT_PRIMARY_OPACITY    (number)
+//   · --stage-*-title-weight → STAGE_TITLE_WEIGHT             (number)
+//
+// Scope — v146 stage-keyed motion extension (Mike §napkin, Tanya §5):
+//   · --stage-*-duration     → STAGE_TRANSITION_DURATION_MS  (string)
+//   · --stage-*-ease         → STAGE_TRANSITION_EASE          (string)
 //
 // Deliberately out of scope (see _reports/from-michael-koch §5, §7):
 //   · decay OKLCH colors        — no non-CSS consumer today (YAGNI)
@@ -33,8 +37,10 @@ export const STAGE_KEYS = [
 export type StageKey = typeof STAGE_KEYS[number];
 
 export interface StageTokens {
-  textPrimary: Record<StageKey, number>;
-  titleWeight: Record<StageKey, number>;
+  textPrimary:        Record<StageKey, number>;
+  titleWeight:        Record<StageKey, number>;
+  transitionDuration: Record<StageKey, string>;
+  transitionEase:     Record<StageKey, string>;
 }
 
 // ── Parser (pure, unit-tested) ─────────────────────────────────────────────
@@ -42,8 +48,10 @@ export interface StageTokens {
 /** Parse stage-scoped presentational atoms from tokens.css source text. */
 export function parseStageTokens(css: string): StageTokens {
   return {
-    textPrimary: extractPerStage(css, 'text-primary', parseFloat),
-    titleWeight: extractPerStage(css, 'title-weight', parseBase10),
+    textPrimary:        extractPerStage(css, 'text-primary', parseFloat),
+    titleWeight:        extractPerStage(css, 'title-weight', parseBase10),
+    transitionDuration: extractPerStageStr(css, 'duration'),
+    transitionEase:     extractPerStageStr(css, 'ease'),
   };
 }
 
@@ -68,6 +76,24 @@ function readOneStage(
   return toNum(m[1]);
 }
 
+/** String-valued token extractor — duration / ease pass through verbatim.
+ *  No numeric coercion: the value may be a raw "120ms" or a `var(--…)` alias.
+ *  Downstream consumers (OG / Satori) embed the literal CSS string. */
+function extractPerStageStr(
+  css: string, suffix: string,
+): Record<StageKey, string> {
+  const out = {} as Record<StageKey, string>;
+  for (const key of STAGE_KEYS) out[key] = readOneStageStr(css, key, suffix);
+  return out;
+}
+
+function readOneStageStr(css: string, key: StageKey, suffix: string): string {
+  const re = new RegExp(`--stage-${key}-${suffix}\\s*:\\s*([^;]+);`);
+  const m = re.exec(css);
+  if (!m) throw new Error(`missing --stage-${key}-${suffix} in tokens.css`);
+  return m[1].trim();
+}
+
 // ── Formatter (pure, deterministic, idempotent) ────────────────────────────
 
 /** Render the .generated.ts file contents. Same input → same bytes. */
@@ -79,6 +105,8 @@ export function formatStageTokensFile(t: StageTokens): string {
     stageAssertionBlock(),
     recordBlock('STAGE_TEXT_PRIMARY_OPACITY', t.textPrimary),
     recordBlock('STAGE_TITLE_WEIGHT', t.titleWeight),
+    stringRecordBlock('STAGE_TRANSITION_DURATION_MS', t.transitionDuration),
+    stringRecordBlock('STAGE_TRANSITION_EASE', t.transitionEase),
     '',
   ].join('\n');
 }
@@ -119,6 +147,11 @@ function stageAssertionBlock(): string {
 function recordBlock(name: string, rec: Record<StageKey, number>): string {
   const entries = STAGE_KEYS.map((k) => `  ${k}: ${formatNum(rec[k])},`).join('\n');
   return `export const ${name}: Record<StageKey, number> = {\n${entries}\n};`;
+}
+
+function stringRecordBlock(name: string, rec: Record<StageKey, string>): string {
+  const entries = STAGE_KEYS.map((k) => `  ${k}: ${JSON.stringify(rec[k])},`).join('\n');
+  return `export const ${name}: Record<StageKey, string> = {\n${entries}\n};`;
 }
 
 function formatNum(n: number): string {

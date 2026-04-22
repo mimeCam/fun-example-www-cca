@@ -14,6 +14,10 @@
  */
 
 /* ── Base shell ──────────────────────────────────────────────────────────── */
+/* Hover transition is stage-keyed (v146, Mike §napkin + Tanya §5). Fresh      */
+/* cards spring at 120ms with overshoot; every other stage aliases to the      */
+/* snap profile — i.e. today's 120ms linear feel. The cascade dispatches via   */
+/* `[data-decay-stage]` / `[data-stage]`; this rule never names a stage.       */
 .card-base {
   position: relative;
   background: var(--surface-raised);
@@ -23,8 +27,8 @@
   display: flex;
   flex-direction: column;
   transition:
-    box-shadow var(--transition-hover),
-    transform  var(--transition-hover);
+    box-shadow var(--stage-transition-duration) var(--stage-transition-ease),
+    transform  var(--stage-transition-duration) var(--stage-transition-ease);
 }
 
 /* Standard hover lift — SNAP profile (Tanya §12 micro-interaction catalogue) */

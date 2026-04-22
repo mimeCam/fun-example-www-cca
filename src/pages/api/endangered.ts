@@ -11,7 +11,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { getLivePosts, COMMUNITY_MAX_DAYS } from '../../lib/communityPosts';
 import { getRevivalCount, getReadingSeconds } from '../../lib/collectiveMemory';
-import { decayFactor } from '../../lib/decay-engine';
+import { decayFactor, wireDecayStage } from '../../lib/decay-engine';
 import {
   isEndangered,
   urgencyLevel,
@@ -52,6 +52,9 @@ function buildEntry(
   const revivalCount = getRevivalCount(slug);
   const readingSeconds = getReadingSeconds(slug);
   const decay = decayFactor(pubDate, maxDays, undefined, revivalCount, readingSeconds);
+  // decayStage MUST come from the wire helper — never re-derive thresholds
+  // here. Mike §7.1 / §7.2 — single source of truth for the wire vocabulary.
+  const decayStage = wireDecayStage(pubDate, revivalCount, readingSeconds, null, maxDays);
   return {
     slug,
     title,
@@ -60,6 +63,7 @@ function buildEntry(
     urgency: urgencyLevel(decay),
     revivalCount,
     pubDate,
+    decayStage,
   };
 }
 

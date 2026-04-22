@@ -172,6 +172,41 @@ export function stageFromFactor(f: number): DecayStage {
   return 'fresh';
 }
 
+/**
+ * Frozen tuple of every wire-published `DecayStage` literal.
+ * Single export consumed by the literal-set guard in
+ * `scripts/check-token-compliance.ts` and by the docs page (`/api/docs`).
+ *
+ * **Immutability commitment** — these five strings are the public vocabulary
+ * of the site (Paul §7.6, Tanya §1.9). Reordering or renaming a value here
+ * is a breaking API change; the guard fails the build to make that explicit.
+ */
+export const DECAY_STAGES = ['fresh', 'fading', 'endangered', 'ghost', 'fossil'] as const;
+
+/**
+ * Sole server-side producer of the `decayStage` wire string.
+ *
+ * Every JSON endpoint that publishes post-shaped data calls this helper —
+ * never `stageFromFactor` directly with hand-rolled inputs. That guarantees
+ * the wire stage stays in lockstep with the UI card for the same `(pubDate,
+ * revivals, reading, conviction)` tuple (Mike §7.2).
+ *
+ * Pass `undefined` for `maxDays` to get the engine default (365 days) — the
+ * same fallback that `decayFactor` uses, so blog + community posts both
+ * resolve correctly without the call site re-deriving the lifespan.
+ */
+export function wireDecayStage(
+  pubDateISO: string,
+  revivalCount = 0,
+  readingSeconds = 0,
+  conviction: ConvictionVerdict | null = null,
+  maxDays?: number,
+  now: Date = new Date(),
+): DecayStage {
+  const factor = decayFactor(pubDateISO, maxDays, now, revivalCount, readingSeconds, conviction);
+  return stageFromFactor(factor);
+}
+
 // ---------------------------------------------------------------------------
 // Visual mappings — perceptual curve widens contrast between stages
 // All visual functions accept RAW factor; they apply perceptual internally.
@@ -647,6 +682,21 @@ export function _testDecayEngine(): void {
   // Backwards compat: decayFactorWithCount still works (conviction defaults to null)
   const wc2 = decayFactorWithCount('2026-01-01', 0, 365, testNow);
   console.assert(wc2 === fNull, 'withCount matches null-conviction baseline');
+
+  // wireDecayStage — sole wire producer; must agree with stageFromFactor for
+  // the same (pubDate, revivals, reading, conviction) tuple. Mike §7.2.
+  const wsBaseline = wireDecayStage('2026-01-01', 0, 0, null, 365, testNow);
+  const wsExpected = stageFromFactor(decayFactor('2026-01-01', 365, testNow, 0, 0, null));
+  console.assert(wsBaseline === wsExpected, `wire stage matches stageFromFactor (${wsBaseline} vs ${wsExpected})`);
+  // Same date, conviction='wrong' decays faster — must still resolve a valid literal
+  const wsWrong = wireDecayStage('2026-01-01', 0, 0, 'wrong', 365, testNow);
+  console.assert(DECAY_STAGES.includes(wsWrong), `wrong-conviction wire stage in literal set (${wsWrong})`);
+  // Defaults: undefined maxDays → engine default; same-day post is fresh
+  console.assert(wireDecayStage('2026-04-22', 0, 0, null, undefined, new Date('2026-04-22')) === 'fresh', 'wire same-day = fresh');
+
+  // DECAY_STAGES is the canonical literal tuple — exactly five strings.
+  console.assert(DECAY_STAGES.length === 5, 'five stages');
+  console.assert(DECAY_STAGES[0] === 'fresh' && DECAY_STAGES[4] === 'fossil', 'literal order');
 
   console.log('[decay-engine] OK — all checks passed');
 }

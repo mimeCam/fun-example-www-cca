@@ -4,6 +4,135 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v146 — Stage-Keyed Motion (Fresh-Spike, One Axis) (2026-04-22)
+#   Sprint: Turn interaction timing into the fifth axis of the decay grammar.
+#     Only `fresh` carries bespoke spring values (120ms · spring easing); every
+#     other stage aliases to `--motion-snap-*` so nothing hovers slower than
+#     today. The cascade dispatches — components never branch on a stage
+#     literal. Pure UIX polish — zero infrastructure changes.
+#   Key changes:
+#     src/styles/stage-motion.css (new) — five `[data-decay-stage="…"]` /
+#       `[data-stage="…"]` rows map each stage's `--stage-*-duration` +
+#       `--stage-*-ease` onto the resolver pair `--stage-transition-duration`
+#       / `--stage-transition-ease`. Dual-key selectors cover both the DecayCard
+#       `data-decay-stage` stamp and the supporting-surface `data-stage`
+#       stamp (DecayClock, StagePill, …) without a plumbing sweep. Add a
+#       stage → add one row; downstream consumers change nothing.
+#     src/styles/tokens.css — ten new stage-motion tokens
+#       (`--stage-{fresh|fading|endangered|ghost|fossil}-{duration,ease}`)
+#       plus the two resolver aliases `--stage-transition-duration` /
+#       `--stage-transition-ease` that default to the snap profile (so
+#       non-stage-aware elements keep today's feel). Only `fresh` spikes to
+#       120ms with `--motion-easing-spring`; every other row aliases to
+#       `--motion-snap-*`. Ten tokens, one behavioural change — Elon §first-
+#       principles veto on slowing the ramp anywhere else.
+#     src/styles/motion.css — `prefers-reduced-motion: reduce` block gains
+#       `--stage-fresh-duration: 0ms` and `--stage-transition-duration: 0ms`
+#       so the fresh spring collapses to instant for accessibility.
+#     src/styles/global.css — imports `./stage-motion.css` right after
+#       `./motion.css` so the cascade dispatch is live before any card sheet
+#       reads the resolver pair.
+#     src/styles/card-base.css — `.card-base` transition consumes
+#       `var(--stage-transition-duration) var(--stage-transition-ease)` for
+#       box-shadow + transform. Never names a stage — the card's
+#       `[data-decay-stage]` stamp drives dispatch.
+#     src/styles/keep-button.css — `.keep-btn` transition consumes the same
+#       resolver pair for color/border-color/box-shadow. Fresh-card KeepButton
+#       springs eagerly; revive-on-ghost stays ceremonial exactly like today.
+#     scripts/generate-stage-tokens.ts — parser + formatter extended with
+#       string-passthrough extractor `extractPerStageStr()`. `StageTokens`
+#       gains `transitionDuration` + `transitionEase` records (strings, no
+#       numeric coercion — value may be raw `120ms` or `var(…)` alias).
+#       `formatStageTokensFile()` emits two new `Record<StageKey, string>`
+#       blocks: `STAGE_TRANSITION_DURATION_MS`, `STAGE_TRANSITION_EASE`.
+#     src/lib/stage-tokens.generated.ts — regenerated artefact now carries
+#       both new records; verified against tokens.css at commit time. The
+#       prebuild staleness guard (check-token-compliance.ts) continues to
+#       diff in-memory — edit tokens.css without regen → build fails fast.
+#     scripts/generate-stage-tokens.test.ts — six new `node:test` cases
+#       cover: fresh row verbatim passthrough, every-other-stage alias
+#       capture, easing string passthrough including `var()`, missing-row
+#       throw (both duration + ease), and record-block shape in output.
+#       Dev-only; not part of Docker build or runtime.
+#     AGENTS.md — new "Stage-keyed motion (v146)" paragraph documents the
+#       token pair, the fresh-only spike, the dual-key cascade dispatch,
+#       and the "components never branch on stage" contract.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `src/` and `scripts/`
+#     wholesale into the builder stage, so the new CSS file, extended
+#     codegen, regenerated artefact, and codegen tests all ship without
+#     any Dockerfile edits. The prebuild compliance guard + stage-tokens
+#     staleness diff run inside `npm run build` during the Docker builder
+#     stage and will fail fast (non-zero) if either the DECAY_STAGES
+#     literal set or the stage-tokens mirror has drifted. deploy.sh
+#     startup sequence (steps 1–8) identical to v145.
+#
+# Architecture v145 — DecayStage Wire Contract & Public API Docs Page (2026-04-22)
+#   Sprint: Freeze the five-name `DecayStage` vocabulary as a published wire
+#     contract, wire a single-producer helper into every JSON endpoint, and
+#     ship a human-readable reference page (`/api/docs`) that renders the
+#     canonical tuple live from source. Pure code-quality + UIX surface —
+#     zero infrastructure changes.
+#   Key changes:
+#     src/lib/decay-engine.ts — new `DECAY_STAGES` as-const tuple (the five
+#       literal strings `fresh/fading/endangered/ghost/fossil`, frozen and
+#       exported as the canonical wire vocabulary). New `wireDecayStage()`
+#       helper — the sole server-side producer of the wire `decayStage`
+#       string. Callers pass `(pubDateISO, revivals?, readingSeconds?,
+#       conviction?, maxDays?, now?)` and get back one of DECAY_STAGES; the
+#       helper calls `decayFactor` + `stageFromFactor` under the hood so the
+#       wire label can never disagree with the UI-card label for the same
+#       tuple (Mike §7.1/§7.2, Paul immutability commitment §7.6). New
+#       `_testDecayEngine()` assertions cover wire/UI parity, conviction
+#       multiplier propagation, default-maxDays fallback, and tuple length.
+#     src/lib/endangered.ts — `EndangeredPost` interface gains a required
+#       `decayStage: DecayStage` field; `DecayStage` type imported and
+#       re-exported through the endangered surface. The field is always
+#       populated by the wire helper — never re-derived at the call site.
+#     src/pages/api/death-clock.ts — response JSON adds `decayStage`, sourced
+#       from `wireDecayStage()` using the same `(pubDate, revivals, reading,
+#       conviction, CLOCK_MAX_DAYS, now)` tuple already passed to `decayFactor`.
+#     src/pages/api/endangered.ts — `buildEntry()` emits `decayStage` on every
+#       entry via the wire helper (null conviction — community feed surface).
+#     src/pages/api/endangered-sse.ts — SSE frame wire contract updated: each
+#       pushed entry carries `decayStage` so clients dismissing endangered
+#       cards off the live float never flicker on a stage mismatch.
+#     src/pages/api/revive.ts — response JSON adds post-revival `decayStage`
+#       computed with the *post-increment* revival count so it agrees with
+#       the `decayAfterRevival` float the client already reads (Mike §7.3).
+#     src/pages/api/docs.astro (new, public page at `/api/docs`) — one-column
+#       BaseLayout surface with three sections: JSON sample block, the five
+#       DecayStage rows (colour + glow per `--color-decay-*`), and a tone
+#       paragraph. List is driven by `DECAY_STAGES.map(...)` so the page
+#       cannot drift from the tuple. No new components; all spacing, type,
+#       and colour values pull from the existing token system (Tanya §1).
+#       Referenced from the footer + README.
+#     scripts/check-token-compliance.ts — new `checkDecayStagesLiteralSet()`
+#       guard. Parses `src/lib/decay-engine.ts` at prebuild time, extracts
+#       the `DECAY_STAGES` tuple, and fails the build with a teaching error
+#       message if the literal set has been renamed, reordered, or grown.
+#       Also adds `src/pages/api/docs.astro` to GUARD_FILES (token-compliance
+#       coverage for the new page).
+#     src/lib/decay-wire.test.ts (new, dev-only) — node:test unit tests
+#       covering wire/UI parity, tuple immutability, conviction multiplier
+#       propagation, buildEntry-shape round-trip, and post-revival count
+#       semantics. Invoked via `npx tsx --test src/lib/decay-wire.test.ts`.
+#       NOT executed at Docker build or runtime — pure dev artefact.
+#     README.md — new "API" section linking to the published docs page.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `scripts/` and `src/`
+#     wholesale into the builder stage, so the new wire helper, the new
+#     docs page, the new literal-set guard, and the dev-only test file all
+#     ship without any Dockerfile edits. The extended prebuild guard runs
+#     inside `npm run build` during the Docker builder stage and will fail
+#     fast (non-zero) if either the stage-tokens mirror or the DECAY_STAGES
+#     literal set has drifted. deploy.sh startup sequence (steps 1–8)
+#     identical to v144.
+#
 # Architecture v144 — Stage-Token Codegen (CSS → TS, Move A) (2026-04-22)
 #   Sprint: Cut the hard-coded duplication between `tokens.css` (CSS truth) and
 #     the Satori OG layout by introducing a codegen artefact sourced from CSS.

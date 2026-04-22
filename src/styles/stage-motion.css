@@ -1,0 +1,64 @@
+/* src/styles/stage-motion.css
+ * Stage-keyed motion — the fresh spike (v146).
+ *
+ * One axis. One token pair. One attribute. Zero new runtime.
+ *
+ * The cascade matches exactly one `[data-decay-stage="…"]` rule per element;
+ * consumers read `--stage-transition-duration` / `--stage-transition-ease`
+ * without ever branching on a stage literal. Add a stage → add a row here,
+ * change nothing downstream. (Mike §napkin "polymorphic dispatch".)
+ *
+ * Why populate five rows when only `fresh` has bespoke values today:
+ *   - The grammar of the decay axis closes on paper (Paul).
+ *   - The nervous system is respected in values (Elon): every non-fresh stage
+ *     aliases to the snap profile, i.e. today's 120 ms baseline — no card
+ *     ever hovers slower than `main`.
+ *   - Extending later is a value change in tokens.css, not an architecture
+ *     change here.
+ *
+ * Dual-key support: the codebase stamps the axis as two attributes today —
+ *   · `data-decay-stage` on decay cards (DecayCard, ConvictionRecord, …)
+ *   · `data-stage`       on supporting surfaces (DecayClock, StagePill, …)
+ * Both selectors are written so every stage-stamped element dispatches the
+ * same way. Keeps Tanya §5 contract surgical without a plumbing sweep.
+ *
+ * Credits: Mike (§napkin stage-keyed-motion), Tanya (§5 minimum viable
+ *          tokens + §3 fresh-only experience), Elon (first-principles
+ *          veto on the slow end of the ramp), Paul (grammar closure on
+ *          paper). AGENTS.md ("polish what we have — AAA").
+ */
+
+/* ── Fresh — the only populated spike; everything else alias snap ────────── */
+[data-decay-stage="fresh"],
+[data-stage="fresh"] {
+  --stage-transition-duration: var(--stage-fresh-duration);
+  --stage-transition-ease:     var(--stage-fresh-ease);
+}
+
+/* ── Fading — grammar row, value alias to snap. Feels like today. ──────── */
+[data-decay-stage="fading"],
+[data-stage="fading"] {
+  --stage-transition-duration: var(--stage-fading-duration);
+  --stage-transition-ease:     var(--stage-fading-ease);
+}
+
+/* ── Endangered — urgency lives in brightness, not tempo. Alias to snap. ─ */
+[data-decay-stage="endangered"],
+[data-stage="endangered"] {
+  --stage-transition-duration: var(--stage-endangered-duration);
+  --stage-transition-ease:     var(--stage-endangered-ease);
+}
+
+/* ── Ghost — alias to snap; revival ceremony lives elsewhere. ──────────── */
+[data-decay-stage="ghost"],
+[data-stage="ghost"] {
+  --stage-transition-duration: var(--stage-ghost-duration);
+  --stage-transition-ease:     var(--stage-ghost-ease);
+}
+
+/* ── Fossil — silence is the message. Alias to snap; no slowed clock. ─── */
+[data-decay-stage="fossil"],
+[data-stage="fossil"] {
+  --stage-transition-duration: var(--stage-fossil-duration);
+  --stage-transition-ease:     var(--stage-fossil-ease);
+}
