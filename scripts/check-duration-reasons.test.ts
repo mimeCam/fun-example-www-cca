@@ -23,6 +23,9 @@ import assert from 'node:assert/strict';
 import {
   LEGAL_REASONS,
   LEGAL_REASONS_SET,
+  computeReducedMotionMask,
+  isReducedMotionMediaOpen,
+  netBraceDelta,
   parseReasonComment,
   isAliasValue,
   isLiteralDurationDecl,
@@ -82,6 +85,50 @@ const FIXTURE_MULTI_MISSING = `
   --motion-duration-fast: 150ms;  /* reason: micro-feedback */
   --bad-1: 333ms;
   --bad-2: 0.5s;
+}
+`;
+
+/** Reduced-motion opt-out block — 0ms policy zeros, NOT perceptual choices.
+ *  Mike napkin v158 §5.2: the entire block is exempt from the reason rule. */
+const FIXTURE_REDUCED_MOTION_BLOCK = `
+:root {
+  --foo-duration: 200ms;  /* reason: micro-feedback */
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --foo-duration: 0ms;
+    --bar-duration: 0ms;
+  }
+}
+`;
+
+/** Clean motion-profile-style fixture — covers the common motion.css shape. */
+const FIXTURE_MOTION_CLEAN = `
+:root {
+  --motion-snap-duration: 120ms;  /* reason: snap */
+  --motion-flow-duration: 200ms;  /* reason: micro-feedback */
+  --stagger-base: 60ms;           /* reason: micro-feedback */
+  --motion-bloom-settle: var(--duration-bloom);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-snap-duration: 0ms;
+    --motion-flow-duration: 0ms;
+    --stagger-base: 0ms;
+  }
+}
+`;
+
+/** Motion fixture with a missing reason OUTSIDE the reduced-motion block —
+ *  proves exemption is scoped to the block, not file-wide. */
+const FIXTURE_MOTION_MISSING = `
+:root {
+  --motion-duration-grand: 800ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-grand: 0ms;
+  }
 }
 `;
 
@@ -190,11 +237,95 @@ describe('scanDurationReasons — fixture coverage', () => {
     for (const v of vs) assert.equal(v.rule, 'duration-reason-missing');
   });
 
+  test('FIXTURE_REDUCED_MOTION_BLOCK → zero violations (0ms is policy)', () => {
+    const vs = scanDurationReasons(
+      toLines(FIXTURE_REDUCED_MOTION_BLOCK), 'x.css');
+    assert.deepEqual(vs, []);
+  });
+
+  test('FIXTURE_MOTION_CLEAN → zero violations (motion-profile shape)', () => {
+    const vs = scanDurationReasons(toLines(FIXTURE_MOTION_CLEAN), 'x.css');
+    assert.deepEqual(vs, []);
+  });
+
+  test('FIXTURE_MOTION_MISSING → exactly 1 violation (outside the block)', () => {
+    const vs = scanDurationReasons(toLines(FIXTURE_MOTION_MISSING), 'x.css');
+    assert.equal(vs.length, 1);
+    assert.equal(vs[0].rule, 'duration-reason-missing');
+    assert.match(vs[0].match, /motion-duration-grand/);
+  });
+
   test('violation carries file, line, column from the source position', () => {
     const vs = scanDurationReasons(toLines(FIXTURE_MISSING), 'src/styles/x.css');
     assert.equal(vs[0].file, 'src/styles/x.css');
     assert.ok(vs[0].line > 0, `expected positive line, got ${vs[0].line}`);
     assert.ok(vs[0].column > 0, `expected positive column, got ${vs[0].column}`);
+  });
+});
+
+// ── Reduced-motion context helpers (Mike napkin v158 §5.2) ───────────────
+
+describe('isReducedMotionMediaOpen — opener detection', () => {
+  test('matches the canonical shape', () => {
+    assert.equal(
+      isReducedMotionMediaOpen('@media (prefers-reduced-motion: reduce) {'),
+      true,
+    );
+  });
+  test('matches tolerant whitespace + extra conditions', () => {
+    assert.equal(
+      isReducedMotionMediaOpen(
+        '@media   screen   and ( prefers-reduced-motion : reduce ) {'),
+      true,
+    );
+  });
+  test('does NOT match without the `{` (same-line brace required)', () => {
+    assert.equal(
+      isReducedMotionMediaOpen('@media (prefers-reduced-motion: reduce)'),
+      false,
+    );
+  });
+  test('does NOT match unrelated @media queries', () => {
+    assert.equal(isReducedMotionMediaOpen('@media (min-width: 640px) {'), false);
+  });
+});
+
+describe('netBraceDelta — per-line brace counter', () => {
+  test('returns 1 for a single opener', () => {
+    assert.equal(netBraceDelta(':root {'), 1);
+  });
+  test('returns -1 for a single closer', () => {
+    assert.equal(netBraceDelta('}'), -1);
+  });
+  test('returns 0 for a same-line matched pair', () => {
+    assert.equal(netBraceDelta('x { y }'), 0);
+  });
+  test('returns 0 for a line with no braces', () => {
+    assert.equal(netBraceDelta('  --foo: 200ms;'), 0);
+  });
+});
+
+describe('computeReducedMotionMask — in-block detection', () => {
+  test('flags every line from opener through closing brace', () => {
+    const lines = [
+      ':root { --a: 1; }',
+      '@media (prefers-reduced-motion: reduce) {',
+      '  :root {',
+      '    --a: 0ms;',
+      '  }',
+      '}',
+      ':root { --b: 2; }',
+    ];
+    const mask = computeReducedMotionMask(lines);
+    assert.deepEqual(mask, [false, true, true, true, true, false, false]);
+  });
+  test('does not flag non-reduced-motion @media blocks', () => {
+    const lines = ['@media (min-width: 640px) {', '  .x { color: red; }', '}'];
+    assert.deepEqual(computeReducedMotionMask(lines), [false, false, false]);
+  });
+  test('returns an all-false mask when no block exists', () => {
+    const lines = [':root {', '  --a: 200ms;', '}'];
+    assert.deepEqual(computeReducedMotionMask(lines), [false, false, false]);
   });
 });
 
@@ -206,6 +337,9 @@ describe('TARGET_FILES — guard scope is explicit and non-empty', () => {
   });
   test('tokens.css is the primary target', () => {
     assert.ok(TARGET_FILES.includes('src/styles/tokens.css'));
+  });
+  test('motion.css joined the ledger (Krystle v157 / Mike v158)', () => {
+    assert.ok(TARGET_FILES.includes('src/styles/motion.css'));
   });
   test('every entry is a .css file inside src/styles/', () => {
     for (const f of TARGET_FILES) {
@@ -225,22 +359,33 @@ describe('TARGET_FILES — guard scope is explicit and non-empty', () => {
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+/** Shared witness — read a CSS file off disk, run the scanner, assert zero
+ *  violations, and on failure report each breach so the developer never has
+ *  to re-run the guard to know what to fix. Keeps both regressions DRY.    */
+function assertLiveFileClean(rel: string): void {
+  const abs = path.resolve(process.cwd(), rel);
+  if (!fs.existsSync(abs)) {
+    // Environments without the file skip cleanly — the guard itself fires
+    // a target-missing violation in that case; no double-report here.
+    return;
+  }
+  const lines = fs.readFileSync(abs, 'utf-8').split('\n');
+  const violations: Violation[] = scanDurationReasons(lines, rel);
+  assert.equal(
+    violations.length, 0,
+    `${rel} has ${violations.length} reason violation(s): ` +
+    violations.map(v => `${v.line}:${v.column} [${v.rule}] ${v.match}`).join(' | '),
+  );
+}
+
 describe('regression — live src/styles/tokens.css passes the guard', () => {
   test('zero violations on the current tokens.css', () => {
-    const rel = 'src/styles/tokens.css';
-    const abs = path.resolve(process.cwd(), rel);
-    if (!fs.existsSync(abs)) {
-      // Environments without the file will skip this assertion cleanly;
-      // the guard itself fails loudly in that case via a target-missing
-      // violation — no double-report needed here.
-      return;
-    }
-    const lines = fs.readFileSync(abs, 'utf-8').split('\n');
-    const violations: Violation[] = scanDurationReasons(lines, rel);
-    assert.equal(
-      violations.length, 0,
-      `tokens.css has ${violations.length} reason violation(s): ` +
-      violations.map(v => `${v.line}:${v.column} [${v.rule}] ${v.match}`).join(' | '),
-    );
+    assertLiveFileClean('src/styles/tokens.css');
+  });
+});
+
+describe('regression — live src/styles/motion.css passes the guard', () => {
+  test('zero violations on the current motion.css', () => {
+    assertLiveFileClean('src/styles/motion.css');
   });
 });

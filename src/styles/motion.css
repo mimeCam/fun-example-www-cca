@@ -11,13 +11,15 @@
 :root {
 
   /* ── Duration Scale ─────────────────────────────────────────────────── */
-  --duration-instant:  80ms;
-  --duration-fast:     150ms;
-  --duration-normal:   300ms;
-  --duration-slow:     500ms;
-  --duration-dramatic: 800ms;
-  --duration-bloom:    1200ms;
-  --duration-museum:   1400ms;   /* crystallized shimmer sweep — deliberate, not urgent */
+  /* Ledger mapping (Mike napkin v158 §5.1). The scale is perceptual, not
+   * arbitrary — every step names the band it serves in the 9-label ledger. */
+  --duration-instant:  80ms;    /* reason: micro-feedback */
+  --duration-fast:     150ms;   /* reason: micro-feedback */
+  --duration-normal:   300ms;   /* reason: ceremony-phase */
+  --duration-slow:     500ms;   /* reason: ceremony-phase */
+  --duration-dramatic: 800ms;   /* reason: ceremony-dwell */
+  --duration-bloom:    1200ms;  /* reason: linger */
+  --duration-museum:   1400ms;  /* reason: linger */  /* crystallized shimmer sweep — deliberate, not urgent */
 
   /* ── Named Easing Functions ─────────────────────────────────────────── */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);      /* snappy exit */
@@ -28,19 +30,19 @@
   /* ── Motion Profiles (3 named — the only ones to use) ───────────────── */
 
   /* SNAP — instant feedback, micro-interactions (hover, focus, border) */
-  --motion-snap-duration: 120ms;
+  --motion-snap-duration: 120ms;  /* reason: snap */
   --motion-snap-easing:   cubic-bezier(0.25, 0, 0, 1);
 
   /* FLOW — standard state changes, badge appear, filter pills */
-  --motion-flow-duration: 200ms;
+  --motion-flow-duration: 200ms;  /* reason: micro-feedback */
   --motion-flow-easing:   cubic-bezier(0.4, 0, 0.2, 1);
 
   /* CEREMONY — emotional moments: revival bloom, verdict reveal */
-  --motion-ceremony-duration: 600ms;
+  --motion-ceremony-duration: 600ms;  /* reason: ceremony-phase */
   --motion-ceremony-easing:   cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* SPRING — hold-to-revive arc, bloom-settle physics */
-  --motion-spring-duration: 800ms;
+  --motion-spring-duration: 800ms;  /* reason: ceremony-dwell */
   --motion-spring-easing: linear(
     0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%,
     0.938 16.7%, 1.017, 1.077, 1.121 24%, 1.149 26.2%,
@@ -49,16 +51,17 @@
   );
 
   /* DRIFT — slow ambient transitions, age rendering */
-  --motion-drift-duration: 500ms;
+  --motion-drift-duration: 500ms;  /* reason: ambient-pulse */
   --motion-drift-easing:   cubic-bezier(0.4, 0, 1, 1);
 
   /* ── Duration Gap-Fills (Mike §napkin — vocabulary expansion) ────────── */
-  /* Fills missing steps between named profiles for token migration.       */
-  --motion-duration-swift:     200ms;  /* leaderboard row stagger, filter pill     */
-  --motion-duration-measured:  400ms;  /* verdict badge entry, card lift            */
-  --motion-duration-dramatic:  600ms;  /* ceremony phases, stage transitions        */
-  --motion-duration-grand:     800ms;  /* ambient pulse, verdict ceremony           */
-  --motion-duration-breath:   1200ms;  /* bloom settle, crystallized sweep          */
+  /* Fills missing steps between named profiles for token migration.
+   * Ledger labels picked per Mike napkin v158 §5.1 mapping table.         */
+  --motion-duration-swift:     200ms;  /* reason: micro-feedback */ /* leaderboard row stagger, filter pill */
+  --motion-duration-measured:  400ms;  /* reason: doherty */         /* verdict badge entry, card lift      */
+  --motion-duration-dramatic:  600ms;  /* reason: ceremony-phase */  /* ceremony phases, stage transitions  */
+  --motion-duration-grand:     800ms;  /* reason: ceremony-dwell */  /* ambient pulse, verdict ceremony     */
+  --motion-duration-breath:   1200ms;  /* reason: linger */          /* bloom settle, crystallized sweep    */
 
   /* ── Semantic Aliases (Mike §napkin — intent-revealing names) ─────────
    * Each alias maps to an existing duration token. The name encodes WHAT
@@ -78,8 +81,8 @@
   --motion-cycle-glacial:   calc(var(--motion-ambient) * 20); /* ~10s   */
 
   /* ── Stagger Utility Tokens (leaderboard rows, tombstone grid) ──────── */
-  --stagger-base: 60ms;
-  --stagger-unit: 60ms;   /* multiply by child index */
+  --stagger-base: 60ms;   /* reason: micro-feedback */
+  --stagger-unit: 60ms;   /* reason: micro-feedback */  /* multiply by child index */
 
   /* DECAY-THUMP — biological heartbeat brightness pulse on bar fill.     */
   /* Duration is overridden per-element by --hb-bar-duration (orchestrator). */

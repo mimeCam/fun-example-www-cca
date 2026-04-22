@@ -43,6 +43,7 @@ import {
   LEGAL_REASONS,
   LEGAL_REASONS_SET,
   REASON_COMMENT_RE,
+  computeReducedMotionMask,
   isAliasValue,
   isLiteralDurationDecl,
   parseLiteralDuration,
@@ -51,11 +52,15 @@ import {
 
 // ── Target configuration (explicit list — no blanket CSS walk) ───────────
 
-/** Files scanned by the guard. tokens.css is the ONLY source-of-truth for
- *  design primitives; stage-tokens.generated.ts is codegen and not scanned.
- *  Adding a file here widens the contract — expect a PR note.              */
+/** Files scanned by the guard. Both are design-system CSS sources — any
+ *  literal `ms`/`s` in either cites a label from the closed vocabulary.
+ *  motion.css joined the ledger in v158 (Krystle v157 / Mike napkin v158):
+ *  the contract and the enforcer must agree, so AGENTS.md was widened in
+ *  the same PR. Adding a third file here widens the contract further —
+ *  expect a PR note + a matching AGENTS.md touch.                          */
 export const TARGET_FILES: readonly string[] = [
   'src/styles/tokens.css',
+  'src/styles/motion.css',
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -73,13 +78,19 @@ export type Violation = Readonly<{
 
 /** Scan a single CSS body (array of lines + file label) for violations.
  *  Reuses the pure helpers in duration-reasons.ts — any change to the
- *  ledger vocabulary rebinds this scanner automatically.                  */
+ *  ledger vocabulary rebinds this scanner automatically.
+ *
+ *  Lines inside `@media (prefers-reduced-motion: reduce) { … }` are
+ *  exempt: their `0ms` overrides are an accessibility policy, not a
+ *  perceptual choice (Mike napkin v158 §5.2). */
 export function scanDurationReasons(
   lines: string[],
   fileName: string,
 ): Violation[] {
+  const reducedMotionMask = computeReducedMotionMask(lines);
   const out: Violation[] = [];
   for (let i = 0; i < lines.length; i++) {
+    if (reducedMotionMask[i]) continue;
     const line = lines[i];
     if (!isLiteralDurationDecl(line)) continue;
     if (isAliasValue(line)) continue;

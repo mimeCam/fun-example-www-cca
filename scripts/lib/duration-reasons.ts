@@ -98,3 +98,46 @@ export function parseLiteralDuration(
   if (!m) return null;
   return { prop: m[1], value: m[2] };
 }
+
+// ── Reduced-motion context (Mike napkin v158 §5.2 — policy, not perception) ──
+//
+// Lines inside `@media (prefers-reduced-motion: reduce) { … }` are an
+// accessibility opt-out; their `0ms` values are policy zeros and should NOT
+// be required to cite a perceptual reason. We track context via a pure
+// brace-depth scan — no AST, same shape as every other guard in this repo.
+// Krystle v157 asked for this exemption; Mike v158 chose context-skip over
+// inventing a `reduced-motion` label (no vocabulary expansion without an
+// incident — Elon §3 integrity rule).
+
+/** Opener regex — `@media …prefers-reduced-motion…reduce… {`. Same-line
+ *  brace is required (the only shape in use today across the repo).        */
+export const REDUCED_MOTION_OPEN_RE =
+  /@media[^{]*prefers-reduced-motion[^{]*reduce[^{]*\{/;
+
+/** True when `line` opens an `@media (prefers-reduced-motion: reduce)` block. */
+export function isReducedMotionMediaOpen(line: string): boolean {
+  return REDUCED_MOTION_OPEN_RE.test(line);
+}
+
+/** Count net brace delta on a line (opens − closes). Pure, no string
+ *  escape handling — CSS does not embed braces in literals in practice. */
+export function netBraceDelta(line: string): number {
+  const opens = (line.match(/\{/g) || []).length;
+  const closes = (line.match(/\}/g) || []).length;
+  return opens - closes;
+}
+
+/** Per-line mask: true when idx sits inside an @media (prefers-reduced-motion:
+ *  reduce) block. Enters on the opener line, exits when brace depth returns
+ *  to zero. Handles nested `:root { … }` via simple counter (Mike §5.2). */
+export function computeReducedMotionMask(lines: string[]): boolean[] {
+  const mask = new Array<boolean>(lines.length).fill(false);
+  let depth = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (depth === 0 && !isReducedMotionMediaOpen(lines[i])) continue;
+    depth += netBraceDelta(lines[i]);
+    mask[i] = depth > 0;
+    if (depth < 0) depth = 0;
+  }
+  return mask;
+}
