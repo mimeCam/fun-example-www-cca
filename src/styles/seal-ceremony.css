@@ -5,7 +5,14 @@
  * (SealCeremony.astro also uses confirm|notarize as visible phases.)
  * Zero runtime JS for visuals. Spring curves, @starting-style, clip-path.
  *
- * Credits: Mike (§CSS-state-machine §Phase-unification §HesitationBeat),
+ * Duration ledger: every literal `ms`/`s` outside `@media (prefers-reduced-
+ * motion: reduce)` either references a ledgered token (alias inherits its
+ * reason — scripts/lib/duration-reasons.ts §5.1) or carries a `/* reason:
+ * <label> *\/` comment from the closed 9-label vocabulary. The guard lives
+ * in `scripts/check-duration-reasons.ts` (prebuild fail-fast).
+ *
+ * Credits: Mike (§CSS-state-machine §Phase-unification §HesitationBeat,
+ *          napkin v160 fence widening), Krystle (sprint shape),
  *          Tanya (§ScoreDots §score-tier-labels §ShadowDepthHierarchy),
  *          DevBrain (@starting-style)
  */
@@ -171,9 +178,13 @@
 
 .seal-ceremony[data-phase="anchor"],
 .seal-ceremony[data-phase="notarize"] {
+  /* Aliases inherit the referenced token's reason (duration-reasons §5.1).
+   * --motion-heartbeat-fresh-duration is ledgered in tokens.css as 833ms
+   * (reason: heartbeat-bpm). The defensive fallbacks were removed because
+   * tokens.css is imported globally via global.css — no resolution risk. */
   animation: ceremony-heartbeat
-    var(--motion-heartbeat-fresh-duration, 833ms)
-    var(--motion-heartbeat-fresh-easing, ease-in-out)
+    var(--motion-heartbeat-fresh-duration)
+    var(--motion-heartbeat-fresh-easing)
     infinite;
 }
 
@@ -353,8 +364,9 @@
 }
 
 .seal-dot.is-spring-filling {
+  /* Alias — --motion-duration-dot-click is ledgered (200ms, micro-feedback). */
   animation: dot-spring-fill
-    var(--motion-duration-dot-click, 200ms)
+    var(--motion-duration-dot-click)
     var(--motion-easing-spring)
     forwards;
 }
@@ -371,8 +383,9 @@
 }
 
 .seal-ceremony[data-hesitating] [data-compose-cta] {
+  /* Alias — --seal-hesitation-duration is ledgered (400ms, doherty). */
   animation: hesitation-pulse
-    var(--seal-hesitation-duration, 400ms)
+    var(--seal-hesitation-duration)
     ease-in-out
     1;
 }
@@ -513,12 +526,15 @@
 }
 @starting-style { .sr-root { opacity: 0; translate: 0 8px; } }
 
-/* Staggered row entrances (80ms per row) */
+/* Staggered row entrances — one `--duration-instant` (80ms) per row index.
+ * Alias beats literal (duration-reasons §5.1): `--duration-instant` is
+ * ledgered in motion.css (reason: micro-feedback), and its reduced-motion
+ * override (0ms) collapses the stagger automatically — no override needed. */
 .sr-root > * {
   transition:
     opacity  var(--motion-ceremony-duration) var(--motion-ceremony-easing),
     translate var(--motion-ceremony-duration) var(--motion-ceremony-easing);
-  transition-delay: calc(var(--row-index, 0) * 80ms);
+  transition-delay: calc(var(--row-index, 0) * var(--duration-instant));
 }
 .sr-root > *:nth-child(1) { --row-index: 0; }
 .sr-root > *:nth-child(2) { --row-index: 1; }

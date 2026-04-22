@@ -11,47 +11,65 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v159 (2026-04-22) — Duration Reasons: verdict-ceremony joins ────
+# ── Sprint v160 (2026-04-22) — Duration Reasons: seal-ceremony joins ──────
 #   What shipped in the active git area this cycle (staged/unstaged):
 #     • scripts/check-duration-reasons.ts (UPDATED) — `TARGET_FILES`
-#       widened from `[tokens.css, motion.css]` to
-#       `[tokens.css, motion.css, verdict-ceremony.css]`
-#       (Krystle / Paul / Mike napkin v159). The ledger now enforces the
-#       reason-citation rule across all three design-system CSS sources;
+#       widened from `[tokens.css, motion.css, verdict-ceremony.css]` to
+#       `[tokens.css, motion.css, verdict-ceremony.css, seal-ceremony.css]`
+#       (Mike napkin v160, Krystle sprint). The ledger now enforces the
+#       reason-citation rule across all four design-system CSS sources;
 #       every literal `ms`/`s` in any of them must cite a label from
 #       `scripts/lib/duration-reasons.ts` (aliases inherit; the
-#       reduced-motion mask from v158 still exempts accessibility
-#       overrides). Header docblock rewritten from "both" → "all" and
-#       updated to name verdict-ceremony.css explicitly.
-#     • scripts/check-duration-reasons.test.ts (UPDATED) — two new
-#       assertions: (1) a `TARGET_FILES` ledger test that locks in
-#       `src/styles/verdict-ceremony.css` as a tracked scope entry, and
-#       (2) a new describe block running the guard against the live
-#       `src/styles/verdict-ceremony.css` and asserting zero violations
-#       (same `assertLiveFileClean()` helper introduced in v158).
-#     • src/styles/verdict-ceremony.css (UPDATED) — the `data-act="1"`
-#       base delay (`--act-delay: 0ms`) now carries a `/* reason: snap */`
-#       comment sourced from the closed vocabulary, satisfying the newly
-#       widened guard. No new tokens, no new timing — only an annotation.
-#       (Acts 2 and 3 cite existing `var(--motion-ceremony-duration)` /
-#       `var(--duration-bloom)` aliases and inherit their reasons.)
+#       reduced-motion mask from v158 still exempts `0.01ms !important`
+#       accessibility overrides). Header docblock extended to name
+#       seal-ceremony.css and note Mike §3's polymorphic win — literals
+#       there were collapsed into aliases to motion.css/tokens.css so the
+#       widened fence is clean out of the gate.
+#     • scripts/check-duration-reasons.test.ts (UPDATED) — six new
+#       assertions covering seal-ceremony shapes:
+#         (1) `TARGET_FILES` ledger test locking in
+#             `src/styles/seal-ceremony.css` as a tracked scope entry;
+#         (2) new "no duplicate entries — fence is a set" invariant;
+#         (3) FIXTURE_SEAL_ANIMATION_ALIAS — `animation:` shorthand with
+#             `var()` tokens never fires the literal-ms decl rule;
+#         (4) FIXTURE_SEAL_CALC_ALIAS — `calc(var(--row-index) *
+#             var(--duration-instant))` counts as alias, zero violations;
+#         (5) FIXTURE_SEAL_REDUCED_MOTION — canonical `0.01ms !important`
+#             policy-zero pattern inside prefers-reduced-motion is exempt;
+#         (6) FIXTURE_SEAL_KEYFRAME_BODY — `@keyframes` stop percentages
+#             (`0%`, `40%`, `70%`, `100%`) are NOT duration declarations;
+#       plus a new describe block running the guard against the live
+#       `src/styles/seal-ceremony.css` and asserting zero violations
+#       (same `assertLiveFileClean()` helper from v158).
+#     • src/styles/seal-ceremony.css (UPDATED) — defensive fallback
+#       literals were collapsed into pure aliases. `var(--motion-
+#       heartbeat-fresh-duration, 833ms)` → `var(--motion-heartbeat-
+#       fresh-duration)`; `var(--motion-duration-dot-click, 200ms)` →
+#       `var(--motion-duration-dot-click)`; `var(--seal-hesitation-
+#       duration, 400ms)` → `var(--seal-hesitation-duration)`. The
+#       stagger `80ms` per-row literal in `.sr-root > *` was replaced
+#       with `var(--duration-instant)` (ledgered in motion.css, reason:
+#       micro-feedback). A header duration ledger docblock was added
+#       explaining the citation contract. No new tokens, no new
+#       timings — pure alias-over-literal discipline.
 #     • AGENTS.md (UPDATED) — Contracts line widened: the parenthetical
-#       now reads "tokens.css · motion.css · verdict-ceremony.css".
-#       Guard line unchanged (`duration-reasons` already on the list
-#       since v156); scope is what moved, again.
+#       now reads "tokens.css · motion.css · verdict-ceremony.css ·
+#       seal-ceremony.css". Guard line unchanged (`duration-reasons`
+#       already on the list since v156); scope is what moved, again.
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, volumes, or docker networks.
 #     Dockerfile already COPY-s `scripts/` and `src/` wholesale into the
 #     builder stage, so the widened guard (extended `TARGET_FILES`
-#     array, two new test assertions, and the annotated
-#     `src/styles/verdict-ceremony.css`) all ship without a single
+#     array, six new test assertions, and the alias-collapsed
+#     `src/styles/seal-ceremony.css`) all ship without a single
 #     Dockerfile edit or docker-run-flag edit. `package.json` was
 #     untouched — the prebuild chain link added in v156
 #     (`check-duration-reasons`) automatically runs the widened guard.
-#     Drift in tokens.css OR motion.css OR verdict-ceremony.css fails
-#     the image build, fails this script, and leaves the previous
-#     container already-stopped — operator re-runs after the fix.
+#     Drift in tokens.css OR motion.css OR verdict-ceremony.css OR
+#     seal-ceremony.css fails the image build, fails this script, and
+#     leaves the previous container already-stopped — operator re-runs
+#     after the fix.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -102,12 +120,14 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival (v154)  →
 #   check-citation-delegation (v155)  →  check-duration-reasons
 #   (v156 tokens.css · v158 + motion.css · v158 reduced-motion exempt ·
-#    v159 + verdict-ceremony.css)  →
+#    v159 + verdict-ceremony.css · v160 + seal-ceremony.css)  →
 #   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit (v153)  →
 #   test:arrival (v154)  →  test:citation-golden (v155)  →
 #   test:citation-delegation (v155)  →  test:duration-reasons
 #   (v158 — three new fixtures + live motion.css regression ·
-#    v159 + live verdict-ceremony.css regression)  →
+#    v159 + live verdict-ceremony.css regression ·
+#    v160 + four seal-ceremony fixtures + live seal-ceremony.css
+#    regression + TARGET_FILES-is-a-set invariant)  →
 #   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
@@ -212,7 +232,9 @@ fi
 #       warming this route is ALSO the smoke-test that the three-mouth
 #       parity held through the build); v156 adds the duration-reason
 #       ledger — every literal-ms / literal-s token in tokens.css now
-#       cites a label from the closed vocabulary, also prebuild-enforced.
+#       cites a label from the closed vocabulary, also prebuild-enforced;
+#       v160 widens that fence to seal-ceremony.css (four CSS sources
+#       now policed — tokens · motion · verdict-ceremony · seal-ceremony).
 #       All static assets baked into dist/client/ at build time, no
 #       runtime cost to warming. The arrival beat only paints when a
 #       visitor lands via `?r=<nonce>`, so this warm-up exercises the

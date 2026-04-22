@@ -55,7 +55,10 @@ import {
 /** Files scanned by the guard. All are design-system CSS sources — any
  *  literal `ms`/`s` in any of them cites a label from the closed vocabulary.
  *  motion.css joined the ledger in v158 (Krystle v157 / Mike napkin v158);
- *  verdict-ceremony.css joined in v159 (Krystle/Paul/Mike napkin v159).
+ *  verdict-ceremony.css joined in v159 (Krystle/Paul/Mike napkin v159);
+ *  seal-ceremony.css joined in v160 (Mike napkin v160, Krystle sprint) —
+ *  literals there were collapsed into aliases to `motion.css` / `tokens.css`
+ *  (polymorphic win, Mike §3: one reason, many sites).
  *  The contract and the enforcer must agree, so AGENTS.md was widened in
  *  the same PR. Adding a further file here widens the contract further —
  *  expect a PR note + a matching AGENTS.md touch.                          */
@@ -63,6 +66,7 @@ export const TARGET_FILES: readonly string[] = [
   'src/styles/tokens.css',
   'src/styles/motion.css',
   'src/styles/verdict-ceremony.css',
+  'src/styles/seal-ceremony.css',
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────

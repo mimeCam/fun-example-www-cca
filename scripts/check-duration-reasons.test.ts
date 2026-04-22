@@ -132,6 +132,53 @@ const FIXTURE_MOTION_MISSING = `
 }
 `;
 
+// ── Seal-ceremony-shape fixtures (v160 — Mike napkin §3, Krystle sprint) ────
+// seal-ceremony.css doesn't declare its own duration tokens — it references
+// tokens from tokens.css / motion.css inside `animation:` and `calc()`. The
+// guard's shape is narrow by design (`--foo: Nms;`), so these shorthands do
+// NOT fire the rule. Widening TARGET_FILES is a CONTRACT move: the fence now
+// covers the file, and the refactor pass ensured the shorthand literals were
+// collapsed into aliases — alias-over-literal is the polymorphic discipline.
+
+/** animation: shorthand with var() — no literal-ms decl, zero violations. */
+const FIXTURE_SEAL_ANIMATION_ALIAS = `
+.seal-ceremony[data-phase="anchor"] {
+  animation: ceremony-heartbeat
+    var(--motion-heartbeat-fresh-duration)
+    var(--motion-heartbeat-fresh-easing)
+    infinite;
+}
+`;
+
+/** transition-delay inside calc(var(...) * var(--duration-instant)) — alias. */
+const FIXTURE_SEAL_CALC_ALIAS = `
+.sr-root > * {
+  transition-delay: calc(var(--row-index, 0) * var(--duration-instant));
+}
+`;
+
+/** Reduced-motion sanctuary — seal-ceremony uses the canonical `0.01ms
+ *  !important` pattern. These are policy zeros, never perceptual picks. */
+const FIXTURE_SEAL_REDUCED_MOTION = `
+@media (prefers-reduced-motion: reduce) {
+  .seal-ceremony * {
+    animation-duration:  0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+`;
+
+/** @keyframes body — percentage stops inside a keyframe block are NOT
+ *  duration declarations. The scanner must not false-fire on them.       */
+const FIXTURE_SEAL_KEYFRAME_BODY = `
+@keyframes stamp-down {
+  0%   { transform: scale(1);    }
+  40%  { transform: scale(0.96); }
+  70%  { transform: scale(1.02); }
+  100% { transform: scale(1);    }
+}
+`;
+
 // ── Closed-vocabulary sanity ─────────────────────────────────────────────
 
 describe('LEGAL_REASONS — closed vocabulary', () => {
@@ -261,6 +308,28 @@ describe('scanDurationReasons — fixture coverage', () => {
     assert.ok(vs[0].line > 0, `expected positive line, got ${vs[0].line}`);
     assert.ok(vs[0].column > 0, `expected positive column, got ${vs[0].column}`);
   });
+
+  // ── seal-ceremony.css shapes (v160 — Krystle sprint) ──────────────────
+
+  test('FIXTURE_SEAL_ANIMATION_ALIAS → zero violations (var() in shorthand)', () => {
+    const vs = scanDurationReasons(toLines(FIXTURE_SEAL_ANIMATION_ALIAS), 'x.css');
+    assert.deepEqual(vs, []);
+  });
+
+  test('FIXTURE_SEAL_CALC_ALIAS → zero violations (calc of aliased tokens)', () => {
+    const vs = scanDurationReasons(toLines(FIXTURE_SEAL_CALC_ALIAS), 'x.css');
+    assert.deepEqual(vs, []);
+  });
+
+  test('FIXTURE_SEAL_REDUCED_MOTION → zero violations (policy zeros exempt)', () => {
+    const vs = scanDurationReasons(toLines(FIXTURE_SEAL_REDUCED_MOTION), 'x.css');
+    assert.deepEqual(vs, []);
+  });
+
+  test('FIXTURE_SEAL_KEYFRAME_BODY → zero violations (stop percentages ≠ durations)', () => {
+    const vs = scanDurationReasons(toLines(FIXTURE_SEAL_KEYFRAME_BODY), 'x.css');
+    assert.deepEqual(vs, []);
+  });
 });
 
 // ── Reduced-motion context helpers (Mike napkin v158 §5.2) ───────────────
@@ -344,10 +413,16 @@ describe('TARGET_FILES — guard scope is explicit and non-empty', () => {
   test('verdict-ceremony.css joined the ledger (Krystle/Paul/Mike v159)', () => {
     assert.ok(TARGET_FILES.includes('src/styles/verdict-ceremony.css'));
   });
+  test('seal-ceremony.css joined the ledger (Mike napkin v160, Krystle)', () => {
+    assert.ok(TARGET_FILES.includes('src/styles/seal-ceremony.css'));
+  });
   test('every entry is a .css file inside src/styles/', () => {
     for (const f of TARGET_FILES) {
       assert.match(f, /^src\/styles\/[a-z0-9-]+\.css$/i, `bad entry: ${f}`);
     }
+  });
+  test('no duplicate entries — the fence is a set, not a list', () => {
+    assert.equal(new Set(TARGET_FILES).size, TARGET_FILES.length);
   });
 });
 
@@ -396,5 +471,11 @@ describe('regression — live src/styles/motion.css passes the guard', () => {
 describe('regression — live src/styles/verdict-ceremony.css passes the guard', () => {
   test('zero violations on the current verdict-ceremony.css', () => {
     assertLiveFileClean('src/styles/verdict-ceremony.css');
+  });
+});
+
+describe('regression — live src/styles/seal-ceremony.css passes the guard', () => {
+  test('zero violations on the current seal-ceremony.css', () => {
+    assertLiveFileClean('src/styles/seal-ceremony.css');
   });
 });
