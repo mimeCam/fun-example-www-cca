@@ -1,0 +1,112 @@
+/* src/styles/stage-selection.css
+ * Stage-keyed ::selection — the reader's own brush.
+ *
+ * One axis, one paint rule per stage. Zero new tokens. Zero new codegen.
+ * Zero new guards. The reuse story is the whole story.
+ *
+ *   bright stages (fresh / fading / endangered) → stage border × dark ink.
+ *   dim stages    (ghost / fossil)              → stage border × light ink.
+ *
+ * Contrast flip (Tanya §4.1/§4.2): a uniform foreground breaks WCAG AA at
+ * the dim end of the ramp — ghost (L≈48) and fossil (L≈38) fall below 4.5:1
+ * with dark ink. The border color stays the fill in every stage; only the
+ * ink polarity flips. Any future border retune automatically retunes
+ * selection — no OKLCH decimal to hand-curate in parallel.
+ *
+ * Scope fence (Tanya §5): prose only. Inputs, textarea, pre, code, nav
+ * chrome, chips — these never receive the decay paint. Scope lives in the
+ * selector list, not in a neutralizing override. Add a prose tag here;
+ * add nothing to cards.
+ *
+ * Firefox parity (Mike §5.3): ::-moz-selection must be a sibling rule,
+ * NEVER a comma-list sibling with ::selection — selector-list invalidation
+ * kills both if one is unknown. Two blocks per stage. Non-negotiable.
+ *
+ * Credits: Tanya (§4 contrast analysis + §5 scope fence), Mike (§napkin
+ *          file shape — this mirrors stage-motion.css verbatim), Elon
+ *          (reuse --stage-{s}-border, no speculative tokens), Paul
+ *          (totality — no stage falls through to OS default on prose).
+ *          AGENTS.md ("polish what we have — AAA"). Sid — 2026-04-22.
+ */
+
+/* ── Prose selector fragment — repeated per stage, kept legible on purpose.
+ *    DO NOT abbreviate via :is() + variable; CSS would lose specificity and
+ *    jr devs add unrelated tags here without understanding scope. */
+
+/* ── Bright stages: dark ink on saturated fill ──────────────────────────── */
+
+[data-decay-stage="fresh"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::selection {
+  background: var(--stage-fresh-border);
+  color:      var(--surface-base);
+  text-shadow: none;
+}
+[data-decay-stage="fresh"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::-moz-selection {
+  background: var(--stage-fresh-border);
+  color:      var(--surface-base);
+  text-shadow: none;
+}
+
+[data-decay-stage="fading"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::selection {
+  background: var(--stage-fading-border);
+  color:      var(--surface-base);
+  text-shadow: none;
+}
+[data-decay-stage="fading"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::-moz-selection {
+  background: var(--stage-fading-border);
+  color:      var(--surface-base);
+  text-shadow: none;
+}
+
+[data-decay-stage="endangered"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::selection {
+  background: var(--stage-endangered-border);
+  color:      var(--surface-base);
+  text-shadow: none;
+}
+[data-decay-stage="endangered"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::-moz-selection {
+  background: var(--stage-endangered-border);
+  color:      var(--surface-base);
+  text-shadow: none;
+}
+
+/* ── Dim stages: bright ink on dusty fill ───────────────────────────────── */
+
+[data-decay-stage="ghost"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::selection {
+  background: var(--stage-ghost-border);
+  color:      var(--text-primary);
+  text-shadow: none;
+}
+[data-decay-stage="ghost"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::-moz-selection {
+  background: var(--stage-ghost-border);
+  color:      var(--text-primary);
+  text-shadow: none;
+}
+
+[data-decay-stage="fossil"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::selection {
+  background: var(--stage-fossil-border);
+  color:      var(--text-primary);
+  text-shadow: none;
+}
+[data-decay-stage="fossil"] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::-moz-selection {
+  background: var(--stage-fossil-border);
+  color:      var(--text-primary);
+  text-shadow: none;
+}
+
+/* ── Accessibility sanctuary — yield to OS-controlled contrast (Mike §5.4,
+ *    Tanya §8). Mirrors the reduced-motion precedent: user preference wins,
+ *    custom paint steps aside without exception. */
+@media (forced-colors: active) {
+  [data-decay-stage] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::selection {
+    background: Highlight;
+    color:      HighlightText;
+  }
+  [data-decay-stage] :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, time)::-moz-selection {
+    background: Highlight;
+    color:      HighlightText;
+  }
+}
+
+/* TODO (next sprint, Tanya §9.2 + Mike §5.10): instrument per-stage
+ *   selection-event counter on blog detail. Two weeks of data before we
+ *   earn dedicated `--stage-{s}-selection-{bg,fg}` tokens or widen the
+ *   scope beyond prose. Do not add tokens on vibes — earn them. */

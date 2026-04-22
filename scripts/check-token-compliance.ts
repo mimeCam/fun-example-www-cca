@@ -99,6 +99,7 @@ const GUARD_FILES = new Set([
   "src/styles/seal-receipt.css",
   "src/styles/seal-sound-toggle.css",
   "src/styles/stage-motion.css",
+  "src/styles/stage-selection.css",
   "src/styles/stage-transitions.css",
   "src/styles/surfaces.css",
   "src/styles/trust-badge.css",

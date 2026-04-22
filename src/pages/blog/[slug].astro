@@ -187,7 +187,10 @@ const jsonLd      = [
          Above-fold now shows: cover → title → author → article begins.
          Readers see content decaying, not UI chrome. -->
     <RevivalMoment slug={post.slug} pubDate={post.data.pubDate}>
-      <article class="post-body">
+      {/* data-decay-stage stamps the prose container so stage-selection.css
+          can paint drag-highlights in the post's decay temperature (Tanya §5).
+          Selector fence lives in the CSS — not every descendant receives paint. */}
+      <article class="post-body" data-decay-stage={decayStage}>
         <Content />
       </article>
     </RevivalMoment>

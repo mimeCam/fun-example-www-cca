@@ -1,15 +1,16 @@
-**Stack:** Astro 4 · TypeScript · Tailwind CSS v4 · @astrojs/node · better-sqlite3 · Docker
+**Stack:** Astro 4 · TS · Tailwind v4 · @astrojs/node · better-sqlite3 · Docker
 
-**Core feature:** Posts decay on a clock — readers revive them. Authors seal conviction; community disputes → batting average. Time is typography: the 5-stage decay grammar (`fresh → fading → endangered → ghost → fossil`) drives post-TTL visuals, author-record age, and now interaction timing (voice softens, record hardens).
+**Core:** Posts decay on a clock; readers revive, authors seal, disputes → batting average. 5-stage grammar (`fresh → fading → endangered → ghost → fossil`) drives every axis — typography, border, tempo, drag-highlight.
 
 ## Paths
 
-- `src/lib/` — domain logic; `client/` for browser-side modules
-- `src/components/` — UI components
-- `src/pages/api/` — REST API (public docs at `/api/docs`)
-- `src/styles/` — design system; `tokens.css` is the single source of truth for stage values
-- `scripts/` — build tooling (token-compliance guard, codegen)
+- `src/lib/` — domain (`client/` = browser)
+- `src/components/`, `src/pages/api/` (docs at `/api/docs`)
+- `src/styles/` — `tokens.css` is single source of truth
+- `scripts/` — compliance guard + codegen
 
-## Stage-token codegen
+## Stage axes
 
-`src/lib/stage-tokens.generated.ts` mirrors `--stage-*` atoms from `tokens.css` for non-CSS surfaces (Satori OG, API docs page). Edit `tokens.css`, then `npm run generate:stage-tokens`. The prebuild guard blocks builds if the mirror is stale.
+One file per axis in `global.css`: `stage-motion.css` (tempo), `stage-selection.css` (drag-highlight, prose-scoped, reuses `--stage-*-border`). Add axis → add file; never branch stage literals in components.
+
+`src/lib/stage-tokens.generated.ts` mirrors tokens for non-CSS consumers; `npm run generate:stage-tokens`.

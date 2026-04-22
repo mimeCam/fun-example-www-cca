@@ -4,6 +4,57 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v147 — Stage-Keyed ::selection (Drag-Highlight Axis) (2026-04-22)
+#   Sprint: Add the reader's *own brush* to the decay grammar — drag-highlight
+#     color on blog prose now reflects the post's decay temperature. Same five-
+#     stage vocabulary, no new tokens, no new codegen, no new guards. One axis,
+#     one paint rule per stage, prose-only scope fence. Pure UIX polish — zero
+#     infrastructure changes.
+#   Key changes:
+#     src/styles/stage-selection.css (new) — five `[data-decay-stage="…"]`
+#       blocks paint `::selection` + `::-moz-selection` on prose descendants
+#       (h1-h6, p, li, blockquote, figcaption, time). Bright stages (fresh/
+#       fading/endangered) use dark ink on saturated fill; dim stages (ghost/
+#       fossil) flip to light ink on dusty fill for WCAG AA contrast at the
+#       dim end of the ramp (Tanya §4.1/§4.2). Reuses existing
+#       `--stage-{s}-border` tokens verbatim — any future border retune
+#       automatically retunes selection. `forced-colors: active` sanctuary
+#       yields to OS Highlight/HighlightText (Mike §5.4, Tanya §8). Firefox
+#       parity preserved via sibling `::-moz-selection` rule (never comma-
+#       listed with `::selection` — selector-list invalidation would kill
+#       both). Inputs, textarea, pre, code, chrome never receive the paint —
+#       scope lives in the selector list, not a neutralizing override.
+#     src/pages/blog/[slug].astro — `<article class="post-body">` now carries
+#       `data-decay-stage={decayStage}` so the prose container is the stamp
+#       anchor for stage-selection.css's descendant selectors. `decayStage`
+#       already computed above for existing cover-decay physics (v140) — no
+#       new derivation, just a second consumer.
+#     src/styles/global.css — imports `./stage-selection.css` right after
+#       `./stage-motion.css` so both axes (motion tempo + selection paint)
+#       sit adjacent in cascade order. The "one file per axis" shape mirrors
+#       stage-motion.css (v146) verbatim — napkin consistency (Mike §shape).
+#     scripts/check-token-compliance.ts — new file added to `GUARD_FILES` so
+#       the prebuild token-compliance guard covers it (no raw colors, no
+#       hardcoded stage literals outside the per-stage rows). Runs inside
+#       `npm run build` during the Docker builder stage; fails fast on drift.
+#     AGENTS.md — core-feature paragraph rewritten to call out the 5-stage
+#       grammar as a grammar of *axes* ("typography, border, tempo, drag-
+#       highlight"). New "Stage axes" section documents the one-file-per-axis
+#       convention + prose-scope fence. The v146 codegen paragraph moved
+#       under the axes section. "Add axis → add file; never branch stage
+#       literals in components" contract made explicit.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `src/` and `scripts/`
+#     wholesale into the builder stage, so the new CSS file, the updated
+#     `<article>` stamp, the extended GUARD_FILES set, and the refreshed
+#     AGENTS.md all ship without any Dockerfile edits. The prebuild
+#     compliance guard continues to run inside `npm run build` during the
+#     Docker builder stage and will fail fast (non-zero) if the new file
+#     introduces raw-value drift or if the stage-tokens mirror has drifted.
+#     deploy.sh startup sequence (steps 1–8) identical to v146.
+#
 # Architecture v146 — Stage-Keyed Motion (Fresh-Spike, One Axis) (2026-04-22)
 #   Sprint: Turn interaction timing into the fifth axis of the decay grammar.
 #     Only `fresh` carries bespoke spring values (120ms · spring easing); every
