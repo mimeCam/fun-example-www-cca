@@ -4,6 +4,76 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v151d — Nav-legend (the quiet sibling) teaches the 8 nav keys;
+# parity locked by test (2026-04-22). Sprint: Close the last silent arc of
+# the keyboard loop on /api/docs. v151 made the 7×5 matrix arrow-navigable
+# and v151a/b/c closed the cite half of the loop (copy string → toast →
+# bloom) with a 3-chip legend and a parity test. The nav half of the loop
+# — eight navigation keys (ArrowUp/Down/Left/Right + Home/End/PageUp/
+# PageDown) that matrix-keynav.ts has accepted since v151 — still taught
+# zero keys in the docs UI. A keyboard-only visitor arrived, saw how to
+# cite, and had to guess how to move. v151d adds a second `<p>` legend
+# directly beneath the existing cite legend (inside a new
+# `.api-docs__legend-stack` flex column with a tight var(--space-1) gap —
+# Tanya §3.1), with 8 `<kbd>` chips spelling the literal KeyboardEvent.key
+# strings so the parity test's labelToKey stays an identity. The live
+# handler and the tested predicate now share ONE source of truth:
+# `isNavKey(e)` is both the gate inside `handleKey()` and the function
+# the test probes, so the legend↔handler contract is locked in both
+# directions. Modifier chords (Ctrl/Cmd/Alt + any nav key) continue to
+# fall through to the browser untouched — native word-jumps and history
+# back/forward remain the user's (Mike §6.4, Tanya §4).
+# Key changes (all under active git area this cycle):
+#   src/lib/client/matrix-keynav.ts — adds an exported `isNavKey(e)`
+#     pure predicate mirroring cell-cite :: isCiteKey in shape. Rejects
+#     modifier chords; returns NAV_KEYS.has(e.key) otherwise. Refactors
+#     the `handleKey` gate from `NAV_KEYS.has(e.key)` to `isNavKey(e)`
+#     so the parity test protects what the user actually feels. Zero
+#     behavioural change for bare-key presses; stricter about modifier
+#     fallthrough (consistent with cite-cite module).
+#   src/pages/api/docs.astro — wraps the v151c `<p data-cite-legend>`
+#     and a new `<p data-nav-legend>` inside a single
+#     `<div class="api-docs__legend-stack">`. New CSS rule for the
+#     stack (flex column, var(--space-1) gap, preserves outer margins);
+#     child legend margins zeroed so the stack gap is exact. The nav
+#     legend uses the same `.api-docs__legend`, `.api-docs__legend-ico`,
+#     `.api-docs__legend-nowrap`, `.api-docs__kbd` classes — one visual
+#     register, two sibling sentences (Tanya §6 sibling contract).
+#     Eight chips in three nowrap groups so the arrow quartet and each
+#     jump-pair (Home/End; PageUp/PageDown) never orphan mid-chip on
+#     narrow viewports. Zero new design tokens.
+#   src/lib/client/nav-legend.test.ts (new, dev-only) — node:test suite
+#     that scrapes every `<kbd>` chip from docs.astro's nav-legend block
+#     and probes `isNavKey` for each. Asserts set-equality in BOTH
+#     directions across a candidate universe of nav keys + cite keys +
+#     near-misses + bare modifiers + full modifier chord × 8 nav key
+#     cross-check. Also asserts (a) cite and nav legends live in
+#     separate <p> blocks (no run-on merge — Tanya §3.1), and (b) no
+#     chip appears in BOTH legends (disjoint key sets — the two
+#     listeners never race). Regex requires `class="api-docs__legend"`
+#     to avoid false positives on Astro comments that mention the tag
+#     in prose. No JSDOM; pure string + pure function. NOT executed at
+#     Docker build or runtime.
+#   package.json — adds `"test:nav-legend": "npx tsx --test
+#     src/lib/client/nav-legend.test.ts"` script. Dev-only; sibling of
+#     test:cite-legend. Never invoked by Docker build or runtime.
+#   AGENTS.md — killer-feature paragraph adopts "v151d, shipped" marker
+#     for the nav-legend and extends the parity-lock sentence to the
+#     nav half of the loop (npm run test:nav-legend).
+# Infrastructure: no new services, volumes, env vars, ports, or npm
+#   packages. CONTAINER still exposes 7100 for external Caddy.
+#   DATA_VOLUME and SQLITE_VOLUME unchanged. ADMIN_SECRET, HMAC_SECRET,
+#   GITHUB_PAT, DISPUTE_QUORUM_RATIO all unchanged. Dockerfile already
+#   copies `src/` wholesale into the builder stage — the updated
+#   `docs.astro` (new legend + stack CSS), the extended
+#   `matrix-keynav.ts` (isNavKey export), and the new dev-only
+#   `nav-legend.test.ts` all ship without any Dockerfile edits. The
+#   prebuild compliance guard runs unchanged inside `npm run build`.
+#   `.test.ts` files are never executed at build or runtime. deploy.sh
+#   startup sequence (1–9) unchanged; step 8 continues to warm both
+#   `/api/docs` SSR (now serving the 3-chip cite + 8-chip nav legend
+#   stack) and the cell-metrics endpoint.
+#
 # Architecture v151c — Legend teaches all three cite keys; parity locked by test
 # (2026-04-22). Sprint: Close the teaching gap opened by v151b. v151b extended
 # the handler to accept `c` / Enter / Space but the legend still said only

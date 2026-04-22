@@ -198,15 +198,42 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
          hierarchy comes from word order, not styling. The courtesy clause
          is wrapped in .api-docs__legend-nowrap so on narrow viewports it
          breaks *before* the em-dash, never mid-chip. Still hidden on
-         hover:none (touch has no analogue). Zero new tokens. */}
-      <p class="api-docs__legend" data-cite-legend>
-        <span class="api-docs__legend-ico" aria-hidden="true">⌨︎</span>
-        Press <kbd class="api-docs__kbd">c</kbd> to cite the focused cell —
-        <span class="api-docs__legend-nowrap">
-          <kbd class="api-docs__kbd">Enter</kbd> and
-          <kbd class="api-docs__kbd">Space</kbd> also work.
-        </span>
-      </p>
+         hover:none (touch has no analogue). Zero new tokens.
+
+         v151d — a second `<p data-nav-legend>` follows as the quiet
+         sibling (Tanya UX spec §3, Mike napkin §4). Order = cite, then
+         nav: cite is the verb; nav is the prerequisite courtesy. Both
+         paragraphs live inside `.api-docs__legend-stack` — a flex
+         column that gives them a tight var(--space-1) gap while the
+         outer margin preserves the room above/below the whole band.
+         Both legends inherit `.api-docs__legend`, so the touch-hide
+         and forced-colors contract covers them together — one owner,
+         one rule (Tanya §3.1, §6). */}
+      <div class="api-docs__legend-stack">
+        <p class="api-docs__legend" data-cite-legend>
+          <span class="api-docs__legend-ico" aria-hidden="true">⌨︎</span>
+          Press <kbd class="api-docs__kbd">c</kbd> to cite the focused cell —
+          <span class="api-docs__legend-nowrap">
+            <kbd class="api-docs__kbd">Enter</kbd> and
+            <kbd class="api-docs__kbd">Space</kbd> also work.
+          </span>
+        </p>
+        <p class="api-docs__legend" data-nav-legend>
+          <span class="api-docs__legend-ico" aria-hidden="true">↕</span>
+          <span class="api-docs__legend-nowrap">
+            <kbd class="api-docs__kbd">ArrowUp</kbd> / <kbd class="api-docs__kbd">ArrowDown</kbd> / <kbd class="api-docs__kbd">ArrowLeft</kbd> / <kbd class="api-docs__kbd">ArrowRight</kbd>
+          </span>
+          move focus;
+          <span class="api-docs__legend-nowrap">
+            <kbd class="api-docs__kbd">Home</kbd> / <kbd class="api-docs__kbd">End</kbd>
+          </span>
+          jump a row,
+          <span class="api-docs__legend-nowrap">
+            <kbd class="api-docs__kbd">PageUp</kbd> / <kbd class="api-docs__kbd">PageDown</kbd>
+          </span>
+          jump an axis.
+        </p>
+      </div>
 
       <div class="api-docs__matrix" role="table" aria-labelledby="matrix-heading">
         <div class="api-docs__matrix-row api-docs__matrix-row--head" role="row">
@@ -544,7 +571,23 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
     line-height: var(--leading-snug);
     color: var(--text-tertiary);
     letter-spacing: var(--tracking-normal);
+    flex-wrap: wrap;
   }
+
+  /* v151d — cite + nav legends stacked as quiet siblings (Tanya §3.1).
+     A flex column with a tight var(--space-1) gap reads the two sentences
+     as one typographic band while keeping each legend an independent
+     owner. The outer margin preserves the original breathing room the
+     single legend used to own. Zero new tokens; one new selector is the
+     cost of stacking two siblings without editing the existing rule. */
+  .api-docs__legend-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 var(--space-3);
+    align-items: flex-start;
+  }
+  .api-docs__legend-stack > .api-docs__legend { margin: 0; }
   .api-docs__legend-ico {
     color: var(--text-ghost);
     /* Nudge the ⌨︎ glyph onto the text baseline without a token bump. */

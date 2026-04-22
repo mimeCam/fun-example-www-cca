@@ -15,8 +15,12 @@
 
 ## Killer feature — `/api/docs` cell citations
 
-7×5 matrix. Cite a cell via click, keystroke (`c`/Enter/Space on focus — v151b, shipped; legend now teaches all three — v151c, shipped), or `curl` — all three produce the same payload (`?r=<nonce>` joins copy→arrive via ledger). Three client modules, DOM as shared contract, no WIP:
+7×5 matrix. Cite a cell via click, keystroke (`c`/Enter/Space on focus — v151b/c), or `curl` — same payload (`?r=<nonce>` joins copy→arrive via ledger). Eight nav keys (Arrows + Home/End/PageUp/PageDown) teach-locked via a second legend — v151d, shipped. Three client modules, DOM as shared contract, no WIP:
 
 - `cell-cite.ts` (citation), `matrix-keynav.ts` (roving tabindex), `edge-bump.ts` (clamp feedback).
 
-Teaching/handler parity is test-locked: `npm run test:cite-legend` scrapes `<kbd>` chips from `/api/docs` and compares against `isCiteKey` behaviour. Build fails if legend and handler drift.
+Teaching/handler parity is test-locked in both halves:
+- `npm run test:cite-legend` — scrapes cite-legend chips vs `isCiteKey`.
+- `npm run test:nav-legend` — scrapes nav-legend chips vs `isNavKey`.
+
+Build fails if either legend and its handler drift.

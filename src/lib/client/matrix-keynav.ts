@@ -45,6 +45,20 @@ const NAV_KEYS: ReadonlySet<string> = new Set<NavKey>([
   'Home', 'End', 'PageUp', 'PageDown',
 ]);
 
+/**
+ * Pure predicate — true when a KeyboardEvent should move the roving
+ * focus inside the matrix. Mirror of cell-cite :: isCiteKey. Rejects
+ * all modifier chords so Cmd/Ctrl/Alt+Arrow (tab switch, history
+ * back/forward, word-jumps) fall through to the browser untouched.
+ * No JSDOM; pure fn — used by `handleKey` below and probed from
+ * `nav-legend.test.ts` to lock the legend↔handler parity contract
+ * (v151d, Mike napkin §4, Tanya §6).
+ */
+export function isNavKey(e: KeyboardEvent): boolean {
+  if (e.metaKey || e.ctrlKey || e.altKey) return false;
+  return NAV_KEYS.has(e.key);
+}
+
 const MAX_AXIS  = STAGE_AXES.length   - 1;
 const MAX_STAGE = DECAY_STAGES.length - 1;
 
@@ -166,7 +180,10 @@ export type ClampListener = (info: {
 let _onClamp: ClampListener | null = null;
 
 function handleKey(matrix: HTMLElement, e: KeyboardEvent): void {
-  if (!NAV_KEYS.has(e.key)) return;
+  // v151d — the tested predicate IS the handler gate (Mike §4). If this
+  // shortcut falls out of sync with the legend chips, `test:nav-legend`
+  // fails the build.
+  if (!isNavKey(e)) return;
   const current = resolveCurrentCell(e);
   if (!current) return;
   const coord = readCoord(current);
