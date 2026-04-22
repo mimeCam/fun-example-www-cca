@@ -4,6 +4,82 @@
 # Safe to run repeatedly: stops/removes any existing container first.
 # All errors are captured in deployment.log for post-mortem investigation.
 #
+# Architecture v149 — Stage-Keyed Prose Underline (Seventh & Final Axis) (2026-04-22)
+#   Sprint: Close the decay grammar on the reader's *archival cue* — the
+#     underline under every prose anchor now reflects the post's stage.
+#     Seventh and FINAL axis: after v149 the axis count is frozen per
+#     AGENTS.md ("instrument, measure, polish. No 8th axis."). Pure UIX
+#     polish — zero infrastructure changes, zero new tokens, zero new
+#     codegen, zero new guards. One grammar, seven axes (typography,
+#     border, tempo, selection, drag-highlight, focus-ring, underline).
+#   Key changes:
+#     src/styles/stage-underline.css (new) — five `[data-decay-stage="…"]`
+#       blocks paint `text-decoration-{line,color,thickness}` +
+#       `text-underline-offset` on prose anchors (`p, li, h2-h6, blockquote,
+#       figcaption` descendants). Bright stages (fresh / fading / endangered)
+#       cite their matching `--stage-{s}-border` token verbatim. Dim stages
+#       (ghost / fossil) FLOOR text-decoration-color at
+#       `--stage-endangered-border` so WCAG 1.4.11 non-text contrast
+#       (≥ 3:1 vs. `--surface-base`) holds at fossil's L≈38 without
+#       inventing a halo token (Mike §5, Elon's contrast-physics veto).
+#       Geometry carries the age instead: thickness 0.08em → 0.16em,
+#       offset 3px → 5px. `text-decoration-skip-ink: auto` dodges
+#       descenders so fossil's 0.16em thickness never reads as
+#       strike-through (Tanya §3.4, non-negotiable). Tempo reuses v146
+#       motion — `transition: text-decoration-color var(--stage-{s}-duration)
+#       var(--stage-{s}-ease)` only; geometry never transitions (would
+#       wobble the baseline mid-paragraph). `forced-colors: active`
+#       sanctuary yields `text-decoration-color: LinkText` and drops
+#       thickness/offset. `prefers-reduced-motion: reduce` drops the
+#       color tween, keeps the stage hue.
+#     src/styles/global.css — imports `./stage-underline.css` right after
+#       `./stage-focus.css` so the three reader-contact axes (selection,
+#       focus, underline) sit adjacent in cascade order. Same "one file
+#       per axis" shape as stage-motion / stage-selection / stage-focus.
+#     scripts/check-token-compliance.ts — adds `src/styles/stage-underline.css`
+#       to `GUARD_FILES`. Prebuild token-compliance guard now fails fast
+#       if any raw hex / rgb / hsl / duration literal slips into the new
+#       file. Same ratchet v146 / v147 / v148 used.
+#     src/lib/stage-underline.test.ts (new) — `node:test` textual-parity
+#       + WCAG-contrast suite. Reads the CSS file as text and asserts:
+#       every DecayStage appears exactly once, every rule cites the
+#       correct border token (bright → own, dim → endangered floor),
+#       every rule carries skip-ink + color-only transition on the
+#       stage's own `--stage-{s}-duration` / `--stage-{s}-ease`,
+#       forced-colors + reduced-motion sanctuaries exist, scope fence
+#       is never widened (prose anchors only; never bare `a`, never
+#       chrome tags), and no hover/active/focus bloat. Plus a live
+#       contrast resolver: each stage's chosen color is walked through
+#       `--color-decay-{s}` OKLCH → linear sRGB → WCAG relative
+#       luminance and compared vs `--surface-base`, asserting ≥ 3:1
+#       for every stage. Dev-only; NOT part of Docker build or runtime.
+#       Run: `npm run test:stage-underline` (new package.json script —
+#       mirrors `test:stage-tokens` / `test:ceremony` / `test:dates`
+#       shape exactly; dev-only, no new dependencies).
+#     src/pages/api/docs.astro — one prose sentence in the "How the five
+#       stages feel" section extends the axis list from six to seven,
+#       naming the underline as a v149 axis. API enum + JSON sample
+#       untouched (Elon §4 — axis list is prose, not wire contract).
+#     AGENTS.md — Stage-axes paragraph extended with stage-underline.css
+#       (v149) + the color-floor/geometry-carry rationale. Ends with
+#       the explicit axis-count freeze: "After v149 the axis count is
+#       frozen — instrument, measure, polish. No 8th axis."
+#     package.json — new dev-only script `test:stage-underline`. Zero
+#       new runtime or dev dependencies.
+#   Infrastructure: no new services, volumes, env vars, ports, or npm packages.
+#     DATA_VOLUME, SQLITE_VOLUME, ADMIN_SECRET, HMAC_SECRET, GITHUB_PAT,
+#     DISPUTE_QUORUM_RATIO all unchanged. Container still exposes 7100 for
+#     external Caddy. Dockerfile already copies `src/` and `scripts/`
+#     wholesale into the builder stage, so the new CSS file, the new
+#     dev-only test, the extended GUARD_FILES set, the docs.astro
+#     sentence, the new package.json script, and the refreshed AGENTS.md
+#     all ship without any Dockerfile edits. The prebuild compliance
+#     guard continues to run inside `npm run build` during the Docker
+#     builder stage and will fail fast if the new file introduces
+#     raw-value drift. The `.test.ts` file is never executed at build
+#     or runtime (dev-only). deploy.sh startup sequence (steps 1–8)
+#     identical to v146 / v147 / v148.
+#
 # Architecture v148 — Stage-Keyed :focus-visible (Focus Ring, Sixth Axis) (2026-04-22)
 #   Sprint: Close the decay grammar on the keyboard contact event. The tab key
 #     is now a full stage axis — `:focus-visible` on prose-interactive

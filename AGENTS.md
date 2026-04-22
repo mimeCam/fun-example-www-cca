@@ -11,6 +11,6 @@
 
 ## Stage axes
 
-One file per axis in `global.css`: `stage-motion.css` (tempo), `stage-selection.css` (drag-highlight, prose-scoped, reuses `--stage-*-border`), `stage-focus.css` (v148, `:focus-visible` ring on prose-interactive `a/button/summary/[tabindex=0]`, reuses `--stage-*-border` + `--stage-*-duration`). Add axis → add file; never branch stage literals in components.
+One file per axis in `global.css`: `stage-motion.css` (tempo), `stage-selection.css` (drag-highlight, prose-scoped, reuses `--stage-*-border`), `stage-focus.css` (v148, `:focus-visible` ring on prose-interactive `a/button/summary/[tabindex=0]`, reuses `--stage-*-border` + `--stage-*-duration`), `stage-underline.css` (v149, prose anchor underlines — color follows stage border on bright stages, floors at `--stage-endangered-border` on ghost/fossil for WCAG 1.4.11; geometry carries the age). Add axis → add file; never branch stage literals in components. After v149 the axis count is **frozen** — instrument, measure, polish. No 8th axis.
 
 `src/lib/stage-tokens.generated.ts` mirrors tokens for non-CSS consumers; `npm run generate:stage-tokens`.

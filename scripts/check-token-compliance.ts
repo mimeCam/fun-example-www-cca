@@ -102,6 +102,7 @@ const GUARD_FILES = new Set([
   "src/styles/stage-motion.css",
   "src/styles/stage-selection.css",
   "src/styles/stage-transitions.css",
+  "src/styles/stage-underline.css",
   "src/styles/surfaces.css",
   "src/styles/trust-badge.css",
   "src/styles/verdict-ceremony.css",

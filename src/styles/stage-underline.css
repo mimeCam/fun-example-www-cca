@@ -1,0 +1,122 @@
+/* src/styles/stage-underline.css
+ * Stage-keyed prose anchor underlines — the reader's archival cue (v149).
+ *
+ * A reader lands on a prose link. Before their eye finds the date, the
+ * underline has already told them whether the door is fresh, cooling,
+ * urgent, fading, or quietly sealed. The link never feels *broken* —
+ * only *quieter*. One grammar, seven axes, zero new tokens, zero new
+ * codegen, zero new guards.
+ *
+ *   bright stages (fresh / fading / endangered) → hue matches border.
+ *   dim stages    (ghost / fossil)              → hue FLOORS at
+ *     --stage-endangered-border; geometry (thickness + offset) carries
+ *     the decay. Louder geometry, quieter hue.
+ *
+ * The color-floor (Mike §5, resolving Elon's contrast physics vs. Jason's
+ * asymmetric curve): reusing --stage-ghost-border (L≈48) or
+ * --stage-fossil-border (L≈38) as text-decoration-color against
+ * --surface-base fails WCAG 1.4.11 (2.65:1 at fossil). Freezing the hue
+ * at --stage-endangered-border keeps all five stages ≥ 3:1 without
+ * inventing a new token. The geometry grows — thickness 0.08em → 0.16em,
+ * offset 3px → 5px — so fossil reads "sealed, still a door," not
+ * "broken hyperlink."
+ *
+ * Scope fence (Tanya §2, mirrors stage-selection.css verbatim): prose
+ * anchors only. Nav chrome, buttons, chips, code blocks, form fields —
+ * none of these carry the axis. Site chrome's underline is unchanged.
+ *
+ * Units (Tanya §3.3, Mike §5): em for thickness (no subpixel reflow on
+ * Firefox at fractional DPI; thickness scales with reader zoom), px for
+ * offset (matches stage-focus.css precedent; no DPI risk at 3–5px).
+ *
+ * Tempo (Tanya §5): transition ONLY text-decoration-color on the
+ * per-stage duration from v146 motion. Geometry does NOT transition —
+ * thickness/offset shifts mid-paragraph cause baseline wobble.
+ *
+ * text-decoration-skip-ink: auto (Tanya §3.4) — the underline dodges
+ * descenders (g, j, p, q, y). At fossil's 0.16em thickness, a word
+ * without skip-ink reads as *crossed-out*. Non-negotiable.
+ *
+ * Credits: Mike (§napkin file shape + §5 color-floor resolution), Tanya
+ *          (§3 asymmetric curve + §2 scope fence + §5 color-only motion
+ *          + §3.4 skip-ink), Elon (WCAG 1.4.11 contrast physics — the
+ *          one constraint nobody else flagged), Jason ("volume knob on
+ *          invitation" primitive), Paul (one-sentence / one-focus gate),
+ *          AGENTS.md ("polish what we have — AAA").
+ *          Sid — 2026-04-22.
+ */
+
+/* ── Prose selector fragment — repeated per stage, kept legible on purpose.
+ *    DO NOT abbreviate via :is() + variable; specificity would drift and
+ *    a jr dev would silently widen scope six months from now. Mirrors the
+ *    exact discipline enforced in stage-selection.css §32.                */
+
+/* ── Bright stages: hue matches the stage border verbatim ──────────────── */
+
+[data-decay-stage="fresh"] :is(p, li, h2, h3, h4, h5, h6, blockquote, figcaption) a {
+  text-decoration-line: underline;
+  text-decoration-color: var(--stage-fresh-border);
+  text-decoration-thickness: 0.08em;
+  text-decoration-skip-ink: auto;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--stage-fresh-duration) var(--stage-fresh-ease);
+}
+
+[data-decay-stage="fading"] :is(p, li, h2, h3, h4, h5, h6, blockquote, figcaption) a {
+  text-decoration-line: underline;
+  text-decoration-color: var(--stage-fading-border);
+  text-decoration-thickness: 0.10em;
+  text-decoration-skip-ink: auto;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--stage-fading-duration) var(--stage-fading-ease);
+}
+
+[data-decay-stage="endangered"] :is(p, li, h2, h3, h4, h5, h6, blockquote, figcaption) a {
+  text-decoration-line: underline;
+  text-decoration-color: var(--stage-endangered-border);
+  text-decoration-thickness: 0.12em;
+  text-decoration-skip-ink: auto;
+  text-underline-offset: 4px;
+  transition: text-decoration-color var(--stage-endangered-duration) var(--stage-endangered-ease);
+}
+
+/* ── Dim stages: hue floors at endangered; geometry carries age ────────── */
+
+[data-decay-stage="ghost"] :is(p, li, h2, h3, h4, h5, h6, blockquote, figcaption) a {
+  text-decoration-line: underline;
+  text-decoration-color: var(--stage-endangered-border);
+  text-decoration-thickness: 0.14em;
+  text-decoration-skip-ink: auto;
+  text-underline-offset: 4px;
+  transition: text-decoration-color var(--stage-ghost-duration) var(--stage-ghost-ease);
+}
+
+[data-decay-stage="fossil"] :is(p, li, h2, h3, h4, h5, h6, blockquote, figcaption) a {
+  text-decoration-line: underline;
+  text-decoration-color: var(--stage-endangered-border);
+  text-decoration-thickness: 0.16em;
+  text-decoration-skip-ink: auto;
+  text-underline-offset: 5px;
+  transition: text-decoration-color var(--stage-fossil-duration) var(--stage-fossil-ease);
+}
+
+/* ── Accessibility sanctuary — OS high-contrast wins (Tanya §6.1, Mike §6).
+ *    Mirrors stage-selection.css / stage-focus.css precedent: user preference
+ *    wins, stage paint steps aside without exception. Every override is
+ *    dropped so the browser negotiates with the high-contrast theme.      */
+@media (forced-colors: active) {
+  [data-decay-stage] :is(p, li, h2, h3, h4, h5, h6, blockquote, figcaption) a {
+    text-decoration-color: LinkText;
+    text-decoration-thickness: auto;
+    text-underline-offset: auto;
+  }
+}
+
+/* ── Reduced motion — keep the color, drop the tempo (Tanya §6.2, Mike §6).
+ *    The underline is still stage-colored; the shift between stages happens
+ *    instantly instead of tweening. Matches stage-focus.css precedent.    */
+@media (prefers-reduced-motion: reduce) {
+  [data-decay-stage] :is(p, li, h2, h3, h4, h5, h6, blockquote, figcaption) a {
+    transition: none;
+  }
+}
