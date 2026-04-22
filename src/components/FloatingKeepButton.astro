@@ -7,6 +7,12 @@
 // Hold-to-revive: inherits RevivalOrchestrator wiring via .keep-btn class.
 // Sync: listens for revival:confirmed to update state across all instances.
 //
+// v152 — `K` hotkey legend (Mike napkin "Earn the PROMOTE", Tanya §6.2).
+// A single <kbd class="ds-kbd">K</kbd> chip whispers below the button on
+// hover-capable devices. The chip is the second real consumer of the
+// `.ds-kbd` design-system class — the PROMOTE IOU pays off in this file.
+// Hidden on touch (`hover: none`): a finger has no K key, only long-press.
+//
 // Tanya §2A: "Promote KeepButton to a persistent, floating position"
 // Mike §Module1: "KeepButton (hero-sized, unmissable)"
 
@@ -48,6 +54,12 @@ const { slug, count, urgency, decayStage } = Astro.props;
   {count > 0 && (
     <span class="keep-float-badge">{count}</span>
   )}
+  {/* v152 — keep-hotkey legend (Tanya §6.2 below-button whisper, Mike
+      scope #4). `ds-kbd` is the second real consumer of the promoted
+      class; parity enforced by keep-legend.test.ts at prebuild. */}
+  <p class="keep-float-legend" data-keep-legend aria-hidden="true">
+    Hold <kbd class="ds-kbd">K</kbd> to revive
+  </p>
 </div>
 
 <script>
@@ -55,6 +67,12 @@ const { slug, count, urgency, decayStage } = Astro.props;
   // Sentinel: .post-header — float appears when header exits viewport.
   // Sync: revival:confirmed from ANY button → update float + inline.
   // Stance prompt: dispatched after bloom settle to trigger StickyStanceBar.
+  //
+  // v152 — `K` hotkey binding (Mike napkin §10d, keep-hotkey.ts auto-boots
+  // via its own top-level `DOMContentLoaded` guard; importing the module
+  // here is the one load-bearing line that keeps the binding in the
+  // post-page bundle graph).
+  import { bindKeepHotkey } from '../lib/client/keep-hotkey';
 
   function initFloatingKeep(): void {
     const float = document.querySelector<HTMLElement>('[data-keep-float]');
@@ -63,6 +81,7 @@ const { slug, count, urgency, decayStage } = Astro.props;
     observeSentinel(float);
     listenForRevival(float);
     watchSsbState(float);
+    bindKeepHotkey();   // idempotent; no-op if no .keep-float-btn present
   }
 
   /** IntersectionObserver on .post-header — zero scroll listeners. */

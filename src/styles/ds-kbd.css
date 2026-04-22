@@ -1,0 +1,43 @@
+/* src/styles/ds-kbd.css
+ * Design-system keyboard chip — `<kbd class="ds-kbd">K</kbd>`.
+ *
+ * One paint, two real consumers: the `/api/docs` legend band and the
+ * floating-keep-button revive hint. Promoted from its page-scoped
+ * ancestor on the second real consumer, per the AGENTS.md "ship on
+ * the second real consumer" rule. Visual contract owned by Tanya —
+ * frozen here so the two surfaces never drift.
+ *
+ * Visual spec (Tanya §1.1) — every value already exists in tokens.css.
+ *   · mono font   → reader's keyboard mnemonic
+ *   · 2xs size    → quiet enough not to shout in prose
+ *   · subtle inks → text-secondary on surface-raised, ≥ 4.5:1
+ *   · radius      → matches inline-code; no 90° corners
+ *   · no shadow   → a 12px chip does not need depth
+ *
+ * Forced-colors carries with the byte (Mike napkin §10.9): if the rule
+ * leaves this file, the high-contrast rule leaves with it.
+ *
+ * Credits: Tanya §1 visual contract, Mike napkin §5–§9 PROMOTE rule,
+ *          Elon §4 teaching-contract one-line invariant, Sid — keep
+ *          the chip a leaf in the DOM (no <Kbd> wrapper).
+ */
+
+.ds-kbd {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-detail);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1;
+  box-shadow: none;
+}
+
+@media (forced-colors: active) {
+  .ds-kbd {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}

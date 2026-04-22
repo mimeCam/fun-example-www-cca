@@ -18,6 +18,7 @@
 @import "./card-base.css";
 @import "./death-clock.css";
 @import "./trust-badge.css";
+@import "./ds-kbd.css";
 
 /* ── Focus ring — chrome fallback (v148 sixth axis, see stage-focus.css) ───
    Site chrome outside any [data-decay-stage] subtree (nav, footer, /api/docs,

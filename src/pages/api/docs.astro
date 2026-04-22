@@ -194,7 +194,7 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
 
       {/* v151c — teach all three cite keys (Mike napkin §6, Tanya §9a).
          `c` first for mnemonic primacy; Enter/Space trail after an em-dash
-         as platform courtesies. All three chips share .api-docs__kbd —
+         as platform courtesies. All three chips share .ds-kbd —
          hierarchy comes from word order, not styling. The courtesy clause
          is wrapped in .api-docs__legend-nowrap so on narrow viewports it
          breaks *before* the em-dash, never mid-chip. Still hidden on
@@ -208,28 +208,33 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
          outer margin preserves the room above/below the whole band.
          Both legends inherit `.api-docs__legend`, so the touch-hide
          and forced-colors contract covers them together — one owner,
-         one rule (Tanya §3.1, §6). */}
+         one rule (Tanya §3.1, §6).
+
+         v152 — `.ds-kbd` PROMOTE shipped (Mike napkin "Earn the PROMOTE",
+         Tanya §1.1). The chip rule lives in src/styles/ds-kbd.css now.
+         Second real consumer is FloatingKeepButton's `K` legend chip,
+         enforced by scripts/check-ds-kbd.ts at prebuild. */}
       <div class="api-docs__legend-stack">
         <p class="api-docs__legend" data-cite-legend>
           <span class="api-docs__legend-ico" aria-hidden="true">⌨︎</span>
-          Press <kbd class="api-docs__kbd">c</kbd> to cite the focused cell —
+          Press <kbd class="ds-kbd">c</kbd> to cite the focused cell —
           <span class="api-docs__legend-nowrap">
-            <kbd class="api-docs__kbd">Enter</kbd> and
-            <kbd class="api-docs__kbd">Space</kbd> also work.
+            <kbd class="ds-kbd">Enter</kbd> and
+            <kbd class="ds-kbd">Space</kbd> also work.
           </span>
         </p>
         <p class="api-docs__legend" data-nav-legend>
           <span class="api-docs__legend-ico" aria-hidden="true">↕</span>
           <span class="api-docs__legend-nowrap">
-            <kbd class="api-docs__kbd">ArrowUp</kbd> / <kbd class="api-docs__kbd">ArrowDown</kbd> / <kbd class="api-docs__kbd">ArrowLeft</kbd> / <kbd class="api-docs__kbd">ArrowRight</kbd>
+            <kbd class="ds-kbd">ArrowUp</kbd> / <kbd class="ds-kbd">ArrowDown</kbd> / <kbd class="ds-kbd">ArrowLeft</kbd> / <kbd class="ds-kbd">ArrowRight</kbd>
           </span>
           move focus;
           <span class="api-docs__legend-nowrap">
-            <kbd class="api-docs__kbd">Home</kbd> / <kbd class="api-docs__kbd">End</kbd>
+            <kbd class="ds-kbd">Home</kbd> / <kbd class="ds-kbd">End</kbd>
           </span>
           jump a row,
           <span class="api-docs__legend-nowrap">
-            <kbd class="api-docs__kbd">PageUp</kbd> / <kbd class="api-docs__kbd">PageDown</kbd>
+            <kbd class="ds-kbd">PageUp</kbd> / <kbd class="ds-kbd">PageDown</kbd>
           </span>
           jump an axis.
         </p>
@@ -597,27 +602,13 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
      so it never orphans mid-chip or between "Enter" and "and". Narrow
      viewports break *before* the em-dash. Tanya §3b. */
   .api-docs__legend-nowrap { white-space: nowrap; }
-  /* v152 (Tanya §2.1, Mike §napkin): PROMOTE to src/styles/ds-kbd.css on the
-     second real consumer. Rename `.api-docs__kbd` → `.ds-kbd`. Visual spec
-     frozen in _my/report.md / from-tanya-donska-expert-uix-designer-67 §3.
-     Add a source-grep guard at the same commit. Not yet. */
-  .api-docs__kbd {
-    padding: 0 var(--space-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-detail);
-    background: var(--surface-raised);
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-    font-size: var(--text-2xs);
-    line-height: 1;
-    box-shadow: none;
-  }
+  /* v152 — `.ds-kbd` PROMOTE landed. The chip rule (incl. forced-colors)
+     lives in src/styles/ds-kbd.css; FloatingKeepButton is the second real
+     consumer. scripts/check-ds-kbd.ts enforces the rule-of-three at
+     prebuild. See AGENTS.md "Legend chips teach active keys" rule. */
   @media (hover: none) {
     /* Touch users have no `c` key — hide the teaching line (Tanya §5.3). */
     .api-docs__legend { display: none; }
-  }
-  @media (forced-colors: active) {
-    .api-docs__kbd { border-color: CanvasText; background: Canvas; color: CanvasText; }
   }
 
   .api-docs__matrix {

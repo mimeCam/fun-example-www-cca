@@ -185,6 +185,35 @@
   outline-offset: 2px;
 }
 
+/* ── v152 — `K` hotkey legend (Tanya §6.2, Mike napkin scope #7) ────
+ * Absolute-positioned whisper below the button. Hug-content width so
+ * it never collides with surrounding chrome. Hidden by default; the
+ * float reveals the whole container (button + legend) via the same
+ * `.keep-float--visible` opacity toggle — one source of truth.
+ *
+ * Every token already lives in tokens.css (no new tokens, frozen per
+ * AGENTS.md). Hidden on touch (no `K` key) and collapses while the
+ * Sticky Stance Bar competes for attention (Tanya §6.2 ssb-gone). */
+
+.keep-float-legend {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+  color: var(--text-ghost);
+  font-size: var(--text-2xs);
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+/* Touch devices have no `K` key — honour the same teaching contract as
+ * the `/api/docs` legend band (Tanya §2.3 "hardware has the hardware"). */
+@media (hover: none) {
+  .keep-float-legend { display: none; }
+}
+
 /* ── Fossil: dead posts are not invitations (Tanya Zone C spec) ──── */
 /* Override .keep-float--visible so the transition cannot override.   */
 

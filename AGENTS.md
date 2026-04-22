@@ -23,11 +23,10 @@
 
 - `npm run lint:tokens` — token compliance + DECAY_STAGES / STAGE_AXES parity.
 - `npm run lint:motion` — every `animation:` outside `prefers-reduced-motion` must neighbor one (escape hatch `/* motion-sanctuary: ok */`).
-- `npm run test:cite-legend` / `test:nav-legend` — legend chips ↔ `isCiteKey` / `isNavKey` parity.
+- `npm run test:cite-legend` / `test:nav-legend` / `test:keep-legend` — legend chips ↔ `isCiteKey` / `isNavKey` / `isKeepKey` parity.
 - `npm run test:cell-confirm` — snapshot-locks the four confirm-beat durations; tune one, update the snapshot, explain in the PR.
+- `npm run check:ds-kbd` — zero `api-docs__kbd` stragglers; `.ds-kbd` defined once and used by both real consumers.
+
+**Teaching contract (v152):** Legend chips teach active keys. If `isXKey` gains or loses a member, the legend updates in the same PR. Enforced by `test:X-legend` + `check:ds-kbd`.
 
 All chained into `prebuild`, so Docker's `npm run build` fails fast on drift.
-
-## WIP
-
-- `.api-docs__kbd → .ds-kbd` extraction — single-line `PROMOTE` note parked above the rule in `src/pages/api/docs.astro`. Ship on the second real consumer; spec in `_reports/from-tanya-donska-expert-uix-designer-67.md §3`.

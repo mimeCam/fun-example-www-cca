@@ -56,9 +56,12 @@ function legendBlock(src: string): string {
   return m![1];
 }
 
-/** Every <kbd class="api-docs__kbd">…</kbd> content, in DOM order. */
+/** Every <kbd class="ds-kbd">…</kbd> content, in DOM order.
+ *  v152 — the chip class promoted to the design-system name on the
+ *  second real consumer (FloatingKeepButton). The regex follows the
+ *  rename; `check:ds-kbd` guards against stragglers. */
 function kbdLabels(block: string): string[] {
-  const re = /<kbd[^>]*class="[^"]*\bapi-docs__kbd\b[^"]*"[^>]*>([\s\S]*?)<\/kbd>/g;
+  const re = /<kbd[^>]*class="[^"]*\bds-kbd\b[^"]*"[^>]*>([\s\S]*?)<\/kbd>/g;
   const out: string[] = [];
   for (const m of block.matchAll(re)) out.push(m[1].trim());
   return out;

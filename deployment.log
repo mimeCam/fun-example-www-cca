@@ -1,4 +1,4 @@
-==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 06:50:55 PM UTC 2026
+==> [deploy] Starting deployment of persona-blog-a at Wed Apr 22 07:21:12 PM UTC 2026
 ==> [deploy] Stopping existing container: persona-blog-a
 persona-blog-a
 ==> [deploy] Removing existing container: persona-blog-a
@@ -15,7 +15,7 @@ persona-blog-a-sqlite
 #1 DONE 0.0s
 
 #2 [internal] load metadata for docker.io/library/node:20-alpine
-#2 DONE 0.2s
+#2 DONE 0.1s
 
 #3 [internal] load .dockerignore
 #3 transferring context: 120B done
@@ -28,77 +28,80 @@ persona-blog-a-sqlite
 #5 CACHED
 
 #6 [internal] load build context
-#6 transferring context: 168.88kB 0.3s done
-#6 DONE 0.3s
+#6 transferring context: 123.67kB 0.4s done
+#6 DONE 0.4s
 
-#7 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
-#7 0.760 ( 1/10) Installing libexpat (2.7.5-r0)
-#7 0.780 ( 2/10) Installing brotli-libs (1.2.0-r0)
-#7 0.802 ( 3/10) Installing libbz2 (1.0.8-r6)
-#7 0.819 ( 4/10) Installing libpng (1.6.57-r0)
-#7 0.836 ( 5/10) Installing freetype (2.14.1-r0)
-#7 0.863 ( 6/10) Installing fontconfig (2.17.1-r0)
-#7 0.905 ( 7/10) Installing encodings (1.1.0-r0)
-#7 0.943 ( 8/10) Installing libfontenc (1.1.8-r0)
-#7 0.959 ( 9/10) Installing mkfontscale (1.2.3-r1)
-#7 0.976 (10/10) Installing font-dejavu (2.37-r6)
-#7 1.072 Executing busybox-1.37.0-r30.trigger
-#7 1.079 Executing fontconfig-2.17.1-r0.trigger
-#7 1.127 Executing mkfontscale-1.2.3-r1.trigger
-#7 1.168 OK: 23.8 MiB in 28 packages
-#7 DONE 1.3s
+#7 [builder  3/10] RUN apk add --no-cache python3 make g++
+#7 1.146 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
+#7 1.426 ( 2/29) Installing jansson (2.14.1-r0)
+#7 1.446 ( 3/29) Installing zstd-libs (1.5.7-r2)
+#7 1.474 ( 4/29) Installing binutils (2.45.1-r0)
+#7 1.619 ( 5/29) Installing libgomp (15.2.0-r2)
+#7 1.643 ( 6/29) Installing libatomic (15.2.0-r2)
+#7 1.664 ( 7/29) Installing gmp (6.3.0-r4)
+#7 1.694 ( 8/29) Installing isl26 (0.26-r1)
+#7 1.739 ( 9/29) Installing mpfr4 (4.2.2-r0)
+#7 1.767 (10/29) Installing mpc1 (1.3.1-r1)
+#7 1.789 (11/29) Installing gcc (15.2.0-r2)
+#7 ...
 
-#8 [builder  3/10] RUN apk add --no-cache python3 make g++
-#8 1.365 ( 1/29) Installing libstdc++-dev (15.2.0-r2)
-#8 1.586 ( 2/29) Installing jansson (2.14.1-r0)
-#8 1.590 ( 3/29) Installing zstd-libs (1.5.7-r2)
-#8 1.598 ( 4/29) Installing binutils (2.45.1-r0)
-#8 1.711 ( 5/29) Installing libgomp (15.2.0-r2)
-#8 1.719 ( 6/29) Installing libatomic (15.2.0-r2)
-#8 1.723 ( 7/29) Installing gmp (6.3.0-r4)
-#8 1.732 ( 8/29) Installing isl26 (0.26-r1)
-#8 1.758 ( 9/29) Installing mpfr4 (4.2.2-r0)
-#8 1.767 (10/29) Installing mpc1 (1.3.1-r1)
-#8 1.770 (11/29) Installing gcc (15.2.0-r2)
-#8 3.022 (12/29) Installing musl-dev (1.2.5-r23)
-#8 3.111 (13/29) Installing g++ (15.2.0-r2)
-#8 3.393 (14/29) Installing make (4.4.1-r3)
-#8 3.397 (15/29) Installing libbz2 (1.0.8-r6)
-#8 3.401 (16/29) Installing libexpat (2.7.5-r0)
-#8 3.404 (17/29) Installing libffi (3.5.2-r0)
-#8 3.407 (18/29) Installing gdbm (1.26-r0)
-#8 3.409 (19/29) Installing xz-libs (5.8.2-r0)
-#8 3.413 (20/29) Installing mpdecimal (4.0.1-r0)
-#8 3.417 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
-#8 3.424 (22/29) Installing libncursesw (6.5_p20251123-r0)
-#8 3.430 (23/29) Installing libpanelw (6.5_p20251123-r0)
-#8 3.431 (24/29) Installing readline (8.3.1-r0)
-#8 3.436 (25/29) Installing sqlite-libs (3.51.2-r0)
-#8 3.449 (26/29) Installing python3 (3.12.13-r0)
-#8 3.646 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
-#8 3.776 (28/29) Installing pyc (3.12.13-r0)
-#8 3.776 (29/29) Installing python3-pyc (3.12.13-r0)
-#8 3.777 Executing busybox-1.37.0-r30.trigger
-#8 3.789 OK: 301.2 MiB in 47 packages
-#8 DONE 4.0s
+#8 [server 3/8] RUN apk add --no-cache fontconfig ttf-dejavu
+#8 1.377 ( 1/10) Installing libexpat (2.7.5-r0)
+#8 1.408 ( 2/10) Installing brotli-libs (1.2.0-r0)
+#8 1.460 ( 3/10) Installing libbz2 (1.0.8-r6)
+#8 1.483 ( 4/10) Installing libpng (1.6.57-r0)
+#8 1.512 ( 5/10) Installing freetype (2.14.1-r0)
+#8 1.561 ( 6/10) Installing fontconfig (2.17.1-r0)
+#8 1.617 ( 7/10) Installing encodings (1.1.0-r0)
+#8 1.683 ( 8/10) Installing libfontenc (1.1.8-r0)
+#8 1.706 ( 9/10) Installing mkfontscale (1.2.3-r1)
+#8 1.727 (10/10) Installing font-dejavu (2.37-r6)
+#8 2.014 Executing busybox-1.37.0-r30.trigger
+#8 2.025 Executing fontconfig-2.17.1-r0.trigger
+#8 2.089 Executing mkfontscale-1.2.3-r1.trigger
+#8 2.147 OK: 23.8 MiB in 28 packages
+#8 DONE 2.3s
+
+#7 [builder  3/10] RUN apk add --no-cache python3 make g++
+#7 2.966 (12/29) Installing musl-dev (1.2.5-r23)
+#7 3.050 (13/29) Installing g++ (15.2.0-r2)
+#7 3.365 (14/29) Installing make (4.4.1-r3)
+#7 3.386 (15/29) Installing libbz2 (1.0.8-r6)
+#7 3.408 (16/29) Installing libexpat (2.7.5-r0)
+#7 3.429 (17/29) Installing libffi (3.5.2-r0)
+#7 3.448 (18/29) Installing gdbm (1.26-r0)
+#7 3.469 (19/29) Installing xz-libs (5.8.2-r0)
+#7 3.490 (20/29) Installing mpdecimal (4.0.1-r0)
+#7 3.511 (21/29) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+#7 3.535 (22/29) Installing libncursesw (6.5_p20251123-r0)
+#7 3.556 (23/29) Installing libpanelw (6.5_p20251123-r0)
+#7 3.577 (24/29) Installing readline (8.3.1-r0)
+#7 3.605 (25/29) Installing sqlite-libs (3.51.2-r0)
+#7 3.650 (26/29) Installing python3 (3.12.13-r0)
+#7 3.892 (27/29) Installing python3-pycache-pyc0 (3.12.13-r0)
+#7 4.049 (28/29) Installing pyc (3.12.13-r0)
+#7 4.049 (29/29) Installing python3-pyc (3.12.13-r0)
+#7 4.050 Executing busybox-1.37.0-r30.trigger
+#7 4.062 OK: 301.2 MiB in 47 packages
+#7 DONE 4.3s
 
 #9 [builder  4/10] COPY package.json package-lock.json* ./
 #9 DONE 0.0s
 
 #10 [builder  5/10] RUN npm ci --prefer-offline 2>/dev/null || npm install
-#10 9.767 
-#10 9.767 added 447 packages, and audited 448 packages in 9s
-#10 9.767 
-#10 9.767 173 packages are looking for funding
-#10 9.767   run `npm fund` for details
-#10 9.821 
-#10 9.821 4 vulnerabilities (2 moderate, 2 high)
-#10 9.821 
-#10 9.821 To address all issues (including breaking changes), run:
-#10 9.821   npm audit fix --force
-#10 9.821 
-#10 9.821 Run `npm audit` for details.
-#10 DONE 10.3s
+#10 9.726 
+#10 9.726 added 447 packages, and audited 448 packages in 9s
+#10 9.726 
+#10 9.726 173 packages are looking for funding
+#10 9.726   run `npm fund` for details
+#10 9.776 
+#10 9.776 4 vulnerabilities (2 moderate, 2 high)
+#10 9.776 
+#10 9.776 To address all issues (including breaking changes), run:
+#10 9.776   npm audit fix --force
+#10 9.776 
+#10 9.776 Run `npm audit` for details.
+#10 DONE 10.2s
 
 #11 [builder  6/10] COPY astro.config.mjs tsconfig.json ./
 #11 DONE 0.0s
@@ -113,97 +116,352 @@ persona-blog-a-sqlite
 #14 DONE 0.0s
 
 #15 [builder 10/10] RUN npm run build
-#15 0.370 
-#15 0.370 > persona-blog@0.1.0 prebuild
-#15 0.370 > npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts
-#15 0.370 
-#15 1.524 npm warn exec The following package was not found and will be installed: tsx@4.21.0
-#15 3.665 ✅  Guard check: 137 guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable. STAGE_AXES inventory clean.
-#15 3.665    ⚠️  0 errors + 2 typography warnings remain in unguarded files.
-#15 3.665 
-#15 5.075 ✅  motion-sanctuary: 143 scannable files clean (0 hits).
-#15 5.104 
-#15 5.104 > persona-blog@0.1.0 build
-#15 5.104 > astro build
-#15 5.104 
-#15 5.812 ▶ Astro collects anonymous usage data.
-#15 5.812   This information helps us improve Astro.
-#15 5.812   Run "astro telemetry disable" to opt-out.
-#15 5.812   https://astro.build/telemetry
-#15 5.812 
-#15 7.207 18:51:17 [types] Generated 499ms
-#15 7.208 18:51:17 [build] output: "hybrid"
-#15 7.208 18:51:17 [build] directory: /app/dist/
-#15 7.208 18:51:17 [build] adapter: @astrojs/node
-#15 7.208 18:51:17 [build] Collecting build info...
-#15 7.209 18:51:17 [build] ✓ Completed in 540ms.
-#15 7.212 18:51:17 [build] Building hybrid entrypoints...
-#15 12.55 18:51:23 [vite] ✓ built in 5.29s
-#15 12.55 18:51:23 [build] ✓ Completed in 5.34s.
-#15 12.55 
-#15 12.55  building client (vite) 
-#15 12.56 18:51:23 [vite] transforming...
-#15 12.90 18:51:23 [vite] ✓ 75 modules transformed.
-#15 12.95 18:51:23 [vite] rendering chunks...
-#15 12.98 18:51:23 [vite] computing gzip size...
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/clipboard.TJO71FjA.js                                               0.46 kB │ gzip: 0.30 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.DgV-i7gH.js                                                 1.33 kB │ gzip: 0.72 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.DVP5K3fI.js    3.81 kB │ gzip: 1.57 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.rj3x2-M7.js                                                 4.48 kB │ gzip: 1.84 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.D2qnmWAa.js                                                 6.25 kB │ gzip: 2.47 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.DoT45hvv.js                                                 7.32 kB │ gzip: 2.68 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/hoisted.Blx46WV1.js                                                 7.89 kB │ gzip: 3.19 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
-#15 12.99 18:51:23 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CTw20Qv1.js       12.14 kB │ gzip: 4.27 kB
-#15 12.99 18:51:23 [vite] ✓ built in 433ms
-#15 13.03 
-#15 13.03  prerendering static routes 
-#15 13.06 18:51:23 λ src/pages/api/graveyard-stats.ts
-#15 13.06 18:51:23   └─ /api/graveyard-stats (+35ms)
-#15 13.10 18:51:23 λ src/pages/api/ingest/cell-event.ts
-#15 13.10 18:51:23   └─ /api/ingest/cell-event (+1ms)
-#15 13.11 18:51:23 λ src/pages/api/metrics/cited-cells.ts
-#15 13.11 18:51:23   └─ /api/metrics/cited-cells (+3ms)
-#15 13.11 18:51:23 λ src/pages/api/reading-pulse.ts
-#15 13.11 18:51:23   └─ /api/reading-pulse (+1ms)
-#15 13.12 18:51:23 ▶ src/pages/author/index.astro
-#15 13.12 18:51:23   └─ /author/index.html (+12ms)
-#15 13.25 18:51:23 ▶ src/pages/blog/[slug].astro
-#15 13.25 18:51:23   ├─ /blog/building-in-public/index.html (+32ms)
-#15 13.28 18:51:23   ├─ /blog/focus-as-a-mood/index.html (+17ms)
-#15 13.30 18:51:23   ├─ /blog/hello-world/index.html (+12ms)
-#15 13.31 18:51:23   ├─ /blog/lo-fi-loop/index.html (+12ms)
-#15 13.32 18:51:23   ├─ /blog/now-page/index.html (+17ms)
-#15 13.34 18:51:23   └─ /blog/the-decay-theory/index.html (+16ms)
-#15 13.36 18:51:24 λ src/pages/feed.xml.ts
-#15 13.36 18:51:24   └─ /feed.xml (+1ms)
-#15 13.36 18:51:24 ✓ Completed in 361ms.
-#15 13.36 
-#15 13.36 18:51:24 [build] Rearranging server assets...
-#15 13.37 18:51:24 [build] Server built in 6.70s
-#15 13.37 18:51:24 [build] Complete!
-#15 DONE 13.5s
+#15 0.359 
+#15 0.359 > persona-blog@0.1.0 prebuild
+#15 0.359 > npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts
+#15 0.359 
+#15 1.442 npm warn exec The following package was not found and will be installed: tsx@4.21.0
+#15 3.438 ✅  Guard check: 137 guarded files clean. stage-tokens.generated.ts current. DECAY_STAGES set immutable. STAGE_AXES inventory clean.
+#15 3.438    ⚠️  0 errors + 2 typography warnings remain in unguarded files.
+#15 3.438 
+#15 4.971 ✅  motion-sanctuary: 144 scannable files clean (0 hits).
+#15 6.352 ✅  check-ds-kbd: zero api-docs__kbd stragglers; .ds-kbd live in 3 sites.
+#15 7.533 TAP version 13
+#15 7.870 # Subtest: isKeepKey — bare letter, no modifiers
+#15 7.873     # Subtest: `k` (lowercase) is a keep
+#15 7.874     ok 1 - `k` (lowercase) is a keep
+#15 7.875       ---
+#15 7.875       duration_ms: 1.276891
+#15 7.875       ...
+#15 7.876     # Subtest: `K` (capital — caps-lock or shift-held) is a keep
+#15 7.876     ok 2 - `K` (capital — caps-lock or shift-held) is a keep
+#15 7.876       ---
+#15 7.876       duration_ms: 0.201049
+#15 7.876       ...
+#15 7.876     1..2
+#15 7.877 ok 1 - isKeepKey — bare letter, no modifiers
+#15 7.877   ---
+#15 7.877   duration_ms: 3.098617
+#15 7.877   type: 'suite'
+#15 7.877   ...
+#15 7.878 # Subtest: isKeepKey — Shift is transparent; capital K still keeps
+#15 7.878     # Subtest: Shift+k still keeps (native `event.key` lowers when Shift flips caps)
+#15 7.878     ok 1 - Shift+k still keeps (native `event.key` lowers when Shift flips caps)
+#15 7.879       ---
+#15 7.879       duration_ms: 0.274657
+#15 7.879       ...
+#15 7.880     # Subtest: Shift+K still keeps (caps-lock on + Shift held → capital)
+#15 7.881     ok 2 - Shift+K still keeps (caps-lock on + Shift held → capital)
+#15 7.881       ---
+#15 7.881       duration_ms: 0.175419
+#15 7.881       ...
+#15 7.883     1..2
+#15 7.883 ok 2 - isKeepKey — Shift is transparent; capital K still keeps
+#15 7.883   ---
+#15 7.883   duration_ms: 0.622641
+#15 7.883   type: 'suite'
+#15 7.883   ...
+#15 7.883 # Subtest: isKeepKey — Cmd / Ctrl / Alt drop the keep (native chords win)
+#15 7.883     # Subtest: Cmd+k → false (let native Cmd+K through — browser search)
+#15 7.883     ok 1 - Cmd+k → false (let native Cmd+K through — browser search)
+#15 7.884       ---
+#15 7.884       duration_ms: 0.551267
+#15 7.884       ...
+#15 7.885     # Subtest: Ctrl+k → false (Ctrl+K = search/omnibox on many browsers)
+#15 7.885     ok 2 - Ctrl+k → false (Ctrl+K = search/omnibox on many browsers)
+#15 7.885       ---
+#15 7.885       duration_ms: 0.220043
+#15 7.885       ...
+#15 7.885     # Subtest: Alt+k → false (Alt-chords own by platform)
+#15 7.885     ok 3 - Alt+k → false (Alt-chords own by platform)
+#15 7.885       ---
+#15 7.885       duration_ms: 1.173917
+#15 7.885       ...
+#15 7.886     # Subtest: Cmd+K (capital) → false
+#15 7.886     ok 4 - Cmd+K (capital) → false
+#15 7.886       ---
+#15 7.886       duration_ms: 0.307839
+#15 7.886       ...
+#15 7.887     1..4
+#15 7.887 ok 3 - isKeepKey — Cmd / Ctrl / Alt drop the keep (native chords win)
+#15 7.887   ---
+#15 7.887   duration_ms: 2.584549
+#15 7.887   type: 'suite'
+#15 7.887   ...
+#15 7.891 # Subtest: isKeepKey — everything else is NOT a keep
+#15 7.892     # Subtest: "a" is not a keep
+#15 7.893     ok 1 - "a" is not a keep
+#15 7.893       ---
+#15 7.893       duration_ms: 0.282581
+#15 7.893       ...
+#15 7.894     # Subtest: "c" is not a keep
+#15 7.895     ok 2 - "c" is not a keep
+#15 7.896       ---
+#15 7.896       duration_ms: 0.240261
+#15 7.896       ...
+#15 7.896     # Subtest: "j" is not a keep
+#15 7.897     ok 3 - "j" is not a keep
+#15 7.899       ---
+#15 7.899       duration_ms: 0.125336
+#15 7.899       ...
+#15 7.899     # Subtest: "l" is not a keep
+#15 7.900     ok 4 - "l" is not a keep
+#15 7.900       ---
+#15 7.900       duration_ms: 0.147638
+#15 7.900       ...
+#15 7.903     # Subtest: "x" is not a keep
+#15 7.903     ok 5 - "x" is not a keep
+#15 7.903       ---
+#15 7.903       duration_ms: 0.105017
+#15 7.903       ...
+#15 7.906     # Subtest: "Escape" is not a keep
+#15 7.906     ok 6 - "Escape" is not a keep
+#15 7.906       ---
+#15 7.906       duration_ms: 0.146617
+#15 7.906       ...
+#15 7.906     # Subtest: "Tab" is not a keep
+#15 7.906     ok 7 - "Tab" is not a keep
+#15 7.907       ---
+#15 7.907       duration_ms: 0.10618
+#15 7.907       ...
+#15 7.909     # Subtest: "Enter" is not a keep
+#15 7.910     ok 8 - "Enter" is not a keep
+#15 7.911       ---
+#15 7.911       duration_ms: 0.07984
+#15 7.911       ...
+#15 7.911     # Subtest: " " is not a keep
+#15 7.911     ok 9 - " " is not a keep
+#15 7.912       ---
+#15 7.912       duration_ms: 0.103724
+#15 7.912       ...
+#15 7.913     # Subtest: "ArrowUp" is not a keep
+#15 7.914     ok 10 - "ArrowUp" is not a keep
+#15 7.914       ---
+#15 7.914       duration_ms: 0.306467
+#15 7.914       ...
+#15 7.915     # Subtest: "ArrowDown" is not a keep
+#15 7.915     ok 11 - "ArrowDown" is not a keep
+#15 7.915       ---
+#15 7.915       duration_ms: 0.103634
+#15 7.915       ...
+#15 7.915     # Subtest: "ArrowLeft" is not a keep
+#15 7.916     ok 12 - "ArrowLeft" is not a keep
+#15 7.916       ---
+#15 7.916       duration_ms: 0.079709
+#15 7.916       ...
+#15 7.916     # Subtest: "ArrowRight" is not a keep
+#15 7.919     ok 13 - "ArrowRight" is not a keep
+#15 7.919       ---
+#15 7.919       duration_ms: 0.086042
+#15 7.919       ...
+#15 7.920     # Subtest: "Home" is not a keep
+#15 7.920     ok 14 - "Home" is not a keep
+#15 7.920       ---
+#15 7.920       duration_ms: 0.086412
+#15 7.920       ...
+#15 7.921     # Subtest: "End" is not a keep
+#15 7.921     ok 15 - "End" is not a keep
+#15 7.921       ---
+#15 7.921       duration_ms: 0.088868
+#15 7.921       ...
+#15 7.921     # Subtest: "PageUp" is not a keep
+#15 7.921     ok 16 - "PageUp" is not a keep
+#15 7.921       ---
+#15 7.921       duration_ms: 0.098886
+#15 7.921       ...
+#15 7.922     # Subtest: "PageDown" is not a keep
+#15 7.922     ok 17 - "PageDown" is not a keep
+#15 7.922       ---
+#15 7.922       duration_ms: 0.131438
+#15 7.922       ...
+#15 7.922     # Subtest: "0" is not a keep
+#15 7.922     ok 18 - "0" is not a keep
+#15 7.922       ---
+#15 7.922       duration_ms: 0.089337
+#15 7.922       ...
+#15 7.922     1..18
+#15 7.923 ok 4 - isKeepKey — everything else is NOT a keep
+#15 7.923   ---
+#15 7.923   duration_ms: 3.113224
+#15 7.923   type: 'suite'
+#15 7.923   ...
+#15 7.925 # Subtest: isKeepKey — any Cmd/Ctrl/Alt combo suppresses both K forms
+#15 7.925     # Subtest: every combo × every keep key → false
+#15 7.925     ok 1 - every combo × every keep key → false
+#15 7.926       ---
+#15 7.926       duration_ms: 0.241315
+#15 7.926       ...
+#15 7.928     1..1
+#15 7.928 ok 5 - isKeepKey — any Cmd/Ctrl/Alt combo suppresses both K forms
+#15 7.928   ---
+#15 7.928   duration_ms: 0.373131
+#15 7.928   type: 'suite'
+#15 7.928   ...
+#15 7.928 # Subtest: isKeepKey — disjoint from cite and nav keys
+#15 7.929     # Subtest: none of the cite keys are keep keys
+#15 7.929     ok 1 - none of the cite keys are keep keys
+#15 7.929       ---
+#15 7.929       duration_ms: 0.295616
+#15 7.929       ...
+#15 7.929     # Subtest: none of the nav keys are keep keys
+#15 7.930     ok 2 - none of the nav keys are keep keys
+#15 7.930       ---
+#15 7.930       duration_ms: 0.161664
+#15 7.930       ...
+#15 7.930     1..2
+#15 7.931 ok 6 - isKeepKey — disjoint from cite and nav keys
+#15 7.931   ---
+#15 7.931   duration_ms: 0.570933
+#15 7.931   type: 'suite'
+#15 7.931   ...
+#15 7.943 1..6
+#15 7.943 # tests 29
+#15 7.943 # suites 6
+#15 7.943 # pass 29
+#15 7.943 # fail 0
+#15 7.944 # cancelled 0
+#15 7.944 # skipped 0
+#15 7.944 # todo 0
+#15 7.944 # duration_ms 432.158862
+#15 9.190 TAP version 13
+#15 9.526 # Subtest: v152 — keep-legend ↔ isKeepKey parity
+#15 9.529     # Subtest: legend block exists in FloatingKeepButton.astro
+#15 9.530     ok 1 - legend block exists in FloatingKeepButton.astro
+#15 9.530       ---
+#15 9.530       duration_ms: 1.360919
+#15 9.530       ...
+#15 9.531     # Subtest: legend contains at least one <kbd> chip
+#15 9.531     ok 2 - legend contains at least one <kbd> chip
+#15 9.531       ---
+#15 9.531       duration_ms: 0.449266
+#15 9.531       ...
+#15 9.532     # Subtest: every chip label maps to a real key the handler accepts
+#15 9.532     ok 3 - every chip label maps to a real key the handler accepts
+#15 9.533       ---
+#15 9.533       duration_ms: 0.280056
+#15 9.533       ...
+#15 9.533     # Subtest: every keep key the handler accepts is taught by the legend
+#15 9.533     ok 4 - every keep key the handler accepts is taught by the legend
+#15 9.533       ---
+#15 9.533       duration_ms: 0.224833
+#15 9.533       ...
+#15 9.534     # Subtest: no legend chip teaches a key the handler ignores (stale-key guard)
+#15 9.534     ok 5 - no legend chip teaches a key the handler ignores (stale-key guard)
+#15 9.534       ---
+#15 9.534       duration_ms: 0.177564
+#15 9.534       ...
+#15 9.535     # Subtest: no empty <kbd> chips (broken-icon guard, Tanya §2b mirror)
+#15 9.535     ok 6 - no empty <kbd> chips (broken-icon guard, Tanya §2b mirror)
+#15 9.535       ---
+#15 9.535       duration_ms: 0.198654
+#15 9.535       ...
+#15 9.536     # Subtest: modifier chords (Ctrl/Cmd/Alt + K) fall through to browser
+#15 9.536     ok 7 - modifier chords (Ctrl/Cmd/Alt + K) fall through to browser
+#15 9.536       ---
+#15 9.536       duration_ms: 0.305685
+#15 9.536       ...
+#15 9.536     # Subtest: keep legend sits inside the floating-keep scope (not a run-on paragraph)
+#15 9.536     ok 8 - keep legend sits inside the floating-keep scope (not a run-on paragraph)
+#15 9.536       ---
+#15 9.536       duration_ms: 0.202982
+#15 9.536       ...
+#15 9.537     1..8
+#15 9.538 ok 1 - v152 — keep-legend ↔ isKeepKey parity
+#15 9.538   ---
+#15 9.538   duration_ms: 5.092525
+#15 9.538   type: 'suite'
+#15 9.538   ...
+#15 9.552 1..1
+#15 9.552 # tests 8
+#15 9.552 # suites 1
+#15 9.552 # pass 8
+#15 9.553 # fail 0
+#15 9.553 # cancelled 0
+#15 9.553 # skipped 0
+#15 9.553 # todo 0
+#15 9.553 # duration_ms 382.791266
+#15 9.578 
+#15 9.578 > persona-blog@0.1.0 build
+#15 9.578 > astro build
+#15 9.578 
+#15 10.32 ▶ Astro collects anonymous usage data.
+#15 10.32   This information helps us improve Astro.
+#15 10.32   Run "astro telemetry disable" to opt-out.
+#15 10.32   https://astro.build/telemetry
+#15 10.32 
+#15 11.72 19:21:39 [types] Generated 510ms
+#15 11.73 19:21:39 [build] output: "hybrid"
+#15 11.73 19:21:39 [build] directory: /app/dist/
+#15 11.73 19:21:39 [build] adapter: @astrojs/node
+#15 11.73 19:21:39 [build] Collecting build info...
+#15 11.73 19:21:39 [build] ✓ Completed in 550ms.
+#15 11.73 19:21:39 [build] Building hybrid entrypoints...
+#15 17.04 19:21:45 [vite] ✓ built in 5.26s
+#15 17.04 19:21:45 [build] ✓ Completed in 5.31s.
+#15 17.04 
+#15 17.04  building client (vite) 
+#15 17.05 19:21:45 [vite] transforming...
+#15 17.40 19:21:45 [vite] ✓ 76 modules transformed.
+#15 17.44 19:21:45 [vite] rendering chunks...
+#15 17.48 19:21:45 [vite] computing gzip size...
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.pURd_RYM.js                                                 0.13 kB │ gzip: 0.13 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.Ce6EJ-s4.js                                                 0.14 kB │ gzip: 0.13 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/haptics.siE5Iely.js                                                 0.23 kB │ gzip: 0.19 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/spring-easing.BTb9w97q.js                                           0.41 kB │ gzip: 0.26 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.DDtuu7jL.js                                                 0.41 kB │ gzip: 0.30 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/clipboard.TJO71FjA.js                                               0.46 kB │ gzip: 0.30 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/atmosphere.D6LB7ZBP.js                                              0.59 kB │ gzip: 0.35 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/TensionBadge.astro_astro_type_script_index_0_lang.B5LQsGpa.js       0.94 kB │ gzip: 0.53 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.D7ybaJw9.js                                                 1.23 kB │ gzip: 0.74 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.DgV-i7gH.js                                                 1.33 kB │ gzip: 0.72 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/batting-average-chip.DQtDHu-f.js                                    1.92 kB │ gzip: 0.90 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.Cke4By7J.js                                                 2.07 kB │ gzip: 1.09 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/TrustBadge.astro_astro_type_script_index_0_lang.DInspvbw.js         2.48 kB │ gzip: 1.18 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.BGpEqIUC.js                                                 3.09 kB │ gzip: 1.47 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/DisputeChallenge.astro_astro_type_script_index_0_lang.BbudaG-y.js   3.68 kB │ gzip: 1.54 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/ShareSealButton.astro_astro_type_script_index_0_lang.DVP5K3fI.js    3.81 kB │ gzip: 1.57 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.CGPmSj6H.js                                                 4.20 kB │ gzip: 1.84 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.rj3x2-M7.js                                                 4.48 kB │ gzip: 1.84 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.BDb7nVDx.js                                                 5.83 kB │ gzip: 2.13 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.D2qnmWAa.js                                                 6.25 kB │ gzip: 2.47 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.Blx46WV1.js                                                 7.89 kB │ gzip: 3.19 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/hoisted.DSrdmPuI.js                                                 8.21 kB │ gzip: 2.99 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/PactPanel.astro_astro_type_script_index_0_lang.BIr-522Y.js         10.13 kB │ gzip: 3.59 kB
+#15 17.49 19:21:45 [vite] dist/client/_astro/SealReceipt.astro_astro_type_script_index_0_lang.CTw20Qv1.js       12.14 kB │ gzip: 4.27 kB
+#15 17.49 19:21:45 [vite] ✓ built in 447ms
+#15 17.52 
+#15 17.52  prerendering static routes 
+#15 17.55 19:21:45 λ src/pages/api/graveyard-stats.ts
+#15 17.55 19:21:45   └─ /api/graveyard-stats (+31ms)
+#15 17.59 19:21:45 λ src/pages/api/ingest/cell-event.ts
+#15 17.59 19:21:45   └─ /api/ingest/cell-event (+1ms)
+#15 17.59 19:21:45 λ src/pages/api/metrics/cited-cells.ts
+#15 17.59 19:21:45   └─ /api/metrics/cited-cells (+3ms)
+#15 17.60 19:21:45 λ src/pages/api/reading-pulse.ts
+#15 17.60 19:21:45   └─ /api/reading-pulse (+1ms)
+#15 17.61 19:21:45 ▶ src/pages/author/index.astro
+#15 17.61 19:21:45   └─ /author/index.html (+10ms)
+#15 17.76 19:21:45 ▶ src/pages/blog/[slug].astro
+#15 17.76 19:21:45   ├─ /blog/building-in-public/index.html (+29ms)
+#15 17.79 19:21:45   ├─ /blog/focus-as-a-mood/index.html (+15ms)
+#15 17.81 19:21:45   ├─ /blog/hello-world/index.html (+13ms)
+#15 17.82 19:21:45   ├─ /blog/lo-fi-loop/index.html (+11ms)
+#15 17.83 19:21:45   ├─ /blog/now-page/index.html (+16ms)
+#15 17.85 19:21:45   └─ /blog/the-decay-theory/index.html (+17ms)
+#15 17.87 19:21:45 λ src/pages/feed.xml.ts
+#15 17.87 19:21:45   └─ /feed.xml (+3ms)
+#15 17.87 19:21:45 ✓ Completed in 371ms.
+#15 17.87 
+#15 17.87 19:21:45 [build] Rearranging server assets...
+#15 17.88 19:21:45 [build] Server built in 6.70s
+#15 17.88 19:21:45 [build] Complete!
+#15 DONE 18.0s
 
 #16 [server 4/8] COPY --from=builder /app/dist ./dist
 #16 DONE 0.1s
 
 #17 [server 5/8] COPY --from=builder /app/node_modules ./node_modules
-#17 DONE 2.5s
+#17 DONE 2.3s
 
 #18 [server 6/8] COPY --from=builder /app/src/content/blog/ ./src/content/blog/
 #18 DONE 0.0s
@@ -217,24 +475,24 @@ persona-blog-a-sqlite
 #21 exporting to image
 #21 exporting layers
 #21 exporting layers 1.4s done
-#21 writing image sha256:db9e0ed2a501a0b2741a667eb8c6df5a5310818fe115e7c1afc6c596b1ccfd35 done
+#21 writing image sha256:b52ff824637de480cad24e7b3b9a3c024bd13b23e48a683ea6be5971397938d9 done
 #21 naming to docker.io/library/persona-blog-a done
 #21 DONE 1.4s
 ==> [deploy] Starting container: persona-blog-a on port 7100
-6ea674a74b3ad5e24c3ef1d2cd0a6ed4b3ac76982d24d754bc534ae4aa2f4590
+f83716dd2f40ceec033f5e70ab068735c0aed35fd5246ba2e3126703c247009d
 ==> [deploy] Waiting for container to become healthy…
 ==> [deploy] ✓ Container is running
 ==> [deploy] Running deadline sweep…
 ==> [deploy] Deadline sweep response: {"ok":true,"swept":0,"skipped":0,"errors":0,"results":[],"disputeResolved":0,"disputeResults":[]}
 ==> [deploy] Running OTS upgrade sweep…
 ==> [deploy] OTS upgrade response: {"upgraded":0,"stillPending":1,"failed":0,"errors":[]}
-==> [deploy] Warming up /api/docs SSR (v150d cited-cell heat)…
+==> [deploy] Warming up /api/docs SSR (cited-cell heat + legend stack)…
 ==> [deploy] /api/docs SSR warm-up: HTTP 200
 ==> [deploy] Warming up cell-metrics endpoint…
-==> [deploy] Cell-metrics baseline: {"window":{"days":1,"since":"2026-04-21T18:51:23.761Z"},"copies":0,"arrivals":0,"roundTripRatio":0,"byCell":[],"heatByCell":[{"axis":"typography","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0}],"ledger":{"ready":false,"ageDays":0,"coldStartDays":7,"warmDays":7}}
+==> [deploy] Cell-metrics baseline: {"window":{"days":1,"since":"2026-04-21T19:21:45.663Z"},"copies":0,"arrivals":0,"roundTripRatio":0,"byCell":[],"heatByCell":[{"axis":"typography","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"typography","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"border","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"tempo","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"selection","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"drag-highlight","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"focus","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fresh","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fading","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"endangered","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"ghost","heat":"dormant","lastTs":null,"copies":0,"arrivals":0},{"axis":"underline","stage":"fossil","heat":"dormant","lastTs":null,"copies":0,"arrivals":0}],"ledger":{"ready":false,"ageDays":0,"coldStartDays":7,"warmDays":7}}
 ==> [deploy] Pruning dangling images…
 Deleted Images:
-deleted: sha256:ad25a8f5ed20a818226d42ec9adb1bc869cd9893b2937f3812204595a8e9d2a1
+deleted: sha256:db9e0ed2a501a0b2741a667eb8c6df5a5310818fe115e7c1afc6c596b1ccfd35
 
 Total reclaimed space: 0B
-==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 06:51:39 PM UTC 2026
+==> [deploy] Done. persona-blog-a is live at http://localhost:7100 — Wed Apr 22 07:21:58 PM UTC 2026
