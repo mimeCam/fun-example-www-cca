@@ -341,6 +341,9 @@ describe('TARGET_FILES — guard scope is explicit and non-empty', () => {
   test('motion.css joined the ledger (Krystle v157 / Mike v158)', () => {
     assert.ok(TARGET_FILES.includes('src/styles/motion.css'));
   });
+  test('verdict-ceremony.css joined the ledger (Krystle/Paul/Mike v159)', () => {
+    assert.ok(TARGET_FILES.includes('src/styles/verdict-ceremony.css'));
+  });
   test('every entry is a .css file inside src/styles/', () => {
     for (const f of TARGET_FILES) {
       assert.match(f, /^src\/styles\/[a-z0-9-]+\.css$/i, `bad entry: ${f}`);
@@ -387,5 +390,11 @@ describe('regression — live src/styles/tokens.css passes the guard', () => {
 describe('regression — live src/styles/motion.css passes the guard', () => {
   test('zero violations on the current motion.css', () => {
     assertLiveFileClean('src/styles/motion.css');
+  });
+});
+
+describe('regression — live src/styles/verdict-ceremony.css passes the guard', () => {
+  test('zero violations on the current verdict-ceremony.css', () => {
+    assertLiveFileClean('src/styles/verdict-ceremony.css');
   });
 });

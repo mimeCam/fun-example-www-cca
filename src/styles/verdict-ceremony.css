@@ -48,7 +48,9 @@
 /* forwards (to-state holds after end). Acts are invisible until their cue.   */
 
 /* Act base delays — inherited by children via --act-delay custom property */
-[data-act="1"] { --act-delay: 0ms; }
+[data-act="1"] {
+  --act-delay: 0ms;   /* reason: snap */
+}
 [data-act="2"] { --act-delay: var(--motion-ceremony-duration); }   /* 600ms */
 [data-act="3"] { --act-delay: var(--duration-bloom); }             /* 1200ms */
 

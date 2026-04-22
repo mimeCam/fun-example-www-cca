@@ -11,56 +11,47 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v158 (2026-04-22) — Duration Reasons: motion.css joins ledger ────
+# ── Sprint v159 (2026-04-22) — Duration Reasons: verdict-ceremony joins ────
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • scripts/lib/duration-reasons.ts (UPDATED) — extended with the
-#       reduced-motion context tracker (Mike napkin v158 §5.2). New pure
-#       helpers: `REDUCED_MOTION_OPEN_RE`, `isReducedMotionMediaOpen`,
-#       `netBraceDelta`, `computeReducedMotionMask`. A brace-depth scan
-#       (no AST — same shape as every guard in this repo) masks every
-#       line inside `@media (prefers-reduced-motion: reduce) { … }` as
-#       in-context, so the accessibility-policy `0ms` overrides are
-#       exempt from the reason-citation rule. No vocabulary expansion —
-#       context-skip chosen over a new `reduced-motion` label (Elon §3
-#       integrity rule: no new labels without an incident).
 #     • scripts/check-duration-reasons.ts (UPDATED) — `TARGET_FILES`
-#       widened from `[tokens.css]` to `[tokens.css, motion.css]`
-#       (Krystle v157 / Mike napkin v158). The scanner now consults
-#       `computeReducedMotionMask()` first and skips lines that sit
-#       inside a `prefers-reduced-motion: reduce` block before running
-#       the literal-duration / alias / reason-parse checks.
-#     • scripts/check-duration-reasons.test.ts (UPDATED) — three new
-#       fixtures (`FIXTURE_REDUCED_MOTION_BLOCK`, `FIXTURE_MOTION_CLEAN`,
-#       `FIXTURE_MOTION_MISSING`) + a new describe block covering each
-#       helper in isolation (opener detection, brace-delta counter, full
-#       mask). New regression: the guard runs against the live
-#       `src/styles/motion.css` and must see zero violations. The live-
-#       file check was DRY-ed into a shared `assertLiveFileClean()`.
-#     • src/styles/motion.css (UPDATED) — every literal-ms token in the
-#       Duration Scale, Motion Profiles, Duration Gap-Fills, and Stagger
-#       Utility sections now carries a `/* reason: <label> */` comment
-#       sourced from the closed vocabulary. Labels used: micro-feedback ·
-#       ceremony-phase · ceremony-dwell · linger · snap · doherty ·
-#       ambient-pulse. No new tokens, only annotations.
-#     • AGENTS.md (UPDATED) — Contracts line widened: "every `ms`/`s` in
-#       design-system CSS sources (tokens.css · motion.css) cites a
-#       legal label … `@media (prefers-reduced-motion: reduce)` 0ms
-#       overrides exempt". Guard line unchanged (`duration-reasons` was
-#       already present from v156); scope is what moved.
+#       widened from `[tokens.css, motion.css]` to
+#       `[tokens.css, motion.css, verdict-ceremony.css]`
+#       (Krystle / Paul / Mike napkin v159). The ledger now enforces the
+#       reason-citation rule across all three design-system CSS sources;
+#       every literal `ms`/`s` in any of them must cite a label from
+#       `scripts/lib/duration-reasons.ts` (aliases inherit; the
+#       reduced-motion mask from v158 still exempts accessibility
+#       overrides). Header docblock rewritten from "both" → "all" and
+#       updated to name verdict-ceremony.css explicitly.
+#     • scripts/check-duration-reasons.test.ts (UPDATED) — two new
+#       assertions: (1) a `TARGET_FILES` ledger test that locks in
+#       `src/styles/verdict-ceremony.css` as a tracked scope entry, and
+#       (2) a new describe block running the guard against the live
+#       `src/styles/verdict-ceremony.css` and asserting zero violations
+#       (same `assertLiveFileClean()` helper introduced in v158).
+#     • src/styles/verdict-ceremony.css (UPDATED) — the `data-act="1"`
+#       base delay (`--act-delay: 0ms`) now carries a `/* reason: snap */`
+#       comment sourced from the closed vocabulary, satisfying the newly
+#       widened guard. No new tokens, no new timing — only an annotation.
+#       (Acts 2 and 3 cite existing `var(--motion-ceremony-duration)` /
+#       `var(--duration-bloom)` aliases and inherit their reasons.)
+#     • AGENTS.md (UPDATED) — Contracts line widened: the parenthetical
+#       now reads "tokens.css · motion.css · verdict-ceremony.css".
+#       Guard line unchanged (`duration-reasons` already on the list
+#       since v156); scope is what moved, again.
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, volumes, or docker networks.
 #     Dockerfile already COPY-s `scripts/` and `src/` wholesale into the
-#     builder stage, so the widened guard (new pure helpers in
-#     `scripts/lib/duration-reasons.ts`, the extended `TARGET_FILES`
-#     array, the new test fixtures + live-file regression, and the
-#     annotated `src/styles/motion.css`) all ship without a single
+#     builder stage, so the widened guard (extended `TARGET_FILES`
+#     array, two new test assertions, and the annotated
+#     `src/styles/verdict-ceremony.css`) all ship without a single
 #     Dockerfile edit or docker-run-flag edit. `package.json` was
 #     untouched — the prebuild chain link added in v156
 #     (`check-duration-reasons`) automatically runs the widened guard.
-#     Drift in either tokens.css OR motion.css fails the image build,
-#     fails this script, and leaves the previous container already-
-#     stopped — operator re-runs after the fix.
+#     Drift in tokens.css OR motion.css OR verdict-ceremony.css fails
+#     the image build, fails this script, and leaves the previous
+#     container already-stopped — operator re-runs after the fix.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -110,11 +101,13 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival (v154)  →
 #   check-citation-delegation (v155)  →  check-duration-reasons
-#   (v156 tokens.css · v158 + motion.css · v158 reduced-motion exempt)  →
+#   (v156 tokens.css · v158 + motion.css · v158 reduced-motion exempt ·
+#    v159 + verdict-ceremony.css)  →
 #   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit (v153)  →
 #   test:arrival (v154)  →  test:citation-golden (v155)  →
 #   test:citation-delegation (v155)  →  test:duration-reasons
-#   (v158 — three new fixtures + live motion.css regression)  →
+#   (v158 — three new fixtures + live motion.css regression ·
+#    v159 + live verdict-ceremony.css regression)  →
 #   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
