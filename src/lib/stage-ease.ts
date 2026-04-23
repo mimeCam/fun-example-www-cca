@@ -1,6 +1,11 @@
 // src/lib/stage-ease.ts
 // v162 "Stage Ease Divergence" — one cubic-bezier per decay stage.
 //
+// v163 note: this module remains the 4-D SHAPE oracle. The 5-D joint
+// oracle (shape + duration) lives in `stage-tempo.ts`, which imports
+// STAGE_EASE_CURVES wholesale — one source, two readers (Sid §poly).
+// Existing v162 imports continue to compile unchanged (Mike v163 §6).
+//
 // Why this module exists (Mike napkin §5):
 //   The 7×5 `/api/docs` matrix has always called `tempo` a 5-valued axis.
 //   On disk, four of the five stages used to alias the snap profile — so
@@ -10,7 +15,7 @@
 //   Tests, prebuild guards, and any future SSR consumer (e.g. an OG
 //   renderer that paints the curve) all import from here. The CSS-side
 //   literals in `tokens.css` MUST match these tuples byte-for-byte; the
-//   `scripts/check-stage-ease-divergence.ts` guard asserts that parity
+//   `scripts/check-stage-tempo-divergence.ts` guard asserts that parity
 //   every Docker build.
 //
 // Anti-scope: this module does NOT render CSS, read from disk, or touch

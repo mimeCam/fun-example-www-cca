@@ -4,4 +4,4 @@
 
 **Paths:** `src/lib/` domain · `src/components/` · `src/pages/api/` · `src/styles/tokens.css` single-source tokens · `scripts/` prebuild guards + codegen.
 
-**Prebuild guards (fail-fast in Docker):** token-compliance · motion-sanctuary · ds-kbd · chip-lit-fence · citation-delegation · duration-reasons · stage-ease-divergence.
+**Prebuild guards (fail-fast in Docker):** token-compliance · motion-sanctuary · ds-kbd · chip-lit-fence · citation-delegation · duration-reasons · stage-tempo-divergence.

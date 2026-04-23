@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx scripts/check-no-chip-lit-in-arrival.ts && npx tsx scripts/check-citation-delegation.ts && npx tsx scripts/check-duration-reasons.ts && npx tsx scripts/check-stage-ease-divergence.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts && npx tsx --test src/lib/client/ds-kbd-lit.test.ts && npx tsx --test src/lib/client/arrival.test.ts && npx tsx --test src/lib/citation-golden.test.ts && npx tsx --test scripts/check-citation-delegation.test.ts && npx tsx --test scripts/check-duration-reasons.test.ts && npx tsx --test src/lib/stage-ease.test.ts && npx tsx --test scripts/check-stage-ease-divergence.test.ts",
+    "prebuild": "npx tsx scripts/check-token-compliance.ts --guard && npx tsx scripts/check-motion-sanctuary.ts && npx tsx scripts/check-ds-kbd.ts && npx tsx scripts/check-no-chip-lit-in-arrival.ts && npx tsx scripts/check-citation-delegation.ts && npx tsx scripts/check-duration-reasons.ts && npx tsx scripts/check-stage-tempo-divergence.ts && npx tsx --test src/lib/client/keep-hotkey.test.ts && npx tsx --test src/lib/client/keep-legend.test.ts && npx tsx --test src/lib/client/ds-kbd-lit.test.ts && npx tsx --test src/lib/client/arrival.test.ts && npx tsx --test src/lib/citation-golden.test.ts && npx tsx --test scripts/check-citation-delegation.test.ts && npx tsx --test scripts/check-duration-reasons.test.ts && npx tsx --test src/lib/stage-ease.test.ts && npx tsx --test src/lib/stage-tempo.test.ts && npx tsx --test scripts/check-stage-tempo-divergence.test.ts",
     "build": "astro build",
     "preview": "astro preview",
     "whisper": "node cli/whisper.mjs",
@@ -29,9 +29,10 @@
     "test:citation-delegation": "npx tsx --test scripts/check-citation-delegation.test.ts",
     "check:duration-reasons": "npx tsx scripts/check-duration-reasons.ts",
     "test:duration-reasons": "npx tsx --test scripts/check-duration-reasons.test.ts",
-    "check:stage-ease-divergence": "npx tsx scripts/check-stage-ease-divergence.ts",
+    "check:stage-tempo-divergence": "npx tsx scripts/check-stage-tempo-divergence.ts",
     "test:stage-ease": "npx tsx --test src/lib/stage-ease.test.ts",
-    "test:stage-ease-divergence": "npx tsx --test scripts/check-stage-ease-divergence.test.ts"
+    "test:stage-tempo": "npx tsx --test src/lib/stage-tempo.test.ts",
+    "test:stage-tempo-divergence": "npx tsx --test scripts/check-stage-tempo-divergence.test.ts"
   },
   "dependencies": {
     "@astrojs/node": "^8.3.4",
