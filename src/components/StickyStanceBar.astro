@@ -81,11 +81,16 @@ const hasVotes    = dist.total > 0;
   <!-- Actions: desktop inline buttons / mobile single CTA / voted chip -->
   <div class="ssb-actions" id="ssb-actions">
 
-    <!-- Desktop: three inline stance buttons (hidden on mobile via CSS) -->
+    <!-- Desktop: three inline stance buttons (hidden on mobile via CSS).
+         v176 1/2/3 wedge — each button carries a `.ds-kbd` chip that
+         `ds-kbd-lit.ts::lightForKey` flashes on the matching keystroke.
+         `aria-keyshortcuts` teaches AT the live digit; the visible chip
+         teaches sighted readers. One chip per button, same class as the
+         keep / revive / submit hints — the fourth consumer of ds-kbd. -->
     <div class="ssb-vote-group" id="ssb-vote-group">
-      <button class="ssb-vote-btn ssb-vote-btn--agree"    data-vote="agree"    type="button" aria-label="Agree with this post"><span class="ssb-glyph" aria-hidden="true">◉</span><span>Agree</span></button>
-      <button class="ssb-vote-btn ssb-vote-btn--torn"     data-vote="torn"     type="button" aria-label="Torn about this post"><span class="ssb-glyph" aria-hidden="true">◈</span><span>Torn</span></button>
-      <button class="ssb-vote-btn ssb-vote-btn--disagree" data-vote="disagree" type="button" aria-label="Disagree with this post"><span class="ssb-glyph" aria-hidden="true">◇</span><span>Dis</span></button>
+      <button class="ssb-vote-btn ssb-vote-btn--agree"    data-vote="agree"    type="button" aria-label="Agree with this post"    aria-keyshortcuts="1"><span class="ssb-glyph" aria-hidden="true">◉</span><span>Agree</span><kbd class="ds-kbd ssb-vote-kbd" aria-hidden="true">1</kbd></button>
+      <button class="ssb-vote-btn ssb-vote-btn--torn"     data-vote="torn"     type="button" aria-label="Torn about this post"    aria-keyshortcuts="2"><span class="ssb-glyph" aria-hidden="true">◈</span><span>Torn</span><kbd class="ds-kbd ssb-vote-kbd" aria-hidden="true">2</kbd></button>
+      <button class="ssb-vote-btn ssb-vote-btn--disagree" data-vote="disagree" type="button" aria-label="Disagree with this post" aria-keyshortcuts="3"><span class="ssb-glyph" aria-hidden="true">◇</span><span>Dis</span><kbd class="ds-kbd ssb-vote-kbd" aria-hidden="true">3</kbd></button>
     </div>
 
     <!-- Mobile: single CTA expands inline vote buttons (StanceDrawer absorbed) -->
@@ -114,6 +119,15 @@ const hasVotes    = dist.total > 0;
 // SSE reuses window.__heartbeatES (same as TensionBadge — no second connection).
 // Vote POSTs to /api/stance; writes localStorage + sessionStorage on success.
 // Dismiss stores a sessionStorage flag — bar stays gone for the rest of the visit.
+//
+// v176 — `1`/`2`/`3` keyboard mouth (Mike napkin §1 / Krystle's PR-D).
+// The stance-hotkey module auto-boots on import (same load-bearing shape
+// as keep-hotkey / revive-hotkey / submit-hotkey); this import line keeps
+// the binding inside the post-page bundle graph. Fourth flat sibling —
+// no registry, no polymorphism (Mike §4 "four flat siblings beats one
+// clever tree"). The module no-ops on pages without `.ssb` so the cost
+// is a single keydown listener that exits early.
+import '../lib/client/stance-hotkey';
 
 (function mountStickyStanceBar() {
   const bar = document.getElementById('sticky-stance-bar');
@@ -599,6 +613,28 @@ const hasVotes    = dist.total > 0;
   }
 
   .ssb-vote-btn:hover .ssb-glyph { transform: scale(1.12); }
+
+  /* v176 — `.ds-kbd` chip nested inside `.ssb-vote-btn`. The chip teaches
+     the digit mnemonic and flashes when stance-hotkey fires; the same
+     `data-lit` contract the keep/revive/submit chips use. Tanya §3.3
+     budget (120ms snap). No new tokens; offsets use `--space-1` only. */
+  .ssb-vote-kbd {
+    margin-left: var(--space-1);
+    /* Subtle — a whispered mnemonic, not a second label (Tanya §3.2). */
+    opacity: 0.7;
+    transition: opacity var(--motion-snap-duration) var(--motion-snap-easing);
+  }
+
+  /* Pair the chip with the button's hover/active feedback so it lifts
+     alongside the label without new micro-animations. */
+  .ssb-vote-btn:hover:not(:disabled) .ssb-vote-kbd { opacity: 1; }
+
+  /* Mobile: chips crowd the 44px-height bar — hide them on narrow widths
+     (Tanya §3.2 "make it quiet"). The hotkey still works; the chip hint
+     is desktop-only, which matches how reader inputs split. */
+  @media (max-width: 639px) /* --bp-md - 1px */ {
+    .ssb-vote-kbd { display: none; }
+  }
 
   /* ── Mobile CTA — hidden on desktop ────────────────────────────────────── */
   .ssb-weigh-in {

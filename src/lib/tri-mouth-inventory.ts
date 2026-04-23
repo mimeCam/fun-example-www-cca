@@ -144,11 +144,22 @@ export const TRI_MOUTH_ACTIONS: readonly TriMouthAction[] = [
     name:     'stance',
     mouth:    'record a reader stance after revival',
     pointer:  'StickyStanceBar',
-    keyboard: null,                 // TODO: 1/2/3 chord proposed (agree/torn/disagree).
+    // v176 1/2/3 wedge — Mike napkin §1 row #4 (Krystle's PR-D). Digits
+    // `1`, `2`, `3` (no modifier chord) synthesise a click on the
+    // matching `.ssb-vote-btn[data-vote="agree|torn|disagree"]` via
+    // src/lib/client/stance-hotkey.ts. One producer, three mouths;
+    // fourth sibling of keep/submit/revive hotkeys (no registry, no
+    // polymorphism — Mike §4 "four flat siblings beats one clever tree").
+    keyboard: '1|2|3',
     curl:     'POST /api/stance',
     producer: 'src/lib/stance-ledger.ts',
-    status:   'pending-keyboard',
-    pending:  'keyboard',
+    // v176 1/2/3 wedge — promoted from pending-keyboard → wired. The
+    // pending receipt is dropped; wiredActions() climbs 3 → 4 (above
+    // PROMOTE_THRESHOLD_WIRED = 3). The `pendingSummary().keyboard`
+    // count drops 1 → 0. The --warn → --error flip happens in the
+    // follow-up PR once `keep-post` pays its curl-peer wedge (Paul
+    // MH-2, Mike §8 explicit out-of-scope).
+    status:   'wired',
   },
 ] as const;
 

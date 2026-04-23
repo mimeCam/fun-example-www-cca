@@ -8,4 +8,4 @@
 
 **WIP — Journey Witness:** `submit → read → endanger` mouths. Deferred `revive → verdict-resolve` (needs `ADMIN_SECRET` + offline TSA stub).
 
-**WIP — Tri-Mouth / Parity Seal (v175):** 5 rows / **3 wired** · `readyToPromote()=true`. Shared helper `src/lib/parity-seal.ts` (page band + cite JSON `parity` field + guard). Cap ledger `data/tri-mouth-pending-cap.json` (cap=2, monotonic). Next: `keep-post` curl-peer, `stance` 1/2/3 keyboard → cap=0 → flip `--warn → --error`.
+**WIP — Tri-Mouth / Parity Seal (v176):** 5 rows / **4 wired** · `readyToPromote()=true` · keyboard mouths all wired. Shared helper `src/lib/parity-seal.ts` (page band + cite JSON `parity` field + guard). Cap ledger `data/tri-mouth-pending-cap.json` (cap=1, monotonic). Next: `keep-post` curl-peer → cap=0 → flip `check-tri-mouth --warn → --error`.

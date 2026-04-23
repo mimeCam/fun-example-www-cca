@@ -11,110 +11,107 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v175 PR-C (2026-04-23) — "R-chord wedge" ─────────────────────
-#   Builds on v175 PR-A/B's "Parity Seal" (one shared helper;
-#   `src/lib/parity-seal.ts` is the sole producer for the page band, the
-#   cite JSON witness, AND the prebuild guard). PR-C wires the third
-#   mouth on the `revive` row — the `R` hotkey — and, as a side effect
-#   of crossing the 3-wired threshold, flips `readyToPromote()` from
-#   `false` → `true`. The seal sentence that failed closed last PR
-#   (`parityCopy() === null`) now emits `"5 actions · 3 mouths each ·
-#   build-enforced parity."` on the wire. Mike napkin R-chord §1–8,
-#   Tanya §4 revive UX, Sid — every function ≤ 10 lines.
+# ── Sprint v176 PR-D (2026-04-23) — "1/2/3-stance wedge" ────────────────
+#   Builds on v175 PR-C's R-chord wedge (which crossed the
+#   `readyToPromote()` threshold at 3 wired rows). PR-D wires the fourth
+#   mouth — the `1` / `2` / `3` keyboard chord on the `stance` row of
+#   StickyStanceBar — bringing the tri-mouth tally to 4 wired of 5. All
+#   remaining debt now lives on ONE row (`keep-post`, curl-peer), so the
+#   next PR that pays that wedge flips `check-tri-mouth --warn →
+#   --error` and mints the parity gold pip. Mike napkin v176 §1–8,
+#   Tanya §3.2 seal-closed state + §3.3 chip-lit discipline, Krystle
+#   PR-D scope, Sid — every function ≤ 10 lines, zero module-level state.
 #
-#   Honest state after this PR: 5 rows / **3 wired** (cite-cell,
-#   submit-post, revive). Two rows still owe a wedge — `keep-post`
-#   (pending-curl-peer — the /api/ingest/cell-event POST is a beacon,
-#   not a ledger-write peer) and `stance` (keyboard 1/2/3 chord not yet
-#   published). `parityGoldEarned()` stays `false` until both land
-#   (Tanya §4.6 — no gold on a half-debt ledger). The band footer
-#   receipt now reads "2 mouths pending · curl-peer+keyboard
-#   (keep-post, stance)".
+#   Honest state after this PR: 5 rows / **4 wired** (cite-cell,
+#   submit-post, revive, stance). ONE row still owes a wedge —
+#   `keep-post` (pending-curl-peer — the /api/ingest/cell-event POST is
+#   a beacon, not a ledger-write peer). `parityGoldEarned()` stays
+#   `false` until that last wedge lands (Tanya §4.6 — no gold on a
+#   half-debt ledger). The band footer receipt now reads "1 mouth
+#   pending · curl-peer (keep-post)". readyToPromote() stays `true`.
 #
 #   The monotonic cap ledger (`data/tri-mouth-pending-cap.json`)
-#   descends 3 → 2 in the same PR that wires the revive mouth —
+#   descends 2 → 1 in the same PR that wires the stance keyboard —
 #   Mike §3.7 "paying a wedge = decrementing the cap". The guard
 #   stays in WARN for this sprint; the `--warn → --error` flip happens
-#   in the PR that wires the next mouth (keep-post curl-peer OR stance
-#   keyboard), at which point the cap descends to 1 and then 0.
+#   in the follow-up PR that wires keep-post's curl-peer, at which
+#   point the cap descends to 0 (Paul MH-2, Mike §8 out-of-scope).
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/client/revive-hotkey.ts (NEW) — the third sibling to
-#       keep-hotkey.ts and submit-hotkey.ts. Pure `isReviveKey()`
-#       predicate (rejects Cmd/Ctrl/Alt combos so browser refresh
-#       wins), focus-aware trigger resolver (active element's nearest
-#       `[data-revive-trigger]` beats the first in document order),
-#       fire-and-forget click synthesis (no hold — Mike §6 "revive is
-#       an instant verb, not a hold"), 120ms chip-lit flash via
-#       `lightForKey()` (Tanya §3.3 same beat as cell-cite). Auto-boots
-#       on DOMContentLoaded; `bindReviveHotkey()` is idempotent and
-#       no-ops on pages without a trigger.
-#     • src/lib/client/revive-hotkey.test.ts (NEW, untracked) —
-#       pure-function truth-table: `r`/`R` fire, Shift+R fires,
-#       Cmd/Ctrl/Alt+R do NOT fire (browser refresh + platform chords
-#       win), every non-R key + Escape/Tab/Arrow/digits do NOT fire,
-#       and the revive predicate is DISJOINT from keep/cite/nav
-#       predicates (no two listeners race on the same keystroke).
-#       NOTE: not joined to the prebuild chain this PR — package.json
-#       unchanged. The file runs green via `npx tsx --test` locally;
-#       wiring it into prebuild is a one-line follow-up.
-#     • src/lib/tri-mouth-inventory.ts (UPDATED) — revive row promoted:
-#         · pointer : 'RevivalBadge' → '[data-revive-trigger]' (Mike
-#           §6 selector drift — attribute survives CSS class renames).
-#         · keyboard: null → 'R' (the hotkey shipped).
+#     • src/lib/client/stance-hotkey.ts (NEW, untracked) — the fourth
+#       sibling to keep-hotkey.ts / submit-hotkey.ts / revive-hotkey.ts.
+#       Pure `isStanceKey()` predicate (rejects Cmd/Ctrl/Alt combos so
+#       Cmd+1/Ctrl+1 browser tab-switches + Alt+1 platform chords
+#       fall through; Shift+digit produces !/@/# which is implicitly
+#       filtered). Pure `keyToStance()` mapper (`1→agree`, `2→torn`,
+#       `3→disagree`; one frozen STANCE_KEY_MAP as sole source of
+#       truth). Bar-visibility gate (no-op until `.ssb` carries
+#       `ssb--visible` — mirrors submit-hotkey's inStep3 gate).
+#       Voted-state gate (no double-cast). Text-input focus guard.
+#       120ms chip-lit flash via `lightForKey()` (Tanya §3.3 same
+#       beat). Auto-boots on DOMContentLoaded; `bindStanceHotkey()`
+#       idempotent and no-ops on pages without `.ssb`.
+#     • src/lib/client/stance-hotkey.test.ts (NEW, untracked) —
+#       pure-function truth-table: `1`/`2`/`3` fire, Cmd+1/Ctrl+1/
+#       Alt+1 do NOT fire (browser tab-switch + platform chords win),
+#       Shift-produced `!`/`@`/`#` do NOT fire, keyToStance maps in
+#       the right order, and the stance predicate is DISJOINT from
+#       keep/revive predicates so the four keyboard mouths never race
+#       on a single keystroke. Joined to the prebuild chain this PR
+#       (package.json adds the `--test` line).
+#     • src/lib/tri-mouth-inventory.ts (UPDATED) — stance row promoted:
+#         · keyboard: null → '1|2|3' (the hotkey shipped).
 #         · status  : 'pending-keyboard' → 'wired'; pending field
-#           deleted. wiredActions() climbs 2 → 3; readyToPromote() ==
-#           true.
-#     • src/components/FloatingKeepButton.astro (UPDATED) — the keep
-#       button now doubles as the single revive trigger:
-#         · `data-revive-trigger` attribute (matches the inventory
-#           pointer selector).
-#         · `aria-keyshortcuts="R"` (AT teach — mirrors the pattern
-#           v174 shipped for submit's Ctrl+Enter chord).
-#         · inline module-script adds `import { bindReviveHotkey }`
-#           alongside `bindKeepHotkey`; the keep + revive bindings
-#           coexist because isKeepKey and isReviveKey are disjoint
-#           predicates (revive-hotkey.test.ts locks this).
-#     • src/lib/revival-engine.ts (UPDATED) — now exports the canonical
-#       `/api/revive` response shape. Route no longer mints its own
-#       literal; instead it passes `ReviveFacts` to `buildRevivePayload`
-#       which returns `ReviveResponse`. Mike napkin §3.1 "producer
-#       naming" — the tri-mouth import-regex (§5.5) now resolves for
-#       this row (route imports producer basename). Also exports
-#       `atmosphereFor(wasEndangered, isEndangeredAfter)` — pure,
-#       referentially transparent, every function ≤ 10 lines.
-#     • src/pages/api/revive.ts (UPDATED) — route is now a thin
-#       adapter: computes facts (decay before/after, monthly count,
-#       survivor rank, resonance, endangered-before/after) and delegates
-#       the shape to `buildRevivePayload()`. Import line locks the
-#       producer binding under §5.5. Wire shape is byte-compatible with
-#       v174: same fields, same order (the literal was lifted verbatim
-#       into revival-engine.ts).
-#     • data/tri-mouth-pending-cap.json (UPDATED) — cap: 3 → 2.
+#           deleted. wiredActions() climbs 3 → 4; readyToPromote()
+#           stays `true` (it crossed the threshold last sprint).
+#     • src/components/StickyStanceBar.astro (UPDATED) — the three
+#       inline vote buttons now teach the 1/2/3 mnemonic:
+#         · `aria-keyshortcuts="1"|"2"|"3"` (AT teach — mirrors the
+#           pattern v174 shipped for submit's Ctrl+Enter and v175
+#           shipped for revive's R).
+#         · nested `<kbd class="ds-kbd ssb-vote-kbd">` chip per button
+#           — same ds-kbd class the keep/revive/submit chips use, so
+#           ds-kbd-lit.ts::lightForKey flashes on matching keystroke.
+#           Fourth consumer of the ds-kbd design system.
+#         · `ssb-vote-kbd` CSS: margin-left var(--space-1), opacity
+#           0.7 → 1 on hover, hidden on mobile (<640px) so the 44px
+#           touch bar stays uncrowded.
+#         · inline module-script imports `../lib/client/stance-hotkey`
+#           (auto-boot on import keeps the binding in the post-page
+#           bundle graph).
+#     • data/tri-mouth-pending-cap.json (UPDATED) — cap: 2 → 1.
 #       Monotonic descent; the prebuild guard (`checkMonotonicCap`)
-#       now requires ≤ 2 outstanding rows.
-#     • scripts/check-tri-mouth.test.ts (UPDATED) — new describe block
-#       "v175 R-chord — live inventory after revive wiring" walks the
-#       real TRI_MOUTH_ACTIONS literal and asserts the post-PR shape:
-#       revive is wired with pointer+R+curl, wiredActions().length ==
-#       3, pendingSummary() is {keyboard:1, curl:0, pointer:0},
-#       readyToPromote() == true, total rows == 5. Regresses loudly
-#       if a future PR demotes the row.
+#       now requires ≤ 1 outstanding row. Comment bumped v175 → v176.
+#     • scripts/check-tri-mouth.test.ts (UPDATED) — previous v175
+#       R-chord describe block collapsed into new "v176 1/2/3-stance
+#       — live inventory after stance wiring" block. Asserts the
+#       post-PR shape: stance wired with pointer+1|2|3+curl, revive
+#       stays wired (no regression), wiredActions().length == 4,
+#       pendingSummary() is {keyboard:0, curl:0, pointer:0} (the
+#       `keep-post` row's curl-peer debt lives in the status, not
+#       the `pending` field), readyToPromote() == true. Regresses
+#       loudly if a future PR demotes either row.
+#     • package.json (UPDATED) — new `test:stance-hotkey` script and
+#       the same line added to the `prebuild` chain (right after
+#       `test:submit-hotkey`); AGENTS.md version bump 175 → 176.
 #
 #   Infrastructure deltas this sprint:
 #     · NO new runtime env vars, ports, services, named volumes, or
-#       docker networks. revive-hotkey.ts is a client module and
+#       docker networks. stance-hotkey.ts is a client module and
 #       ships via the same `src/` COPY the Dockerfile already does.
-#     · NO new API routes — the R chord synthesises a click on the
-#       existing `[data-revive-trigger]` which flows into the existing
-#       POST /api/revive handler. One producer, three triggers.
-#     · Build-time inputs unchanged from v175 PR-B — the monotonic cap
+#     · NO new API routes — the 1/2/3 chord synthesises a click on
+#       the existing `.ssb-vote-btn[data-vote="…"]` which flows into
+#       the existing POST /api/stance handler. One producer
+#       (stance-ledger.ts), three mouths.
+#     · Build-time inputs unchanged from v175 — the monotonic cap
 #       file `data/tri-mouth-pending-cap.json` is still COPY'd (its
-#       value just descended 3 → 2).
-#     · Parity Seal wire shape IS observably changed: the previously-
-#       null seal sentence now renders ("5 actions · 3 mouths each ·
-#       build-enforced parity."), and the cite-JSON `parity.enforced`
-#       field flips `false` → `true`. Warm-up 8f asserts both.
+#       value just descended 2 → 1).
+#     · Parity Seal wire shape unchanged from v175 PR-C — seal sentence
+#       still renders `"5 actions · 3 mouths each · build-enforced
+#       parity."`, cite-JSON `parity.enforced` stays `true`. The band
+#       footer receipt tightens from "2 mouths pending" to "1 mouth
+#       pending" but the seal itself is unchanged. 8f probe stays
+#       the same; a new 8h probe was added for the stance keyboard.
 #     · v172 clock-migration guard (`check-no-raw-now`) still WARN at
 #       80 raw callsites; no clock work landed in this PR.
 #
@@ -157,6 +154,14 @@
 #       did not silently break the page (a resolution error would 500
 #       the SSR render), and (c) the tri-mouth pointer selector
 #       (`[data-revive-trigger]`) can actually resolve at runtime.
+#   8h. Warm the v176 1/2/3-stance wedge: reuse the same blog post
+#       SSR and grep for the four markers that prove the StickyStance-
+#       Bar keyboard teach shipped — three `aria-keyshortcuts="1|2|3"`
+#       attrs (one per vote button) AND the `ssb-vote-kbd` chip class
+#       (shared ds-kbd family). Presence of all proves (a) the
+#       StickyStanceBar.astro template edit shipped, (b) the page-chunk
+#       import of `stance-hotkey.ts` did not silently break the page,
+#       (c) the fourth ds-kbd-family chip is resolvable at runtime.
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -209,14 +214,15 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     §5.5 the route file *imports* the producer basename (v175 teeth:
 #     import-regex, not substring — comments no longer pass), §5.6 v175
 #     monotonic cap — outstanding (non-wired) row count ≤ cap in
-#     data/tri-mouth-pending-cap.json (cap descended 3 → 2 this PR).
-#     5 rows / 3 wired today after the R-chord wedge; readyToPromote()
-#     now returns true so the --error flip is unblocked — deferred to
-#     the PR that wires the next mouth (keep-post curl-peer OR stance
-#     1/2/3 keyboard) so we never flip into --error with live debt.
-#     v175 PR-A surfaced the `keep-post` route-import drift (its
-#     producer keep-pact.ts is still imported only transitively); that
-#     wedge is the next candidate)  →
+#     data/tri-mouth-pending-cap.json (cap descended 2 → 1 this PR).
+#     5 rows / 4 wired today after the v176 1/2/3-stance wedge;
+#     readyToPromote() stays true (it crossed threshold last sprint).
+#     The --error flip stays deferred — the last outstanding row is
+#     `keep-post`'s curl-peer wedge, and Mike §8 / Paul MH-2 is
+#     explicit: never flip into --error with live debt. That wedge is
+#     the sole remaining candidate (v175 PR-A first surfaced the
+#     route-import drift; keep-pact.ts is still imported only
+#     transitively).  →
 #   check-verify-bundle (v169 TENTH guard — freezes the VerifyBundleDto
 #     wire shape across the API + SSR page)  →
 #   check-user-journey (v168 EIGHTH guard, expanded v169 — seven-step
@@ -228,6 +234,14 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     /community/submit; proves bare Enter is NOT a publish, the two
 #     valid chord forms ARE, and the predicate is disjoint from
 #     keep-hotkey so the two listeners can coexist without racing)  →
+#   test:stance-hotkey (v176 NEW — pure-function truth-table over {key}
+#     × {modifier combos} for the `1` / `2` / `3` stance hotkey on the
+#     StickyStanceBar; proves the digits fire, Cmd/Ctrl+{1,2,3} does
+#     NOT (native browser tab-switch wins), Alt+{1,2,3} does NOT
+#     (platform chords win), Shift-produced !/@/# does NOT, keyToStance
+#     maps in button-render order, and the predicate is DISJOINT from
+#     keep-hotkey + revive-hotkey so all four keyboard mouths coexist
+#     without any listener racing another on a single keystroke)  →
 #   test:keep-legend → test:chip-lit → test:arrival →
 #   test:citation-golden → test:journey-golden →
 #   test:api-stamp-golden (v170 — proves jsonStamped's six napkin
@@ -635,6 +649,50 @@ rm -f "${REVIVE_BODY_FILE}"
 echo "==> [deploy] /blog/${REVIVE_SLUG}: HTTP ${REVIVE_STATUS} · body=${REVIVE_BODY_LEN}B · data-revive-trigger-hits=${REVIVE_HAS_TRIGGER} · aria-keyshortcuts=R-hits=${REVIVE_HAS_ARIA}"
 if [ "${REVIVE_STATUS}" != "200" ] || [ "${REVIVE_HAS_TRIGGER}" -lt 1 ] || [ "${REVIVE_HAS_ARIA}" -lt 1 ]; then
   echo "==> [deploy] ⚠ /blog/${REVIVE_SLUG} missing v175 PR-C R-chord markers (data-revive-trigger and/or aria-keyshortcuts=R) — investigate (container still up)." >&2
+fi
+
+# ── 8h. 1/2/3-stance warm-up (v176 PR-D) — StickyStanceBar keyboard mouth ──
+# v176 PR-D wires the `1` / `2` / `3` keyboard mouth on StickyStanceBar
+# (fourth sibling to keep-hotkey / submit-hotkey / revive-hotkey). The
+# prebuild golden (`src/lib/client/stance-hotkey.test.ts`, newly joined
+# to the prebuild chain this PR) already proves the predicate truth
+# table at image-build time. This runtime probe SSR-renders the same
+# blog post page as 8g (StickyStanceBar is rendered on every post via
+# src/pages/blog/[slug].astro) and greps for four markers that prove
+# the wedge actually shipped to the wire:
+#
+#   (a) Three `aria-keyshortcuts="1"` / `"2"` / `"3"` attrs — canonical
+#       AT teach, one per vote button (Mike napkin v176 §6.7); presence
+#       of all three proves the StickyStanceBar.astro template change
+#       is live and the digit→stance binding reached the HTML wire.
+#   (b) `ssb-vote-kbd` — the sighted teach chip class. Presence proves
+#       (i) the nested <kbd class="ds-kbd ssb-vote-kbd"> markup shipped,
+#       (ii) the stance row joins the ds-kbd family as the fourth
+#       consumer (so ds-kbd-lit.ts::lightForKey resolves on keypress),
+#       (iii) the page-chunk import of `stance-hotkey.ts` did NOT
+#       silently break the page (a runtime module-resolution error
+#       would 500 the SSR render before any HTML reached the wire).
+#
+# The page is publicly reachable (no auth gate, no PoW); bare GET
+# suffices. Slug reused from 8g so we keep the probe footprint tight.
+echo "==> [deploy] Warming up /blog/${REVIVE_SLUG} stance keyboard (v176 PR-D 1/2/3 wedge)…"
+STANCE_BODY_FILE="$(mktemp)"
+STANCE_STATUS=$(curl --silent --show-error --output "${STANCE_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/blog/${REVIVE_SLUG}" \
+  || echo '000')
+STANCE_BODY_LEN=$(wc -c < "${STANCE_BODY_FILE}" | tr -d ' ')
+STANCE_HAS_ARIA_1=$(grep -c 'aria-keyshortcuts="1"' "${STANCE_BODY_FILE}" || true)
+STANCE_HAS_ARIA_2=$(grep -c 'aria-keyshortcuts="2"' "${STANCE_BODY_FILE}" || true)
+STANCE_HAS_ARIA_3=$(grep -c 'aria-keyshortcuts="3"' "${STANCE_BODY_FILE}" || true)
+STANCE_HAS_CHIP=$(grep -c 'ssb-vote-kbd' "${STANCE_BODY_FILE}" || true)
+rm -f "${STANCE_BODY_FILE}"
+echo "==> [deploy] /blog/${REVIVE_SLUG} stance: HTTP ${STANCE_STATUS} · body=${STANCE_BODY_LEN}B · aria-1-hits=${STANCE_HAS_ARIA_1} · aria-2-hits=${STANCE_HAS_ARIA_2} · aria-3-hits=${STANCE_HAS_ARIA_3} · ssb-vote-kbd-hits=${STANCE_HAS_CHIP}"
+if [ "${STANCE_STATUS}" != "200" ] \
+   || [ "${STANCE_HAS_ARIA_1}" -lt 1 ] || [ "${STANCE_HAS_ARIA_2}" -lt 1 ] \
+   || [ "${STANCE_HAS_ARIA_3}" -lt 1 ] || [ "${STANCE_HAS_CHIP}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /blog/${REVIVE_SLUG} missing v176 PR-D stance keyboard markers (aria-keyshortcuts=1|2|3 and/or ssb-vote-kbd chip) — investigate (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

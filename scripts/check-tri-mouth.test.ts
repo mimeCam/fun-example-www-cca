@@ -342,14 +342,14 @@ describe('routeCandidates — .ts + /index.ts', () => {
   });
 });
 
-// ── v175 R-chord wedge — live inventory shape after `revive` wires ────────
-// Mike napkin §5 check #10 ("Add a case: after this PR, wiredActions().length
-// === 3, pendingSummary().keyboard === 1, readyToPromote() === true").
-// Walks the real literal — regresses loudly if a future edit demotes the
-// revive row or drops the R chord without a receipt.
+// ── v176 1/2/3-stance wedge — live inventory after `stance` wires ────────
+// Mike napkin §6 acceptance ("wired: 4 · pending: 0 · ready: true"). Walks
+// the real literal — regresses loudly if a future edit demotes the stance
+// row or drops the 1/2/3 chord without a receipt. The v175 R-chord block
+// was collapsed into this one; four wired rows supersede three.
 
-describe('v175 R-chord — live inventory after revive wiring', () => {
-  test('revive row is wired, has pointer + R + curl', () => {
+describe('v176 1/2/3-stance — live inventory after stance wiring', () => {
+  test('revive row stays wired (no regression from v175 R-chord)', () => {
     const revive = findAction('revive');
     assert.ok(revive, 'revive row must exist in inventory');
     assert.equal(revive!.status,   'wired');
@@ -358,25 +358,35 @@ describe('v175 R-chord — live inventory after revive wiring', () => {
     assert.equal(revive!.pending,  undefined);
   });
 
-  test('wiredActions() count climbs to 3', () => {
-    assert.equal(wiredActions().length, 3);
+  test('stance row is wired, has pointer + 1|2|3 + curl', () => {
+    const stance = findAction('stance');
+    assert.ok(stance, 'stance row must exist in inventory');
+    assert.equal(stance!.status,   'wired');
+    assert.equal(stance!.keyboard, '1|2|3');
+    assert.equal(stance!.pointer,  'StickyStanceBar');
+    assert.equal(stance!.pending,  undefined);
   });
 
-  test('pendingSummary owes only the stance keyboard (1/2/3 chord)', () => {
-    // Mike §3.1 — `stance` still declares `pending: 'keyboard'`. `keep-post`
-    // is `pending-curl-peer` but does NOT set the `pending` field (the curl
-    // field is non-null; the peer-shape fault lives in the status only) —
-    // so pendingSummary() does not double-count it. Next wedge is 1/2/3.
+  test('wiredActions() count climbs to 4', () => {
+    assert.equal(wiredActions().length, 4);
+  });
+
+  test('pendingSummary owes no keyboard mouths (all 1/2/3 wired)', () => {
+    // Mike §6 — after this PR the only outstanding row is `keep-post`,
+    // whose debt is the curl-peer status (the curl field is non-null;
+    // the peer-shape fault lives in the status only). pendingSummary()
+    // counts the `pending` field, which is absent on that row, so all
+    // three kinds report zero. The cap ledger guards the remaining debt.
     const p = pendingSummary();
-    assert.equal(p.keyboard, 1);
+    assert.equal(p.keyboard, 0);
     assert.equal(p.curl,     0);
     assert.equal(p.pointer,  0);
   });
 
   test('readyToPromote() is true — --error flip criterion met', () => {
-    // Mike §5.9 / Krystle cadence. After this PR the guard may promote.
-    // The actual flip happens with the PR that wires the last two rows,
-    // not here (out-of-scope per Mike §8 / Paul MH-2).
+    // Mike §6 / Krystle cadence. The --warn → --error flip happens in
+    // the follow-up PR once `keep-post` pays its curl-peer wedge
+    // (Paul MH-2, Mike §8 explicit out-of-scope).
     assert.equal(readyToPromote(), true);
   });
 
