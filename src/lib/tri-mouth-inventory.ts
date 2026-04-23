@@ -120,17 +120,25 @@ export const TRI_MOUTH_ACTIONS: readonly TriMouthAction[] = [
   {
     name:     'revive',
     mouth:    'revive a fossil post',
-    pointer:  'RevivalBadge',
-    keyboard: null,                 // TODO: no published keybinding yet.
+    // v175 R-chord wedge — Mike napkin §6 "selector drift". The former
+    // `RevivalBadge` string named a passive label; the real click target
+    // is the revive button inside FloatingKeepButton.astro (and any
+    // inline .keep-btn[data-keep-slug]). A `[data-revive-trigger]`
+    // attribute pins the selector so a class rename cannot silently
+    // orphan the R hotkey. Points at the attribute, not a component.
+    pointer:  '[data-revive-trigger]',
+    // v175 R-chord wedge — Mike napkin §1 row #3. `R` (bare) synthesises
+    // a click on the first `[data-revive-trigger]` via
+    // src/lib/client/revive-hotkey.ts. One producer, three triggers; the
+    // hotkey is a fire-and-forget verb (no hold), mirrors submit-hotkey.
+    keyboard: 'R',
     curl:     'POST /api/revive',
     producer: 'src/lib/revival-engine.ts',
-    // v175 PR-A (Mike napkin §3.1, Elon §5.1): honest status. The row
-    // already declares `pending: 'keyboard'`; the status literal now
-    // matches that debt. `wiredActions()` drops from 3 → 2;
-    // `readyToPromote()` returns `false` until the R chord lands.
-    // Better "honest red" than "fake green".
-    status:   'pending-keyboard',
-    pending:  'keyboard',
+    // v175 R-chord: promoted from pending-keyboard → wired. The pending
+    // receipt is gone; wiredActions() climbs from 2 → 3, which is the
+    // `readyToPromote()` threshold. Parity sentence and the gold pip
+    // flip naturally in parity-seal.ts; no copy edits required here.
+    status:   'wired',
   },
   {
     name:     'stance',

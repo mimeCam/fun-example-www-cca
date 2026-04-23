@@ -1,4 +1,4 @@
 {
-  "_comment": "v175 PR-B monotonic cap ledger. cap ≥ (TRI_MOUTH_ACTIONS.length - wiredActions().length). Each PR that wires a mouth MUST lower `cap` by 1. cap may only descend. See scripts/check-tri-mouth.ts::checkMonotonicCap. Mike napkin §3.7 / Elon §5.2.",
-  "cap": 3
+  "_comment": "v175 PR-C monotonic cap ledger. cap ≥ (TRI_MOUTH_ACTIONS.length - wiredActions().length). Each PR that wires a mouth MUST lower `cap` by 1. cap may only descend. See scripts/check-tri-mouth.ts::checkMonotonicCap. Mike napkin §3.7 / Elon §5.2. R-chord PR paid one wedge (2 rows pending after: keep-post curl-peer + stance keyboard).",
+  "cap": 2
 }

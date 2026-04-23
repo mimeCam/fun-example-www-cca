@@ -8,4 +8,4 @@
 
 **WIP — Journey Witness:** `submit → read → endanger` mouths. Deferred `revive → verdict-resolve` (needs `ADMIN_SECRET` + offline TSA stub).
 
-**WIP — Tri-Mouth / Parity Seal (v175):** 5 rows / **2 wired**. `src/lib/parity-seal.ts` = single shared helper (page band + cite JSON `parity` field + guard). Sentence fails closed until `readyToPromote()`. Cap ledger `data/tri-mouth-pending-cap.json` (cap=3, monotonic). Import-regex replaces substring scan (surfaces 2 pre-existing drifts: `keep-post`, `revive` routes don't import their producer). Next: R-chord, 1/2/3 stance, fix route imports → flip `--warn → --error`.
+**WIP — Tri-Mouth / Parity Seal (v175):** 5 rows / **3 wired** · `readyToPromote()=true`. Shared helper `src/lib/parity-seal.ts` (page band + cite JSON `parity` field + guard). Cap ledger `data/tri-mouth-pending-cap.json` (cap=2, monotonic). Next: `keep-post` curl-peer, `stance` 1/2/3 keyboard → cap=0 → flip `--warn → --error`.

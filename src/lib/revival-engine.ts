@@ -1,15 +1,21 @@
 // src/lib/revival-engine.ts
-// Revival Engine — card-level SSE bloom + graveyard resurrect.
+// Revival Engine — client-side bloom + the canonical `/api/revive`
+// response payload shape. ONE producer; three consumers
+// (pointer / keyboard / curl) all route through this file.
 //
-// KeepButton (revival-counter.ts) is the SOLE revival signal source.
-// This module only handles two things:
-//   1. SSE sympathetic bloom on .decay-card when another reader revives
-//   2. Click .resurrect-btn on /graveyard → POST /api/resurrect
+// Two surfaces:
+//   1. `revivalEngineScript()` — client IIFE that handles SSE sympathetic
+//      bloom on .decay-card and .resurrect-btn clicks on /graveyard.
+//   2. `buildRevivePayload()` / `ReviveResponse` / `atmosphereFor()` —
+//      the **canonical** response-shape builder the POST `/api/revive`
+//      route composes. Named here so the Tri-Mouth import-regex (v175
+//      §5.5) resolves: route must import its producer.
 //
 // Hover-dwell and touch press-and-hold are removed per Mike's spec.
 // Bloom is a CSS transition, not a JS orchestrator.
 //
-// Credits: Mike (architecture), Tanya (UX spec)
+// Credits: Mike (architecture; v175 producer-naming §3.1), Tanya (UX spec),
+//          Sid — every function ≤ 10 lines, zero module-level state.
 
 // ---------------------------------------------------------------------------
 // Config
@@ -135,4 +141,75 @@ export function _testRevivalEngine(): void {
   console.assert(script.includes('__presenceES'), 'unified EventSource key');
 
   console.log('[revival-engine] OK — all checks passed');
+}
+
+// ---------------------------------------------------------------------------
+// Canonical `/api/revive` response shape (v175 §3.1 — producer naming)
+// ---------------------------------------------------------------------------
+//
+// The shape the POST handler sends back on success. Kept here so all three
+// mouths — pointer (click), keyboard (R), curl — serialize the SAME fields
+// through the SAME module. Route composes a `ReviveResponse`, never a bare
+// literal. Additive-forever: new fields are added here; renames are breaks.
+
+/** The fields consumers (orchestrator, pact-panel, RevivalMoment) read. */
+export interface ReviveResponse {
+  readonly ok:                  boolean;
+  readonly count:               number;
+  readonly revivalCount:        number;        // alias — orchestrator reads this
+  readonly battingAverageDelta: number;        // placeholder; verdicts drive batting avg
+  readonly relatedSlugs:        readonly string[];
+  readonly decayAfterRevival:   number;
+  readonly decayPct:            number;
+  readonly decayStage:          string;
+  readonly monthlyCount:        number;
+  readonly survivorRank:        number;
+  readonly resonance:           readonly unknown[];
+  readonly nowSafe:              boolean;
+  readonly atmosphereHint:      'risen' | null;
+}
+
+/** Facts the route has on hand after rate-limit + ledger write. Pure input.
+ *  `wasEndangered` / `isEndangeredAfter` are booleans (not decay factors)
+ *  so callers own the threshold — keeps this module free of the
+ *  endangered() policy and keeps the payload shape deterministic. */
+export interface ReviveFacts {
+  readonly count:               number;
+  readonly decayAfterRevival:   number;
+  readonly decayStage:          string;
+  readonly monthlyCount:        number;
+  readonly survivorRank:        number;
+  readonly relatedSlugs:        readonly string[];
+  readonly resonance:           readonly unknown[];
+  readonly wasEndangered:       boolean;  // before increment
+  readonly isEndangeredAfter:   boolean;  // after increment
+}
+
+/** Derive the atmosphere hint — 'risen' iff revival crossed out of danger.
+ *  Pure; referentially transparent. Tanya §3.2 "one action, one feeling". */
+export function atmosphereFor(
+  wasEndangered: boolean, isEndangeredAfter: boolean,
+): 'risen' | null {
+  return wasEndangered && !isEndangeredAfter ? 'risen' : null;
+}
+
+/** Compose the canonical payload. One literal; the only place `ok: true`
+ *  is minted. Keeping this tiny + pure lets the route stay a thin adapter. */
+export function buildRevivePayload(f: ReviveFacts): ReviveResponse {
+  const hint = atmosphereFor(f.wasEndangered, f.isEndangeredAfter);
+  return {
+    ok: true,
+    count:               f.count,
+    revivalCount:        f.count,
+    battingAverageDelta: 0,
+    relatedSlugs:        f.relatedSlugs,
+    decayAfterRevival:   f.decayAfterRevival,
+    decayPct:            Math.round(f.decayAfterRevival * 100),
+    decayStage:          f.decayStage,
+    monthlyCount:        f.monthlyCount,
+    survivorRank:        f.survivorRank,
+    resonance:           f.resonance,
+    nowSafe:             hint === 'risen',
+    atmosphereHint:      hint,
+  };
 }

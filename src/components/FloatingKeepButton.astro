@@ -38,6 +38,8 @@ const { slug, count, urgency, decayStage } = Astro.props;
     class="keep-float-btn keep-btn"
     data-keep-slug={slug}
     data-keep-state="idle"
+    data-revive-trigger
+    aria-keyshortcuts="R"
     aria-label={`Keep this post alive${count > 0 ? ` (${count} revivals)` : ''}`}
     aria-pressed="false"
     type="button"
@@ -72,7 +74,13 @@ const { slug, count, urgency, decayStage } = Astro.props;
   // via its own top-level `DOMContentLoaded` guard; importing the module
   // here is the one load-bearing line that keeps the binding in the
   // post-page bundle graph).
-  import { bindKeepHotkey } from '../lib/client/keep-hotkey';
+  // v175 — `R` hotkey binding (Mike napkin R-chord §3, Tanya §4). The
+  // revive-hotkey module mirrors keep-hotkey's load-bearing import shape:
+  // auto-boots via its own `DOMContentLoaded` guard; importing it here
+  // keeps the binding in the post-page bundle graph. Third sibling — no
+  // registry, no polymorphism (Mike §6 polymorphism-is-a-killer).
+  import { bindKeepHotkey }   from '../lib/client/keep-hotkey';
+  import { bindReviveHotkey } from '../lib/client/revive-hotkey';
 
   function initFloatingKeep(): void {
     const float = document.querySelector<HTMLElement>('[data-keep-float]');
@@ -81,7 +89,8 @@ const { slug, count, urgency, decayStage } = Astro.props;
     observeSentinel(float);
     listenForRevival(float);
     watchSsbState(float);
-    bindKeepHotkey();   // idempotent; no-op if no .keep-float-btn present
+    bindKeepHotkey();     // idempotent; no-op if no .keep-float-btn present
+    bindReviveHotkey();   // idempotent; no-op if no [data-revive-trigger] present
   }
 
   /** IntersectionObserver on .post-header — zero scroll listeners. */

@@ -36,7 +36,14 @@ import {
   type Finding,
 } from './check-tri-mouth.ts';
 
-import type { TriMouthAction } from '../src/lib/tri-mouth-inventory.ts';
+import {
+  TRI_MOUTH_ACTIONS,
+  wiredActions,
+  pendingSummary,
+  readyToPromote,
+  findAction,
+  type TriMouthAction,
+} from '../src/lib/tri-mouth-inventory.ts';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -332,6 +339,49 @@ describe('routeCandidates — .ts + /index.ts', () => {
   test('nested path preserves segments', () => {
     assert.deepEqual(routeCandidates('/api/docs/cite'),
       ['src/pages/api/docs/cite.ts', 'src/pages/api/docs/cite/index.ts']);
+  });
+});
+
+// ── v175 R-chord wedge — live inventory shape after `revive` wires ────────
+// Mike napkin §5 check #10 ("Add a case: after this PR, wiredActions().length
+// === 3, pendingSummary().keyboard === 1, readyToPromote() === true").
+// Walks the real literal — regresses loudly if a future edit demotes the
+// revive row or drops the R chord without a receipt.
+
+describe('v175 R-chord — live inventory after revive wiring', () => {
+  test('revive row is wired, has pointer + R + curl', () => {
+    const revive = findAction('revive');
+    assert.ok(revive, 'revive row must exist in inventory');
+    assert.equal(revive!.status,   'wired');
+    assert.equal(revive!.keyboard, 'R');
+    assert.equal(revive!.pointer,  '[data-revive-trigger]');
+    assert.equal(revive!.pending,  undefined);
+  });
+
+  test('wiredActions() count climbs to 3', () => {
+    assert.equal(wiredActions().length, 3);
+  });
+
+  test('pendingSummary owes only the stance keyboard (1/2/3 chord)', () => {
+    // Mike §3.1 — `stance` still declares `pending: 'keyboard'`. `keep-post`
+    // is `pending-curl-peer` but does NOT set the `pending` field (the curl
+    // field is non-null; the peer-shape fault lives in the status only) —
+    // so pendingSummary() does not double-count it. Next wedge is 1/2/3.
+    const p = pendingSummary();
+    assert.equal(p.keyboard, 1);
+    assert.equal(p.curl,     0);
+    assert.equal(p.pointer,  0);
+  });
+
+  test('readyToPromote() is true — --error flip criterion met', () => {
+    // Mike §5.9 / Krystle cadence. After this PR the guard may promote.
+    // The actual flip happens with the PR that wires the last two rows,
+    // not here (out-of-scope per Mike §8 / Paul MH-2).
+    assert.equal(readyToPromote(), true);
+  });
+
+  test('inventory shape is 5 total rows (no regressions)', () => {
+    assert.equal(TRI_MOUTH_ACTIONS.length, 5);
   });
 });
 

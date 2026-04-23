@@ -26,6 +26,9 @@ import { decayFactorWithCount, stageFromFactor, decayFactor, wireDecayStage } fr
 import { canRevive as stageCanRevive, gateReason } from '../../lib/revival-gate';
 import { appendResonance } from '../../lib/conviction-ledger';
 import { getReadingSeconds } from '../../lib/collectiveMemory';
+// v175 §3.1 — the route binds to its named producer. Tri-Mouth import-regex
+// (scripts/check-tri-mouth.ts §5.5) fails the build if this line regresses.
+import { buildRevivePayload } from '../../lib/revival-engine';
 
 export const prerender = false;
 
@@ -101,16 +104,12 @@ export const POST: APIRoute = async ({ request }) => {
   // Recalculate decay with new count so client can decide dismiss vs update
   const decayAfterRevival  = decayFactorWithCount(pubDateISO, count);
   const decayBeforeRevival = decayFactorWithCount(pubDateISO, count - 1);
-  const decayPct = Math.round(decayAfterRevival * 100);
   // Post-revival wire stage — uses the *post-increment* count so the string
   // matches `decayAfterRevival` the client already reads. Mike §7.3 — clients
   // dismiss endangered cards off the float; a mismatched stage would flicker.
   const readerSecondsForStage = (() => { try { return getReadingSeconds(slug); } catch { return 0; } })();
   const decayStage = wireDecayStage(pubDateISO, count, readerSecondsForStage);
 
-  // nowSafe: revival crossed post out of the danger zone (was endangered, now isn't)
-  const nowSafe: boolean = isEndangered(decayBeforeRevival) && !isEndangered(decayAfterRevival);
-  const atmosphereHint: 'risen' | null = nowSafe ? 'risen' : null;
   const monthlyCount = getMonthlyRevivalCount(slug);
 
   const constellation = await getConstellation(slug);
@@ -132,21 +131,20 @@ export const POST: APIRoute = async ({ request }) => {
     broadcastNamed('endangered-update', { slug, revivalCount: count, decay: decayAfterRevival, urgency: urgencyLevel(decayAfterRevival) });
   }
 
-  return jsonOk({
-    ok: true,
+  // v175 §3.1 — delegate to the named producer. Route is a thin adapter;
+  // the payload shape lives in src/lib/revival-engine.ts, same module all
+  // three mouths (click / R / curl) imply through the Tri-Mouth inventory.
+  return jsonOk(buildRevivePayload({
     count,
-    revivalCount:        count,        // alias — orchestrator reads this
-    battingAverageDelta: 0,            // placeholder; verdicts drive batting avg, not revivals
-    relatedSlugs,                      // slugs for cascade bloom in cascade-bloom.ts
     decayAfterRevival,
-    decayPct,
-    decayStage,                        // post-revival 5-stage label — agrees with decayAfterRevival
+    decayStage,
     monthlyCount,
-    survivorRank:        survivorRank(slug, count), // percentile vs all posts
-    resonance:           resonance ?? [],
-    nowSafe,                           // true → revival crossed post out of danger zone
-    atmosphereHint,                    // 'risen' | null — client sets body[data-atmosphere]
-  });
+    survivorRank:       survivorRank(slug, count),
+    relatedSlugs,
+    resonance:          resonance ?? [],
+    wasEndangered:      isEndangered(decayBeforeRevival),
+    isEndangeredAfter:  isEndangered(decayAfterRevival),
+  }));
 };
 
 // ---------------------------------------------------------------------------
