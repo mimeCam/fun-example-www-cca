@@ -22,7 +22,17 @@
 //       `function(){` on the same or previous non-blank line.
 //
 // Scope (napkin §4.3): this is the prebuild-guard arm of the clock seam.
-// Flip to --error once the remaining ~60 server-side callsites migrate.
+// Flip to --error once the remaining server-side callsites migrate.
+//
+// Wedge log:
+//   v172 (2026-04-23): collectiveMemory.ts wedge — 20 callsites → 0.
+//                      Total raw count fell 100 → 80. Next fattest wedges
+//                      per Paul E7 / Mike napkin §3.3:
+//                        · src/lib/presence-hub.ts      (6 callsites)
+//                        · src/lib/live-decay.ts        (5 callsites)
+//                        · src/lib/cell-event-ledger.ts (3 callsites)
+//                        · src/lib/cell-heat.ts         (3 callsites)
+//                      Three of those = guard flip to --error is in reach.
 //
 // Credits: Mike Koch (§5 PoI-8 migration order + guard discipline), Elon
 //          (§1 red-line — guard is the canary), Sid (≤-10 LOC per function),

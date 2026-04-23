@@ -4,6 +4,22 @@
 //
 // Lazy singleton: DB created on first call, reused thereafter.
 // better-sqlite3 is synchronous — no connection pool, no promises, no races.
+//
+// Clock seam (2026-04-23 wedge): every wall-clock read in this file routes
+// through `now()` / `nowDate()` / `nowISO()` from `./clock`. One SSR request
+// = one pinned `now`. Net: 20 raw wall-clock callsites removed (Date-now
+// and bare-new-Date alike); the heavy DB module now agrees with the
+// middleware's pin and the `/api/docs/cite` payload byte-for-byte. Two
+// helpers (`rateWindowOpen`, `cutoffMs`) are extracted so the golden test
+// can lock the math without touching the seam.
+//
+// Credits: Mike Koch (napkin §3 wedge plan + §6 PoI checklist),
+//          Paul Kim (E7 ship-signal: byte-identical citations across surfaces),
+//          Elon (§5.2 finish the migration, §3.a no-new-deps),
+//          Krystle Clear (v171 per-file freeze-witness template),
+//          Tanya Donska (§6 evidentiary timestamps don't dance on update),
+//          Sid (every helper ≤ 10 lines).
+//          2026-04-23.
 
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
@@ -11,9 +27,13 @@ import { mkdirSync } from 'fs';
 import type { CauseOfDeath } from './cause-of-death';
 import { rowToVerdictRecord } from './verdict-resolver';
 import type { VerdictRecord } from './verdict-resolver';
+import { now, nowDate, nowISO } from './clock';
 
 const RATE_WINDOW_MS = 30_000;
 const READING_RATE_MS = 25_000; // Accept a pulse every 25s (client fires every 30s)
+const HOUR_MS         = 3_600_000;
+const DAY_MS          = 86_400_000;
+const VELOCITY_RETENTION_DAYS = 90; // covers the 8-week sparkline + buffer
 
 // ---------------------------------------------------------------------------
 // Lazy DB singleton
@@ -173,8 +193,8 @@ export function resurrectPost(slug: string, weight: number): number {
     ON CONFLICT(slug) DO UPDATE SET count = count + ?, risen_at = ?
     RETURNING count
   `);
-  const now = new Date().toISOString();
-  const row = stmt.get(slug, weight, now, weight, now) as { count: number } | undefined;
+  const iso = nowISO();
+  const row = stmt.get(slug, weight, iso, weight, iso) as { count: number } | undefined;
   return row?.count ?? weight;
 }
 
@@ -205,8 +225,8 @@ export function getLastRevivalAt(slug: string): Date | null {
  * Record the first entombment timestamp for a slug.
  * Idempotent: COALESCE guarantees existing entombed_at is never overwritten.
  */
-export function entombPost(slug: string, now = new Date()): void {
-  const iso = now.toISOString();
+export function entombPost(slug: string, when: Date = nowDate()): void {
+  const iso = when.toISOString();
   db().prepare(`
     INSERT INTO revivals (slug, entombed_at) VALUES (?, ?)
     ON CONFLICT(slug) DO UPDATE SET entombed_at = COALESCE(entombed_at, ?)
@@ -253,21 +273,31 @@ export function getAllCausesOfDeath(): Map<string, CauseOfDeath> {
 // Rate limiting
 // ---------------------------------------------------------------------------
 
+/**
+ * Pure: has the rate window since `lastAt` opened relative to `nowMs`?
+ * Extracted (Mike PoI §3) so the golden test can lock the math without
+ * `freezeClock`. `lastAt === null` (no prior stamp) is always "open".
+ */
+export function rateWindowOpen(lastAt: number | null, nowMs: number, windowMs: number): boolean {
+  if (lastAt === null) return true;
+  return nowMs - lastAt >= windowMs;
+}
+
 /** True if this IP+slug combo hasn't fired within the rate window. */
 export function canRevive(ip: string, slug: string): boolean {
   const key = `${ip}:${slug}`;
   const row = db().prepare('SELECT last_at FROM rate_limit WHERE ip_slug = ?').get(key) as { last_at: number } | undefined;
-  if (!row) return true;
-  return Date.now() - row.last_at >= RATE_WINDOW_MS;
+  return rateWindowOpen(row?.last_at ?? null, now(), RATE_WINDOW_MS);
 }
 
 /** Stamp the rate-limit record for this IP+slug. */
 export function recordRevival(ip: string, slug: string): void {
   const key = `${ip}:${slug}`;
+  const t   = now();   // PoI §2: ONE clock read, written into both columns.
   db().prepare(`
     INSERT INTO rate_limit (ip_slug, last_at) VALUES (?, ?)
     ON CONFLICT(ip_slug) DO UPDATE SET last_at = ?
-  `).run(key, Date.now(), Date.now());
+  `).run(key, t, t);
 }
 
 // ---------------------------------------------------------------------------
@@ -290,10 +320,11 @@ export function canReviveBySession(sessionId: string, slug: string): boolean {
 /** Stamp the session rate-limit record for this session+slug. */
 export function recordRevivalBySession(sessionId: string, slug: string): void {
   const key = `${sessionId}:${slug}`;
+  const t   = now();   // PoI §2: one clock read per stamp.
   db().prepare(`
     INSERT INTO rate_limit_session (session_slug, last_at) VALUES (?, ?)
     ON CONFLICT(session_slug) DO UPDATE SET last_at = ?
-  `).run(key, Date.now(), Date.now());
+  `).run(key, t, t);
 }
 
 // ---------------------------------------------------------------------------
@@ -302,7 +333,7 @@ export function recordRevivalBySession(sessionId: string, slug: string): void {
 
 /** Purge stale rate-limit entries older than 1 hour. */
 export function pruneRateLimits(): void {
-  const cutoff = Date.now() - 3_600_000;
+  const cutoff = cutoffMs(now(), HOUR_MS);
   db().prepare('DELETE FROM rate_limit WHERE last_at < ?').run(cutoff);
   db().prepare('DELETE FROM rate_limit_session WHERE last_at < ?').run(cutoff);
   db().prepare('DELETE FROM rate_limit_reading WHERE last_at < ?').run(cutoff);
@@ -347,17 +378,17 @@ export function canPulse(sessionId: string, slug: string): boolean {
   const row = db()
     .prepare('SELECT last_at FROM rate_limit_reading WHERE session_slug = ?')
     .get(key) as { last_at: number } | undefined;
-  if (!row) return true;
-  return Date.now() - row.last_at >= READING_RATE_MS;
+  return rateWindowOpen(row?.last_at ?? null, now(), READING_RATE_MS);
 }
 
 /** Stamp the reading rate-limit record for this session+slug. */
 export function recordPulse(sessionId: string, slug: string): void {
   const key = `${sessionId}:${slug}`;
+  const t   = now();   // PoI §2: one clock read per stamp.
   db().prepare(`
     INSERT INTO rate_limit_reading (session_slug, last_at) VALUES (?, ?)
     ON CONFLICT(session_slug) DO UPDATE SET last_at = ?
-  `).run(key, Date.now(), Date.now());
+  `).run(key, t, t);
 }
 
 // ---------------------------------------------------------------------------
@@ -376,9 +407,15 @@ export function sharedDatabase(): Database.Database {
  * @internal Test-only override. Swaps the lazy singleton so a suite can
  * point sibling modules at an in-memory database without touching the
  * production file. Pass `null` to restore cold-start behaviour.
+ *
+ * When a DB is provided we eagerly run `initTables` against it so the
+ * collectiveMemory tables exist immediately — tests that wrote against
+ * `sharedDatabase()` for cell-events have always done their own
+ * `ensureSchema()`, so this is purely additive (Mike PoI §6).
  */
 export function __setSharedDbForTests(override: Database.Database | null): void {
   _db = override;
+  if (override) initTables(override);
 }
 
 // ---------------------------------------------------------------------------
@@ -397,27 +434,26 @@ export function getVisitorTrust(fp: string): TrustRow | null {
 
 /** Upsert trust: increment visits, recalculate score. */
 export function upsertVisitorTrust(fp: string): void {
-  const now = Date.now();
-  upsertVisitorRow(fp, now);
-  recalcTrust(fp);
+  const t = now();
+  upsertVisitorRow(fp, t);
+  recalcTrust(fp, t);
 }
 
 /** Insert or update the visitor_trust row. */
-function upsertVisitorRow(fp: string, now: number): void {
+function upsertVisitorRow(fp: string, t: number): void {
   db().prepare(`
     INSERT INTO visitor_trust (fp_hash, score, visits, last_at, first_seen)
     VALUES (?, 0.5, 1, ?, ?)
     ON CONFLICT(fp_hash) DO UPDATE SET visits = visits + 1, last_at = ?
-  `).run(fp, now, now, now);
+  `).run(fp, t, t, t);
 }
 
 /** Recalculate trust score based on age and visit count. */
-function recalcTrust(fp: string): void {
+function recalcTrust(fp: string, t: number = now()): void {
   const row = getVisitorTrust(fp);
   if (!row) return;
-  const ageMs = Date.now() - row.first_seen;
-  const dayMs = 86_400_000;
-  const score = (ageMs > dayMs && row.visits > 3) ? 1.0 : 0.5;
+  const ageMs = t - row.first_seen;
+  const score = (ageMs > DAY_MS && row.visits > 3) ? 1.0 : 0.5;
   db().prepare('UPDATE visitor_trust SET score = ? WHERE fp_hash = ?')
     .run(score, fp);
 }
@@ -429,7 +465,7 @@ function recalcTrust(fp: string): void {
 /** Log a revival event for velocity calculation. */
 export function logVelocity(slug: string): void {
   db().prepare('INSERT INTO velocity_log (slug, ts) VALUES (?, ?)')
-    .run(slug, Date.now());
+    .run(slug, now());
   maybePruneVelocity();
 }
 
@@ -447,7 +483,7 @@ export function getRevivalTimeline(slug: string, windowWeeks = 8): {
   lastAt: string | null;
   total: number;
 } {
-  const cutoff = Date.now() - windowWeeks * 7 * 86_400_000;
+  const cutoff = cutoffMs(now(), windowWeeks * 7 * DAY_MS);
   const rows = db()
     .prepare('SELECT ts FROM velocity_log WHERE slug = ? AND ts > ? ORDER BY ts ASC')
     .all(slug, cutoff) as Array<{ ts: number }>;
@@ -461,7 +497,7 @@ export function getRevivalTimeline(slug: string, windowWeeks = 8): {
 
 /** Count revivals for a slug in the last 30 days (for witness badge). */
 export function getMonthlyRevivalCount(slug: string): number {
-  const cutoff = Date.now() - 30 * 86_400_000;
+  const cutoff = cutoffMs(now(), 30 * DAY_MS);
   const row = db()
     .prepare('SELECT COUNT(*) AS c FROM velocity_log WHERE slug = ? AND ts > ?')
     .get(slug, cutoff) as { c: number };
@@ -470,7 +506,7 @@ export function getMonthlyRevivalCount(slug: string): number {
 
 /** Count revivals for a slug within a time window. */
 export function getSlugVelocity(slug: string, windowMs: number): number {
-  const cutoff = Date.now() - windowMs;
+  const cutoff = cutoffMs(now(), windowMs);
   const row = db()
     .prepare('SELECT COUNT(*) AS c FROM velocity_log WHERE slug = ? AND ts > ?')
     .get(slug, cutoff) as { c: number };
@@ -479,7 +515,7 @@ export function getSlugVelocity(slug: string, windowMs: number): number {
 
 /** Count all revivals within a time window. */
 export function getGlobalVelocity(windowMs: number): number {
-  const cutoff = Date.now() - windowMs;
+  const cutoff = cutoffMs(now(), windowMs);
   const row = db()
     .prepare('SELECT COUNT(*) AS c FROM velocity_log WHERE ts > ?')
     .get(cutoff) as { c: number };
@@ -491,10 +527,10 @@ export function getGlobalVelocity(windowMs: number): number {
  *  Was incorrectly set to 2 hours — that erased all sparkline history. */
 let _lastPrune = 0;
 function maybePruneVelocity(): void {
-  const now = Date.now();
-  if (now - _lastPrune < 120_000) return;
-  _lastPrune = now;
-  const cutoff = now - 90 * 86_400_000; // 90 days
+  const t = now();
+  if (t - _lastPrune < 120_000) return;
+  _lastPrune = t;
+  const cutoff = cutoffMs(t, VELOCITY_RETENTION_DAYS * DAY_MS);
   db().prepare(
     'DELETE FROM velocity_log WHERE id IN (SELECT id FROM velocity_log WHERE ts < ? LIMIT 1000)'
   ).run(cutoff);
@@ -504,9 +540,20 @@ function maybePruneVelocity(): void {
 // Revival Guard: daily counts (fingerprint + IP)
 // ---------------------------------------------------------------------------
 
-/** Today's date key for daily bucketing. */
+/** Today's date key for daily bucketing.
+ *  Shape (`YYYY-MM-DD`) is load-bearing for existing daily_counts rows —
+ *  do NOT swap to Intl.DateTimeFormat (Mike PoI §4). */
 function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return nowISO().slice(0, 10);
+}
+
+/**
+ * Pure: `nowMs - windowMs`. Extracted (Mike PoI §3) so the test can lock
+ * sparkline / prune cutoffs without `freezeClock`. Saturates at 0 — a
+ * negative cutoff would let SQLite filters reach into prehistory.
+ */
+export function cutoffMs(nowMs: number, windowMs: number): number {
+  return Math.max(0, nowMs - windowMs);
 }
 
 /** Get daily revival count for a fingerprint. */

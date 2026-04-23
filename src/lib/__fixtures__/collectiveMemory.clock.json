@@ -1,0 +1,30 @@
+{
+  "_doc": [
+    "Frozen-clock fixtures for src/lib/collectiveMemory.clock.test.ts.",
+    "",
+    "One ISO instant + window literals — every test that reads the wall clock",
+    "wraps its call in withClock(frozenISO, fn) and asserts derived values",
+    "against literals computed from these primitives.",
+    "",
+    "Convention (Mike napkin §7, Krystle v171):",
+    "  · frozenISO matches the repo-wide test instant convention.",
+    "  · windowMs values mirror the module's private constants exactly;",
+    "    duplicating them here is intentional — the test is a contract,",
+    "    not a re-derivation. If they diverge, one side is wrong.",
+    "  · todayKey is the YYYY-MM-DD bucket the daily_counts table keys on;",
+    "    shape is load-bearing for existing on-disk rows.",
+    "",
+    "Credits: Mike Koch (napkin §7), Paul Kim (E7 ship-signal),",
+    "         Elon (§5.2 finish the migration), Krystle (v171 template),",
+    "         Tanya (§6 evidentiary stamps), Sid (≤10-line helpers)."
+  ],
+  "frozenISO": "2026-04-23T14:07:03.192Z",
+  "todayKey":  "2026-04-23",
+  "windows": {
+    "rateWindowMs":  30000,
+    "readingRateMs": 25000,
+    "hourMs":        3600000,
+    "dayMs":         86400000,
+    "velocityRetentionDays": 90
+  }
+}

@@ -11,69 +11,72 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v170 (2026-04-23) — "Stamped JSON" ────────────────────────────
+# ── Sprint v172 (2026-04-23) — "Collective Memory Clock Seam" ────────────
 #   v169 shipped the clock seam (`src/lib/clock.ts`) + SSR middleware
-#   (`src/middleware.ts`) that pins one `now()` per request. v170 converts
-#   that pin into a visible, byte-checkable API guarantee:
+#   (`src/middleware.ts`) that pins one `now()` per request. v170 wired
+#   read-only JSON handlers through `jsonStamped()` so every `computedAt`
+#   field in one SSR request is byte-identical. v172 finishes the fattest
+#   remaining wedge by migrating the heavy DB module:
 #
-#     Every read-only JSON endpoint now stamps its payload via the new
-#     `jsonStamped(body)` helper in `src/lib/clock.ts`, which returns
-#     `{ ...body, computedAt: nowISO() }`. Two sibling handlers invoked
-#     within the SAME SSR request emit byte-identical `computedAt` values
-#     — "input parity by construction" (Paul Kim). No more per-handler
-#     drift between a leaderboard stamp and a stage-counts stamp taken
-#     milliseconds apart.
+#     `src/lib/collectiveMemory.ts` — 20 raw `Date.now()` / `new Date()`
+#     callsites → 0. Every wall-clock read now routes through `now()` /
+#     `nowDate()` / `nowISO()` from `src/lib/clock.ts`. Two pure helpers
+#     (`rateWindowOpen`, `cutoffMs`) are extracted so the math can be
+#     locked without touching the seam. Net: the heavy DB module now
+#     agrees with the middleware pin and the `/api/docs/cite` payload
+#     byte-for-byte across revival, rate-limit, velocity, daily-bucket,
+#     and visitor-trust paths.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/clock.ts (UPDATED) — adds `jsonStamped<T>(body)` that
-#       spreads `body` and appends `computedAt: nowISO()`. The seam wins
-#       over any caller-supplied `computedAt` (shape rule: field is
-#       ALWAYS named `computedAt`, ISO-8601 UTC, ms precision). Builds
-#       on the v169 `withClock()` AsyncLocalStorage scope.
-#     • src/lib/api-stamp-golden.test.ts (NEW) — golden covering the six
-#       napkin acceptance criteria: (§1) shape, (§2) pin identity within
-#       scope, (§3) nested-scope isolation, (§4) body preservation, (§5)
-#       seam overrides caller, (§6) cross-handler parity. Wired into
-#       prebuild chain below, so drift fails the image build.
-#     • src/pages/api/stage-counts.ts (UPDATED) — `json({ ...counts,
-#       computedAt })` → `json(jsonStamped({ ...counts }))`. Same wire
-#       shape, single producer.
-#     • src/pages/api/conviction-stats.ts (UPDATED) — buildAuthorPayload
-#       routed through `jsonStamped`.
-#     • src/pages/api/leaderboard.ts (UPDATED) — routed through
-#       `jsonStamped`. Retains `generatedAt` alias for one sprint so
-#       external RSS/embed consumers that pinned the old field name keep
-#       working; drop after 2026-05 per Mike §PoI-2.
-#     • src/pages/api/batting-average-embed.ts (UPDATED) — buildJsonPayload
-#       routed through `jsonStamped`. Same `generatedAt` one-sprint alias.
-#     • src/pages/api/death-clock.ts (UPDATED) — swaps raw `new Date()`
-#       for `nowDate()` from the clock seam so the SVG that the embed
-#       serves agrees with every other handler in the same request.
-#     • src/pages/api/docs.astro (UPDATED) — `Date.now()` → `now()` from
-#       the clock seam on the heat-map read; the 7×5 grid, the subtitle
-#       sentence, and the `/api/docs/cite` mouth now all share ONE pin.
-#     • src/components/DecayClock.astro (UPDATED) — `computedAt` prop
-#       default flips from `new Date().toISOString()` to `nowISO()`.
-#       Caller-supplied values still win; the default just matches the
-#       rest of the stamped handlers in the same SSR request.
-#     • AGENTS.md (UPDATED) — documents the `jsonStamped` contract, bumps
-#       the clock-migration remaining-callsite count from 107 to 100,
-#       names `collectiveMemory.ts` as the next sprint target.
-#     • package.json (UPDATED) — adds `test:api-stamp-golden` convenience
-#       script, and wires the new golden test into `prebuild` between
-#       `test:journey-golden` and `test:citation-delegation`.
+#     • src/lib/collectiveMemory.ts (UPDATED) — all 20 raw wall-clock
+#       callsites replaced. Rate-limit stamps write ONE clock read into
+#       both columns (Mike PoI §2). `todayKey()` reads `nowISO().slice
+#       (0,10)` — shape `YYYY-MM-DD` stays load-bearing for existing
+#       daily_counts rows. New exports: `rateWindowOpen(lastAt, nowMs,
+#       windowMs)` and `cutoffMs(nowMs, windowMs)` (Math.max(0, …) so a
+#       negative cutoff never leaks into SQLite filters). Test-only
+#       `__setSharedDbForTests` now eagerly calls `initTables(override)`
+#       so swap-in `:memory:` handles have the schema immediately.
+#     • src/lib/__fixtures__/collectiveMemory.clock.json (NEW) — frozen
+#       ISO instant + window literals (rateWindowMs, readingRateMs,
+#       hourMs, dayMs, velocityRetentionDays). Duplicated intentionally:
+#       the test is a contract, not a re-derivation.
+#     • src/lib/collectiveMemory.clock.test.ts (NEW) — golden covering
+#       the Mike PoI §6 checklist: (0) fixture sanity, (1) pure helpers
+#       on boundary inputs, (2) stamps land on the pinned clock, (3)
+#       rate-limit windows deterministic under the pin, (4) velocity
+#       cutoffs route through the seam, (5) daily-count bucket keys off
+#       pinned today, (6) visitor-trust aging relative to the pin, (7)
+#       pruneRateLimits uses the pinned cutoff, (8) parallel withClock
+#       scopes don't cross-contaminate (AsyncLocalStorage per-stack).
+#       Every case swaps in a `:memory:` DB via the test hatch.
+#     • scripts/check-no-raw-now.ts (UPDATED) — wedge log extended.
+#       Guard STILL runs in WARN mode. Fattest remaining wedges called
+#       out: presence-hub.ts (6), live-decay.ts (5), cell-event-ledger
+#       .ts (3), cell-heat.ts (3). Flip to `--error` after the next 2–3.
+#     • package.json (UPDATED) — adds `test:collective-memory-clock`
+#       convenience script, wires the new golden into `prebuild` right
+#       after `test:api-stamp-golden` (the adjacent seam-golden arm).
+#     • AGENTS.md (UPDATED) — bumps remaining raw-callsite tally from
+#       100 to 80, names the next wedge targets.
 #
 #   Infrastructure deltas this sprint: NONE.
-#     No new RUNTIME env vars (jsonStamped is pure code, routes through
-#     the v169 clock middleware that already ships). No new ports,
-#     services, named volumes, or docker networks. Every new/modified
-#     file lives under paths the Dockerfile already COPY-s wholesale
-#     (`COPY src/ ./src/` + `COPY scripts/ ./scripts/`). The new golden
-#     test runs inside `npm run build` via `prebuild`, so a drift in the
-#     stamp seam fails the image build BEFORE the container ever starts.
-#     The v169 `check-no-raw-now` guard still runs in WARN mode — raw
-#     callsite tally drops from 107 to ~100 this sprint; next wedge is
-#     `collectiveMemory.ts` (20 callsites, its own sprint).
+#     No new RUNTIME env vars (the clock seam + AsyncLocalStorage middle-
+#     ware already ship since v169). No new ports, services, named
+#     volumes, or docker networks. Every new/modified file lives under
+#     paths the Dockerfile already COPY-s wholesale:
+#       `COPY src/ ./src/`      (captures collectiveMemory.ts + the new
+#                                collectiveMemory.clock.test.ts + the
+#                                new `src/lib/__fixtures__/` directory)
+#       `COPY scripts/ ./scripts/` (captures check-no-raw-now.ts)
+#     The new golden test runs inside `npm run build` via `prebuild`, so
+#     a drift in the collective-memory seam fails the image build BEFORE
+#     the container ever starts — this script never gets to `docker run`.
+#     The `check-no-raw-now` guard still runs in WARN mode — raw callsite
+#     tally drops 100 → 80 this sprint; after 2–3 more wedges (presence-
+#     hub, live-decay, cell-event-ledger, cell-heat) it flips to --error
+#     and collectivememory-style regressions become a hard image-build
+#     failure here, not a runtime surprise.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -90,6 +93,9 @@
 #   8c. Warm the v170 stamped-JSON surfaces — /api/stage-counts (canonical
 #       jsonStamped() use) and /api/leaderboard (jsonStamped + one-sprint
 #       `generatedAt` alias); smoke-test the `computedAt` field shape.
+#   8d. Warm the v172 collective-memory clock-seam runtime via
+#       /api/ghost-echoes (calls getRevivalTimeline → cutoffMs(now(),…));
+#       proves the middleware pin reaches the heavy DB module in prod.
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -130,8 +136,10 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-citation-delegation  →  check-duration-reasons  →
 #   check-stage-tempo-divergence  →
 #   check-no-raw-now (v169 NINTH guard — WARN mode; flags raw Date.now()
-#     / new Date() outside the clock seam allowlist. Tally drops ~107→100
-#     this sprint; flip to --error once collectiveMemory.ts migrates)  →
+#     / new Date() outside the clock seam allowlist. Tally drops 100→80
+#     this sprint after the collectiveMemory.ts wedge; flip to --error
+#     once 2–3 more small wedges land: presence-hub (6), live-decay (5),
+#     cell-event-ledger (3), cell-heat (3))  →
 #   check-verify-bundle (v169 TENTH guard — freezes the VerifyBundleDto
 #     wire shape across the API + SSR page)  →
 #   check-user-journey (v168 EIGHTH guard, expanded v169 — seven-step
@@ -139,11 +147,21 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     APIRoute handlers in-process, hermetic :memory: SQLite)  →
 #   test:keep-hotkey → test:keep-legend → test:chip-lit → test:arrival →
 #   test:citation-golden → test:journey-golden →
-#   test:api-stamp-golden (v170 NEW — proves jsonStamped's six napkin
+#   test:api-stamp-golden (v170 — proves jsonStamped's six napkin
 #     acceptance properties: shape, pin identity within scope, nested-
 #     scope isolation, body preservation, seam-overrides-caller, cross-
-#     handler parity. A drift in the stamp seam fails the image build
-#     here, never reaches this deploy script)  →
+#     handler parity)  →
+#   test:collective-memory-clock (v172 NEW — nine-section golden locking
+#     the collectiveMemory.ts wedge: (0) fixture sanity, (1) pure
+#     rateWindowOpen/cutoffMs edges, (2) stamps land on pinned clock,
+#     (3) rate-limit windows deterministic under withClock, (4) velocity
+#     cutoffs route through the seam, (5) daily-count bucket keys off
+#     pinned today, (6) visitor-trust aging relative to the pin, (7)
+#     pruneRateLimits uses pinned cutoff, (8) parallel withClock scopes
+#     don't cross-contaminate. Runs against a :memory: DB swapped in via
+#     __setSharedDbForTests — zero disk I/O. A drift in the collective-
+#     memory seam fails the image build here, never reaches this script)
+#     →
 #   test:citation-delegation → test:duration-reasons →
 #   test:stage-ease → test:stage-tempo → test:stage-tempo-divergence  →
 #   astro build.
@@ -341,6 +359,38 @@ rm -f "${LB_BODY_FILE}"
 echo "==> [deploy] /api/leaderboard: HTTP ${LB_STATUS} · body=${LB_BODY_LEN}B · computedAt-hits=${LB_HAS_STAMP} · generatedAt-hits=${LB_HAS_ALIAS}"
 if [ "${LB_STATUS}" != "200" ] || [ "${LB_HAS_STAMP}" -lt 1 ] || [ "${LB_HAS_ALIAS}" -lt 1 ]; then
   echo "==> [deploy] ⚠ leaderboard missing expected stamp or alias — investigate (container still up)." >&2
+fi
+
+# ── 8d. Collective-memory clock-seam warm-up (v172) ────────────────────────
+# The v172 wedge migrates 20 raw Date.now()/new Date() callsites in
+# `src/lib/collectiveMemory.ts` through `now()` / `nowDate()` / `nowISO()`
+# from `src/lib/clock.ts`. The prebuild golden
+# (`src/lib/collectiveMemory.clock.test.ts`) already hermetically proves
+# the seam's acceptance properties at image-build time against a :memory:
+# DB. This runtime probe hits a real read-through surface — the
+# `/api/ghost-echoes` endpoint calls `getRevivalTimeline(slug)`, which
+# now computes its cutoff via `cutoffMs(now(), windowWeeks * 7 * DAY_MS)`
+# — so if the middleware pin ever failed to reach the DB module in
+# production, the response would throw or 500 here instead of surfacing
+# during the first real visitor's sparkline render.
+#
+# Probe is intentionally lightweight: a slug that doesn't exist yields a
+# well-formed empty-timeline JSON (total:0, lastAt:null). We just assert
+# HTTP 200 + non-empty body + the `buckets` field shape.
+echo "==> [deploy] Warming up /api/ghost-echoes (v172 collectiveMemory clock seam runtime)…"
+GHOST_BODY_FILE="$(mktemp)"
+GHOST_STATUS=$(curl --silent --show-error --output "${GHOST_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/ghost-echoes?slug=warmup-demo" \
+  || echo '000')
+GHOST_BODY_LEN=$(wc -c < "${GHOST_BODY_FILE}" | tr -d ' ')
+GHOST_HAS_BUCKETS=$(grep -c '"buckets":' "${GHOST_BODY_FILE}" || true)
+GHOST_BODY_PREVIEW=$(head -c 200 "${GHOST_BODY_FILE}" | tr '\n' ' ')
+rm -f "${GHOST_BODY_FILE}"
+echo "==> [deploy] /api/ghost-echoes: HTTP ${GHOST_STATUS} · body=${GHOST_BODY_LEN}B · buckets-hits=${GHOST_HAS_BUCKETS} · preview=\"${GHOST_BODY_PREVIEW}\""
+if [ "${GHOST_STATUS}" != "200" ] || [ "${GHOST_HAS_BUCKETS}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ ghost-echoes did not respond 200 with buckets — collectiveMemory seam may not be wired (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────
