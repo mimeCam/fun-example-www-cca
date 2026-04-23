@@ -33,6 +33,7 @@ import { cellCitationPayload, STAGE_AXES, cellAnchorId } from './stage-axes';
 import type { Axis } from './stage-axes';
 import { DECAY_STAGES } from './decay-engine';
 import type { DecayStage } from './decay-engine';
+import { dispatchApiRoute } from './handler-dispatch';
 
 // ── Sentinel origin (the one Elon §3 calls "the shape, not the host") ─────
 //
@@ -163,19 +164,18 @@ export function buildCiteUrl(
 /**
  * Dispatch a synthetic GET through the handler and return the Response.
  *
- * The handler signature is `APIRoute` — `{ url, request, … }`. We pass
- * only `url` and `request`; the Astro typing is permissive here because
- * the handler never reaches for cookies, params, etc. This IS the tautol-
- * ogy-breaker (Elon §4): three mouths, one oracle, asserted at runtime.
+ * Routes through `src/lib/handler-dispatch.ts::dispatchApiRoute` — the
+ * one shared in-process route dispatcher (Mike "Journey Witness" §6).
+ * Both this module and the new journey witness (`journey-witness.ts`)
+ * go through the same symbol, so the tautology-breaker (Elon §4) is
+ * now also the non-duplication invariant (Sid §no-second-producer).
  */
 export async function curlMouthResponse(
   axis: Axis, stage: DecayStage, origin: string, ref?: string,
 ): Promise<Response> {
   const mod = await import('../pages/api/docs/cite');
   const url = buildCiteUrl(axis, stage, origin, ref);
-  const request = new Request(url.toString(), { method: 'GET' });
-  const handler = mod.GET as (ctx: { url: URL; request: Request }) => Response | Promise<Response>;
-  return handler({ url, request });
+  return dispatchApiRoute(mod, 'GET', url);
 }
 
 /** Convenience: fetch the handler's body string only. Happy-path shape. */

@@ -14,7 +14,12 @@ import { mkdirSync } from 'fs';
 
 let _db: Database.Database | null = null;
 
+/** Resolve the DB file location. `COMMUNITY_DB_PATH` env overrides (e.g.
+ *  `:memory:` for the journey-witness guard — see scripts/check-user-journey.ts
+ *  and src/lib/journey-witness.ts). Unset → default `data/revivals.db`. */
 function dbPath(): string {
+  const override = process.env.COMMUNITY_DB_PATH;
+  if (override) return override;
   const dir = resolve(process.cwd(), 'data');
   mkdirSync(dir, { recursive: true });
   return resolve(dir, 'revivals.db');
@@ -23,9 +28,16 @@ function dbPath(): string {
 function db(): Database.Database {
   if (_db) return _db;
   _db = new Database(dbPath());
-  _db.pragma('journal_mode = WAL');
+  if (dbPath() !== ':memory:') _db.pragma('journal_mode = WAL');
   ensureTable(_db);
   return _db;
+}
+
+/** Drop the cached handle — lets a test re-open against a new DB_PATH env.
+ *  Never called from production code paths; gated for journey-witness reuse. */
+export function resetCommunityPostsDb(): void {
+  if (_db) { try { _db.close(); } catch { /* already closed */ } }
+  _db = null;
 }
 
 function ensureTable(d: Database.Database): void {

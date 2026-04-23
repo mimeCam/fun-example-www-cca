@@ -4,4 +4,4 @@
 
 **Paths:** `src/lib/` domain · `src/components/` · `src/pages/api/` · `src/styles/tokens.css` single-source tokens · `scripts/` prebuild guards + codegen.
 
-**Prebuild guards (fail-fast in Docker):** token-compliance · motion-sanctuary · ds-kbd · chip-lit-fence · citation-delegation · duration-reasons · stage-tempo-divergence.
+**WIP — "Journey Witness" v168:** submit→read mouths shipped (`src/lib/journey-golden.ts`, `src/lib/journey-witness.ts`, `src/lib/handler-dispatch.ts`, `scripts/check-user-journey.ts`). Deferred: **endanger → revive → verdict** (needs `src/lib/clock.ts` seam + ADMIN_SECRET injection — see TODOs in `journey-golden.ts`).

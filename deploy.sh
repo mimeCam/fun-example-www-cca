@@ -11,89 +11,83 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v165 (2026-04-23) — "Urgency Shape" (widens v163) ────────────
-#   v163 guarded a 5-D joint metric over (ease + duration·τ) but — by
-#   explicit policy — left duration-distinctness unchecked, because four
-#   of five stages aliased to `--motion-snap-duration` (120ms). v165
-#   de-aliases every stage: each `--stage-*-duration` now carries its
-#   own literal ms value (280 / 360 / 140 / 540 / 720). The new tempo
-#   shape is intentional — `endangered` (140ms) is the unique strict
-#   minimum because it is the one stage where the reader can still act
-#   to revive the post (Tanya §4.1 / Mike napkin v165). The guard is
-#   widened in place (no rename) with a CONJUNCTION — NOT substitution —
-#   of two new rules: `duration-alias` (byte-distinctness on resolved
-#   ms literals) and `endangered-not-min` (strict-min ordering on the
-#   duration axis of the oracle). Elon §2.3 counterexample —
-#   [280,280,140,540,720] satisfies "unique strict min" on its own yet
-#   fails distinctness — proves the conjunction is strictly stronger
-#   than either rule alone. Guard count stays at 7.
+# ── Sprint v168 (2026-04-23) — "Journey Witness" (eighth prebuild guard) ─
+#   The previous seven prebuild guards all watched TOKENS (motion vars,
+#   duration literals, citation delegation, tempo divergence, …). v168
+#   adds the first guard that watches a USER: a synthetic `submit → read`
+#   journey is dispatched in-process through the real APIRoute handlers
+#   and asserted step-by-step. Guard count: 7 → 8.
+#
+#   Mike Koch's napkin §4 ships the minimum viable lifecycle
+#   (submit-happy-path · submit-invalid-json · submit-missing-title ·
+#   submit-body-too-short · submit-bad-pow · read-empty-store). The
+#   endanger → revive → verdict legs are DEFERRED (need a `src/lib/clock.ts`
+#   seam + ADMIN_SECRET injection — see §TODO in `journey-golden.ts`).
+#   Elon §5.3's user-witnessing principle: the guard asserts an outcome
+#   the reader will experience, not a token rule the compiler would catch.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/stage-tempo.ts (UPDATED) — `STAGE_DURATIONS_MS` now
-#       holds five distinct literals instead of SNAP_MS × 5. The 5-D
-#       JND floor still clears for every unordered pair (proven in
-#       stage-tempo.test.ts §5); duration coords no longer collapse
-#       collinearly, so every pair's distance now picks up a real
-#       ms·τ contribution. Public API unchanged: same exports, same
-#       Tempo5 tuple shape, same `tempoDivergence` / `composeTempo`
-#       / `minTempoDivergence` signatures. Header comment documents
-#       the v165 rationale inline.
-#     • src/lib/stage-tempo.test.ts (UPDATED) — fixtures swapped to
-#       the v165 duration table; the collinear-invariance test now
-#       asserts v165 explicitly breaks collinearity; new §5 asserts
-#       the 5-D JND floor still clears for every pair with the new
-#       literals. `endangered`-is-strict-min proven numerically.
-#     • scripts/check-stage-tempo-divergence.ts (UPDATED — widened in
-#       place, no rename). Two new Violation rules added to the
-#       `Violation.rule` discriminated union: `duration-alias` and
-#       `endangered-not-min`. New helpers: `checkAliasDistinctness`
-#       (polymorphic over ease|duration — reuses the old ease path),
-#       `checkEndangeredStrictMin`, `fmtEndangeredNotMin`, and a
-#       refactored `fmtAlias(axis, v)` that serves both axes. The
-#       reduced-motion stripping (`stripReducedMotion`) still runs
-#       first so the accessibility-0ms block never trips distinctness.
-#     • scripts/check-stage-tempo-divergence.test.ts (UPDATED) — new
-#       §6b suite covers: canonical v165 fixture is clean; Elon §2.3
-#       counterexample fires `duration-alias` (and `endangered-not-min`
-#       does NOT, proving the conjunction matters); [280,280,280,280,140]
-#       fires `endangered-not-min` (and `duration-alias` does); `fossil`
-#       < `endangered` fires `endangered-not-min`. Clean-fixture
-#       builder now draws literals from STAGE_TEMPO_VECTORS so the
-#       oracle remains single-source.
-#     • src/lib/stage-tokens.generated.ts (UPDATED) — codegen output
-#       refreshed: `STAGE_TRANSITION_DURATION_MS` now emits five
-#       distinct ms literals instead of four `var(--motion-snap-
-#       duration)` aliases.
-#     • src/pages/api/docs.astro (UPDATED) — motion section lede
-#       rewritten to explain "endangered is shortest on purpose";
-#       `motionValueLabel` updated — the `var(…)` branch is now a
-#       defensive fallback only (the prebuild guard catches any
-#       regression before this function ever sees an alias).
-#     • src/styles/tokens.css (UPDATED) — five distinct `--stage-*-
-#       duration` literals; comment block refreshed to reference
-#       v165 + Tanya §4.1. Ease axis values unchanged.
-#     • src/styles/motion.css (UPDATED) — the `@media (prefers-
-#       reduced-motion: reduce)` block now sets every single
-#       `--stage-*-duration` to 0ms explicitly (previously only
-#       `fresh` carried an override because the others aliased snap
-#       which was already 0ms in that block). The scanner strips
-#       this block via `stripReducedMotion` before resolution.
-#     • AGENTS.md (UPDATED) — Prebuild-guards line now notes the
-#       v165 conjunction ("+duration-alias +endangered-not-min");
-#       new v165 summary line records the five durations + Tanya
-#       UX citation. Wire contract frozen; `cite.ts` / JSON shape
-#       unchanged.
+#     • src/lib/journey-golden.ts (NEW) — frozen fixture table of six
+#       journey steps. Each row pins { status, bodyKeys, bodyLiteral }
+#       and carries a sentinel author (`a.test`) + sentinel IP
+#       (`127.0.0.10`) so the guard can never be confused for a real
+#       reader. PoW nonce for the happy-path submit is PRE-COMPUTED
+#       offline and baked in as a literal (see §6 "how the nonce was
+#       found") — keeps the guard hermetic and fast (no rehash loop at
+#       prebuild). Mirrors `citation-golden.ts` for style parity.
+#     • src/lib/journey-witness.ts (NEW) — witness runtime. Routes each
+#       journey step through `dispatchApiRoute()` (below), decodes the
+#       JSON body, and exposes the shape helpers (`hasShape`,
+#       `matchesLiteral`, `summarize`) the guard + its .test sibling
+#       both consume. No global state — every call is hermetic.
+#     • src/lib/handler-dispatch.ts (NEW) — the one generalisation
+#       Mike §6 asks for. Promoted out of `citation-golden.ts::curl-
+#       MouthResponse` so BOTH the citation witness (3 mouths, 35 rows)
+#       AND the new journey witness (5 submit branches + 1 read) route
+#       through one symbol. `dispatchApiRoute(mod, method, url)` → Response.
+#     • src/lib/citation-golden.ts (UPDATED) — `curlMouthResponse` now
+#       delegates to `dispatchApiRoute`. No behavior change; the tautology-
+#       breaker (Elon §4) is now also the non-duplication invariant
+#       (Sid §no-second-producer). Wire contract unchanged.
+#     • src/lib/communityPosts.ts (UPDATED) — DB path is now overridable
+#       via `COMMUNITY_DB_PATH` env var. Unset → default `data/revivals.db`
+#       (production path, volume-mounted). `:memory:` → hermetic SQLite
+#       for the journey guard (skips WAL pragma on memory DBs). New
+#       export `resetCommunityPostsDb()` drops the cached handle so
+#       the `.test` sibling can re-open against a new path. Production
+#       code paths never call it.
+#     • src/lib/journey-golden.test.ts (NEW) — unit coverage on the
+#       pure helpers (fixture table shape, reorder lemma, PoW nonce
+#       re-check) independent of the integration guard run.
+#     • scripts/check-user-journey.ts (NEW) — the EIGHTH prebuild guard.
+#       Iterates `JOURNEY_STEPS` through `dispatchJourneyStep(…)` and
+#       fails on any drift in status/shape/literal. Refuses to run
+#       unless `COMMUNITY_DB_PATH=:memory:` is set (Paul §ship criteria
+#       — the guard must not touch real `data/revivals.db`). `package.json`
+#       `prebuild` chain prefixes that env var inline.
+#     • AGENTS.md (UPDATED) — prebuild-guards line grew by one
+#       (`· user-journey`); new WIP note explains the submit→read
+#       scope and the deferred legs.
+#     • package.json (UPDATED) — `prebuild` chain gains the new guard
+#       (env-prefixed with `COMMUNITY_DB_PATH=:memory:`) and a new
+#       test step `test:journey-golden`. Corresponding `check:user-
+#       journey` + `test:journey-golden` scripts added for local use.
 #
 #   Infrastructure deltas this sprint: NONE.
-#     No new env vars, ports, services, named volumes, or docker
-#     networks. Every modified file lives under paths the Dockerfile
-#     already COPY-s wholesale (`COPY src/ ./src/` + `COPY scripts/
-#     ./scripts/`), so no Dockerfile edit is required. The prebuild
-#     chain (`npm run build`) picks up the widened guard automatically
-#     — the `package.json` entry still points at the same script path
-#     (widened, not renamed). Drift fails the image build, fails this
-#     script, and leaves the previous container already-stopped —
-#     operator re-runs after the fix.
+#     No new env vars at RUNTIME (the new `COMMUNITY_DB_PATH` is a
+#     prebuild/test-only override — unset at container start, so
+#     `communityPosts.ts` falls through to the default `data/revivals.db`
+#     path under the `persona-blog-a-sqlite` volume, exactly as before).
+#     No new ports, services, named volumes, or docker networks.
+#     Every new/modified file lives under paths the Dockerfile already
+#     COPY-s wholesale (`COPY src/ ./src/` + `COPY scripts/ ./scripts/`),
+#     so no Dockerfile edit is required. The prebuild chain
+#     (`npm run build`) picks up the new guard automatically — the
+#     `package.json` entry now invokes `scripts/check-user-journey.ts`
+#     with the hermetic-DB env prefix. Any drift in the six journey
+#     outcomes fails the image build, fails this script, and leaves
+#     the previous container already-stopped — operator re-runs after
+#     the fix.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -144,27 +138,33 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival  →
 #   check-citation-delegation  →  check-duration-reasons  →
-#   check-stage-tempo-divergence (v165 WIDENED — asserts byte parity
-#     between STAGE_EASE_CURVES + STAGE_TEMPO_VECTORS in src/lib/ and
-#     the --stage-{stage}-ease + --stage-{stage}-duration literals in
+#   check-stage-tempo-divergence (v165 — asserts byte parity between
+#     STAGE_EASE_CURVES + STAGE_TEMPO_VECTORS in src/lib/ and the
+#     --stage-{stage}-ease + --stage-{stage}-duration literals in
 #     src/styles/tokens.css, the 5-D Euclidean JND floor on every
 #     unordered pair, AND the v165 duration conjunction: five distinct
-#     resolved `--stage-*-duration` literals (`duration-alias`) PLUS
-#     `endangered` as the unique strict minimum on the ms axis
-#     (`endangered-not-min`) — the one stage where the reader can still
-#     act to save the post)  →
+#     resolved `--stage-*-duration` literals PLUS `endangered` as the
+#     unique strict minimum on the ms axis)  →
+#   check-user-journey (v168 NEW — EIGHTH guard; submit→read witness.
+#     Dispatches JOURNEY_STEPS through the real APIRoute handlers in-
+#     process via handler-dispatch.ts, asserts { status, bodyKeys,
+#     bodyLiteral } per step. Prefixed with `COMMUNITY_DB_PATH=:memory:`
+#     so the hermetic SQLite never touches the production volume. The
+#     guard itself refuses to run unless the env var is set to :memory:
+#     — Paul §ship criteria)  →
 #   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit  →
 #   test:arrival  →  test:citation-golden  →
+#   test:journey-golden (v168 NEW — unit coverage for the fixture
+#     table, reorder lemma, and PoW nonce re-check)  →
 #   test:citation-delegation  →  test:duration-reasons  →
 #   test:stage-ease (v162 — 5 curves distinct + 4-D pair divergence ≥
 #     JND floor)  →
 #   test:stage-tempo (v163+v165 — 5-D joint oracle: v165 breaks the
-#     day-one collinearity, asserts the JND floor still clears for all
-#     10 pairs with the new literals, endangered-is-strict-min proof)  →
+#     day-one collinearity, JND floor clears for all 10 pairs,
+#     endangered-is-strict-min proof)  →
 #   test:stage-tempo-divergence (v163+v165 — scanner + parity + JND
 #     reporter fixtures PLUS §6b duration-distinctness / strict-min
-#     conjunction suite: Elon §2.3 counterexample proves the two rules
-#     are independent)  →
+#     conjunction suite)  →
 #   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
@@ -265,10 +265,12 @@ fi
 #       (v165 duration half — 280/360/140/540/720, with endangered the
 #       unique strict minimum). Both halves are mirrored byte-for-byte
 #       between src/lib/stage-{ease,tempo}.ts and src/styles/tokens.css
-#       — the widened prebuild guard above asserts that parity + the
-#       duration conjunction on every Docker build, so warming this
-#       route is ALSO the runtime smoke-test that the cascade resolves
-#       each per-stage ease AND duration correctly.
+#       — the prebuild guard asserts that parity + the duration
+#       conjunction on every Docker build, so warming this route is
+#       ALSO the runtime smoke-test that the cascade resolves each
+#       per-stage ease AND duration correctly. v168 adds the NEW
+#       journey-witness guard upstream — a drift on submit→read would
+#       have already failed the image build before we ever get here.
 #
 #   (b) GET /api/docs/cite — terminal/`curl` mouth. Sends a hand-shaped
 #       (axis, stage) pair and asserts a 200 response with a non-empty
