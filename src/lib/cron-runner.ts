@@ -123,3 +123,35 @@ export function shutdown(): void {
   handles.length = 0;
   booted = false;
 }
+
+// ---------------------------------------------------------------------------
+// Production lazy-boot seam (Sid — 2026-04-23 deployment.log fix)
+// ---------------------------------------------------------------------------
+//
+// Why: the `astro:server:start` integration hook in astro.config.mjs only
+// fires under `astro dev` / `astro preview`. The compiled standalone Node
+// server (`dist/server/entry.mjs`) does not run Astro's integration pipeline,
+// so in production the cron NEVER booted — deadline-sweeper and OTS-poller
+// never ticked. The deploy-time witness caught it:
+//
+//   ==> [deploy] cron-runner boot witness: boot-lines=0 · ts-iso-lines=0
+//   ==> [deploy] ⚠ v173 cron-runner boot stderr line NOT seen in docker logs
+//
+// Fix: expose an env-driven boot that the middleware calls once per process
+// on the first request. `booted` guard already makes it idempotent; the
+// middleware is included in the production bundle (verified in dist/server).
+// HOST/PORT come from Docker env (see Dockerfile `ENV PORT=7100`).
+//
+// TODO: once Astro exposes a production `server:listen` hook, wire it in
+//       astro.config.mjs alongside the dev hook and drop this seam.
+
+/** Boot once from env vars (HOST/PORT) — safe to call on every request. */
+export function bootFromEnv(): void {
+  if (booted) return;
+  const host = process.env.HOST ?? '127.0.0.1';
+  const port = Number(process.env.PORT) || 7100;
+  void boot({ address: host, port }).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    logJson('boot_error', { error: msg });
+  });
+}

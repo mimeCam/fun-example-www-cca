@@ -11,6 +11,101 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
+# ── Sprint "v179 CiteFlash + cron-lazy-boot" (2026-04-23) — active cycle ──
+#   Two independent wedges ship together in this sprint's active git area:
+#
+#   (A) CiteFlash / ApiAlso design-system consolidation (Mike napkin §4,
+#       Tanya §5 pass 1). The copy→arrive→verify receipt flash and the
+#       "Also via API" curl chip now ship as TWO reusable primitives any
+#       citable region can mount, with a new prebuild guard freezing the
+#       single-source-of-truth discipline (one `@keyframes cite-flash*`
+#       producer, one JS producer for `CITE_FLASH_DURATION_MS`). Wired
+#       onto /api/docs this sprint: the matrix gets one inline CiteFlash
+#       mark next to its h2, the endpoint docs row grows one ApiAlso chip
+#       that reveals `curl -s "${origin}/api/docs/cite?axis=…&stage=…"`.
+#       Files in the active git area:
+#         · src/lib/cite-flash.ts          (NEW ~170 lines, pure)
+#         · src/components/CiteFlash.astro (NEW ~210 lines, SSR + inline IIFE)
+#         · src/components/ApiAlso.astro   (NEW ~190 lines, SSR + inline IIFE)
+#         · src/styles/cite-flash.css      (NEW ~175 lines, two keyframes,
+#                                           no new tokens — reuses --motion-
+#                                           cite-ack-duration + --gold*)
+#         · scripts/check-cite-flash-reuse.ts (NEW — the guard, WARN mode
+#                                           on first ship; flips --error
+#                                           in the next wedge once the
+#                                           four legacy receipt-* keyframes
+#                                           collapse onto CiteFlash)
+#         · src/pages/api/docs.astro       (UPDATED — imports + mounts
+#                                           <CiteFlash /> next to matrix h2,
+#                                           <ApiAlso endpoint="/api/docs/cite"
+#                                           params={axis, stage} /> inside
+#                                           the endpoint docs dd, and marks
+#                                           the matrix container `data-citable`
+#                                           so the IIFE's copy listener fires)
+#         · package.json                   (UPDATED — prebuild chain grows
+#                                           one line: `check-cite-flash-reuse`
+#                                           slotted after `check-no-chip-
+#                                           lit-in-arrival` and before
+#                                           `check-citation-delegation`)
+#         · AGENTS.md                      (UPDATED — adds "WIP — CiteFlash
+#                                           consolidation" line flagging
+#                                           the four remaining receipt-*
+#                                           holdouts as next wedge)
+#
+#   (B) cron-runner production lazy-boot fix (Sid — deployment.log receipt).
+#       Previous deploys witnessed `cron-runner boot witness: boot-lines=0
+#       · ts-iso-lines=0` because Astro's `astro:server:start` integration
+#       hook only fires under `astro dev` / `astro preview`; the compiled
+#       standalone Node server (`dist/server/entry.mjs`) never ran the
+#       integration pipeline, so deadline-sweeper and OTS-poller never
+#       ticked. Fix: middleware now calls a new `bootFromEnv()` seam on
+#       the first request (idempotent via `booted` guard). HOST/PORT come
+#       from the Dockerfile's existing `ENV PORT=7100`. Files in the
+#       active git area:
+#         · src/lib/cron-runner.ts (UPDATED — +32: exports `bootFromEnv()`)
+#         · src/middleware.ts      (UPDATED — +8: calls bootCronFromEnv()
+#                                   before pinning the clock on every
+#                                   request; the `booted` flag keeps it
+#                                   O(1) after the first tick)
+#       Expected deploy-time effect: probe 8l (cron-runner stderr witness)
+#       should now see `boot-lines=1 · ts-iso-lines=1` in docker logs once
+#       the first warm-up request (probe 8a hits /api/docs) lights the
+#       middleware. The probe stays observational (WARN on miss) per its
+#       existing preamble — `test:ledger-clock` at build time is the teeth.
+#
+#   Infrastructure deltas this sprint: NONE.
+#     · No new env vars, ports, services, named volumes, docker networks,
+#       or npm deps. All seven touched/new src/ + scripts/ files ship via
+#       the existing `COPY scripts/` + `COPY src/` + `COPY package.json`
+#       layers at the top of the builder stage — `docker build --no-cache`
+#       picks them up without a Dockerfile edit. The existing
+#       `persona-blog-a-data` + `persona-blog-a-sqlite` named volumes are
+#       reused as-is. Port 7100 stays the single public-facing surface
+#       (external Caddy terminates SSL and proxies to it).
+#     · PREBUILD CHAIN FLIPS: one new line joins the wall.
+#         `npx tsx scripts/check-cite-flash-reuse.ts`
+#       — sweeps src/styles + src/components + src/layouts for any second
+#       `@keyframes cite-flash*` / `@keyframes receipt-*` producer, and
+#       src/lib + src/components for raw-ms literals near `cite-flash`
+#       references. WARN mode this wedge (four legacy receipt-* keyframes
+#       still exist in seal-receipt / arrival-receipt / audit-receipt /
+#       verify-receipt). Next wedge consolidates those and flips to
+#       `--error`. Observational only this sprint — the image still
+#       builds on violations; they surface in deploy.log as warn lines.
+#     · RUNTIME PROBES: one new probe (8n) witnesses CiteFlash + ApiAlso
+#       markers on /api/docs. WARN-only (Mike §8 "build-time gate, runtime
+#       witness"). See the probe's in-place preamble for the exact markers.
+#     · Probe 8l (v173 cron-runner stderr witness): same probe, same
+#       contract — but with the (B) lazy-boot fix in place, the boot line
+#       should now APPEAR in docker logs for the first time in production.
+#       Silence here after this sprint means the middleware lazy-boot
+#       seam regressed; before this sprint silence was a known-false-
+#       negative documented in the probe preamble.
+#
+#   Previous-sprint banner ("v178 Parity Console") preserved below for
+#   continuity — that wedge's probes (8m) are still live and still green
+#   on every deploy. Earlier sprints' banners are kept in git history.
+#
 # ── Sprint "v178 Parity Console" (2026-04-23) — on-page tri-mouth proof ──
 #   Pure-discipline wedge that brings the "three mouths, one byte" identity
 #   ON-PAGE, inside /api/docs, as a reading-column section (Tanya UX §7).
@@ -822,6 +917,15 @@ docker volume create "${SQLITE_VOLUME}" || true
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival  →
+#   check-cite-flash-reuse (v179 NEW — WARN mode. Enforces single-source-
+#     of-truth for the copy→arrive flash: one `@keyframes cite-flash*`
+#     producer (src/styles/cite-flash.css), one JS producer
+#     (src/lib/cite-flash.ts). Also flags remaining `@keyframes receipt-*`
+#     holdouts (seal-receipt / arrival-receipt / audit-receipt / verify-
+#     receipt) as drift vectors the next wedge will consolidate, and
+#     warns on raw-ms literals near `cite-flash` references anywhere
+#     outside the pure helper. Flips to `--error` once the four legacy
+#     receipt-* keyframes collapse onto CiteFlash)  →
 #   check-citation-delegation  →  check-duration-reasons  →
 #   check-stage-tempo-divergence  →
 #   check-no-raw-now (v169 NINTH guard — WARN mode; flags raw Date.now()
@@ -1793,18 +1897,21 @@ fi
 # working byte-for-byte. The build-time golden (`test:ledger-clock`,
 # inside `npm run build`) already proves the seam pins `ts`; this probe
 # is the live witness that the consolidated producer reaches production
-# stderr unchanged. Observational only — failure WARNs (the cron may
-# not have booted yet on a slow host; the build-time gate is the teeth).
+# stderr unchanged. Observational only — failure WARNs (the build-time
+# gate is the teeth; this probe is the live sighting).
 #
-# Cron boot timing: the cron-runner integration hook (astro.config.mjs)
-# fires on `astro:server:start`, then waits 5s before scheduling the
-# first tick — the BOOT line itself is logged immediately when boot()
-# is called (cron-runner.ts:105), so by the time we land here (after
-# all the warm-up probes 8a–8k.g, well past 5s) the boot line MUST be
-# in stderr. If it isn't, either the integration hook didn't fire
-# (Astro internal regression) or the shared seam dropped the line
-# (clock.logJson regression — the build-time golden would normally
-# have caught this, but the runtime witness backstops it).
+# v179 lazy-boot fix (Sid, this sprint): before v179 the cron-runner
+# integration hook only fired under `astro dev` / `astro preview` via
+# `astro:server:start` — the compiled standalone Node server
+# (`dist/server/entry.mjs`) never ran the integration pipeline, so cron
+# never booted in production and this probe's boot-lines count was
+# always 0 (a known-false-negative, documented here). With v179's
+# `bootFromEnv()` call inside src/middleware.ts, the boot line is
+# emitted on the first request (probe 8a's GET /api/docs is enough to
+# light it). Starting this deploy, `boot-lines=1` / `ts-iso-lines=1` is
+# the expected happy-path observation; silence now means the middleware
+# lazy-boot seam regressed (the middleware is bundled into dist/server —
+# grep for `bootFromEnv` in dist to verify, or inspect docker logs).
 echo "==> [deploy] Witnessing v173 cron-runner stderr boot line (shared clock.logJson seam)…"
 CRON_BOOT_LOG_FILE="$(mktemp)"
 docker logs "${CONTAINER_NAME}" 2>&1 > "${CRON_BOOT_LOG_FILE}" || true
@@ -1918,6 +2025,76 @@ if [ "${PCONSOLE_HAS_DIFF}" -lt 1 ] || [ "${PCONSOLE_HAS_DRIFT_ZERO}" -lt 1 ]; t
 fi
 if [ "${PCONSOLE_HAS_CHUNK}" -lt 1 ]; then
   echo "==> [deploy] ⚠ /api/docs missing 'parity-console' client chunk reference — page-chunk import may have been tree-shaken out (container still up)." >&2
+fi
+
+# ── 8n. v179 CiteFlash + ApiAlso warm-up — design-system primitives ────────
+# v179 consolidates copy→arrive acknowledgement onto TWO reusable primitives:
+#   · <CiteFlash /> — one 10px gold dot that rides inline next to a citable
+#     region's title; the IIFE binds a document-level `copy` listener on
+#     `[data-citable]` regions and plays `@keyframes cite-flash` on every
+#     successful copy, then lights `@keyframes cite-flash-lit` once
+#     `/api/docs/arrival?r=<nonce>` returns 200 (same third-mouth handler
+#     the v177 ArrivalReceipt trilogy probes in 8k.a–8k.g).
+#   · <ApiAlso endpoint=… params=… /> — a small chip that reveals a one-
+#     line `curl "${origin}/api/docs/cite?axis=…&stage=…"` popover on
+#     hover/focus. The IIFE swaps a server-rendered `__ORIGIN__` tag for
+#     `window.location.origin` on boot so prerendered HTML stays host-
+#     agnostic (same discipline cell-cite.ts uses — no baked-in hostnames).
+# Both primitives mount on /api/docs this sprint: CiteFlash next to the
+# matrix h2 ("The grammar, whole."), ApiAlso inside the endpoint docs dd
+# for the /api/docs/cite row (the keyboard-first curl reveal, Paul MH-3).
+#
+# The build-time prebuild guard (`check-cite-flash-reuse.ts`, WARN mode
+# this wedge) is where the consolidation teeth live — see the §4 guard
+# block above. This runtime probe is the deploy-time witness that the
+# SSR page actually carries the primitives on the wire AND that their
+# inline <script> IIFEs did not crash the page at module-resolution time.
+#
+# Four markers asserted in one GET /api/docs fetch (reusing an existing
+# probe's body would conflate concerns; this is a fresh curl):
+#   (a) `data-cite-flash-root`   — the CiteFlash span's stable DOM handle.
+#                                   Presence proves the component mounted
+#                                   (a render-throw inside the frontmatter
+#                                   would 500 the page) AND the client
+#                                   IIFE's `queryRoot()` has a target.
+#   (b) `data-citable`           — at least one ancestor region carries
+#                                   the attr. Without it the copy listener
+#                                   never fires; with it the matrix
+#                                   participates in the flash ceremony.
+#                                   v179 adds `data-citable` to
+#                                   `.api-docs__matrix`.
+#   (c) `data-api-also-root`     — the ApiAlso span's stable DOM handle.
+#                                   Presence proves the chip rendered and
+#                                   its origin-rebinding IIFE has a target
+#                                   to rewrite on boot.
+#   (d) `__ORIGIN__`             — the placeholder string IS expected to
+#                                   be on the wire (server doesn't know
+#                                   the caller origin; the browser IIFE
+#                                   swaps it at boot). Its presence proves
+#                                   the curl literal was assembled at SSR.
+#
+# Observational only — failure WARNs; the build-time guard is the teeth.
+echo "==> [deploy] Warming up /api/docs CiteFlash + ApiAlso primitives (v179 design-system consolidation)…"
+CITEFLASH_BODY_FILE="$(mktemp)"
+CITEFLASH_STATUS=$(curl --silent --show-error --output "${CITEFLASH_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/api/docs" \
+  || echo '000')
+CITEFLASH_BODY_LEN=$(wc -c < "${CITEFLASH_BODY_FILE}" | tr -d ' ')
+CITEFLASH_HAS_ROOT=$(grep -c 'data-cite-flash-root' "${CITEFLASH_BODY_FILE}" || true)
+CITEFLASH_HAS_CITABLE=$(grep -c 'data-citable' "${CITEFLASH_BODY_FILE}" || true)
+CITEFLASH_HAS_APIALSO=$(grep -c 'data-api-also-root' "${CITEFLASH_BODY_FILE}" || true)
+CITEFLASH_HAS_ORIGIN_TAG=$(grep -c '__ORIGIN__' "${CITEFLASH_BODY_FILE}" || true)
+CITEFLASH_HAS_CURL_PREFIX=$(grep -c 'curl -s ' "${CITEFLASH_BODY_FILE}" || true)
+rm -f "${CITEFLASH_BODY_FILE}"
+echo "==> [deploy] /api/docs CiteFlash+ApiAlso: HTTP ${CITEFLASH_STATUS} · body=${CITEFLASH_BODY_LEN}B · cite-flash-root=${CITEFLASH_HAS_ROOT} · data-citable=${CITEFLASH_HAS_CITABLE} · api-also-root=${CITEFLASH_HAS_APIALSO} · origin-tag=${CITEFLASH_HAS_ORIGIN_TAG} · curl-literal=${CITEFLASH_HAS_CURL_PREFIX}"
+if [ "${CITEFLASH_STATUS}" != "200" ] || [ "${CITEFLASH_HAS_ROOT}" -lt 1 ] \
+   || [ "${CITEFLASH_HAS_CITABLE}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing v179 CiteFlash markers (data-cite-flash-root / data-citable) — component mount or [data-citable] host regressed (container still up)." >&2
+fi
+if [ "${CITEFLASH_HAS_APIALSO}" -lt 1 ] || [ "${CITEFLASH_HAS_ORIGIN_TAG}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing v179 ApiAlso markers (data-api-also-root / __ORIGIN__ placeholder) — chip didn't render or curl literal assembly regressed (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

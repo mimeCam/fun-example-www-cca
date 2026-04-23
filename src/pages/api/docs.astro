@@ -69,6 +69,13 @@ import '../../styles/arrival-receipt.css';
 // section); the component owns its own section shell + a11y labels.
 import ParityConsole from '../../components/ParityConsole.astro';
 import '../../styles/parity-console.css';
+// v179 "CiteFlash" — one shared flash mark + one "Also via API" chip for
+// every citable region on the page. The mark is data-attr-addressable
+// (the IIFE listens at document-level for `copy` events inside
+// `[data-citable]` regions). Zero new tokens (Tanya §2/§3, Mike §4).
+import CiteFlash from '../../components/CiteFlash.astro';
+import ApiAlso from '../../components/ApiAlso.astro';
+import '../../styles/cite-flash.css';
 
 // v177 — gate client-side payload on `?r=` presence. Non-arrival readers
 // pay zero bytes for the acknowledge flow (Mike napkin §5.6).
@@ -233,7 +240,13 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
        with the exact CSS each cell documents. Not a new page, not a new
        route, not a content-negotiated JSON contract: an appendix, anchored. */}
     <section class="api-docs__section api-docs__matrix-section" aria-labelledby="matrix-heading">
-      <h2 id="matrix-heading" class="api-docs__h2">The grammar, whole.</h2>
+      <h2 id="matrix-heading" class="api-docs__h2">
+        The grammar, whole.
+        {/* v179 CiteFlash — the flash mark rides inline next to the section
+           title. One mount per page (Mike §4); the IIFE listens document-
+           wide for `copy` events inside [data-citable] regions. */}
+        <CiteFlash id="matrix-cite-flash" />
+      </h2>
       <p class="api-docs__lede">
         Seven axes, five stages. Each cell below is rendered with the exact
         CSS it documents — if a cell looks wrong, the axis is wrong, not the
@@ -294,7 +307,7 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
         </p>
       </div>
 
-      <div class="api-docs__matrix" role="table" aria-labelledby="matrix-heading">
+      <div class="api-docs__matrix" role="table" aria-labelledby="matrix-heading" data-citable>
         <div class="api-docs__matrix-row api-docs__matrix-row--head" role="row">
           <div class="api-docs__matrix-rowhead api-docs__matrix-corner" role="columnheader" aria-hidden="true"></div>
           {DECAY_STAGES.map((stage) => (
@@ -418,6 +431,13 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
             <code class="api-docs__inline">application/json</code> (via
             <code class="api-docs__inline">Accept</code>). Byte-identical to
             what the click and keystroke mouths place on the clipboard.
+            {/* v179 ApiAlso — keyboard-first curl reveal. Paul MH-3 KPI. */}
+            <ApiAlso
+              endpoint="/api/docs/cite"
+              method="GET"
+              params={{ axis: 'typography', stage: 'fresh' }}
+              id="api-also-cite"
+            />
           </dd>
         </div>
         <div class="api-docs__row">

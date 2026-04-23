@@ -1,0 +1,175 @@
+/* src/styles/cite-flash.css
+ * v179 "CiteFlash" — one source of truth for the copy→arrive receipt flash.
+ *
+ * Tokens consumed (no new ones authored — Elon §3.3 veto respected):
+ *   · --motion-cite-ack-duration  (motion.css L79, alias of --motion-flow-duration)
+ *   · --motion-flow-easing
+ *   · --gold, --gold-glow
+ *   · --radius-full, --shadow-chip
+ *   · --text-xs, --text-tertiary, --space-2
+ *
+ * Two keyframes only (`cite-flash` + `cite-flash-lit`) — any duplicate is a
+ * sprint-by-sprint drift vector the prebuild guard catches
+ * (scripts/check-cite-flash-reuse.ts).
+ *
+ * Motion gate (Tanya §3.1): the flash is only painted when `.cite-flash--
+ * playing` lands — i.e., in response to a real copy event. Idle state is
+ * visually invisible (opacity 0, pointer-events none). No ambient pulse.
+ *
+ * Credits: Tanya Donska (§2 "one accent color" + §3.3 choreography),
+ *          Mike Koch (napkin §4 CSS budget), Elon (§3.3 no new tokens).
+ */
+
+/* ── The mark — a single 10px gold dot that rides inline flow. ───────── */
+.cite-flash {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  margin-inline-start: var(--space-2);
+  vertical-align: middle;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity  var(--motion-cite-ack-duration) var(--motion-flow-easing),
+    transform var(--motion-cite-ack-duration) var(--motion-flow-easing);
+  pointer-events: none;
+}
+
+/* ── Playing — the 200ms sweep that plays on every successful copy. ──── */
+.cite-flash--playing {
+  animation: cite-flash var(--motion-cite-ack-duration) var(--motion-flow-easing) forwards;
+}
+
+/* ── Lit — /api/docs/arrival returned 200. The dot turns gold and lingers
+ *     for one beat before fading cleanly. Paired with `--playing`. */
+.cite-flash--lit {
+  animation: cite-flash-lit var(--motion-cite-ack-duration) var(--motion-flow-easing) forwards;
+  background: var(--gold);
+  box-shadow: var(--shadow-chip);
+}
+
+/* ── Keyframe A — idle → visible. The only "copy happened" sweep. ───── */
+@keyframes cite-flash {
+  0%   { opacity: 0;   transform: scale(0.6); background: transparent; }
+  50%  { opacity: 0.9; transform: scale(1.1); background: var(--gold-glow); }
+  100% { opacity: 1;   transform: scale(1);   background: var(--gold-dim); }
+}
+
+/* ── Keyframe B — visible → lit. Runs after arrival 200, then rests. ── */
+@keyframes cite-flash-lit {
+  0%   { opacity: 1; transform: scale(1);    background: var(--gold-dim); }
+  50%  { opacity: 1; transform: scale(1.18); background: var(--gold);     }
+  100% { opacity: 1; transform: scale(1);    background: var(--gold);     }
+}
+
+/* ── SR mirror — never visible, announced polite on each copy. ───────── */
+.cite-flash-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Reduced motion — collapse keyframes to a two-frame state swap. ── */
+@media (prefers-reduced-motion: reduce) {
+  .cite-flash { transition: none; }
+  .cite-flash--playing,
+  .cite-flash--lit { animation: none; }
+  .cite-flash--playing { opacity: 1; transform: scale(1); background: var(--gold-dim); }
+  .cite-flash--lit     { opacity: 1; transform: scale(1); background: var(--gold); }
+}
+
+/* ── ApiAlso chip — shares the file because the two features ship as a
+ *     pair (Mike napkin §4). Keeping one stylesheet keeps the shadow tier
+ *     and border radii in lockstep. */
+
+.api-also {
+  position: relative;
+  display: inline-block;
+}
+
+.api-also__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gold-border);
+  background: var(--surface-raised);
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: var(--transition-hover);
+}
+
+.api-also__chip:hover,
+.api-also__chip:focus-visible {
+  background: var(--surface-hover);
+  color: var(--gold);
+  box-shadow: var(--shadow-chip);
+  outline: none;
+}
+
+.api-also__glyph {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 0.9em;
+  color: var(--gold-dim);
+}
+
+.api-also__label {
+  letter-spacing: 0.02em;
+}
+
+.api-also__popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-card, 12px);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-chip);
+  border: 1px solid var(--gold-border);
+}
+
+.api-also__curl {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  user-select: all;
+  white-space: nowrap;
+}
+
+.api-also__copy {
+  font-size: var(--text-xs);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gold-border);
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  transition: var(--transition-hover);
+}
+
+.api-also__copy:hover,
+.api-also__copy:focus-visible {
+  background: var(--gold-bg);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .api-also__chip,
+  .api-also__copy { transition: none; }
+}

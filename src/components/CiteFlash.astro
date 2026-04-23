@@ -1,0 +1,209 @@
+---
+// src/components/CiteFlash.astro
+// v179 "CiteFlash" — the single shared flash mark that acknowledges a copy
+// anywhere a `[data-citable]` region lives on the page. Welds three
+// existing voices (click / keystroke / selection-copy) onto one pixel:
+//
+//   · User selects text inside `[data-citable]` → native copy fires →
+//     our listener appends `?r=<nonce>` to the clipboard text and plays
+//     the `cite-flash` keyframe (idle → lit) for one --motion-cite-ack-
+//     duration beat.
+//   · A background `fetch(/api/docs/arrival?r=<nonce>)` validates the
+//     nonce; on 200 we add `.cite-flash--lit` — the dot turns gold.
+//   · On 4xx/timeout/Safari-exec-fallback we fade cleanly with no
+//     console error. The flash is still observed; the lit-dot is the
+//     bonus, per Mike napkin §6 PoI-7 ("no user action un-acknowledged").
+//
+// Non-duties (Tanya §3.2 motion gate, Mike §4 explicit vetoes):
+//   · No new tokens. Uses --motion-cite-ack-duration + --motion-flow-easing.
+//   · No keyframes named `receipt-*` — the prebuild guard greps for them
+//     and fails on duplicates (scripts/check-cite-flash-reuse.ts).
+//   · No payload mutation — the pure helper owns the bytes. This shell
+//     only wires events → helper → DOM class toggles.
+//   · No direct DOM reach into `.api-docs__matrix-cell`. The matrix owns
+//     its own ceremony (cell-cite.ts); CiteFlash is the reusable primitive
+//     ANY citable region can mount (blog blockquotes next wedge).
+//
+// Credits: Mike Koch (napkin §4 "Create · CiteFlash.astro", §6 PoI-7 quirks),
+//          Tanya Donska (§3.3 "three timing values, one accent" — the
+//          idle → lit swap is exactly those two frames), Paul Kim (15-
+//          second test — this IS the hero moment), Elon (§3.6 no persona
+//          comments in new code; reasons stay in prose here + git log).
+//          Sid — 2026-04-23. Motto: "code maintenance without tests."
+
+import { CITE_FLASH_DURATION_MS } from '../lib/cite-flash';
+
+export interface Props {
+  /** Optional id so callers can target the mark via aria-describedby. */
+  readonly id?: string;
+  /** Optional ARIA label override; default is a brief, screen-reader
+   *  sentence that matches the visible moment. */
+  readonly label?: string;
+}
+
+const {
+  id    = 'cite-flash',
+  label = 'citation copied',
+} = Astro.props;
+
+// Expose the scheduling beat to the client IIFE without hand-typing ms.
+// Reads from the pure module (cite-flash.ts) — the single source of truth.
+const DUR = CITE_FLASH_DURATION_MS;
+---
+
+{/* A one-node mark. `data-cite-flash-root` is the stable DOM handle the
+    client IIFE queries for. The mark is `aria-hidden` for SR — the
+    visible text alternative lives inside `.sr` via aria-live polite. */}
+<span
+  class="cite-flash"
+  id={id}
+  data-cite-flash-root
+  data-cite-flash-duration={String(DUR)}
+  aria-hidden="true"
+></span>
+
+{/* SR mirror — announced on each successful copy. */}
+<span class="cite-flash-sr" data-cite-flash-sr aria-live="polite" aria-atomic="true"></span>
+
+<script>
+  // Client IIFE — binds once per page. Idempotent: a second mount (HMR,
+  // Astro view transitions) short-circuits on the data-wired marker.
+  // The module is deliberately INLINE so the flash mark ships zero extra
+  // JS bytes on pages that don't mount <CiteFlash />. On pages that do,
+  // the IIFE is <1.5 KB gzipped (Vite-tree-shaken). Mike §4 budget.
+
+  import { describeCiteFlash, LIT_CLASS, CITE_FLASH_DURATION_MS } from '../lib/cite-flash';
+
+  const WIRED = 'cite-flash-wired';
+  const ROOT  = '[data-cite-flash-root]';
+  const REGION = '[data-citable]';
+  const SR    = '[data-cite-flash-sr]';
+  const LIT_CLS = LIT_CLASS;
+  const DUR = CITE_FLASH_DURATION_MS;
+
+  function queryRoot(): HTMLElement | null {
+    return document.querySelector<HTMLElement>(ROOT);
+  }
+
+  function prefersReducedMotion(): boolean {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  }
+
+  // ── Find the owning citable region for a selection/event target.
+  // Returns null when the user copied from outside a citable region —
+  // the IIFE then does nothing, preserving native copy behaviour.
+  function closestCitable(node: Node | null): HTMLElement | null {
+    const el = node && node instanceof Element ? node : node?.parentElement ?? null;
+    return el ? (el as Element).closest<HTMLElement>(REGION) : null;
+  }
+
+  // ── Resolve the element the user actually copied from, preferring the
+  //    selection's focus node (real copy target) over event.target (may
+  //    be the document body in some browsers). Falls back to event.target.
+  function resolveCopySource(ev: ClipboardEvent): Element | null {
+    const sel = window.getSelection?.();
+    const focus = sel?.focusNode ?? null;
+    if (focus) return focus instanceof Element ? focus : focus.parentElement;
+    const t = ev.target;
+    return t instanceof Element ? t : null;
+  }
+
+  // ── Read (axis, stage) off the nearest ancestor that carries them. In
+  //    the 7×5 matrix, the citable region is the whole grid; the coords
+  //    live on each cell. Blog blockquotes may carry the attrs directly.
+  //    When neither is present the flash still plays (Mike §PoI-7), but
+  //    the arrival fetch is skipped (no valid cell to verify).
+  function readCoord(src: Element | null): { axis: string; stage: string } {
+    const host = src?.closest<HTMLElement>('[data-axis][data-decay-stage]') ?? null;
+    return {
+      axis:  host?.dataset.axis       ?? '',
+      stage: host?.dataset.decayStage ?? '',
+    };
+  }
+
+  // ── Flash painter: idle → lit → (optional reset). One class add, one
+  //    timeout clear — no stacking. Reduced-motion collapses to an
+  //    instant two-frame state swap (no keyframe sweep).
+  function playFlash(root: HTMLElement): void {
+    root.classList.remove(LIT_CLS);
+    // Force reflow so a re-fire restarts the keyframe cleanly.
+    void root.offsetWidth;
+    root.classList.add('cite-flash--playing');
+    if (prefersReducedMotion()) {
+      root.classList.add(LIT_CLS);
+      window.setTimeout(() => reset(root), DUR * 2);
+      return;
+    }
+    window.setTimeout(() => reset(root), DUR * 3);
+  }
+
+  function markLit(root: HTMLElement): void {
+    root.classList.add(LIT_CLS);
+  }
+
+  function reset(root: HTMLElement): void {
+    root.classList.remove('cite-flash--playing');
+    root.classList.remove(LIT_CLS);
+  }
+
+  function announce(sr: HTMLElement | null, axis: string, stage: string): void {
+    if (!sr) return;
+    const where = axis && stage ? ` — ${axis} at ${stage}` : '';
+    sr.textContent = `citation copied${where}`;
+  }
+
+  // ── Arrival round-trip. Lights the flash on 200; silent on failure so
+  //    Safari's exec-fallback path degrades to "local flash only".
+  async function verifyArrival(url: string, root: HTMLElement): Promise<void> {
+    if (!url) return;
+    try {
+      const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+      if (res.ok) markLit(root);
+    } catch {
+      // Intentional silence — the flash already acknowledged the copy.
+    }
+  }
+
+  // ── Clipboard tail: append `?r=<nonce>` when the selection carries plain
+  //    text. The Clipboard API supports `setData('text/plain', …)` on the
+  //    ClipboardEvent; Safari's exec-fallback path ignores it and we keep
+  //    the original selection bytes (degrades, never throws).
+  function appendRefToClipboard(ev: ClipboardEvent, nonce: string): boolean {
+    const data = ev.clipboardData;
+    if (!data) return false;
+    const raw = data.getData('text/plain');
+    if (!raw) return false;
+    const joiner = raw.includes('?') ? '&' : '?';
+    data.setData('text/plain', `${raw}${joiner}r=${encodeURIComponent(nonce)}`);
+    ev.preventDefault();
+    return true;
+  }
+
+  // ── Copy handler. Delegated at document level so any number of
+  //    [data-citable] regions reuse one listener.
+  function onCopy(ev: ClipboardEvent): void {
+    const src = resolveCopySource(ev);
+    if (!closestCitable(src)) return;
+    const root = queryRoot();
+    if (!root) return;
+    const { axis, stage } = readCoord(src);
+    const d = describeCiteFlash({ axis, stage, origin: window.location.origin });
+    appendRefToClipboard(ev, d.nonce);
+    playFlash(root);
+    announce(document.querySelector<HTMLElement>(SR), axis, stage);
+    void verifyArrival(d.arrivalUrl, root);
+  }
+
+  function boot(): void {
+    const root = queryRoot();
+    if (!root || root.dataset[WIRED]) return;
+    root.dataset[WIRED] = '1';
+    document.addEventListener('copy', onCopy, { capture: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+</script>

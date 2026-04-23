@@ -22,8 +22,16 @@
 
 import { defineMiddleware } from 'astro:middleware';
 import { withClock } from './lib/clock';
+import { bootFromEnv as bootCronFromEnv } from './lib/cron-runner';
 
+// Sid 2026-04-23 deployment.log fix: the `astro:server:start` integration
+// hook is dev-only; production standalone (dist/server/entry.mjs) never
+// fires it, so cron-runner never booted. Lazy-boot on first request; the
+// `booted` guard in cron-runner keeps this idempotent. Middleware is
+// bundled into dist/server, so this runs in production. One-shot, no
+// per-request cost after the first tick.
 export const onRequest = defineMiddleware(async (_context, next) => {
+  bootCronFromEnv();
   // Pin once at request entry. Date.now() here is the ONLY raw read
   // per request — everything downstream routes through clock.ts.
   return withClock(Date.now(), () => next());

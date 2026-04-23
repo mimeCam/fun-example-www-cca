@@ -1,0 +1,191 @@
+---
+// src/components/ApiAlso.astro
+// v179 "Also via API" — a minimal chip that reveals a one-line `curl`
+// equivalent of a citable action. The chip is the compound-leverage half
+// of Mike napkin §4: it sits near the action (the footer /api/docs link
+// in particular), and on hover/focus it reveals a pre-selected `curl`
+// snippet that any reader can paste verbatim.
+//
+// Discipline (Mike §4, Tanya §7):
+//   · One chip, one glyph, one line of preformatted text revealed.
+//   · No dashboard. No iconography inflation. The chip IS the affordance.
+//   · Hover + focus both reveal (keyboard-first per Tanya §4).
+//   · Reveal selects the text so ⌘C / Ctrl+C works without mouse-drag.
+//   · Zero framework JS. One inline <script> that wires the reveal.
+//
+// Non-duties:
+//   · No new tokens; the chip uses --shadow-chip + --radius-full.
+//   · No motion beyond the existing --transition-hover.
+//   · No payload assembly — callers pass the endpoint + params literal.
+//     If the chip drifts from the oracle, check-cite-flash-reuse flags it.
+//
+// Credits: Mike Koch (napkin §4 "Create · ApiAlso.astro", §6 PoI-4 one
+//          oracle), Paul Kim (§6 "Curious Builder chip" — the 3rd KPI),
+//          Tanya Donska (§4.3 keyboard-first reveal), Elon (§5 one chip,
+//          never multiply). Sid — 2026-04-23.
+
+export interface Props {
+  /** The bare endpoint, e.g. "/api/docs/cite". The component prepends
+   *  origin at render time; the reader pastes a full, runnable curl. */
+  readonly endpoint: string;
+  /** Optional HTTP method. Defaults to GET — the only verb the docs API
+   *  exposes on read endpoints. */
+  readonly method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** Optional, caller-supplied search params. Rendered verbatim after
+   *  the endpoint. Omit for "no query string". */
+  readonly params?: Record<string, string>;
+  /** Chip label. Defaults to "Also via API" per Paul MH-3. */
+  readonly label?: string;
+  /** Stable id the chip uses for aria-controls / label association. */
+  readonly id?: string;
+}
+
+const {
+  endpoint,
+  method = 'GET',
+  params,
+  label  = 'Also via API',
+  id     = 'api-also',
+} = Astro.props;
+
+// Build the curl literal at SSR time; origin is NOT baked in — the
+// client IIFE swaps `__ORIGIN__` for window.location.origin on boot,
+// so prerendered HTML stays host-agnostic (same discipline as
+// cell-cite.ts; Paul §non-negotiable).
+const ORIGIN_TAG = '__ORIGIN__';
+const qs = params
+  ? '?' + Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')
+  : '';
+const methodFlag = method === 'GET' ? '' : `-X ${method} `;
+const curlLine = `curl -s ${methodFlag}"${ORIGIN_TAG}${endpoint}${qs}"`;
+const popoverId = `${id}-popover`;
+---
+
+<span
+  class="api-also"
+  data-api-also-root
+  data-origin-tag={ORIGIN_TAG}
+>
+  <button
+    type="button"
+    class="api-also__chip"
+    id={id}
+    aria-expanded="false"
+    aria-controls={popoverId}
+    data-api-also-trigger
+  >
+    <span class="api-also__glyph" aria-hidden="true">&gt;_</span>
+    <span class="api-also__label">{label}</span>
+  </button>
+
+  <span
+    class="api-also__popover"
+    id={popoverId}
+    role="region"
+    aria-labelledby={id}
+    hidden
+  >
+    <code class="api-also__curl" data-api-also-curl>{curlLine}</code>
+    <button
+      type="button"
+      class="api-also__copy"
+      data-api-also-copy
+      aria-label="copy curl to clipboard"
+    >copy</button>
+  </span>
+</span>
+
+<script>
+  // Client IIFE — one listener, four roots maximum per page (the chip is
+  // meant to be rare, per Tanya §7 "no chip inflation"). Kept inline so
+  // pages that don't mount ApiAlso ship zero extra JS.
+
+  const ROOT_SEL    = '[data-api-also-root]';
+  const TRIG_SEL    = '[data-api-also-trigger]';
+  const CURL_SEL    = '[data-api-also-curl]';
+  const COPY_SEL    = '[data-api-also-copy]';
+  const POP_SEL     = '.api-also__popover';
+  const OPEN_CLS    = 'is-open';
+  const WIRED       = 'apiAlsoWired';
+
+  function rebindOrigin(root: HTMLElement): void {
+    const tag = root.dataset.originTag ?? '__ORIGIN__';
+    const code = root.querySelector<HTMLElement>(CURL_SEL);
+    if (!code) return;
+    const origin = window.location.origin;
+    code.textContent = (code.textContent ?? '').replace(tag, origin);
+  }
+
+  function openPopover(root: HTMLElement): void {
+    const pop = root.querySelector<HTMLElement>(POP_SEL);
+    const trig = root.querySelector<HTMLElement>(TRIG_SEL);
+    if (!pop || !trig) return;
+    pop.hidden = false;
+    trig.setAttribute('aria-expanded', 'true');
+    root.classList.add(OPEN_CLS);
+    selectCurl(root);
+  }
+
+  function closePopover(root: HTMLElement): void {
+    const pop = root.querySelector<HTMLElement>(POP_SEL);
+    const trig = root.querySelector<HTMLElement>(TRIG_SEL);
+    if (!pop || !trig) return;
+    pop.hidden = true;
+    trig.setAttribute('aria-expanded', 'false');
+    root.classList.remove(OPEN_CLS);
+  }
+
+  function selectCurl(root: HTMLElement): void {
+    const code = root.querySelector<HTMLElement>(CURL_SEL);
+    if (!code || !window.getSelection) return;
+    const range = document.createRange();
+    range.selectNodeContents(code);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }
+
+  function copyCurl(root: HTMLElement): void {
+    const code = root.querySelector<HTMLElement>(CURL_SEL);
+    if (!code) return;
+    const text = code.textContent ?? '';
+    try {
+      void navigator.clipboard?.writeText(text);
+    } catch {
+      // Fallback: selection is already active from openPopover; user Cmd+C.
+    }
+  }
+
+  function onDocClick(root: HTMLElement, ev: MouseEvent): void {
+    if (!root.contains(ev.target as Node)) closePopover(root);
+  }
+
+  function wire(root: HTMLElement): void {
+    if (root.dataset[WIRED]) return;
+    root.dataset[WIRED] = '1';
+    rebindOrigin(root);
+    const trig = root.querySelector<HTMLElement>(TRIG_SEL);
+    const copy = root.querySelector<HTMLElement>(COPY_SEL);
+    trig?.addEventListener('click', () => {
+      const open = trig.getAttribute('aria-expanded') === 'true';
+      open ? closePopover(root) : openPopover(root);
+    });
+    trig?.addEventListener('focus', () => openPopover(root));
+    root.addEventListener('mouseleave', () => closePopover(root));
+    copy?.addEventListener('click', () => { copyCurl(root); closePopover(root); });
+    document.addEventListener('click', (ev) => onDocClick(root, ev));
+    root.addEventListener('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') closePopover(root);
+    });
+  }
+
+  function boot(): void {
+    document.querySelectorAll<HTMLElement>(ROOT_SEL).forEach(wire);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+</script>
