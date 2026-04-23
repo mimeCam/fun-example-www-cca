@@ -11,6 +11,138 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
+# ── Sprint "v178 Parity Console" (2026-04-23) — on-page tri-mouth proof ──
+#   Pure-discipline wedge that brings the "three mouths, one byte" identity
+#   ON-PAGE, inside /api/docs, as a reading-column section (Tanya UX §7).
+#   ONE new pure producer (src/lib/parity-proof.ts::buildProof), ONE new
+#   SSR component (src/components/ParityConsole.astro), ONE new client
+#   module (src/lib/client/parity-console.ts), ONE new prebuild guard
+#   (scripts/check-parity-proof.ts — `--error` from day one, no warn mode),
+#   ONE new unit+integration suite (src/lib/parity-proof.test.ts — 35
+#   cells + VALID_REF_FIXTURES + byteDrift unit tests). The citation-
+#   delegation guard's TARGETS literal grows 4 → 6 — the SSR proof file
+#   AND the client repainter are both now registered as oracle consumers,
+#   so any future file-level reimplementation of `cellCitationPayload`
+#   inside EITHER module fails the prebuild (same teeth the existing
+#   four targets already have).
+#
+#   Infrastructure deltas this sprint: NONE.
+#     · No new env vars, ports, services, named volumes, docker networks,
+#       or npm deps. Everything ships via the existing `COPY scripts/` +
+#       `COPY src/` + `COPY package.json` layers at the top of the
+#       builder stage — the next `docker build --no-cache` picks them up
+#       without a Dockerfile edit. The existing `persona-blog-a-data`
+#       + `persona-blog-a-sqlite` volumes are reused as-is. No schema
+#       migrations, no new API surfaces — the client repainter refetches
+#       from the EXISTING `GET /api/docs/cite` terminal mouth (already
+#       warmed in probe 8a + 8f), so no new route to probe.
+#     · PREBUILD CHAIN FLIPS: two new lines join the wall. One guard
+#       (inserted right after `check-tri-mouth.ts --error`):
+#         `npx tsx scripts/check-parity-proof.ts`
+#       — sweeps 35 cells + VALID_REF_FIXTURES and asserts `driftBytes
+#       === 0` for every ParityProof (fail-closed, no warn phase). One
+#       test (inserted right after `test:citation-golden`):
+#         `npx tsx --test src/lib/parity-proof.test.ts`
+#       — locks byteDrift semantics (UTF-8 byte length, not code-unit),
+#       sweeps every (axis, stage), and asserts pointer ≡ keyboard ≡
+#       curl byte-for-byte. Any drift in ANY of the three mouths fails
+#       `npm run build` → image build fails → this script exits non-zero
+#       → previous container stays stopped → operator re-runs after fix.
+#     · check-citation-delegation guard: the TARGETS literal grows from
+#       four files to six (v178 adds `src/lib/parity-proof.ts` and
+#       `src/lib/client/parity-console.ts`). Every consumer of
+#       `cellCitationPayload` is now registered as an oracle delegate;
+#       a future reimplementation in EITHER new file would fail the
+#       existing delegation guard (unchanged teeth, wider reach).
+#
+#   What shipped in the active git area this cycle (staged/unstaged):
+#     • src/lib/parity-proof.ts (NEW, ~160 lines) — the pure producer.
+#       `buildProof(axis, stage, origin, ref?)` assembles the three mouth
+#       payloads: pointer and keyboard both route through the SAME
+#       `cellCitationPayload()` oracle (the UI split is for the reader —
+#       the bytes are one oracle); curl dispatches through
+#       `curlMouthPayload()` (the existing handler-invoking helper
+#       citation-golden.ts owns). `byteDrift(...strings)` is the pure
+#       UTF-8-byte pairwise witness (returns 0 iff every string is
+#       byte-identical to the first). `proofSweep(origin)` yields one
+#       ParityProof per (axis, stage) — the prebuild guard's input.
+#       `defaultProof(origin)` is the SSR convenience for the grid's
+#       origin cell (`typography × fresh`). `diffSentence(proof)` is
+#       the narrator ("0 bytes · pointer ≡ keyboard ≡ curl" at rest).
+#     • src/components/ParityConsole.astro (NEW, ~113 lines) — the
+#       on-page demonstrator. Reading-column section, SSR-rendered,
+#       mounted on /api/docs right below the matrix (above the endpoint
+#       docs). Three `<figure data-pane="…">` panes (pointer / keyboard /
+#       curl), each showing the exact payload for the currently-focused
+#       cell (or the rest-state origin). One `data-parity-diff` line
+#       whose `data-drift` attr flips between `zero` and `drift` — with
+#       `data-drift="zero"` the line reads the parity sentence. One
+#       `data-parity-jump` anchor that keyboard users use to land on
+#       the focused cell.
+#     • src/lib/client/parity-console.ts (NEW, ~206 lines) — the DOM
+#       repainter. One `focus` listener (capture; `focus` does not
+#       bubble) on `.api-docs__matrix`. On focus-change: rewrite pointer
+#       + keyboard panes from the oracle (pure), mark the curl pane
+#       pending, refetch `/api/docs/cite?axis=…&stage=…` with
+#       `cache: 'no-store'`, write the curl bytes, repaint the diff
+#       line via the SHARED `byteDrift()` / `diffSentence()` from
+#       parity-proof.ts. Fail-closed: curl errors render as "—" in
+#       the pane and "curl pending" in the diff line (never red,
+#       never blocking).
+#     • src/styles/parity-console.css (NEW) — tokens-only section
+#       shell + pane grid + diff line. Motion fires ONLY when drift > 0
+#       (arrival / drift-narration only — at rest, zero frames); a
+#       reduced-motion sanctuary drops even that.
+#     • scripts/check-parity-proof.ts (NEW, ~103 lines) — the prebuild
+#       guard. Walks 35 (axis × stage) cells + every VALID_REF_FIXTURES
+#       nonce and asserts `driftBytes === 0` for every resulting
+#       ParityProof. Single success line (`✅ check-parity-proof: N
+#       proofs green (drift=0 everywhere).`) on the happy path; one
+#       grep-friendly finding per drift on failure. `--error` mode from
+#       day one per Mike napkin §5 (no warn purgatory).
+#     • src/lib/parity-proof.test.ts (NEW, ~151 lines) — unit +
+#       handler-integration suite. byteDrift pure semantics (empty /
+#       single / identical / differing / UTF-8 multibyte edge cases),
+#       default-cell wiring, full 35-cell sweep with driftBytes === 0,
+#       VALID_REF_FIXTURES sweep (pointer leg equals oracle
+#       byte-for-byte), proofSweep() row count equals
+#       STAGE_AXES × DECAY_STAGES, diffSentence narrator phrasing
+#       ("0 bytes · pointer ≡ keyboard ≡ curl" at rest vs
+#       "<N> bytes drift" on drift).
+#     • scripts/check-citation-delegation.ts (UPDATED, +9) — TARGETS
+#       literal grows 4 → 6: adds `src/lib/parity-proof.ts`
+#       (requiredSymbols: cellCitationPayload, cellCitationLabel,
+#       cellAnchorId — the SSR helper imports all three) and
+#       `src/lib/client/parity-console.ts` (requiredSymbols:
+#       cellCitationPayload — the client repainter routes pointer +
+#       keyboard through it). Mouth strings: "parity proof (SSR)" /
+#       "parity console (client)".
+#     • scripts/check-citation-delegation.test.ts (UPDATED, +15/−3) —
+#       TARGETS.length assertion flips 4 → 6; new test asserts both new
+#       paths are registered.
+#     • src/pages/api/docs.astro (UPDATED, +16) — imports
+#       `ParityConsole` + `parity-console.css`; mounts `<ParityConsole />`
+#       inside the reading column, right below the matrix; imports
+#       `../../lib/client/parity-console` inside the page's `<script>`
+#       so the client module bundles with the docs chunk.
+#     • package.json (UPDATED, +2/−1 on prebuild + 2 new npm scripts) —
+#       prebuild chain grows one guard (after `check-tri-mouth.ts
+#       --error`) and one test (after `test:citation-golden`). Two new
+#       convenience scripts: `check:parity-proof` +
+#       `test:parity-proof`.
+#
+#   Credits: Mike Koch (napkin §2 shape, §4 file table + LoC budget,
+#   §5 points-of-interest — origin discipline, no-trailing-newline,
+#   no-store on refetch, fail-closed curl pane, zero-new-animations,
+#   §6 work distribution, §8 shipping criteria), Tanya Donska (UX spec
+#   §7 tri-mouth proof strip "bring it on-page", §10 motion roster —
+#   motion narrates drift only, §11 rounded-corner discipline —
+#   container > detail), Elon Musk (§1 red-line — prebuild guards are
+#   the moat, §5 "bring it on-page"), Paul Kim (§7 90-second
+#   make-or-break test — can a reader eyeball parity in one glance?),
+#   AGENTS.md (freeze, one-oracle), Sid — 2026-04-23.
+#   Motto: "code maintenance without tests."
+#
 # ── Sprint "v173 Ledger+Jobs Wedge" (2026-04-23) — clock-seam migration ──
 #   Pure-discipline wedge between v177.1 and the next big feature: 17
 #   raw `Date.now()` / `new Date()` callsites across ten ledger + cron
@@ -607,6 +739,37 @@
 #       All three derive their receipt from the same `buildArrivalReceipt`
 #       pure function — probe (c) is the byte-identical anchor for the
 #       falsifiable criterion (Mike napkin §5.10).
+#   8m. Warm the v178 "Parity Console" on-page demonstrator. SSR-render
+#       /api/docs and grep for seven markers that prove the new reading-
+#       column section shipped AND the SSR helper dispatched cleanly
+#       through the citation oracle:
+#         · `data-parity-console`             — section root (component
+#           mounted; a render-throw inside `await defaultProof(…)` would
+#           500 the whole page before any HTML reached the wire).
+#         · `Three mouths, one byte.`         — the section h2 copy
+#           (plain-word user-facing title; Tanya §7).
+#         · `data-pane-body="pointer"`        — the three pane bodies,
+#         · `data-pane-body="keyboard"`         one per mouth. Presence
+#         · `data-pane-body="curl"`             of all three proves the
+#                                               panes map rendered and
+#                                               each carries a non-empty
+#                                               `<code>` body.
+#         · `0 bytes · pointer ≡ keyboard ≡ curl` — the diff sentence at
+#           rest. `diffSentence(proof)` emits this EXACT string iff
+#           `driftBytes === 0`; its presence on the wire is the deploy-
+#           time witness that the SSR helper's three-mouth parity
+#           invariant held for the default cell (`typography × fresh`).
+#         · `parity-console` client module reference — inside the
+#           bundled script chunk, the module is imported from docs.astro;
+#           its name surfaces in the emitted chunk filename. Presence
+#           proves the page-chunk import did not silently break.
+#       Observational build-time truth is the actual gate: the prebuild
+#       guard (`check-parity-proof.ts`) sweeps 35 cells +
+#       VALID_REF_FIXTURES at image-build time and fails the image on
+#       ANY non-zero drift (→ operator redeploys after fix). This probe
+#       is the "live container carries the proof" witness — a regression
+#       here WARNs without tearing the container down.
+#
 #   8l. Witness the v173 ledger+jobs wedge on the wire by reading
 #       `docker logs` and grepping for the cron-runner boot stderr line.
 #       The cron-runner integration hook fires on `astro:server:start`
@@ -671,6 +834,18 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     next two flagged: presence-hub (6 callsites), live-decay (5).
 #     Plus cell-heat (3) puts the guard's own promotion within reach
 #     of the wedge AFTER next)  →
+#   check-parity-proof (v178 TWELFTH guard — NEW this sprint. Imports
+#     `buildProof` / `proofSweep` from src/lib/parity-proof.ts and
+#     sweeps 35 (axis, stage) cells + every VALID_REF_FIXTURES nonce;
+#     asserts `driftBytes === 0` for every resulting ParityProof. No
+#     warn phase — `--error` mode from day one (Mike napkin §5). The
+#     new on-page `<ParityConsole />` demonstrator renders bytes
+#     directly from this producer, so a non-zero drift here would mean
+#     the reader SEES drift in the browser — catching it at image-build
+#     time keeps the console's "0 bytes" claim honest on the wire.
+#     Single success line `✅ check-parity-proof: N proofs green` on
+#     the happy path; grep-friendly single-line findings on failure.
+#     Runs right after `check-tri-mouth --error`)  →
 #   check-tri-mouth --error (v173 ELEVENTH guard — v176 PR-E flipped from
 #     WARN → ERROR this sprint. Walks the frozen `TRI_MOUTH_ACTIONS`
 #     literal in src/lib/tri-mouth-inventory.ts and enforces six
@@ -722,7 +897,17 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     keep-hotkey + revive-hotkey so all four keyboard mouths coexist
 #     without any listener racing another on a single keystroke)  →
 #   test:keep-legend → test:chip-lit → test:arrival →
-#   test:citation-golden → test:journey-golden →
+#   test:citation-golden →
+#   test:parity-proof (v178 NEW — joined the prebuild chain this sprint,
+#     right after `test:citation-golden`. Unit + integration suite for
+#     src/lib/parity-proof.ts: byteDrift UTF-8 semantics (multibyte "×"
+#     vs "x" drifts even though code-unit length matches), default-cell
+#     wiring (typography × fresh, SENTINEL_ORIGIN), full 35-cell sweep
+#     with `driftBytes === 0`, VALID_REF_FIXTURES sweep asserting
+#     pointer leg equals `cellCitationPayload(…)` byte-for-byte,
+#     `proofSweep()` row count equals STAGE_AXES × DECAY_STAGES, and
+#     `diffSentence()` narrator phrasing at rest vs under drift)  →
+#   test:journey-golden →
 #   test:api-stamp-golden (v170 — proves jsonStamped's six napkin
 #     acceptance properties: shape, pin identity within scope, nested-
 #     scope isolation, body preservation, seam-overrides-caller, cross-
@@ -1640,6 +1825,99 @@ if [ "${CRON_BOOT_HITS}" -lt 1 ]; then
 fi
 if [ "${CRON_BOOT_TS_HITS}" -lt 1 ]; then
   echo "==> [deploy] ⚠ v173 cron-runner boot line missing ISO-8601 'ts' stamp — clock.logJson seam regressed on the wire (container still up)." >&2
+fi
+
+# ── 8m. v178 "Parity Console" warm-up — on-page tri-mouth proof section ──
+# v178 mounts a new reading-column section on /api/docs that displays the
+# three-mouth citation payload for the currently-focused cell + a diff
+# line that reads `0 bytes · pointer ≡ keyboard ≡ curl` at rest. The
+# prebuild guard (`check-parity-proof.ts`) is the actual gate — it sweeps
+# 35 cells + every VALID_REF_FIXTURES nonce at image-build time and fails
+# the image on ANY non-zero drift. This runtime probe is the deploy-time
+# witness that the shipped container actually carries the section AND
+# that the SSR helper `defaultProof()` dispatched through the citation
+# oracle without throwing. We grep SEVEN markers against one /api/docs
+# fetch (reusing the ongoing GET from 8k.a would conflate concerns):
+#   (a) `data-parity-console`                     — section root
+#                                                    attribute. Presence
+#                                                    proves the component
+#                                                    mounted (a render-
+#                                                    throw inside
+#                                                    `await defaultProof`
+#                                                    would 500 the page).
+#   (b) `Three mouths, one byte.`                 — the h2 copy. Plain-
+#                                                    word title (Tanya
+#                                                    §7); presence proves
+#                                                    the shell header
+#                                                    rendered.
+#   (c) `data-pane-body="pointer"`                — pointer pane. One of
+#   (d) `data-pane-body="keyboard"`                 three mouths; all
+#   (e) `data-pane-body="curl"`                     three must be present
+#                                                    for the panes map
+#                                                    to have three entries
+#                                                    at runtime (the
+#                                                    client repainter
+#                                                    fail-closes if
+#                                                    panes.size !== 3).
+#   (f) `0 bytes · pointer ≡ keyboard ≡ curl`    — the diff sentence at
+#                                                    rest. emitted by
+#                                                    `diffSentence(p)`
+#                                                    iff driftBytes===0;
+#                                                    its presence on the
+#                                                    wire is the deploy-
+#                                                    time witness that
+#                                                    the SSR producer's
+#                                                    three-mouth parity
+#                                                    held for the default
+#                                                    cell (typography ×
+#                                                    fresh).
+#   (g) `parity-console` chunk reference          — the bundled client
+#                                                    module's public-id
+#                                                    surfaces in the
+#                                                    docs page's emitted
+#                                                    <script type="module"
+#                                                    src="…"> tag.
+#                                                    Presence proves the
+#                                                    page-chunk import
+#                                                    (inside the docs
+#                                                    <script> block)
+#                                                    resolved and Vite
+#                                                    bundled a reachable
+#                                                    chunk — a bad import
+#                                                    would 500 the page
+#                                                    before any HTML
+#                                                    reached the wire.
+# Observational only — failure WARNs; the image-build guard is the teeth.
+echo "==> [deploy] Warming up /api/docs parity console (v178 on-page tri-mouth demonstrator)…"
+PCONSOLE_BODY_FILE="$(mktemp)"
+PCONSOLE_STATUS=$(curl --silent --show-error --output "${PCONSOLE_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/api/docs" \
+  || echo '000')
+PCONSOLE_BODY_LEN=$(wc -c < "${PCONSOLE_BODY_FILE}" | tr -d ' ')
+PCONSOLE_HAS_ROOT=$(grep -c 'data-parity-console' "${PCONSOLE_BODY_FILE}" || true)
+PCONSOLE_HAS_TITLE=$(grep -c 'Three mouths, one byte\.' "${PCONSOLE_BODY_FILE}" || true)
+PCONSOLE_HAS_POINTER=$(grep -c 'data-pane-body="pointer"' "${PCONSOLE_BODY_FILE}" || true)
+PCONSOLE_HAS_KEYBOARD=$(grep -c 'data-pane-body="keyboard"' "${PCONSOLE_BODY_FILE}" || true)
+PCONSOLE_HAS_CURL=$(grep -c 'data-pane-body="curl"' "${PCONSOLE_BODY_FILE}" || true)
+# The diff sentence contains a non-ASCII `≡` (U+2261). Use grep -F for a
+# literal fixed-string match so the sentence is compared byte-for-byte.
+PCONSOLE_HAS_DIFF=$(grep -cF '0 bytes · pointer ≡ keyboard ≡ curl' "${PCONSOLE_BODY_FILE}" || true)
+PCONSOLE_HAS_DRIFT_ZERO=$(grep -c 'data-drift="zero"' "${PCONSOLE_BODY_FILE}" || true)
+PCONSOLE_HAS_CHUNK=$(grep -c 'parity-console' "${PCONSOLE_BODY_FILE}" || true)
+rm -f "${PCONSOLE_BODY_FILE}"
+echo "==> [deploy] /api/docs parity console: HTTP ${PCONSOLE_STATUS} · body=${PCONSOLE_BODY_LEN}B · root=${PCONSOLE_HAS_ROOT} · title=${PCONSOLE_HAS_TITLE} · pointer=${PCONSOLE_HAS_POINTER} · keyboard=${PCONSOLE_HAS_KEYBOARD} · curl=${PCONSOLE_HAS_CURL} · diff=${PCONSOLE_HAS_DIFF} · drift-zero=${PCONSOLE_HAS_DRIFT_ZERO} · chunk=${PCONSOLE_HAS_CHUNK}"
+if [ "${PCONSOLE_STATUS}" != "200" ] || [ "${PCONSOLE_HAS_ROOT}" -lt 1 ] \
+   || [ "${PCONSOLE_HAS_TITLE}" -lt 1 ] || [ "${PCONSOLE_HAS_POINTER}" -lt 1 ] \
+   || [ "${PCONSOLE_HAS_KEYBOARD}" -lt 1 ] || [ "${PCONSOLE_HAS_CURL}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing v178 ParityConsole shell markers (root/title/pointer/keyboard/curl) — component mount regressed (container still up)." >&2
+fi
+if [ "${PCONSOLE_HAS_DIFF}" -lt 1 ] || [ "${PCONSOLE_HAS_DRIFT_ZERO}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs ParityConsole diff sentence / data-drift=\"zero\" missing — SSR helper saw drift OR diffSentence() regressed; build-time check-parity-proof is the actual gate (container still up)." >&2
+fi
+if [ "${PCONSOLE_HAS_CHUNK}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing 'parity-console' client chunk reference — page-chunk import may have been tree-shaken out (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

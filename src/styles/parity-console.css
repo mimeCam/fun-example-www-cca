@@ -1,0 +1,211 @@
+/* src/styles/parity-console.css
+ * v178 "Parity Console" — three-pane demonstrator on /api/docs.
+ *
+ * Rules (Mike napkin §5, Tanya UX §7 / §10):
+ *   · Tokens only. Zero hand-rolled pixels. Zero raw colors.
+ *   · Motion narrates drift only. At rest (driftBytes === 0) zero frames.
+ *   · Reduced-motion sanctuary at the bottom — drops the drift pulse.
+ *   · Forced-colors block renders in Canvas / CanvasText — panes stay
+ *     readable and the diff line collapses to a text state.
+ *
+ * Credits: Tanya Donska (UX §7 tri-mouth strip, §10 motion roster, §11
+ *          rounded-corner discipline — container > detail), Mike Koch
+ *          (napkin §5 no-new-tokens), Sid — 2026-04-23.
+ *          Motto: "code maintenance without tests."
+ */
+
+/* ── Section shell ─────────────────────────────────────────────────── */
+
+.parity-console {
+  margin-top: var(--space-8);
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
+}
+
+.parity-console__head {
+  margin-bottom: var(--space-4);
+}
+
+.parity-console__title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-tight);
+}
+
+.parity-console__lede {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--text-secondary);
+}
+
+.parity-console__inline {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  padding: 0 var(--space-1);
+  background: var(--surface-inset);
+  border-radius: var(--radius-detail);
+}
+
+.parity-console__focus {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* ── Three panes — CSS grid, three equal columns at rest ─────────────── */
+
+.parity-console__panes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.parity-console__pane {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-detail);
+  min-width: 0;       /* allow long payload strings to wrap */
+}
+
+.parity-console__cap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-normal);
+}
+
+.parity-console__cap-ico {
+  color: var(--text-ghost);
+}
+
+.parity-console__cap-label {
+  color: var(--text-secondary);
+}
+
+/* The payload is long (~80 chars) — let it wrap so narrow viewports
+   never scroll horizontally at the container level. Mono size steps
+   down one rung to keep all three panes legible at once. */
+.parity-console__body {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-snug);
+  color: var(--text-primary);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+/* Fail-closed dash — the client module swaps this class in while a
+   curl refetch is in flight or has errored. Tanya §10 — zero red. */
+.parity-console__body[data-pending='true'] {
+  color: var(--text-tertiary);
+}
+
+/* ── Diff line — the only narrator in this component ─────────────────── */
+
+.parity-console__diff {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-normal);
+}
+
+.parity-console__diff-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklch, var(--gold) 60%, transparent);
+}
+
+/* At rest (drift=0) the dot is gold; on drift it tints endangered and
+   pulses once to narrate the arrival (Tanya §10 — motion narrates). */
+.parity-console__diff[data-drift='drift'] .parity-console__diff-dot {
+  background: color-mix(in oklch, var(--color-decay-endangered) 70%, transparent);
+  animation: parity-console-drift var(--motion-duration-base, 220ms) ease-out;
+}
+.parity-console__diff[data-drift='drift'] {
+  color: var(--text-primary);
+}
+
+@keyframes parity-console-drift {
+  from { opacity: 0.3; transform: scale(0.6); }
+  to   { opacity: 1;   transform: scale(1); }
+}
+
+/* ── Jump-to-cell affordance (keyboard users, §13 a11y) ──────────────── */
+
+.parity-console__jump {
+  display: inline-block;
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  text-decoration: none;
+  letter-spacing: var(--tracking-normal);
+}
+.parity-console__jump:hover,
+.parity-console__jump:focus-visible {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* ── Responsive: ≤640px stack; ≤480px tighter padding ────────────────── */
+
+@media (max-width: 640px) {
+  .parity-console__panes {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .parity-console {
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-detail);
+  }
+}
+
+/* ── Reduced motion (Tanya §10) ──────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .parity-console__diff[data-drift='drift'] .parity-console__diff-dot {
+    animation: none;
+  }
+}
+
+/* ── Forced colors — Canvas / CanvasText (Mike §5.9) ─────────────────── */
+
+@media (forced-colors: active) {
+  .parity-console,
+  .parity-console__pane {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+  .parity-console__diff-dot {
+    background: CanvasText;
+  }
+}

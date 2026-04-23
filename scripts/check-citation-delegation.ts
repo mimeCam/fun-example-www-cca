@@ -83,6 +83,15 @@ export const TARGETS: readonly Target[] = [
   { rel: 'src/pages/api/docs/cite.ts',
     requiredSymbols: ['cellCitationPayload'],
     mouth: 'curl (terminal)' },
+  // v178 "Parity Console" — Mike napkin §5.1 "extend, do not weaken". The
+  // SSR helper and the client repainter BOTH route through the oracle;
+  // the proof file imports the producer, the client imports it too.
+  { rel: 'src/lib/parity-proof.ts',
+    requiredSymbols: ['cellCitationPayload', 'cellCitationLabel', 'cellAnchorId'],
+    mouth: 'parity proof (SSR)' },
+  { rel: 'src/lib/client/parity-console.ts',
+    requiredSymbols: ['cellCitationPayload'],
+    mouth: 'parity console (client)' },
 ];
 
 // The oracle module path fragment each import statement must reference.

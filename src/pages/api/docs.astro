@@ -64,6 +64,11 @@ import ParityPip from '../../components/ParityPip.astro';
 // shell always renders so the payload is zero extra requests (Mike §5.6).
 import ArrivalReceipt from '../../components/ArrivalReceipt.astro';
 import '../../styles/arrival-receipt.css';
+// v178 "Parity Console" — the on-page Three-Mouths-One-Byte demonstrator.
+// Mike napkin §4 mounts under the matrix (above the Three-endpoints
+// section); the component owns its own section shell + a11y labels.
+import ParityConsole from '../../components/ParityConsole.astro';
+import '../../styles/parity-console.css';
 
 // v177 — gate client-side payload on `?r=` presence. Non-arrival readers
 // pay zero bytes for the acknowledge flow (Mike napkin §5.6).
@@ -380,6 +385,13 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
       ></div>
     </section>
 
+    {/* v178 "Parity Console" — Mike napkin §2. The on-page Three-Mouths-
+       One-Byte demonstrator. Sits directly under the matrix so the
+       visitor reads "0 bytes" before scrolling to the endpoint docs
+       below. All data flows from buildProof() via parity-proof.ts — one
+       producer, zero polymorphism. */}
+    <ParityConsole />
+
     {/* v150c — Mike napkin §1 (endpoint documentation).
        v156 — Three endpoints: the terminal/`curl` mouth of the citation
        trilogy joins the ingest beacon and the metrics snapshot. One
@@ -534,6 +546,10 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
 <script>
   import '../../lib/client/cell-cite';
   import '../../lib/client/edge-bump';
+  // v178 "Parity Console" — client-side refresh on focus-change. Listens
+  // to matrix focus events via capture (focus does not bubble); repaints
+  // the three panes + diff line. Fail-closes on curl fetch error.
+  import '../../lib/client/parity-console';
 </script>
 
 {/* v177 — arrival-acknowledge is conditionally mounted: the import only

@@ -167,18 +167,27 @@ describe('scanReimplementation — true iff ALL three markers present', () => {
 
 // ── Target configuration sanity ───────────────────────────────────────────
 
-describe('TARGETS — four files, each with at least one required symbol', () => {
-  test('exactly four targets (click+keystroke, keynav, server render, curl)', () => {
+describe('TARGETS — six files, each with at least one required symbol', () => {
+  test('exactly six targets (click+keystroke, keynav, server render, curl, parity proof, parity console)', () => {
     // v156 "Third Mouth": the terminal/`curl` citer joins the trilogy.
+    // v178 "Parity Console": adds the SSR helper + client repainter.
     // If this number changes, the addition (or removal) must appear in
     // AGENTS.md and in the /api/docs page's "endpoints" section.
-    assert.equal(TARGETS.length, 4);
+    assert.equal(TARGETS.length, 6);
   });
 
   test('v156 — the terminal mouth is registered by path', () => {
     const rels = TARGETS.map((t) => t.rel);
     assert.ok(rels.includes('src/pages/api/docs/cite.ts'),
       'terminal mouth (src/pages/api/docs/cite.ts) not in TARGETS');
+  });
+
+  test('v178 — the parity proof SSR helper is registered by path', () => {
+    const rels = TARGETS.map((t) => t.rel);
+    assert.ok(rels.includes('src/lib/parity-proof.ts'),
+      'parity proof (src/lib/parity-proof.ts) not in TARGETS');
+    assert.ok(rels.includes('src/lib/client/parity-console.ts'),
+      'parity console client (src/lib/client/parity-console.ts) not in TARGETS');
   });
 
   test('every target declares at least one required oracle symbol', () => {

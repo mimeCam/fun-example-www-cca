@@ -1,0 +1,112 @@
+---
+// src/components/ParityConsole.astro
+// v178 "Parity Console" — the on-page Three-Mouths-One-Byte demonstrator.
+//
+// What this component is (Mike napkin §2 napkin, Tanya UX §7):
+//   · A reading-column section, SSR-rendered, under the matrix.
+//   · Three panes (pointer / keyboard / curl), each showing the exact
+//     citation payload for the CURRENTLY FOCUSED cell (or the grid's
+//     origin `typography × fresh` at rest).
+//   · One diff line that reads `0 bytes · pointer ≡ keyboard ≡ curl`.
+//
+// What this component is NOT:
+//   · A new endpoint. The data is pre-assembled via buildProof().
+//   · A new token. Everything reuses `tokens.css`.
+//   · A new animation. Motion fires only when drift > 0 (arrival only).
+//   · A new producer. Every string comes from `cellCitationPayload`.
+//
+// Client-side refresh (src/lib/client/parity-console.ts):
+//   The client module listens to matrix focus-change events and refetches
+//   the curl pane via `fetch('/api/docs/cite?...')`. It never blocks; a
+//   fail-closed dash renders when the fetch is in flight or errors.
+//
+// Credits: Mike Koch (napkin §2 diagram, §4 LoC budget 120 for this file,
+//          §5 points-of-interest esp. origin discipline + no-trailing-
+//          newline), Tanya Donska (UX spec §7 tri-mouth proof strip,
+//          §10 motion roster), Elon (§5 "bring it on-page"), Paul (§7
+//          90-second test), prior-author of ArrivalReceipt.astro (shell
+//          pattern), AGENTS.md (freeze). Sid — 2026-04-23.
+//          Motto: "code maintenance without tests."
+
+import {
+  defaultProof,
+  DEFAULT_PROOF_AXIS,
+  DEFAULT_PROOF_STAGE,
+  diffSentence,
+} from '../lib/parity-proof';
+import { cellAnchorId, cellCitationLabel } from '../lib/stage-axes';
+
+// v178 Mike §5.2 — origin discipline: SSR uses `Astro.url.origin`; never
+// `import.meta.env.SITE`, never `request.headers.get('host')`. The client
+// module re-uses `window.location.origin` on refresh.
+const proof = await defaultProof(Astro.url.origin);
+
+// Label / anchor for the rest-state cell (used in the sr-only caption).
+const restLabel  = cellCitationLabel(DEFAULT_PROOF_AXIS, DEFAULT_PROOF_STAGE);
+const restAnchor = cellAnchorId(DEFAULT_PROOF_AXIS, DEFAULT_PROOF_STAGE);
+---
+
+<section
+  class="parity-console"
+  aria-labelledby="parity-console-title"
+  data-parity-console
+  data-rest-axis={DEFAULT_PROOF_AXIS}
+  data-rest-stage={DEFAULT_PROOF_STAGE}
+>
+  <header class="parity-console__head">
+    <h2 id="parity-console-title" class="parity-console__title">
+      Three mouths, one byte.
+    </h2>
+    <p class="parity-console__lede">
+      Focus a cell above — pointer, keyboard, and <code class="parity-console__inline">curl</code>
+      produce the same payload. The diff line says so.
+    </p>
+    <p class="parity-console__focus" data-parity-focus>
+      focused cell: <span data-parity-focus-label>{restLabel}</span>
+    </p>
+  </header>
+
+  <div class="parity-console__panes" role="group" aria-describedby="parity-console-title">
+    <figure class="parity-console__pane" data-pane="pointer">
+      <figcaption class="parity-console__cap">
+        <span class="parity-console__cap-ico" aria-hidden="true">⌗</span>
+        <span class="parity-console__cap-label">pointer</span>
+      </figcaption>
+      <code class="parity-console__body" data-pane-body="pointer">{proof.pointer}</code>
+    </figure>
+
+    <figure class="parity-console__pane" data-pane="keyboard">
+      <figcaption class="parity-console__cap">
+        <span class="parity-console__cap-ico" aria-hidden="true">⌨︎</span>
+        <span class="parity-console__cap-label">keyboard</span>
+      </figcaption>
+      <code class="parity-console__body" data-pane-body="keyboard">{proof.keyboard}</code>
+    </figure>
+
+    <figure class="parity-console__pane" data-pane="curl">
+      <figcaption class="parity-console__cap">
+        <span class="parity-console__cap-ico" aria-hidden="true">$</span>
+        <span class="parity-console__cap-label">curl</span>
+      </figcaption>
+      <code class="parity-console__body" data-pane-body="curl">{proof.curl}</code>
+    </figure>
+  </div>
+
+  <p
+    class="parity-console__diff"
+    data-parity-diff
+    data-drift={proof.driftBytes === 0 ? 'zero' : 'drift'}
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <span class="parity-console__diff-dot" aria-hidden="true"></span>
+    <span data-parity-diff-text>{diffSentence(proof)}</span>
+  </p>
+
+  {/* Keyboard users can jump straight to the focused cell. Anchor is
+     updated by the client module on focus-change events. */}
+  <a class="parity-console__jump" href={`#${restAnchor}`} data-parity-jump>
+    jump to focused cell
+  </a>
+</section>
