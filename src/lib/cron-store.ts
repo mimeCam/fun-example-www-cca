@@ -4,10 +4,15 @@
 // No polymorphism. No abstractions. Just a table and four functions.
 //
 // Credits: Mike (arch §cron-store)
+//          Sid (2026-04-23 ledger wedge v173: started/finished/error stamps
+//          route through the clock seam — Mike PoI-3: cron-runner is outside
+//          SSR, so the seam falls through to wall-clock in prod; the wedge
+//          is about future pinnability of tests, not a live drift fix).
 
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
+import { now as clockNow } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -98,7 +103,7 @@ function prevStreak(jobName: string, currentId: number): number {
 export function recordStart(jobName: string): number {
   const result = db()
     .prepare('INSERT INTO cron_runs (job_name, started_at) VALUES (?, ?)')
-    .run(jobName, Date.now());
+    .run(jobName, clockNow());
   return result.lastInsertRowid as number;
 }
 
@@ -117,7 +122,7 @@ export function recordFinish(
     SET finished_at = ?, status = ?, upgraded = ?,
         still_pending = ?, failed = ?, consecutive_failures = ?
     WHERE id = ?
-  `).run(Date.now(), status, upgraded, stillPending, failed, streak, id);
+  `).run(clockNow(), status, upgraded, stillPending, failed, streak, id);
 }
 
 /** Mark the run as crashed (uncaught exception). Always increments streak. */
@@ -129,7 +134,7 @@ export function recordError(id: number, msg: string): void {
     SET finished_at = ?, status = 'error', error_msg = ?,
         consecutive_failures = ?
     WHERE id = ?
-  `).run(Date.now(), msg.slice(0, 500), streak, id);
+  `).run(clockNow(), msg.slice(0, 500), streak, id);
 }
 
 // ---------------------------------------------------------------------------

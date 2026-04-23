@@ -6,11 +6,16 @@
 // HMAC seal (2026-04-07): dropped SHA-256 chain display (Elon's call — it was
 // blockchain cosplay with no external anchor). Replaced with HMAC-based seal:
 // proves the server wrote it, nothing more, nothing less.
+//
+// 2026-04-23 ledger wedge (v173, Sid): the two raw wall-clock stamp callsites
+// now flow through the clock seam (`now()`), so a pinned-clock test can
+// assert byte-identity across ledger writes (Mike napkin §2/§E).
 
 import Database from 'better-sqlite3';
 import { createHash, createHmac } from 'crypto';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
+import { now as clockNow } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,6 +66,16 @@ function db(): Database.Database {
   _db.pragma('journal_mode = WAL');
   initTable(_db);
   return _db;
+}
+
+/** @internal Test hatch (2026-04-23, Sid ledger wedge): swap the lazy singleton
+ *  to an arbitrary `better-sqlite3` handle. Mirrors `__setSharedDbForTests`
+ *  in collectiveMemory.ts so the ledger-clock golden can pin a `:memory:` DB
+ *  without mutating the real file on disk. Pass `null` to reset. */
+export function __setDbForTests(override: Database.Database | null): void {
+  if (_db && _db !== override) { try { _db.close(); } catch { /* closed */ } }
+  _db = override;
+  if (override) initTable(override);
 }
 
 function initTable(d: Database.Database): void {
@@ -154,7 +169,7 @@ function buildChainParams(
   score: number | null,
   payload: object | null,
 ): { ts: number; prevHash: string; hash: string; payloadJson: string | null } {
-  const ts = Date.now();
+  const ts = clockNow();
   const prevHash = prevHashForSlug(slug);
   const hash = computeHash(slug, eventType, score, ts, prevHash);
   return { ts, prevHash, hash, payloadJson: payload ? JSON.stringify(payload) : null };
@@ -215,7 +230,7 @@ export function sealConviction(slug: string, score: number, authorNote: string, 
   if (existing) throw new ConvictionAlreadySealedError(slug);
   // Compute HMAC if ADMIN_SECRET is set; null otherwise (CLI fallback).
   const secret = process.env.ADMIN_SECRET ?? '';
-  const ts = Date.now();
+  const ts = clockNow();
   const hmac = secret ? hmacSeal(slug, score, ts, secret) : null;
   // Use a fixed timestamp so HMAC and chain hash share the same ts.
   const prevHash = prevHashForSlug(slug);

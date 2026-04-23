@@ -26,17 +26,26 @@
 //
 // Wedge log:
 //   v172 (2026-04-23): collectiveMemory.ts wedge — 20 callsites → 0.
-//                      Total raw count fell 100 → 80. Next fattest wedges
-//                      per Paul E7 / Mike napkin §3.3:
+//                      Total raw count fell 100 → 80.
+//   v173 (2026-04-23): ledger+jobs cluster wedge (Mike napkin §2) —
+//                      17 callsites → 0 across cell-event-ledger.ts,
+//                      conviction-ledger.ts, stance-ledger.ts,
+//                      verdict-dispute.ts, verdict-resolver.ts,
+//                      graveyard-ledger.ts, cron-store.ts, cron-runner.ts,
+//                      jobs/deadline-sweeper.ts, jobs/ots-poller.ts.
+//                      Total raw count fell 80 → 63. One shared `logJson`
+//                      extracted to clock.ts; three duplicate locals deleted.
+//                      New golden `src/lib/ledger-clock.test.ts` locks
+//                      byte-identical `ts` across three ledgers.
+//                      Next fattest wedges per Paul E7 / Mike napkin §3.3:
 //                        · src/lib/presence-hub.ts      (6 callsites)
 //                        · src/lib/live-decay.ts        (5 callsites)
-//                        · src/lib/cell-event-ledger.ts (3 callsites)
 //                        · src/lib/cell-heat.ts         (3 callsites)
-//                      Three of those = guard flip to --error is in reach.
+//                      Guard flip to --error is the wedge AFTER the next.
 //
 // Credits: Mike Koch (§5 PoI-8 migration order + guard discipline), Elon
-//          (§1 red-line — guard is the canary), Sid (≤-10 LOC per function),
-//          2026-04-23.
+//          (§1 red-line — guard is the canary), Sid (≤-10 LOC per function;
+//          v173 ledger wedge author), 2026-04-23.
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';

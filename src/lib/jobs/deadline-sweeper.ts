@@ -3,17 +3,20 @@
 // Calls POST /api/deadline-sweep — idempotent, safe to run every 60 min.
 // Self-HTTP: auth layer exercised identically to ops.
 //
-// Credits: Mike (arch §deadline-sweeper)
+// Credits: Mike (arch §deadline-sweeper),
+//          Sid (2026-04-23 ledger wedge v173: local stderr stamp retired —
+//          curried wrapper around `clock.logJson`).
+
+import { logJson as clockLogJson } from '../clock';
 
 // ---------------------------------------------------------------------------
-// Structured logger
+// Structured logger — 1-line curry over the seam
 // ---------------------------------------------------------------------------
 
 type LogEvent = 'start' | 'result' | 'error';
 
 function logJson(event: LogEvent, data: Record<string, unknown>): void {
-  const entry = { ts: new Date().toISOString(), job: 'deadline-sweeper', event, data };
-  process.stderr.write(JSON.stringify(entry) + '\n');
+  clockLogJson('deadline-sweeper', event, data);
 }
 
 // ---------------------------------------------------------------------------

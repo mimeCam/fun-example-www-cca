@@ -10,6 +10,8 @@ import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 import { getLockedScore } from './conviction-ledger';
 import { getDisputeResolution, getResolvedVerdictCount as _getResolvedCount } from './verdict-dispute';
+// 2026-04-23 ledger wedge (v173, Sid): seal stamp reads from the seam.
+import { now as clockNow } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,7 +134,7 @@ export function resolveVerdict(
 ): VerdictRecord {
   if (hasExistingVerdict(slug)) throw new VerdictAlreadySealedError(slug);
   const originalScore = getLockedScore(slug) ?? 0;
-  const ts   = Date.now();
+  const ts   = clockNow();
   const hmac = computeHmac(slug, verdict, originalScore, ts, secret);
   const hash = insertVerdictRow(slug, verdict, originalScore, note, ts, hmac);
   return { post_slug: slug, verdict, originalScore, note, hmac_seal: hmac, sealedAt: ts, hash };

@@ -3,10 +3,12 @@
 // Uses the same revivals.db as collectiveMemory.ts (WAL mode, singleton pattern).
 // One write path. One schema. UNIQUE index enforces idempotency at the storage layer.
 // Credits: Mike (arch spec — Adversarial Stance Drawer napkin plan)
+//          Sid (2026-04-23 ledger wedge v173: stamp routes through clock seam).
 
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
+import { now as clockNow } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,6 +41,14 @@ function db(): Database.Database {
   _db.pragma('journal_mode = WAL');
   initTable(_db);
   return _db;
+}
+
+/** @internal Test hatch (2026-04-23, Sid ledger wedge): swap the lazy DB
+ *  singleton to a caller-supplied handle. See conviction-ledger's twin. */
+export function __setDbForTests(override: Database.Database | null): void {
+  if (_db && _db !== override) { try { _db.close(); } catch { /* closed */ } }
+  _db = override;
+  if (override) initTable(override);
 }
 
 function initTable(d: Database.Database): void {
@@ -76,7 +86,7 @@ export function recordStance(
   const result = db().prepare(`
     INSERT OR IGNORE INTO reader_stances (post_slug, session_id, stance, score, timestamp)
     VALUES (?, ?, ?, ?, ?)
-  `).run(slug, sessionId, stance, score, Date.now());
+  `).run(slug, sessionId, stance, score, clockNow());
   return result.changes > 0;
 }
 

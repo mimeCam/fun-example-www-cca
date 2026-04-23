@@ -9,6 +9,8 @@
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
+// 2026-04-23 ledger wedge (v173, Sid): stamp via the seam.
+import { now as clockNow } from './clock';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -146,7 +148,7 @@ export function writeDisputeResolution(
 ): void {
   db().prepare(
     'INSERT OR IGNORE INTO dispute_resolutions (post_slug, state, resolved_at, challenge_share_pct) VALUES (?, ?, ?, ?)',
-  ).run(slug, state, Date.now(), Math.round(challengeSharePct * 100) / 100);
+  ).run(slug, state, clockNow(), Math.round(challengeSharePct * 100) / 100);
 }
 
 /** Count posts with a final dispute resolution — used by BattingAverageHero gate. */
@@ -181,7 +183,7 @@ export function getContestedSlugs(): string[] {
 export function recordDispute(slug: string, sessionId: string): boolean {
   const result = db().prepare(
     'INSERT OR IGNORE INTO verdict_disputes (post_slug, session_id, timestamp) VALUES (?, ?, ?)',
-  ).run(slug, sessionId, Date.now());
+  ).run(slug, sessionId, clockNow());
   return result.changes > 0;
 }
 

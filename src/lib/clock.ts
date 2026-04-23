@@ -29,6 +29,8 @@
 //          no new deps, seam is the unlock), Jason Fried (named the seam),
 //          Krystle Clear (v168 unblock), Paul Kim (one decayFactor, one now).
 //          Tanya Donska (§2: the design reads from this scalar, never forks).
+//          Sid (2026-04-23: ledger wedge — logJson() extracted here; one seam
+//               for wall-clock + one seam for stderr stamping).
 //          2026-04-23.
 //
 // TODO: route SSR middleware `now = Date.now()` at request entry so all
@@ -107,6 +109,32 @@ export function nowISO(): string {
  */
 export function jsonStamped<T extends object>(body: T): T & { computedAt: string } {
   return { ...body, computedAt: nowISO() };
+}
+
+// ── Stderr JSON stamp — one producer for cron/job log lines ──────────────
+
+/**
+ * Emit one structured JSON log line to stderr, stamped via the seam.
+ *
+ * Three files (`cron-runner.ts`, `jobs/deadline-sweeper.ts`, `jobs/ots-poller.ts`)
+ * duplicated the same three-line helper — `{ ts: new Date().toISOString(), … }`
+ * flushed to stderr. The stamp bypassed `withClock`, so a pinned-clock test
+ * couldn't freeze log output. Extracting the helper here routes every cron
+ * log line through `nowISO()` — one seam, one producer, zero duplication.
+ *
+ * Callers typically wrap with a job-name curry, e.g.
+ *   const logJson = (event, data) => clockLogJson('cron-runner', event, data);
+ * to preserve a 2-arg local shape at the callsites.
+ *
+ * Sid (2026-04-23): per "no function longer than 10 lines" — this one is 3.
+ */
+export function logJson(
+  job: string,
+  event: string,
+  data: Record<string, unknown>,
+): void {
+  const entry = { ts: nowISO(), job, event, data };
+  process.stderr.write(JSON.stringify(entry) + '\n');
 }
 
 // ── Scoped override — the preferred test seam ─────────────────────────────
@@ -210,5 +238,20 @@ export function _testClock(): void {
     console.assert(stamped.computedAt === '2026-05-02T09:00:00.000Z', 'seam overrides caller');
   });
 
-  console.log('[clock] OK — now, nowDate, nowISO, jsonStamped, withClock, freezeClock verified');
+  // logJson — stderr stamp reads the pinned clock. We snoop stderr for one call.
+  const originalWrite = process.stderr.write.bind(process.stderr);
+  let captured = '';
+  (process.stderr as { write: (b: string) => boolean }).write = (buf: string) => {
+    captured += buf; return true;
+  };
+  try {
+    withClock('2026-05-03T09:00:00Z', () => logJson('sid-test', 'chk', { n: 1 }));
+  } finally {
+    (process.stderr as { write: (b: string) => boolean }).write = originalWrite as unknown as (b: string) => boolean;
+  }
+  const parsed = JSON.parse(captured.trim()) as { ts: string; job: string; event: string; data: { n: number } };
+  console.assert(parsed.ts === '2026-05-03T09:00:00.000Z', 'logJson stamps via seam');
+  console.assert(parsed.job === 'sid-test' && parsed.event === 'chk' && parsed.data.n === 1, 'logJson payload intact');
+
+  console.log('[clock] OK — now, nowDate, nowISO, jsonStamped, logJson, withClock, freezeClock verified');
 }

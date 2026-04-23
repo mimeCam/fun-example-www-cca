@@ -4,26 +4,21 @@
 // Also checks for "stuck" seals (pending > 4h = warn, > 24h = error log).
 // Uses Promise.allSettled semantics: one calendar down ≠ abort the batch.
 //
-// Credits: Mike (arch §ots-poller), Peter Todd (OTS spec)
+// Credits: Mike (arch §ots-poller), Peter Todd (OTS spec),
+//          Sid (2026-04-23 ledger wedge v173: stderr stamp + skew clock both
+//          route through the seam — clock.ts is the single wall-clock source).
 
 import { getPendingOtsSeals } from '../conviction-ledger';
+import { logJson as clockLogJson, now as clockNow } from '../clock';
 
 // ---------------------------------------------------------------------------
-// Structured logger — all cron lines are JSON readable by any Docker log driver
+// Structured logger — 1-line curry over the seam
 // ---------------------------------------------------------------------------
 
 type LogEvent = 'start' | 'stuck_warn' | 'stuck_alert' | 'result' | 'alert' | 'error';
 
-interface LogPayload {
-  ts: string;
-  job: 'ots-poller';
-  event: LogEvent;
-  data: Record<string, unknown>;
-}
-
 function logJson(event: LogEvent, data: Record<string, unknown>): void {
-  const entry: LogPayload = { ts: new Date().toISOString(), job: 'ots-poller', event, data };
-  process.stderr.write(JSON.stringify(entry) + '\n');
+  clockLogJson('ots-poller', event, data);
 }
 
 // ---------------------------------------------------------------------------
@@ -35,7 +30,7 @@ const TWENTY_FOUR_HRS = 24 * 60 * 60 * 1000;
 
 function warnStuckSeals(): void {
   const pending = getPendingOtsSeals(100);
-  const now     = Date.now();
+  const now     = clockNow();
   for (const seal of pending) {
     const age = now - seal.timestamp;
     if (age > TWENTY_FOUR_HRS) {

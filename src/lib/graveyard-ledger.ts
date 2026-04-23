@@ -3,10 +3,13 @@
 // Pure functions — no DB access, no side effects.
 // Called by graveyard.astro and /api/graveyard-stats.
 // Credits: Mike (arch §4.4)
+//          Sid (2026-04-23 ledger wedge v173: entombedAt fallback pulls
+//          `nowDate()` from the clock seam — Mike §2 table).
 
 import type { PostDisplayData } from './postMeta';
 import { generateEpitaph, survivalTier } from './epitaph-engine';
 import type { SurvivalTier } from './epitaph-engine';
+import { nowDate } from './clock';
 
 export interface LedgerEntry {
   slug: string;
@@ -30,7 +33,7 @@ export interface GraveyardSummary {
 
 /** UTC-safe survival days via millisecond arithmetic on Date objects. */
 function survivalDays(post: PostDisplayData): number {
-  const end = post.entombedAt ?? new Date();
+  const end = post.entombedAt ?? nowDate();
   return Math.max(0, Math.round((end.getTime() - post.pubDate.getTime()) / 86_400_000));
 }
 

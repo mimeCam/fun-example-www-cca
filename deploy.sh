@@ -11,6 +11,139 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
+# ── Sprint "v173 Ledger+Jobs Wedge" (2026-04-23) — clock-seam migration ──
+#   Pure-discipline wedge between v177.1 and the next big feature: 17
+#   raw `Date.now()` / `new Date()` callsites across ten ledger + cron
+#   + job files now route through the `clock.ts` seam, the cron stderr
+#   helper is consolidated to ONE producer, and a new prebuild golden
+#   locks the byte-identity invariant at the ledger floor. The
+#   `check-no-raw-now` tally falls 80 → 63, which puts the guard's
+#   `--warn → --error` flip 1–2 wedges away (next two flagged: presence-
+#   hub, live-decay). NO infrastructure deltas — no new env vars, ports,
+#   services, named volumes, docker networks, or npm deps; the touched
+#   src/ files ship via the existing `COPY src/ ./src/` layer; the new
+#   prebuild test ships via the same layer; the existing
+#   `persona-blog-a-data` + `persona-blog-a-sqlite` volumes are reused
+#   as-is (the wedge is internal-API only — no new wire surfaces, no
+#   schema migrations).
+#
+#   What shipped in the active git area this cycle (staged/unstaged):
+#     • src/lib/clock.ts (UPDATED, +28) — extracts `logJson(job, event,
+#       data)` as the single producer for cron/job stderr lines. The
+#       function reads its `ts` from `nowISO()` so a `withClock(iso, …)`
+#       scope can pin the stamp during tests. Three files (cron-runner,
+#       deadline-sweeper, ots-poller) duplicated the same three-line
+#       helper before this wedge — they now collapse to a 3-line curry
+#       that delegates here. Inline `_testClock()` block grows one
+#       stderr-snoop assertion (Mike PoI-2: pin must reach the stamp).
+#     • src/lib/cell-event-ledger.ts (UPDATED, +6/−3) — three default-
+#       arg callsites (`clampTimestamp(ts, now = …)`, `windowCutoff
+#       (days, now = …)`, `ledgerMaturity(now = …)`) flip from raw
+#       `Date.now()` to `clockNow()`. Default arg semantics preserved
+#       (caller can still inject a custom now); inside `withClock(iso, …)`
+#       the seam is observed at call time, not at module load (Mike PoI-2).
+#     • src/lib/conviction-ledger.ts (UPDATED, +18/−2) — both ledger-
+#       write `ts` stamps (`buildChainParams`, `sealConviction`) move
+#       to the seam. Adds a `__setDbForTests(handle | null)` test hatch
+#       (mirrors `__setSharedDbForTests` in collectiveMemory.ts) so the
+#       new ledger-clock golden can pin a `:memory:` DB without mutating
+#       data/revivals.db on disk. Closes the old singleton + initialises
+#       the schema on the override.
+#     • src/lib/stance-ledger.ts (UPDATED, +12/−1) — `recordStance`
+#       timestamp routes through the seam; same `__setDbForTests` hatch
+#       as conviction-ledger (one twin per ledger, three :memory: DBs
+#       in the golden — see below).
+#     • src/lib/verdict-dispute.ts (UPDATED, +4/−2) — `writeDisputeRes-
+#       olution` + `recordDispute` stamps move to the seam.
+#     • src/lib/verdict-resolver.ts (UPDATED, +3/−1) — `resolveVerdict`
+#       seal `ts` moves to the seam (HMAC + chain hash share the pinned
+#       stamp under `withClock`, so a sealed verdict is reproducible
+#       under a frozen clock).
+#     • src/lib/graveyard-ledger.ts (UPDATED, +4/−1) — `survivalDays`
+#       fallback (`post.entombedAt ?? new Date()`) flips to `nowDate()`
+#       from the seam.
+#     • src/lib/cron-store.ts (UPDATED, +8/−3) — three `Date.now()`
+#       writes (`recordStart`, `recordFinish`, `recordError`) move to
+#       the seam. Mike PoI-3: cron-runner is outside the SSR request,
+#       so the seam falls through to wall-clock in prod; the wedge is
+#       about future test pinnability, not a live drift fix.
+#     • src/lib/cron-runner.ts (UPDATED, +6/−4) — local 3-line `logJson`
+#       helper retired; replaced by a job-name curry over
+#       `clockLogJson('cron-runner', …)` — every callsite below stays
+#       at two args while the `ts` is pinned through `nowISO()`.
+#     • src/lib/jobs/deadline-sweeper.ts (UPDATED, +6/−5) — same
+#       retirement: local `logJson` collapses to a curry over the
+#       shared seam.
+#     • src/lib/jobs/ots-poller.ts (UPDATED, +6/−13) — same retirement
+#       PLUS the skew-clock read in `warnStuckSeals()` (`now =
+#       Date.now()`) flips to `clockNow()` so the "stuck > 4h / > 24h"
+#       thresholds are pin-testable. The `LogPayload` interface is
+#       deleted — the shared seam owns the shape now.
+#     • src/lib/ledger-clock.test.ts (NEW, ~140 lines) — the §E byte-
+#       identity invariant carried to the ledger floor. Three sections:
+#         (1) Three independent SQLite ledgers (cell-event, conviction,
+#             stance) all stamp at FROZEN_MS under one `withClock(iso,
+#             …)` — and rows from two distinct scopes don't cross-
+#             contaminate (Promise.all with two distinct ISOs).
+#         (2) Mike PoI-2: `clampTimestamp(ts)` re-evaluates the seam at
+#             call time — in-window passes through, far-past clamps to
+#             pinned-now − 1h, far-future clamps to pinned-now + 1h.
+#         (3) `clock.logJson` stamps via the seam — one line under a
+#             scope, two lines in the same scope are byte-identical
+#             on `ts`, ts shape matches `nowISO()` outside any scope.
+#       Hermetic via three `:memory:` DBs (one per ledger) swapped in
+#       through each ledger's `__setDbForTests` hatch — never touches
+#       `data/revivals.db`.
+#     • package.json (UPDATED, +2 inserts) — `prebuild` chain grows one
+#       entry between `test:collective-memory-clock` and `test:tri-mouth-
+#       inventory`: `REVIVALS_DB_PATH=:memory: npx tsx --test src/lib/
+#       ledger-clock.test.ts`. Also adds the matching `test:ledger-clock`
+#       npm script for local invocation. Any drift in any of the ten
+#       wedged files now FAILS the image build.
+#     • scripts/check-no-raw-now.ts (UPDATED, +14/−5) — wedge log grows
+#       a v173 entry: tally fell 80 → 63 across ten files; the next
+#       two fattest wedges (presence-hub:6, live-decay:5) plus cell-
+#       heat:3 put the guard flip to `--error` within reach of the
+#       wedge AFTER the next.
+#     • AGENTS.md (UPDATED) — `WIP — Clock migration` line bumps from
+#       "80 raw callsites" to "63 raw callsites remain after v173
+#       ledger+jobs wedge. Flip --error after next 1–2 wedges
+#       (presence-hub, live-decay)."
+#
+#   Infrastructure deltas this sprint: NONE.
+#     · No new env vars, ports, services, named volumes, docker networks,
+#       or npm deps. The two test-time env vars introduced by the new
+#       golden (`COMMUNITY_DB_PATH=:memory:` already in prebuild;
+#       `REVIVALS_DB_PATH=:memory:` already used by keep-golden) are
+#       deliberately NOT forwarded by `docker run` — pinning the prod
+#       container to `:memory:` would lose stance/conviction/revival
+#       state on every restart (critical regression). Test-time seams
+#       only.
+#     · Reused unchanged: `persona-blog-a-data` (server-side data dir),
+#       `persona-blog-a-sqlite` (collective-memory + revivals + stance
+#       + conviction + verdict ledgers). The wedge is INTERNAL API
+#       only — every existing wire shape is preserved, every existing
+#       SQLite schema is preserved, every existing route's response is
+#       byte-identical (just now reproducible under a pinned clock).
+#     · The `cron-runner` boot stderr line is now emitted by the shared
+#       seam — its JSON shape is EXACTLY preserved (`{ts, job, event,
+#       data}` with the same key order), and runtime probe 8l (NEW
+#       this sprint) greps `docker logs` for that exact shape to
+#       witness the consolidation reached the wire.
+#
+#   Credits: Mike Koch (napkin §2 cluster wedge — ten files migrated in
+#   one cluster instead of one-per-PR; PoI-2 default-arg seams; PoI-3
+#   cron-runner future-pinnability; §3.3 fattest-wedge ordering),
+#   Paul Kim (E7 — "one pinned clock per SSR request" carried to the
+#   ledger floor; §E byte-identity invariant cloned from citation-
+#   golden to ledger-clock golden), Elon Musk (§1 red-line — guard is
+#   the canary; §5.2 wedge-log keeps the migration calendar honest),
+#   Krystle Clear (per-file freeze-witness pattern), Tanya Donska (§6
+#   evidentiary stamps don't dance — same shape pre/post wedge),
+#   Sid (≤-10 LOC per function — the new `logJson` is 3 lines, every
+#   curry is 1 line, every `__setDbForTests` is 4 lines).
+#   2026-04-23.
+#
 # ── Sprint v177.1 "Arrival Receipt §E" (2026-04-23) — cross-mouth wall ──
 #   v177.1 closes the one follow-up v177 left open: the arrival-receipt
 #   golden test is JOINED to the prebuild wall this sprint, AND its §E
@@ -474,6 +607,21 @@
 #       All three derive their receipt from the same `buildArrivalReceipt`
 #       pure function — probe (c) is the byte-identical anchor for the
 #       falsifiable criterion (Mike napkin §5.10).
+#   8l. Witness the v173 ledger+jobs wedge on the wire by reading
+#       `docker logs` and grepping for the cron-runner boot stderr line.
+#       The cron-runner integration hook fires on `astro:server:start`
+#       (~5s after container boot per cold-start delay), and the boot
+#       line is now emitted by the SHARED `clock.logJson` seam — same
+#       JSON shape as before (`{ts, job:"cron-runner", event:"boot",
+#       data:{baseUrl, jobs}}`) but the producer collapsed from three
+#       duplicate helpers to one. Probe asserts (a) one matching line
+#       exists, (b) `"job":"cron-runner"` is present, (c) `"event":
+#       "boot"` is present, (d) the `"ts":"…Z"` ISO-8601 stamp is
+#       parseable. Observational only — failure WARNs, container
+#       stays up; the build-time `test:ledger-clock` golden is where
+#       the actual teeth live (Mike §8 "build-time gate, runtime
+#       witness"). This is the v173 ledger wedge's deploy-time
+#       receipt that the consolidation reached production stderr.
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -514,10 +662,15 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-citation-delegation  →  check-duration-reasons  →
 #   check-stage-tempo-divergence  →
 #   check-no-raw-now (v169 NINTH guard — WARN mode; flags raw Date.now()
-#     / new Date() outside the clock seam allowlist. Tally drops 100→80
-#     after the v172 collectiveMemory.ts wedge; flip to --error once
-#     2–3 more small wedges land: presence-hub (6), live-decay (5),
-#     cell-event-ledger (3), cell-heat (3))  →
+#     / new Date() outside the clock seam allowlist. Tally cadence:
+#     100 → 80 after v172 collectiveMemory.ts wedge; 80 → 63 after
+#     THIS SPRINT's v173 ledger+jobs cluster wedge (ten files: cell-
+#     event/conviction/stance/verdict-dispute/verdict-resolver/
+#     graveyard ledgers + cron-store/cron-runner + jobs/deadline-
+#     sweeper/ots-poller). Flip to `--error` is now 1–2 wedges away —
+#     next two flagged: presence-hub (6 callsites), live-decay (5).
+#     Plus cell-heat (3) puts the guard's own promotion within reach
+#     of the wedge AFTER next)  →
 #   check-tri-mouth --error (v173 ELEVENTH guard — v176 PR-E flipped from
 #     WARN → ERROR this sprint. Walks the frozen `TRI_MOUTH_ACTIONS`
 #     literal in src/lib/tri-mouth-inventory.ts and enforces six
@@ -588,6 +741,22 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     dev DB and the deepEqual against the direct call breaks))  →
 #   test:collective-memory-clock (v172 — nine-section golden locking the
 #     collectiveMemory.ts wedge against a :memory: DB; hermetic)  →
+#   test:ledger-clock (v173 ledger wedge NEW — joined the prebuild chain
+#     this sprint, right after `test:collective-memory-clock`. Three
+#     sections: (1) §E byte-identity at the ledger floor — three
+#     SQLite ledgers (cell-event, conviction, stance) all stamp at
+#     FROZEN_MS under one `withClock(iso, …)`, plus a Promise.all
+#     scope-isolation assertion on two distinct ISOs; (2) Mike PoI-2
+#     — `clampTimestamp(ts)` in cell-event-ledger re-evaluates the
+#     seam at call time (in-window passes through, far-past clamps
+#     to pinned-now − 1h, far-future clamps to pinned-now + 1h);
+#     (3) `clock.logJson` — ts pinned to nowISO() under scope, two
+#     lines in same scope are byte-identical on `ts`, ts shape
+#     matches outside any scope. Hermetic via three `:memory:` DBs
+#     swapped through each ledger's NEW `__setDbForTests` hatch —
+#     never touches data/revivals.db. Requires `REVIVALS_DB_PATH=
+#     :memory:` so the conviction-ledger module's lazy-singleton
+#     init never opens the persistent dev DB)  →
 #   test:tri-mouth-inventory (v173 NEW — golden witnessing the literal's
 #     own health: name uniqueness, closed status vocabulary, `pending`
 #     field truthfulness, producer-file existence, curl grammar,
@@ -1427,6 +1596,50 @@ rm -f "${ARRIVAL_FAIL_HEADERS_FILE}"
 echo "==> [deploy] GET /api/docs/arrival (fail headers): HTTP ${ARRIVAL_FAIL_STATUS} · no-store-on-fail=${ARRIVAL_FAIL_NO_STORE} (expect 404 + no-store)"
 if [ "${ARRIVAL_FAIL_STATUS}" != "404" ] || [ "${ARRIVAL_FAIL_NO_STORE}" -lt 1 ]; then
   echo "==> [deploy] ⚠ v177.1 fail vector missing 'Cache-Control: no-store' on 404 — stale-pin regression guard tripped (container still up)." >&2
+fi
+
+# ── 8l. v173 ledger+jobs wedge — cron-runner stderr witness ────────────────
+# Read the container's stderr via `docker logs` and grep for the cron-
+# runner boot line. This is the "wire receipt" for the wedge: the local
+# 3-line `logJson` helper inside cron-runner.ts has been retired and
+# replaced with a 1-line curry over the SHARED `clock.logJson` seam. The
+# JSON shape is intentionally unchanged (`{ts, job, event, data}`) so a
+# downstream log driver / Loki query keyed on `job=cron-runner` keeps
+# working byte-for-byte. The build-time golden (`test:ledger-clock`,
+# inside `npm run build`) already proves the seam pins `ts`; this probe
+# is the live witness that the consolidated producer reaches production
+# stderr unchanged. Observational only — failure WARNs (the cron may
+# not have booted yet on a slow host; the build-time gate is the teeth).
+#
+# Cron boot timing: the cron-runner integration hook (astro.config.mjs)
+# fires on `astro:server:start`, then waits 5s before scheduling the
+# first tick — the BOOT line itself is logged immediately when boot()
+# is called (cron-runner.ts:105), so by the time we land here (after
+# all the warm-up probes 8a–8k.g, well past 5s) the boot line MUST be
+# in stderr. If it isn't, either the integration hook didn't fire
+# (Astro internal regression) or the shared seam dropped the line
+# (clock.logJson regression — the build-time golden would normally
+# have caught this, but the runtime witness backstops it).
+echo "==> [deploy] Witnessing v173 cron-runner stderr boot line (shared clock.logJson seam)…"
+CRON_BOOT_LOG_FILE="$(mktemp)"
+docker logs "${CONTAINER_NAME}" 2>&1 > "${CRON_BOOT_LOG_FILE}" || true
+# Count the boot lines that match the new shared-seam shape. We require:
+#   - the literal `"job":"cron-runner"` substring
+#   - the literal `"event":"boot"` substring
+# both in the SAME line (boot lines are JSON one-liners).
+CRON_BOOT_HITS=$(grep -c '"job":"cron-runner".*"event":"boot"\|"event":"boot".*"job":"cron-runner"' "${CRON_BOOT_LOG_FILE}" || true)
+# Stamp witness — every line emitted by clock.logJson starts with `{"ts":"`.
+# We grep the boot line (best-effort) for an ISO-shaped Z-terminated stamp.
+CRON_BOOT_TS_HITS=$(grep -c '"ts":"[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[^"]*Z"' "${CRON_BOOT_LOG_FILE}" || true)
+# Sample one boot line for the log so a human can eyeball the JSON shape.
+CRON_BOOT_PREVIEW=$(grep -m1 '"job":"cron-runner".*"event":"boot"' "${CRON_BOOT_LOG_FILE}" 2>/dev/null | head -c 240 | tr -d '\n' || true)
+rm -f "${CRON_BOOT_LOG_FILE}"
+echo "==> [deploy] cron-runner boot witness: boot-lines=${CRON_BOOT_HITS} · ts-iso-lines=${CRON_BOOT_TS_HITS} · preview=\"${CRON_BOOT_PREVIEW}\""
+if [ "${CRON_BOOT_HITS}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ v173 cron-runner boot stderr line NOT seen in docker logs — shared clock.logJson seam may have dropped the line, or cron integration hook didn't fire. Build-time test:ledger-clock is the actual gate (container still up)." >&2
+fi
+if [ "${CRON_BOOT_TS_HITS}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ v173 cron-runner boot line missing ISO-8601 'ts' stamp — clock.logJson seam regressed on the wire (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

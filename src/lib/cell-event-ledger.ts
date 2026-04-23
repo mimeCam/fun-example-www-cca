@@ -18,6 +18,9 @@
 //          guard), Paul Kim (the ratio is his), Elon Musk (falsifiability,
 //          fire-and-forget contract), Tanya Donska (§7 event vocabulary),
 //          Sid (ten-line functions).
+//          2026-04-23: ledger wedge (v173) — default-arg wall-clock reads
+//          route through the `now()` seam so callers inside `withClock(iso, …)`
+//          see a pinned clamp+cutoff (Mike PoI-2).
 
 import type Database from 'better-sqlite3';
 import { sharedDatabase } from './collectiveMemory';
@@ -27,6 +30,8 @@ import { DECAY_STAGES } from './decay-engine';
 import type { DecayStage } from './decay-engine';
 // v156 — shared nonce grammar. One REF_RE, one place (Mike §6.1).
 import { isValidRef } from './citation-ref';
+// v173 ledger wedge (2026-04-23): default-arg callsites read from the seam.
+import { now as clockNow } from './clock';
 
 // ── Public contract ───────────────────────────────────────────────────────
 
@@ -140,7 +145,7 @@ export function isValidEventRow(row: Partial<CellEventRow>): boolean {
 }
 
 /** Clamp wall-clock to a server-trusted ±1h window around now. */
-export function clampTimestamp(ts: number, now = Date.now()): number {
+export function clampTimestamp(ts: number, now = clockNow()): number {
   if (!Number.isFinite(ts)) return now;
   if (ts < now - MAX_SKEW_MS) return now - MAX_SKEW_MS;
   if (ts > now + MAX_SKEW_MS) return now + MAX_SKEW_MS;
@@ -169,7 +174,7 @@ export function record(row: CellEventRow): number {
 const DAY_MS = 86_400_000;
 
 /** ms cutoff for "last N days" windows, exclusive of events older than that. */
-function windowCutoff(days: number, now = Date.now()): number {
+function windowCutoff(days: number, now = clockNow()): number {
   return now - Math.max(1, days) * DAY_MS;
 }
 
@@ -298,7 +303,7 @@ function emptyLifetime(axis: Axis, stage: DecayStage): CellLifetime {
 
 /** Age of the oldest ledger event. Empty ledger → ageDays=0, ready=false
  *  (cold-start guardrail — Elon's "don't ship a lie on day one"). */
-export function ledgerMaturity(now = Date.now()): LedgerMaturity {
+export function ledgerMaturity(now = clockNow()): LedgerMaturity {
   ensureSchema();
   const row = sharedDatabase().prepare(
     'SELECT MIN(ts) AS first FROM cell_events',

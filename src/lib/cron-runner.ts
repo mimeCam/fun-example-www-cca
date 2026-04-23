@@ -10,11 +10,14 @@
 //   - `booted` flag: prevents double-registration in Astro dev hot-reload
 //   - SIGTERM handler: clears intervals, logs final state before Docker stop
 //
-// Credits: Mike (arch §cron-runner), Elon (first-principles: ignition switch only)
+// Credits: Mike (arch §cron-runner), Elon (first-principles: ignition switch only),
+//          Sid (2026-04-23 ledger wedge v173: local `logJson` retired; stderr
+//          stamp flows through the shared clock seam — Mike napkin §2).
 
 import { recordStart, recordFinish, recordError } from './cron-store';
 import { otsPollerRun }       from './jobs/ots-poller';
 import { deadlineSweeperRun } from './jobs/deadline-sweeper';
+import { logJson as clockLogJson } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types — plain objects, no class hierarchy
@@ -55,9 +58,10 @@ function buildBaseUrl(addr: AddressInfo): string {
   return `http://${normalizeHost(addr)}:${addr.port}`;
 }
 
+/** Job-name curry of the shared stderr stamp (clock.ts). Keeps every callsite
+ *  below at two args while the `ts` is pinned through `nowISO()`. */
 function logJson(event: string, data: Record<string, unknown>): void {
-  const entry = { ts: new Date().toISOString(), job: 'cron-runner', event, data };
-  process.stderr.write(JSON.stringify(entry) + '\n');
+  clockLogJson('cron-runner', event, data);
 }
 
 // ---------------------------------------------------------------------------
