@@ -11,8 +11,101 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint "v179 CiteFlash + cron-lazy-boot" (2026-04-23) — active cycle ──
-#   Two independent wedges ship together in this sprint's active git area:
+# ── Sprint "v180 Retire receipt-unfurl" (2026-04-23) — active cycle ─────────
+#   One-wedge sprint that closes the v179 CiteFlash consolidation loop by
+#   retiring the last hand-rolled `@keyframes receipt-*` holdout in
+#   src/styles/. With zero `receipt-*` keyframes left, the v179 prebuild
+#   guard (`scripts/check-cite-flash-reuse.ts`) flips from WARN → ERROR
+#   in this cycle — Mike napkin §2 "retire the last holdout, flip the
+#   guard", Tanya §3.1 "one voice, four instruments" (four receipt
+#   surfaces now consume ONE shared entry gesture).
+#
+#   What shipped in the active git area this cycle (staged/unstaged):
+#     · src/styles/motion.css (UPDATED, +12 lines) — new shared
+#       `@keyframes acknowledge-enter` keyframe, byte-identical in
+#       shape to the retired local `receipt-unfurl` (translateY -10px
+#       → 0 with a 0.98 → 1 scale settle, paired with opacity 0 → 1).
+#       Promoted from seal-receipt.css so all document-lifetime receipt
+#       surfaces can key off one canonical entry gesture. Lives in
+#       motion.css §Shared Keyframe Library — the single library the
+#       motion-sanctuary guard already polices.
+#     · src/styles/seal-receipt.css (UPDATED, +8/−8) — retires the local
+#       `@keyframes receipt-unfurl` definition; the `.seal-receipt`
+#       trophy now animates via `acknowledge-enter var(--motion-drift-
+#       duration) var(--ease-out) both`. A preserved inline comment
+#       warns future editors not to reintroduce a local `receipt-*`
+#       keyframe (the prebuild guard, now `--error`, would reject it).
+#       Shape preserved byte-for-byte — visual output on the trophy
+#       surface is identical pre/post wedge.
+#     · scripts/check-cite-flash-reuse.ts (UPDATED, +12/−7 in the
+#       preamble) — docs updated to describe §(b) as "ZERO files may
+#       hand-roll a `receipt-*` keyframe" (was: "exactly ONE file may
+#       hand-roll"). §(c) raw-ms invariant still ships de-facto WARN
+#       but the global `--error` flag is now safe because §(b) has
+#       zero known violations.
+#     · scripts/check-cite-flash-reuse.test.ts (NEW, untracked, ~130
+#       lines) — guard-for-the-guard: pure-scanner unit tests over
+#       `hasCiteKeyframe` / `hasReceiptKeyframe` / `hasRawMsNearFlash`
+#       (negative fixtures include the new `acknowledge-enter` name,
+#       the sibling `seal-receipt-bloom` / `sc-receipt-bloom`
+#       prefixes, and a narration-only comment) PLUS a live-repo
+#       assertion that walks `src/styles/**/*.css` and asserts ZERO
+#       files carry a `receipt-*` keyframe. Two extra live-repo
+#       assertions prove (a) `motion.css` exports
+#       `@keyframes acknowledge-enter`, and (b) `seal-receipt.css`
+#       consumes it AND carries no local `receipt-*` redefinition.
+#     · package.json (UPDATED, +1/−1) — two prebuild-chain deltas in
+#       ONE edit:
+#         (i)  `check-cite-flash-reuse.ts` → `check-cite-flash-reuse.ts
+#              --error`. Any future `@keyframes receipt-*` reintroduction
+#              fails `npm run build` fails the Docker image build fails
+#              this script fails the deploy (previous container stays
+#              stopped; operator re-runs after fixing the drift).
+#         (ii) NEW test line inserted into the chain:
+#              `npx tsx --test scripts/check-cite-flash-reuse.test.ts`
+#              right after `test:parity-seal`. Protects the regexes
+#              from rot AND surfaces any future `receipt-*`
+#              reintroduction AT BUILD TIME via the live-repo sweep.
+#     · AGENTS.md (UPDATED) — receipt-* invariant is now codified in
+#       the top-of-file map alongside the other prebuild teeth:
+#       "zero `@keyframes receipt-*` in `src/styles/` —
+#        check-cite-flash-reuse.ts --error in prebuild. Receipts consume
+#        shared `acknowledge-enter`." Motion.css gets a cameo in the
+#       Paths line as the "shared keyframe library". The retired
+#       "WIP — CiteFlash consolidation (next napkin)" line is removed.
+#
+#   Infrastructure deltas this sprint: NONE.
+#     · No new env vars, ports, services, named volumes, docker networks,
+#       or npm deps. All changes ship via the existing `COPY scripts/`
+#       + `COPY src/` + `COPY package.json` layers at the top of the
+#       builder stage — the next `docker build --no-cache` picks them up
+#       without a Dockerfile edit. Public surface is still port 7100,
+#       external Caddy still terminates SSL. Existing `persona-blog-a-
+#       data` + `persona-blog-a-sqlite` named volumes are reused as-is.
+#     · PREBUILD CHAIN FLIPS:
+#         · `check-cite-flash-reuse.ts` WARN → `--error` — the wedge's
+#           teeth. ZERO receipt-* keyframes is now a build-fail
+#           invariant, not a warning.
+#         · NEW test line: `npx tsx --test scripts/check-cite-flash-
+#           reuse.test.ts` joins the prebuild wall. Scanners +
+#           live-repo sweep; any regression fails the image build.
+#     · RUNTIME: one new probe (8o) witnesses the shared
+#       `acknowledge-enter` consolidation on the wire — greps the
+#       /api/docs SSR response for BOTH `acknowledge-enter` (shared
+#       keyframe name reaching the CSS bundle) AND the absence of
+#       `@keyframes receipt-unfurl` in the emitted CSS. Observational
+#       only (the prebuild guard + its new live-repo test are the
+#       teeth); the probe exists so a CSS-only regression that slipped
+#       past the guard would still surface in deployment.log.
+#
+#   Credits: Mike Koch (napkin v180 §2 "retire the last holdout",
+#   §5 "add a count-asserting unit test", §9 success criteria row 1),
+#   Tanya Donska (§3.1 entry gesture "one voice, four instruments",
+#   §9 DoD row — zero receipt-* in src/styles), Sid (≤ 10-line walkCss
+#   helper, byte-preserved refactor, 2026-04-23).
+#
+# ── Sprint "v179 CiteFlash + cron-lazy-boot" (2026-04-23) — previous cycle ──
+#   Two independent wedges shipped together in this sprint's git area:
 #
 #   (A) CiteFlash / ApiAlso design-system consolidation (Mike napkin §4,
 #       Tanya §5 pass 1). The copy→arrive→verify receipt flash and the
@@ -880,6 +973,19 @@
 #       the actual teeth live (Mike §8 "build-time gate, runtime
 #       witness"). This is the v173 ledger wedge's deploy-time
 #       receipt that the consolidation reached production stderr.
+#   8o. Witness the v180 shared `acknowledge-enter` consolidation on the
+#       wire. SSR-render /api/docs (which imports both motion.css and
+#       seal-receipt.css via Vite's CSS pass) and grep the emitted HTML
+#       AND the linked CSS bundle payload for (a) the shared keyframe
+#       name `acknowledge-enter` (MUST be present — proves the promoted
+#       library entry survived bundling), (b) the retired local
+#       `@keyframes receipt-unfurl` (MUST be absent — proves the local
+#       holdout was truly retired from the shipped CSS), and (c) any
+#       other `@keyframes receipt-*` redefinition in the bundle (MUST be
+#       absent — broad safety net). Observational only — failure WARNs,
+#       container stays up; the build-time guard (`check-cite-flash-
+#       reuse.ts --error`) + its new unit test (sweeps src/styles/**/*.
+#       css at image-build time) are the actual teeth.
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -917,15 +1023,18 @@ docker volume create "${SQLITE_VOLUME}" || true
 # `npm run build` inside the builder stage runs the full prebuild chain:
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival  →
-#   check-cite-flash-reuse (v179 NEW — WARN mode. Enforces single-source-
-#     of-truth for the copy→arrive flash: one `@keyframes cite-flash*`
-#     producer (src/styles/cite-flash.css), one JS producer
-#     (src/lib/cite-flash.ts). Also flags remaining `@keyframes receipt-*`
-#     holdouts (seal-receipt / arrival-receipt / audit-receipt / verify-
-#     receipt) as drift vectors the next wedge will consolidate, and
-#     warns on raw-ms literals near `cite-flash` references anywhere
-#     outside the pure helper. Flips to `--error` once the four legacy
-#     receipt-* keyframes collapse onto CiteFlash)  →
+#   check-cite-flash-reuse --error (v179 introduced WARN, v180 THIS SPRINT
+#     flipped to `--error`. Enforces single-source-of-truth for the
+#     copy→arrive flash: one `@keyframes cite-flash*` producer
+#     (src/styles/cite-flash.css), one JS producer (src/lib/cite-flash.ts).
+#     §(b) teeth engaged: ZERO files may hand-roll `@keyframes receipt-*`
+#     — v180 retired the last holdout (`receipt-unfurl` in seal-receipt.css
+#     → promoted to shared `@keyframes acknowledge-enter` in motion.css).
+#     Any future `receipt-*` reintroduction fails `npm run build` → fails
+#     this script → previous container stays stopped. §(c) raw-ms literals
+#     near `cite-flash` references still de-facto WARN (global --error
+#     flag is safe because §(b) has zero known violations; future wedge
+#     can split severity if a raw-ms dupe is introduced))  →
 #   check-citation-delegation  →  check-duration-reasons  →
 #   check-stage-tempo-divergence  →
 #   check-no-raw-now (v169 NINTH guard — WARN mode; flags raw Date.now()
@@ -1055,6 +1164,18 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     /parityGoldEarned stay aligned with TRI_MOUTH_ACTIONS. Fail-closed
 #     sentence returns null while enforced=false; JSON witness emits
 #     honest counts regardless; gold pip gates on zero-debt+enforced)  →
+#   test:check-cite-flash-reuse (v180 NEW — joined the prebuild chain
+#     this sprint, right after `test:parity-seal`. Guard-for-the-guard
+#     over scripts/check-cite-flash-reuse.ts scanners — hasCiteKeyframe,
+#     hasReceiptKeyframe, hasRawMsNearFlash — with negative fixtures
+#     covering the new shared `acknowledge-enter` name, sibling
+#     `seal-receipt-bloom` / `sc-receipt-bloom` prefixes, and narration-
+#     only comments. PLUS a live-repo sweep: walks src/styles/**/*.css,
+#     asserts ZERO files carry a `@keyframes receipt-*`, asserts
+#     motion.css exports `@keyframes acknowledge-enter`, asserts
+#     seal-receipt.css consumes the shared keyframe AND carries no local
+#     receipt-* redefinition. Any CSS regression that resurrects a
+#     receipt-* keyframe fails BOTH this test AND the --error guard)  →
 #   test:citation-delegation → test:duration-reasons →
 #   test:check-tri-mouth (v173 NEW, v175 expanded — synthetic-fixture
 #     unit tests for the ELEVENTH guard's scanners; proves each invariant
@@ -2095,6 +2216,90 @@ if [ "${CITEFLASH_STATUS}" != "200" ] || [ "${CITEFLASH_HAS_ROOT}" -lt 1 ] \
 fi
 if [ "${CITEFLASH_HAS_APIALSO}" -lt 1 ] || [ "${CITEFLASH_HAS_ORIGIN_TAG}" -lt 1 ]; then
   echo "==> [deploy] ⚠ /api/docs missing v179 ApiAlso markers (data-api-also-root / __ORIGIN__ placeholder) — chip didn't render or curl literal assembly regressed (container still up)." >&2
+fi
+
+# ── 8o. v180 shared acknowledge-enter consolidation — CSS wire witness ─────
+# v180 retires the last local `@keyframes receipt-unfurl` holdout in
+# seal-receipt.css and promotes a shared `@keyframes acknowledge-enter`
+# into motion.css. The prebuild guard (`check-cite-flash-reuse.ts
+# --error`) plus its new unit test (`scripts/check-cite-flash-reuse.
+# test.ts`) are the teeth — both walk src/styles/**/*.css at build time
+# and fail the image on any `receipt-*` reintroduction, AND the unit
+# test asserts motion.css defines `@keyframes acknowledge-enter` and
+# seal-receipt.css consumes it.
+#
+# This runtime probe is the deploy-time WITNESS that the consolidation
+# reached the shipped container's wire: SSR-render /api/docs (which
+# imports seal-receipt.css via the SealReceipt trophy and motion.css
+# via the shared-library routing) and grep the response HTML AND the
+# linked CSS bundles for:
+#   (a) `acknowledge-enter`         — shared keyframe name reaches the
+#                                     wire. Presence proves motion.css
+#                                     was bundled and the promoted
+#                                     keyframe survived Vite's CSS
+#                                     passes.
+#   (b) `@keyframes receipt-unfurl` — MUST be absent. The retired local
+#                                     keyframe should not appear in any
+#                                     CSS payload served from the
+#                                     container. A regression that
+#                                     restored the local definition
+#                                     would both (i) fail the build-time
+#                                     guard and (ii) surface here.
+#   (c) `@keyframes receipt-`       — broader safety net for any OTHER
+#                                     hand-rolled receipt-* keyframe
+#                                     that might slip in on a future
+#                                     wedge (bloom/etc). MUST be absent.
+#
+# Observational only — failure WARNs (the build-time guard + its unit
+# test are the actual gate). The probe never fails the deploy; it just
+# leaves a grep-friendly line in deployment.log on any CSS regression.
+echo "==> [deploy] Witnessing v180 shared acknowledge-enter consolidation (CSS bundle sweep)…"
+ACK_PAGE_FILE="$(mktemp)"
+ACK_PAGE_STATUS=$(curl --silent --show-error --output "${ACK_PAGE_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/api/docs" \
+  || echo '000')
+# Pull every linked CSS href from the SSR page so we can grep the bundle
+# contents too (Vite emits keyframes in a hashed .css payload; the HTML
+# carries only the link tag). Best-effort — empty list just means the
+# page-level sweep is the only evidence and we warn if the name is
+# missing. `grep -oE` extracts the href value without sed/awk per tool
+# guidance; dedupe via sort -u.
+ACK_CSS_PATHS=$(grep -oE 'href="[^"]+\.css[^"]*"' "${ACK_PAGE_FILE}" | grep -oE '/[^"]+\.css[^"]*' | sort -u || true)
+ACK_CSS_COMBINED="$(mktemp)"
+: > "${ACK_CSS_COMBINED}"
+for css_path in ${ACK_CSS_PATHS}; do
+  curl --silent --show-error --max-time 10 \
+    --output /dev/stdout \
+    "http://localhost:${HOST_PORT}${css_path}" >> "${ACK_CSS_COMBINED}" 2>/dev/null || true
+  echo "" >> "${ACK_CSS_COMBINED}"
+done
+ACK_CSS_BYTES=$(wc -c < "${ACK_CSS_COMBINED}" | tr -d ' ')
+# Presence of the shared keyframe name anywhere across HTML + CSS bundles.
+ACK_SHARED_HITS=$(grep -c 'acknowledge-enter' "${ACK_PAGE_FILE}" "${ACK_CSS_COMBINED}" 2>/dev/null | grep -oE '[0-9]+' | head -n 1 || echo 0)
+# The retired local keyframe must be ABSENT from the CSS bundle. `grep
+# -c` counts lines; we want zero across HTML + CSS. A stray occurrence
+# in a code-comment block inside a blog post would spuriously match,
+# but /api/docs does not render blog content — safe here.
+ACK_RETIRED_HITS=$(grep -c '@keyframes receipt-unfurl' "${ACK_PAGE_FILE}" "${ACK_CSS_COMBINED}" 2>/dev/null | grep -oE '[0-9]+' | paste -sd+ - | (read s && echo "$((s))") 2>/dev/null || echo 0)
+# Broader receipt-* safety net across the CSS bundle only (the SSR HTML
+# may legitimately carry `receipt-*` as a CSS class name or ARIA label;
+# the guard is keyframe reintroduction, so we scope to the bundle).
+ACK_BROAD_HITS=$(grep -c '@keyframes receipt-' "${ACK_CSS_COMBINED}" 2>/dev/null || echo 0)
+rm -f "${ACK_PAGE_FILE}" "${ACK_CSS_COMBINED}"
+echo "==> [deploy] v180 acknowledge-enter witness: HTTP ${ACK_PAGE_STATUS} · css-bundle=${ACK_CSS_BYTES}B · shared-hits=${ACK_SHARED_HITS} · retired-unfurl-hits=${ACK_RETIRED_HITS} · broad-receipt-keyframe-hits=${ACK_BROAD_HITS}"
+if [ "${ACK_PAGE_STATUS}" != "200" ]; then
+  echo "==> [deploy] ⚠ /api/docs SSR did not respond 200 during v180 CSS witness — page regressed (container still up)." >&2
+fi
+if [ "${ACK_SHARED_HITS}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ v180 shared 'acknowledge-enter' keyframe name NOT present in /api/docs HTML + CSS bundles — motion.css promotion may have regressed or been tree-shaken. Build-time check-cite-flash-reuse unit test is the actual gate (container still up)." >&2
+fi
+if [ "${ACK_RETIRED_HITS}" -gt 0 ]; then
+  echo "==> [deploy] ⚠ v180 RETIRED '@keyframes receipt-unfurl' is STILL on the wire — local holdout regressed or a new file reintroduced it. Build-time guard (--error) should have rejected this; please investigate (container still up)." >&2
+fi
+if [ "${ACK_BROAD_HITS}" -gt 0 ]; then
+  echo "==> [deploy] ⚠ v180 broad sweep found '@keyframes receipt-*' in CSS bundle — a NEW receipt-prefixed keyframe slipped past the guard. Investigate (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

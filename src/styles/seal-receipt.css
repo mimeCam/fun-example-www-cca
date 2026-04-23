@@ -1,7 +1,11 @@
 /* src/styles/seal-receipt.css
  * Certificate visual language for the SealReceipt trophy artifact.
  * All values route through tokens.css — zero hardcoded colors or radii.
- * Entry animation: receipt-unfurl (drift tier 600ms, ease-out — arrival, not bounce).
+ * Entry animation: shared `acknowledge-enter` keyframe from motion.css
+ * (drift tier 500ms, var(--ease-out) — arrival, not bounce). v180 wedge
+ * retired the local `receipt-unfurl` holdout so the prebuild guard can
+ * flip to --error. Shape preserved byte-for-byte (Mike napkin §7,
+ * Tanya §3.1 "one voice, four instruments").
  * Print layout: A4-safe, clean white surface, no glow shadows.
  *
  * Credits: Mike Koch (§SealReceipt arch, hex emboss, print spec),
@@ -18,14 +22,10 @@
   border-radius: var(--radius-lg);
   box-shadow:    var(--shadow-e4);
   padding:       var(--space-8);
-  animation:     receipt-unfurl var(--motion-drift-duration) ease-out both;
-}
-
-/* ── Entry animation (drift tier — arrival, not bounce) ─────────── */
-
-@keyframes receipt-unfurl {
-  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+  /* Shared entry gesture — see motion.css §Shared Keyframe Library.
+   * Do not reintroduce a local @keyframes receipt-*; the prebuild guard
+   * (scripts/check-cite-flash-reuse.ts --error) rejects it. */
+  animation:     acknowledge-enter var(--motion-drift-duration) var(--ease-out) both;
 }
 
 /* ── Header: eyebrow row ────────────────────────────────────────── */

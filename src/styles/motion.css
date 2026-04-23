@@ -177,6 +177,18 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Acknowledge-enter — shared entry gesture for document-lifetime receipt
+ * surfaces (today: .seal-receipt trophy). Promoted from the last local
+ * keyframe holdout in seal-receipt.css so the prebuild guard can flip to
+ * --error (see scripts/check-cite-flash-reuse.ts). Shape is byte-identical
+ * to the retired local keyframe: translateY from -10px → 0 with a subtle
+ * scale settle, paired with opacity 0 → 1.
+ * One voice, one beat — Tanya §3.1 entry gesture, Mike napkin v180 wedge. */
+@keyframes acknowledge-enter {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
 /* Periodic warm amber heartbeat — urgent but quiet */
 @keyframes pulse-warm {
   0%, 100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--gold) 0%, transparent); }

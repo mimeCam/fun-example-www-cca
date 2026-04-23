@@ -14,17 +14,22 @@
 //       error (wedge 2). Flips to --error via CLI flag, same discipline
 //       as check-no-raw-now.ts.
 //
-//   (b) Exactly ONE file may hand-roll a `receipt-*` keyframe. This
-//       guards against the next wedge's receipt consolidation (Tanya §5
-//       pass 1) from drifting — once the four receipt components collapse
-//       onto CiteFlash, any new `@keyframes receipt-*` is a regression.
+//   (b) ZERO files may hand-roll a `receipt-*` keyframe. v180 wedge
+//       retired the last holdout (`receipt-unfurl` in seal-receipt.css →
+//       promoted to shared `acknowledge-enter` in motion.css) and flipped
+//       this guard to --error in the prebuild chain. Any new receipt-
+//       prefixed keyframe is a regression. The shared keyframe lives once
+//       in src/styles/motion.css; receipts consume it by name.
 //
 //   (c) Raw-millisecond literals for the cite-flash beat (`200ms` literal
 //       in a component script) must not appear outside the pure helper;
 //       callers read `CITE_FLASH_DURATION_MS` from src/lib/cite-flash.ts.
-//       This invariant ships in WARN mode — the project has many legacy
-//       raw-ms literals (check-no-raw-now is also warn-only). Flips
-//       together with (a) in the wedge after this one.
+//       This invariant still ships de-facto in WARN mode: §(b) has zero
+//       known violations, so the --error flip in prebuild hardens §(b)
+//       without §(c) load-bearing drift. If a raw-ms dupe is introduced
+//       later, the next wedge can fold §(c) into a proper severity split
+//       (today the flag is global — §(b)'s zero-violation state is what
+//       makes the unified --error safe).
 //
 // Exit codes:
 //   0 → no violations (or --warn mode: violations printed to stderr,
