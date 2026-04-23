@@ -11,27 +11,60 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v177 "Arrival Receipt" (2026-04-23) — copy→arrive→verify ────
-#   v177 completes the citation trilogy's handshake: a copied cite now
-#   earns a visible, named receipt when it arrives at /api/docs?r=<nonce>.
-#   One pure producer (src/lib/arrival-receipt.ts::buildArrivalReceipt),
-#   three mouths — the same shape fans out to SSR HTML, a new curl
-#   endpoint, and the browser DOM.
+# ── Sprint v177.1 "Arrival Receipt §E" (2026-04-23) — cross-mouth wall ──
+#   v177.1 closes the one follow-up v177 left open: the arrival-receipt
+#   golden test is JOINED to the prebuild wall this sprint, AND its §E
+#   block (the whole point of the sprint) promotes the falsifiable
+#   criterion from "a test you can run locally" to "a gate npm run
+#   prebuild enforces before astro build starts". Any drift between the
+#   three mouths — producer / route body / DOM painter — now FAILS the
+#   Docker image build (→ this script exits non-zero, previous container
+#   already stopped, operator redeploys after fixing the drift).
+#
+#   The handshake itself — copy→arrive→verify — shipped in v177:
+#   `/api/docs?r=<nonce>` now earns a visible, named receipt. One pure
+#   producer (src/lib/arrival-receipt.ts::buildArrivalReceipt), three
+#   mouths — the same shape fans out to SSR HTML, the new curl endpoint,
+#   and the browser DOM. v177.1 is the lock on that three-way identity.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/arrival-receipt.ts (NEW) — the single producer. Pure,
-#       stateless, clock-pinned via src/lib/clock.ts. Exports:
-#       `buildArrivalReceipt(inputs)`, `serializeArrivalReceipt(r)`,
-#       `statusForReason(reason)`, `ARRIVAL_REASONS` closed vocabulary.
-#       Shapes: `ArrivalReceiptOk = {ok, cell:{axis,stage,anchor},
-#       label, ref, pinnedAt, parity}`, `ArrivalReceiptFail = {ok:false,
-#       reason:'malformed' | 'unknown-cell'}`. Validation order is
-#       malformed-first then unknown-cell (Mike napkin §5.8).
-#     • src/lib/arrival-receipt.test.ts (NEW) — golden test mirroring
-#       citation-golden + api-stamp-golden. Locks shape, stable key
-#       order, clock pinning, and the closed reason vocabulary. NOT
-#       yet in the prebuild chain (one-line follow-up); run via
-#       `npx tsx --test src/lib/arrival-receipt.test.ts`.
+#     • src/lib/arrival-receipt.test.ts (UPDATED) — §E cross-mouth
+#       byte-parity golden added. Four pinned vectors (three happy:
+#       typography×fresh, tempo×endangered, drag-highlight×fossil;
+#       one fail: unknown-cell). Every vector funnels through
+#       `observeThreeMouths()` which reads all three paths under ONE
+#       `withClock()` scope:
+#         A) producer     → `serializeArrivalReceipt(buildArrivalReceipt(…))`
+#         B) route body   → invokes `GET /api/docs/arrival` in-process via
+#                           a minimal `{ url, request }` context
+#         C) painter bytes→ `receiptBytesForPanel(buildArrivalReceipt(…))`
+#       Then `assertTriMouthParity()` asserts A≡B≡C + no trailing
+#       newline/CR + single-line shape + `JSON.stringify(JSON.parse(x))
+#       ≡ x` (catches pretty-print / key-reorder drift). Two extra guards:
+#       the route returns `Cache-Control: no-store` on BOTH happy AND
+#       failure paths (a reverse-proxy that ever pinned `pinnedAt` would
+#       serve a stale clock to a later happy hit — one assertion, one
+#       line). Header: `content-type: application/json; charset=utf-8`.
+#     • src/lib/client/arrival-acknowledge.ts (UPDATED) — extracted the
+#       panel's ONE JSON-serialisation callsite into a new exported
+#       helper `receiptBytesForPanel(r)`. `writePanel()` now calls that
+#       helper instead of `serializeArrivalReceipt()` directly. The
+#       helper is a pure re-export of the producer's bytes from the
+#       painter's POV — extracting it means the §E golden can observe
+#       the painter's bytes without pulling a DOM library into CI (Mike
+#       napkin §6.1 "zero new deps"). Byte-level behaviour of the panel
+#       is UNCHANGED; the wire-level `data-receipt-json` attribute
+#       carries the exact same bytes as before the refactor.
+#     • package.json (UPDATED) — one-line addition to the `prebuild`
+#       chain: `npx tsx --test src/lib/arrival-receipt.test.ts` inserted
+#       right after `check-tri-mouth.ts --error`. The test was NOT on
+#       the prebuild wall in v177 (called out as a follow-up); v177.1
+#       closes that follow-up. Every drift between the three mouths
+#       now fails the image build.
+#     • AGENTS.md (UPDATED) — v177 "WIP — Arrival Receipt" entry
+#       retired; replaced with "Arrival Receipt (shipped v177.1): third
+#       mouth live at GET /api/docs/arrival; §E cross-mouth golden on
+#       the prebuild wall, pinned clock, 4 vectors inc. one fail."
 #     • src/pages/api/docs/arrival.ts (NEW) — third mouth. Thin route
 #       handler: reads axis/stage/r from URL, hands to the producer,
 #       emits `serializeArrivalReceipt()` bytes + `statusForReason()`
@@ -63,21 +96,38 @@
 #
 #   Infrastructure deltas this sprint:
 #     · NO new env vars, ports, services, named volumes, or docker
-#       networks. The arrival trilogy is pure-SSR + pure-client; no
-#       DB, no ledger, no rate-limit table.
-#     · NO Dockerfile changes. All new files ship via the existing
-#       `COPY src/` layer.
-#     · NO prebuild chain changes this sprint. (arrival-receipt.test.ts
-#       is local-only; follow-up will add one line to package.json.)
-#     · New wire-level artefacts to warm (new probe 8k, five sub-probes):
-#         · /api/docs panel shell (`data-arrival-panel`) on every SSR.
-#         · /api/docs?r=<uuid> conditional client chunk reference
-#           (`arrival-acknowledge`) proves the import gate latched.
-#         · GET /api/docs/arrival happy path → 200 with {ok:true,
-#           anchor, pinnedAt, parity}.
-#         · GET /api/docs/arrival malformed ref → 400 reason:malformed.
-#         · GET /api/docs/arrival unknown cell → 404 reason:unknown-cell.
-#         · POST /api/docs/arrival → 405 Allow: GET.
+#       networks. Still a pure-SSR + pure-client handshake; no DB, no
+#       ledger, no rate-limit table. The existing `persona-blog-a-data`
+#       + `persona-blog-a-sqlite` volumes are reused as-is; no schema
+#       work, no migrations.
+#     · NO Dockerfile changes. The two touched files (test + client
+#       helper) both live under `src/` and ship via the existing
+#       `COPY src/` layer. The updated package.json (prebuild chain)
+#       is already in the `COPY package.json package-lock.json* ./`
+#       layer at the top of the builder stage, so `npm run build`
+#       picks up the new chain on the next `docker build --no-cache`.
+#     · PREBUILD CHAIN FLIPS: one new line joins the wall between
+#       `check-tri-mouth.ts --error` and `check-verify-bundle.ts`:
+#         `npx tsx --test src/lib/arrival-receipt.test.ts`
+#       The §E cross-mouth golden is the falsifiable criterion — any
+#       drift between producer, route body, or DOM painter bytes fails
+#       `npm run build` (image build fails → this script exits non-zero
+#       → previous container stays stopped → operator re-runs after fix).
+#     · New wire-level guarantees (runtime, enforced by this script):
+#         · The §E golden runs IN the builder stage at image-build
+#           time. If any of the 4 vectors' producer/route/painter bytes
+#           ever diverge, the image never gets tagged. All existing
+#           probes 8k.a–8k.f (panel shell, conditional chunk, happy
+#           path, malformed → 400, unknown-cell → 404, POST → 405)
+#           remain — they cover the three mouths end-to-end at runtime.
+#         · NEW runtime probe 8k.g — deploy-time byte-identity witness.
+#           A SECOND happy vector (tempo × endangered with a distinct
+#           ref suffix) hits `GET /api/docs/arrival` and asserts 200 +
+#           `"ok":true` + `"anchor":"axis-tempo-stage-endangered"` +
+#           `Cache-Control: no-store` on BOTH happy AND fail responses.
+#           The §E golden proves the bytes identical at BUILD; 8k.g
+#           proves the route keeps serving them under production env
+#           (middleware clock pin, no-store header, charset=utf-8).
 #
 # ── Sprint v176 PR-E "seal wave" (2026-04-23) — ParityPip hoist + flip ──
 #   Pays the last wedge on the Tri-Mouth Inventory and hoists the parity
@@ -483,6 +533,22 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     Mike §8). When the guard passes with the board full, it prints
 #     ONE celebratory summary line (`tri-mouth: 5/5 wired, cap=0,
 #     pip=lit ✓`) — pure print, no new module, surfaces in this log)  →
+#   test:arrival-receipt (v177.1 NEW — joined the prebuild chain this
+#     sprint, right after check-tri-mouth. §A–§D (shape · key order ·
+#     closed reason vocabulary · pin identity) + §E (cross-mouth byte-
+#     parity golden, THE falsifiable criterion). §E reads all three
+#     mouths under one `withClock()` scope — producer bytes via
+#     `serializeArrivalReceipt(buildArrivalReceipt(…))`, route body via
+#     in-process invocation of `GET /api/docs/arrival`, painter bytes
+#     via `receiptBytesForPanel(buildArrivalReceipt(…))` — and asserts
+#     A≡B≡C on 4 pinned vectors (typography×fresh, tempo×endangered,
+#     drag-highlight×fossil, + one fail: unknown-cell). Extra lines:
+#     no-trailing-newline, no-CR, single-line shape, and `JSON.
+#     stringify(JSON.parse(x)) === x` (catches pretty-print drift);
+#     route `Cache-Control: no-store` on BOTH happy AND fail paths;
+#     `content-type: application/json; charset=utf-8`. If any of the
+#     three mouths ever drift, the image NEVER builds — the script
+#     exits non-zero with the stopped previous container intact)  →
 #   check-verify-bundle (v169 TENTH guard — freezes the VerifyBundleDto
 #     wire shape across the API + SSR page)  →
 #   check-user-journey (v168 EIGHTH guard, expanded v169 — seven-step
@@ -1289,6 +1355,78 @@ rm -f "${ARRIVAL_POST_HEADERS_FILE}"
 echo "==> [deploy] POST /api/docs/arrival: HTTP ${ARRIVAL_POST_STATUS} · Allow:GET-hits=${ARRIVAL_POST_HAS_ALLOW} (expect 405)"
 if [ "${ARRIVAL_POST_STATUS}" != "405" ] || [ "${ARRIVAL_POST_HAS_ALLOW}" -lt 1 ]; then
   echo "==> [deploy] ⚠ POST /api/docs/arrival did not respond 405 with 'Allow: GET' — rejectNonGet regression or route unmounted (container still up)." >&2
+fi
+
+# ── 8k.g — v177.1 §E cross-mouth byte-parity runtime witness ───────────────
+# The §E golden runs at BUILD time inside `npm run build` and locks the
+# producer / route / painter bytes byte-identical on 4 vectors. This
+# runtime probe is the "deploy-time witness" for the live container:
+# a SECOND happy vector (distinct axis+stage pair from 8k.c) must
+# return 200 with the expected anchor AND both the happy and failure
+# responses must carry `Cache-Control: no-store` and `Content-Type:
+# application/json; charset=utf-8`. Together they prove (i) the route
+# module still resolves after the §E refactor, (ii) the middleware
+# clock-pin still reaches the handler (`pinnedAt` shape asserted), and
+# (iii) a reverse proxy between Caddy and the container cannot ever
+# pin a stale `pinnedAt` (no-store on BOTH paths — same guarantee
+# §E's last two tests assert at build time).
+ARRIVAL_PARITY_AXIS="tempo"
+ARRIVAL_PARITY_STAGE="endangered"
+ARRIVAL_PARITY_REF="ab12-cd34-ef56-7890-abcdef012345"
+ARRIVAL_PARITY_EXPECTED_ANCHOR='"anchor":"axis-tempo-stage-endangered"'
+
+echo "==> [deploy] Warming up GET /api/docs/arrival second happy vector (v177.1 §E byte-parity witness)…"
+ARRIVAL_PARITY_BODY_FILE="$(mktemp)"
+ARRIVAL_PARITY_HEADERS_FILE="$(mktemp)"
+ARRIVAL_PARITY_STATUS=$(curl --silent --show-error --output "${ARRIVAL_PARITY_BODY_FILE}" \
+  --dump-header "${ARRIVAL_PARITY_HEADERS_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/docs/arrival?axis=${ARRIVAL_PARITY_AXIS}&stage=${ARRIVAL_PARITY_STAGE}&r=${ARRIVAL_PARITY_REF}" \
+  || echo '000')
+ARRIVAL_PARITY_BODY_LEN=$(wc -c < "${ARRIVAL_PARITY_BODY_FILE}" | tr -d ' ')
+ARRIVAL_PARITY_HAS_OK=$(grep -c '"ok":true' "${ARRIVAL_PARITY_BODY_FILE}" || true)
+ARRIVAL_PARITY_HAS_ANCHOR=$(grep -cF "${ARRIVAL_PARITY_EXPECTED_ANCHOR}" "${ARRIVAL_PARITY_BODY_FILE}" || true)
+ARRIVAL_PARITY_HAS_PINNED=$(grep -c '"pinnedAt":"' "${ARRIVAL_PARITY_BODY_FILE}" || true)
+ARRIVAL_PARITY_HAPPY_NO_STORE=$(grep -ci '^cache-control: *no-store' "${ARRIVAL_PARITY_HEADERS_FILE}" || true)
+ARRIVAL_PARITY_HAPPY_CTYPE=$(grep -ci '^content-type: *application/json; *charset=utf-8' "${ARRIVAL_PARITY_HEADERS_FILE}" || true)
+# Body must be one line — §E asserts no '\n' / '\r' in the bytes.
+ARRIVAL_PARITY_LINE_COUNT=$(wc -l < "${ARRIVAL_PARITY_BODY_FILE}" | tr -d ' ')
+rm -f "${ARRIVAL_PARITY_BODY_FILE}" "${ARRIVAL_PARITY_HEADERS_FILE}"
+echo "==> [deploy] GET /api/docs/arrival (parity vector): HTTP ${ARRIVAL_PARITY_STATUS} · body=${ARRIVAL_PARITY_BODY_LEN}B · ok=${ARRIVAL_PARITY_HAS_OK} · anchor=${ARRIVAL_PARITY_HAS_ANCHOR} · pinnedAt=${ARRIVAL_PARITY_HAS_PINNED} · no-store=${ARRIVAL_PARITY_HAPPY_NO_STORE} · ctype=${ARRIVAL_PARITY_HAPPY_CTYPE} · body-lines=${ARRIVAL_PARITY_LINE_COUNT}"
+if [ "${ARRIVAL_PARITY_STATUS}" != "200" ] || [ "${ARRIVAL_PARITY_HAS_OK}" -lt 1 ] \
+   || [ "${ARRIVAL_PARITY_HAS_ANCHOR}" -lt 1 ] || [ "${ARRIVAL_PARITY_HAS_PINNED}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ v177.1 §E byte-parity witness failed (second happy vector regressed — ok/anchor/pinnedAt) — investigate (container still up)." >&2
+fi
+if [ "${ARRIVAL_PARITY_HAPPY_NO_STORE}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ v177.1 happy vector missing 'Cache-Control: no-store' — stale-pin regression risk (container still up)." >&2
+fi
+if [ "${ARRIVAL_PARITY_HAPPY_CTYPE}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ v177.1 happy vector missing 'Content-Type: application/json; charset=utf-8' — wire shape regression (container still up)." >&2
+fi
+# `wc -l` counts newline TERMINATORS; a one-line body with no trailing
+# newline should count 0 (§E asserts: body has no '\n'/'\r' at all).
+if [ "${ARRIVAL_PARITY_LINE_COUNT}" -gt 0 ]; then
+  echo "==> [deploy] ⚠ v177.1 happy vector body is multi-line or has trailing newline — §E single-line invariant regressed on the wire (container still up)." >&2
+fi
+
+# Failure path parallel: `Cache-Control: no-store` MUST still be
+# pinned when the route returns a closed reason — the §E test asserts
+# the same on a 404. A reverse proxy that caches the fail response
+# could later serve a stale `pinnedAt` on a happy hit.
+echo "==> [deploy] Warming up GET /api/docs/arrival failure vector headers (v177.1 §E no-store on fail)…"
+ARRIVAL_FAIL_HEADERS_FILE="$(mktemp)"
+ARRIVAL_FAIL_STATUS=$(curl --silent --show-error --output /dev/null \
+  --dump-header "${ARRIVAL_FAIL_HEADERS_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/docs/arrival?axis=not-an-axis&stage=${ARRIVAL_SAMPLE_STAGE}&r=${ARRIVAL_SAMPLE_REF}" \
+  || echo '000')
+ARRIVAL_FAIL_NO_STORE=$(grep -ci '^cache-control: *no-store' "${ARRIVAL_FAIL_HEADERS_FILE}" || true)
+rm -f "${ARRIVAL_FAIL_HEADERS_FILE}"
+echo "==> [deploy] GET /api/docs/arrival (fail headers): HTTP ${ARRIVAL_FAIL_STATUS} · no-store-on-fail=${ARRIVAL_FAIL_NO_STORE} (expect 404 + no-store)"
+if [ "${ARRIVAL_FAIL_STATUS}" != "404" ] || [ "${ARRIVAL_FAIL_NO_STORE}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ v177.1 fail vector missing 'Cache-Control: no-store' on 404 — stale-pin regression guard tripped (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

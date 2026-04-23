@@ -78,12 +78,21 @@ function paintNow(panel: HTMLElement, ref: string): void {
 
 /** Write the receipt into the panel DOM; hide on failure (paranoia). */
 function writePanel(panel: HTMLElement, r: ArrivalReceipt): void {
-  panel.dataset.receiptJson = serializeArrivalReceipt(r);
+  panel.dataset.receiptJson = receiptBytesForPanel(r);
   if (!r.ok) { panel.hidden = true; return; }
   setText(panel, '[data-arrival-cell]',   r.label);
   setText(panel, '[data-arrival-ref]',    r.ref);
   setText(panel, '[data-arrival-pinned]', formatPinned(r));
   panel.hidden = false;
+}
+
+/** The panel's ONE JSON-serialisation callsite — the third mouth's bytes.
+ *  Extracted so the §E cross-mouth golden (src/lib/arrival-receipt.test.ts)
+ *  can observe these bytes without a DOM dependency; `writePanel()` and
+ *  the test call the same helper. Polymorphism-is-a-killer, applied at
+ *  the byte-formatting level (Mike napkin §5.3). */
+export function receiptBytesForPanel(r: ArrivalReceipt): string {
+  return serializeArrivalReceipt(r);
 }
 
 /** Write textContent onto a panel descendant, safe on missing nodes. */
