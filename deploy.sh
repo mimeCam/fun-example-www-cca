@@ -11,6 +11,81 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
+# ── Sprint v176 PR-E (2026-04-23) — "keep-post curl-peer wedge" ──────────
+#   Pays the LAST outstanding wedge on the Tri-Mouth Inventory. Lands a
+#   real byte-producing curl peer on the `keep-post` row — the new
+#   `POST /api/keep` route — so the existing pointer (FloatingKeepButton)
+#   + keyboard (`K`) mouths now share a single oracle instead of the row
+#   carrying a `pending-curl-peer` debt receipt. Mike napkin v176 PR-E
+#   §3 ("single oracle"), §5 ("guard re-spec for the keep-post row"),
+#   §6 ("polymorphism is a killer — keep deps injectable, no DI tree"),
+#   Krystle Clear ("cap 1→0 ratchet, --warn→--error in the same PR"),
+#   Tanya Donska (§3 band switches to the gold receipt — "all mouths
+#   wired"), Sid — every helper ≤ 10 lines, zero module-level state.
+#
+#   What shipped in the active git area this cycle (staged/unstaged):
+#     • src/lib/keep-pact.ts (UPDATED) — appends the §SSR-SAFE PRODUCER
+#       block: `KeepReceipt` type literal (frozen wire shape: slug,
+#       nonce, ts, kept, count, why?), `KeepPactInput` / `KeepLedgerFacts`
+#       / `KeepPactDeps` interfaces, `DEFAULT_KEEP_DEPS` (clock+nonce
+#       seams via clock.ts and Web-Crypto randomUUID with a fallback),
+#       `buildKeepReceipt()` pure assembler, `keepPact()` the producer
+#       (pure: caller hands in pre-resolved ledger facts so this module
+#       stays free of DB imports — Vite-safe on the client bundle that
+#       PactPanel.astro pulls), `KeepPactLedger` interface,
+#       `makeMemoryLedger()` for tests, `keepWithLedger()` route-replay
+#       composer, `_testKeepPact()` isolated-run sanity. The DOM-only
+#       prelude (initKeepPact / PactPanel listeners) is UNTOUCHED — the
+#       producer is purely additive (new export surface, no rename).
+#     • src/lib/keep-golden.test.ts (NEW, untracked) — three-mouth
+#       byte-identical golden. Mouth 1: direct `keepPact(input, facts,
+#       deps)` under pinned clock + fixed nonce. Mouth 2: `keepWithLedger`
+#       against an in-memory ledger (same receipt). Mouth 3: `POST
+#       /api/keep` dispatched in-process via `dispatchJson()` with
+#       `withClock(PINNED_TS, …)` + a temp `globalThis.crypto.randomUUID`
+#       stub; `deepEqual` against the literal. Also asserts: bare GET
+#       returns 405 (Allow: POST), missing `x-session-id` is 400,
+#       malformed JSON is 400, unknown slug is 400, second POST with
+#       same {sessionId, slug} returns `kept:false` (idempotent). Run
+#       hermetically: `COMMUNITY_DB_PATH=:memory: npx tsx --test
+#       src/lib/keep-golden.test.ts`. NOT joined to the prebuild chain
+#       this PR (a follow-up once handler-dispatch in :memory: stops
+#       requiring the env-var dance — Mike napkin §8 sequencing).
+#     • src/pages/api/keep.ts (NEW, untracked) — the curl mouth.
+#       `POST /api/keep` body `{ slug, why? }`, header `x-session-id`,
+#       returns the KeepReceipt JSON. Imports `keepPact` from
+#       `../../lib/keep-pact` so the v175 §5.5 import-regex scanner in
+#       `check-tri-mouth.ts` resolves the producer. Reuses the existing
+#       collectiveMemory.ts session-rate-limit + revival-count writers
+#       (no new DB table). Non-POST verbs share one `rejectNonPost`
+#       handler that emits `Allow: POST`. Each helper ≤ 10 LoC (Sid).
+#
+#   Infrastructure deltas this sprint:
+#     · NO new env vars, ports, services, named volumes, or networks.
+#       The route is a pure-Node Astro endpoint — ships through the
+#       same `COPY src/` already in the Dockerfile builder stage.
+#     · NO new npm deps. Web Crypto's `crypto.randomUUID` is built-in
+#       on Node 20 (the Dockerfile base). The fallback UUID stub
+#       (Math.random) is dead code on production but keeps the test
+#       surface portable.
+#     · NO new SSE channel — `keep:confirmed` is deferred (keep-pact's
+#       pointer mouth already broadcasts via `/api/revive` and firing
+#       a second event for one logical keep would double-light the
+#       UI; see TODO at the bottom of src/pages/api/keep.ts). Tanya §6.
+#     · The Tri-Mouth cap ledger (`data/tri-mouth-pending-cap.json`)
+#       descends 1 → 0 as part of this PR. The COPY line in the
+#       Dockerfile is unchanged (the ratchet is a value, not a path).
+#     · `check-tri-mouth` flips `--warn` → `--error` once the inventory
+#       row's status moves to `wired` and `keep-post` imports
+#       `keep-pact` directly (the new route satisfies §5.5). Both
+#       happen in this PR; the build will fail-closed on any future
+#       drift instead of warning. Paul Kim MH-2 invariant preserved.
+#     · The Parity Seal flips to GOLD: `parityGoldEarned()` returns
+#       true once all 5 rows are wired AND the guard is in --error
+#       mode. Tanya §3 band footer drops the "1 mouth pending" receipt
+#       and surfaces the gold pip. The cite-JSON `parity.enforced`
+#       stays `true`; new field `parity.gold` becomes `true` (additive).
+#
 # ── Sprint v176 PR-D (2026-04-23) — "1/2/3-stance wedge" ────────────────
 #   Builds on v175 PR-C's R-chord wedge (which crossed the
 #   `readyToPromote()` threshold at 3 wired rows). PR-D wires the fourth
@@ -162,6 +237,16 @@
 #       StickyStanceBar.astro template edit shipped, (b) the page-chunk
 #       import of `stance-hotkey.ts` did not silently break the page,
 #       (c) the fourth ds-kbd-family chip is resolvable at runtime.
+#   8i. Warm the v176 PR-E keep-post curl peer (POST /api/keep) using
+#       three NON-MUTATING probes so the warm-up never bumps a real
+#       revival count: (a) GET /api/keep → 405 (rejector mounted; the
+#       module-scope `import { keepPact }` from `../../lib/keep-pact`
+#       resolved); (b) POST with malformed body → 400 ("Invalid JSON");
+#       (c) POST with an unknown slug + a synthetic x-session-id → 400
+#       ("Unknown slug"). Path (c) also exercises the slug-resolution
+#       helper, which dynamically imports `astro:content` — a cold
+#       failure there would 500 every real keep, so we want it to
+#       surface at deploy-time, not on the first reader's chord.
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -693,6 +778,79 @@ if [ "${STANCE_STATUS}" != "200" ] \
    || [ "${STANCE_HAS_ARIA_1}" -lt 1 ] || [ "${STANCE_HAS_ARIA_2}" -lt 1 ] \
    || [ "${STANCE_HAS_ARIA_3}" -lt 1 ] || [ "${STANCE_HAS_CHIP}" -lt 1 ]; then
   echo "==> [deploy] ⚠ /blog/${REVIVE_SLUG} missing v176 PR-D stance keyboard markers (aria-keyshortcuts=1|2|3 and/or ssb-vote-kbd chip) — investigate (container still up)." >&2
+fi
+
+# ── 8i. v176 PR-E keep-post curl-peer warm-up (POST /api/keep) ─────────────
+# v176 PR-E lands the third mouth of the `keep-post` row: the new
+# `POST /api/keep` route that imports `keepPact` from
+# `../../lib/keep-pact`. Three NON-MUTATING probes — none of them
+# bumps the revival count — so the warm-up is safe to run on every
+# redeploy. Together they prove the route is mounted, the module-scope
+# import of the producer resolved, the JSON guards fire, and the
+# slug-resolution helper (dynamic `astro:content` import) loads
+# without throwing.
+#
+#   (a) GET /api/keep        → expect 405 with `Allow: POST`. Proves
+#                              the module loaded (a broken import
+#                              would 500 here) AND the shared
+#                              `rejectNonPost` helper is bound to
+#                              the non-POST verbs.
+#   (b) POST malformed body  → expect 400 ("Invalid JSON"). Proves
+#                              `parseBody()` reaches the `badRequest`
+#                              branch on a real worker thread.
+#   (c) POST + unknown slug  → expect 400 ("Unknown slug"). The slug
+#                              guard fires AFTER `slugExists()`, which
+#                              dynamically imports `astro:content`
+#                              under the hood. A cold failure inside
+#                              that loader would 500 every real keep
+#                              — better to surface it at deploy-time.
+#
+# The synthetic `x-session-id` is a fixed sentinel ("deploy-warmup")
+# so even if a future refactor accidentally lets the count bump on
+# an unknown slug, the session is the same on every redeploy and the
+# blast radius is one row, not N. No `why` field is sent.
+KEEP_SENTINEL_SESSION="deploy-warmup-keep-curl"
+
+echo "==> [deploy] Warming up GET /api/keep (v176 PR-E rejector + keep-pact import resolution)…"
+KEEP_GET_STATUS=$(curl --silent --show-error --output /dev/null \
+  --write-out '%{http_code}' --max-time 10 \
+  --request GET \
+  "http://localhost:${HOST_PORT}/api/keep" \
+  || echo '000')
+echo "==> [deploy] GET /api/keep: HTTP ${KEEP_GET_STATUS} (expect 405)"
+if [ "${KEEP_GET_STATUS}" != "405" ]; then
+  echo "==> [deploy] ⚠ GET /api/keep did not respond 405 — route may be unmounted or keep-pact import broken (container still up)." >&2
+fi
+
+echo "==> [deploy] Warming up POST /api/keep with malformed body (v176 PR-E parseBody guard)…"
+KEEP_BAD_JSON_STATUS=$(curl --silent --show-error --output /dev/null \
+  --write-out '%{http_code}' --max-time 10 \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "x-session-id: ${KEEP_SENTINEL_SESSION}" \
+  --data 'not-json-{{{' \
+  "http://localhost:${HOST_PORT}/api/keep" \
+  || echo '000')
+echo "==> [deploy] POST /api/keep (bad JSON): HTTP ${KEEP_BAD_JSON_STATUS} (expect 400)"
+if [ "${KEEP_BAD_JSON_STATUS}" != "400" ]; then
+  echo "==> [deploy] ⚠ POST /api/keep with malformed body did not respond 400 — JSON guard regression (container still up)." >&2
+fi
+
+echo "==> [deploy] Warming up POST /api/keep with unknown slug (v176 PR-E slug-resolver + astro:content dynamic import)…"
+KEEP_UNKNOWN_BODY_FILE="$(mktemp)"
+KEEP_UNKNOWN_STATUS=$(curl --silent --show-error --output "${KEEP_UNKNOWN_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "x-session-id: ${KEEP_SENTINEL_SESSION}" \
+  --data '{"slug":"deploy-warmup-no-such-slug"}' \
+  "http://localhost:${HOST_PORT}/api/keep" \
+  || echo '000')
+KEEP_UNKNOWN_BODY_PREVIEW=$(head -c 200 "${KEEP_UNKNOWN_BODY_FILE}" | tr '\n' ' ')
+rm -f "${KEEP_UNKNOWN_BODY_FILE}"
+echo "==> [deploy] POST /api/keep (unknown slug): HTTP ${KEEP_UNKNOWN_STATUS} · preview=\"${KEEP_UNKNOWN_BODY_PREVIEW}\" (expect 400 'Unknown slug')"
+if [ "${KEEP_UNKNOWN_STATUS}" != "400" ]; then
+  echo "==> [deploy] ⚠ POST /api/keep with unknown slug did not respond 400 — slug-resolver or astro:content loader regression (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────
