@@ -11,72 +11,82 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v172 (2026-04-23) — "Collective Memory Clock Seam" ────────────
-#   v169 shipped the clock seam (`src/lib/clock.ts`) + SSR middleware
-#   (`src/middleware.ts`) that pins one `now()` per request. v170 wired
-#   read-only JSON handlers through `jsonStamped()` so every `computedAt`
-#   field in one SSR request is byte-identical. v172 finishes the fattest
-#   remaining wedge by migrating the heavy DB module:
-#
-#     `src/lib/collectiveMemory.ts` — 20 raw `Date.now()` / `new Date()`
-#     callsites → 0. Every wall-clock read now routes through `now()` /
-#     `nowDate()` / `nowISO()` from `src/lib/clock.ts`. Two pure helpers
-#     (`rateWindowOpen`, `cutoffMs`) are extracted so the math can be
-#     locked without touching the seam. Net: the heavy DB module now
-#     agrees with the middleware pin and the `/api/docs/cite` payload
-#     byte-for-byte across revival, rate-limit, velocity, daily-bucket,
-#     and visitor-trust paths.
+# ── Sprint v173 (2026-04-23) — "Tri-Mouth Inventory" ─────────────────────
+#   The site's killer feature is "one producer, three mouths": a user can
+#   invoke every core action via pointer, keyboard, OR curl and the SAME
+#   `src/lib/*.ts` module computes the payload. Prior sprints pinned this
+#   shape per-feature (v156 citation-golden, v168 journey-witness). v173
+#   lifts the pattern to the repo: ONE frozen literal describing every
+#   user-writable action × its three mouths × its single producer, plus
+#   an ELEVENTH prebuild guard that walks the literal on every image
+#   build and receipts any drift in `deployment.log`.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/collectiveMemory.ts (UPDATED) — all 20 raw wall-clock
-#       callsites replaced. Rate-limit stamps write ONE clock read into
-#       both columns (Mike PoI §2). `todayKey()` reads `nowISO().slice
-#       (0,10)` — shape `YYYY-MM-DD` stays load-bearing for existing
-#       daily_counts rows. New exports: `rateWindowOpen(lastAt, nowMs,
-#       windowMs)` and `cutoffMs(nowMs, windowMs)` (Math.max(0, …) so a
-#       negative cutoff never leaks into SQLite filters). Test-only
-#       `__setSharedDbForTests` now eagerly calls `initTables(override)`
-#       so swap-in `:memory:` handles have the schema immediately.
-#     • src/lib/__fixtures__/collectiveMemory.clock.json (NEW) — frozen
-#       ISO instant + window literals (rateWindowMs, readingRateMs,
-#       hourMs, dayMs, velocityRetentionDays). Duplicated intentionally:
-#       the test is a contract, not a re-derivation.
-#     • src/lib/collectiveMemory.clock.test.ts (NEW) — golden covering
-#       the Mike PoI §6 checklist: (0) fixture sanity, (1) pure helpers
-#       on boundary inputs, (2) stamps land on the pinned clock, (3)
-#       rate-limit windows deterministic under the pin, (4) velocity
-#       cutoffs route through the seam, (5) daily-count bucket keys off
-#       pinned today, (6) visitor-trust aging relative to the pin, (7)
-#       pruneRateLimits uses the pinned cutoff, (8) parallel withClock
-#       scopes don't cross-contaminate (AsyncLocalStorage per-stack).
-#       Every case swaps in a `:memory:` DB via the test hatch.
-#     • scripts/check-no-raw-now.ts (UPDATED) — wedge log extended.
-#       Guard STILL runs in WARN mode. Fattest remaining wedges called
-#       out: presence-hub.ts (6), live-decay.ts (5), cell-event-ledger
-#       .ts (3), cell-heat.ts (3). Flip to `--error` after the next 2–3.
-#     • package.json (UPDATED) — adds `test:collective-memory-clock`
-#       convenience script, wires the new golden into `prebuild` right
-#       after `test:api-stamp-golden` (the adjacent seam-golden arm).
-#     • AGENTS.md (UPDATED) — bumps remaining raw-callsite tally from
-#       100 to 80, names the next wedge targets.
+#     • src/lib/tri-mouth-inventory.ts (NEW) — the single frozen literal.
+#       `TRI_MOUTH_ACTIONS` names five rows today (cite-cell · submit-
+#       post · keep-post · revive · stance), each a `{ name, mouth,
+#       pointer, keyboard, curl, producer, status, pending? }` record.
+#       Pure exports: `findAction`, `wiredActions`, `pendingActions`,
+#       `parseCurl`, `pendingSummary`, `readyToPromote`. No fs, no DOM,
+#       SSR-safe. The literal is the SAME symbol the guard, the golden
+#       test, and any future UI legend consume — polymorphism-is-a-killer.
+#     • src/lib/tri-mouth-inventory.test.ts (NEW) — golden witnessing
+#       the literal's own health: name uniqueness, closed status
+#       vocabulary, `pending` fields name a truly-null mouth, every
+#       producer resolves on disk, every curl parses clean, parseCurl
+#       strips `?query#frag`, findAction misses return `undefined`
+#       (no throw), readyToPromote reflects the documented thresholds
+#       (≥ 5 rows ∧ ≥ 3 wired). Fires every `test:tri-mouth` run so
+#       an ill-formed row surfaces in seconds.
+#     • scripts/check-tri-mouth.ts (NEW) — the ELEVENTH prebuild guard.
+#       WARN mode (default), --error flips when `readyToPromote()`
+#       holds. Five invariants (Mike napkin §5): §5.1 producer file
+#       exists · §5.2 curl is `VERB /api/...` · §5.3 curl path resolves
+#       to a file under `src/pages/api/` (both `<path>.ts` and
+#       `<path>/index.ts` candidates) · §5.4 every non-wired row
+#       declares its single null mouth via `pending` · §5.5 the route
+#       file mentions the producer's basename (delegate-of-"imports").
+#       Scanners each ≤ 10 LoC, pure, fs predicates injected so the
+#       test sibling drives them with an in-memory fixture map.
+#     • scripts/check-tri-mouth.test.ts (NEW) — synthetic-fixture
+#       witness that the five invariants actually FIRE when the input
+#       is hole-shaped and PASS when it's clean. Mocks `existsFn` /
+#       `readFn` — zero disk I/O. Prevents the guard from rotting into
+#       a vacuous pass.
+#     • package.json (UPDATED) — two new convenience scripts
+#       (`check:tri-mouth`, `test:tri-mouth`) and the prebuild chain
+#       extended in two places: `check-tri-mouth.ts` runs right after
+#       `check-no-raw-now.ts` (guard-to-guard adjacency in the log) and
+#       the two new `--test` runs join the witness suite adjacent to
+#       the sibling `check-citation-delegation.test.ts` +
+#       `check-duration-reasons.test.ts` lines.
+#     • AGENTS.md (UPDATED) — adds a WIP line naming the v173 wedge
+#       ("5 rows / 2 wired / 2 findings"), the next targets (submit-
+#       post keyboard, keep-post curl peer, revive golden), and the
+#       `--error` flip criterion. Clock-migration + Journey Witness
+#       WIP lines untouched; Krystle §receipt-fidelity welcome-map
+#       trim preserved.
 #
 #   Infrastructure deltas this sprint: NONE.
-#     No new RUNTIME env vars (the clock seam + AsyncLocalStorage middle-
-#     ware already ship since v169). No new ports, services, named
-#     volumes, or docker networks. Every new/modified file lives under
-#     paths the Dockerfile already COPY-s wholesale:
-#       `COPY src/ ./src/`      (captures collectiveMemory.ts + the new
-#                                collectiveMemory.clock.test.ts + the
-#                                new `src/lib/__fixtures__/` directory)
-#       `COPY scripts/ ./scripts/` (captures check-no-raw-now.ts)
-#     The new golden test runs inside `npm run build` via `prebuild`, so
-#     a drift in the collective-memory seam fails the image build BEFORE
-#     the container ever starts — this script never gets to `docker run`.
-#     The `check-no-raw-now` guard still runs in WARN mode — raw callsite
-#     tally drops 100 → 80 this sprint; after 2–3 more wedges (presence-
-#     hub, live-decay, cell-event-ledger, cell-heat) it flips to --error
-#     and collectivememory-style regressions become a hard image-build
-#     failure here, not a runtime surprise.
+#     No new RUNTIME env vars. No new ports, services, named volumes,
+#     or docker networks. The inventory is a *description* of reality —
+#     it doesn't define reality — so it adds zero request paths and
+#     zero SSR surfaces. Every new file lives under paths the
+#     Dockerfile already COPY-s wholesale:
+#       `COPY src/ ./src/`       (captures tri-mouth-inventory.ts +
+#                                 its .test.ts sibling)
+#       `COPY scripts/ ./scripts/` (captures check-tri-mouth.ts + its
+#                                 .test.ts sibling)
+#     The new guard + tests run inside `npm run build` via `prebuild`,
+#     so a drift in the tri-mouth inventory fails the image build
+#     BEFORE the container ever starts — this script never gets to
+#     `docker run`. The guard still ships in WARN mode (2 findings:
+#     `keep-post` curl-no-producer-ref + one route lookup drift) —
+#     flip to `--error` comes with the first PR that wires the
+#     `keep-post` curl peer AND grows `wiredActions()` to 3. The v172
+#     clock-migration guard (`check-no-raw-now`) is still WARN at 80
+#     raw callsites; next wedges (presence-hub, live-decay, cell-event-
+#     ledger, cell-heat) remain the trailhead for that flip.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -137,9 +147,17 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-stage-tempo-divergence  →
 #   check-no-raw-now (v169 NINTH guard — WARN mode; flags raw Date.now()
 #     / new Date() outside the clock seam allowlist. Tally drops 100→80
-#     this sprint after the collectiveMemory.ts wedge; flip to --error
-#     once 2–3 more small wedges land: presence-hub (6), live-decay (5),
+#     after the v172 collectiveMemory.ts wedge; flip to --error once
+#     2–3 more small wedges land: presence-hub (6), live-decay (5),
 #     cell-event-ledger (3), cell-heat (3))  →
+#   check-tri-mouth (v173 ELEVENTH guard — WARN mode; walks the frozen
+#     `TRI_MOUTH_ACTIONS` literal in src/lib/tri-mouth-inventory.ts and
+#     enforces five invariants: §5.1 producer file exists, §5.2 curl is
+#     VERB /api/..., §5.3 curl path resolves under src/pages/api/, §5.4
+#     every non-wired row receipts its single null mouth via `pending`,
+#     §5.5 the route file mentions the producer's basename. 5 rows / 2
+#     wired / 2 findings today; flips to --error when readyToPromote()
+#     holds — ≥ 5 rows ∧ ≥ 3 wired)  →
 #   check-verify-bundle (v169 TENTH guard — freezes the VerifyBundleDto
 #     wire shape across the API + SSR page)  →
 #   check-user-journey (v168 EIGHTH guard, expanded v169 — seven-step
@@ -151,18 +169,17 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     acceptance properties: shape, pin identity within scope, nested-
 #     scope isolation, body preservation, seam-overrides-caller, cross-
 #     handler parity)  →
-#   test:collective-memory-clock (v172 NEW — nine-section golden locking
-#     the collectiveMemory.ts wedge: (0) fixture sanity, (1) pure
-#     rateWindowOpen/cutoffMs edges, (2) stamps land on pinned clock,
-#     (3) rate-limit windows deterministic under withClock, (4) velocity
-#     cutoffs route through the seam, (5) daily-count bucket keys off
-#     pinned today, (6) visitor-trust aging relative to the pin, (7)
-#     pruneRateLimits uses pinned cutoff, (8) parallel withClock scopes
-#     don't cross-contaminate. Runs against a :memory: DB swapped in via
-#     __setSharedDbForTests — zero disk I/O. A drift in the collective-
-#     memory seam fails the image build here, never reaches this script)
-#     →
+#   test:collective-memory-clock (v172 — nine-section golden locking the
+#     collectiveMemory.ts wedge against a :memory: DB; hermetic)  →
+#   test:tri-mouth-inventory (v173 NEW — golden witnessing the literal's
+#     own health: name uniqueness, closed status vocabulary, `pending`
+#     field truthfulness, producer-file existence, curl grammar,
+#     parseCurl strips ?query#frag, readyToPromote thresholds)  →
 #   test:citation-delegation → test:duration-reasons →
+#   test:check-tri-mouth (v173 NEW — synthetic-fixture unit tests for
+#     the ELEVENTH guard's scanners; proves each invariant fires on a
+#     hole-shaped row and passes on a clean one — prevents the guard
+#     from rotting into a vacuous pass)  →
 #   test:stage-ease → test:stage-tempo → test:stage-tempo-divergence  →
 #   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
