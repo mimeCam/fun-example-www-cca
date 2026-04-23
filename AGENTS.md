@@ -8,4 +8,4 @@
 
 **WIP — Journey Witness:** `submit → read → endanger` mouths in `src/lib/journey-witness.ts`. Deferred `revive → verdict-resolve` — needs `ADMIN_SECRET` + offline TSA stub (TODOs in `journey-golden.ts`).
 
-**WIP — Tri-Mouth Inventory (v173):** `src/lib/tri-mouth-inventory.ts` = ONE frozen literal (action × pointer / keyboard / curl × producer). `scripts/check-tri-mouth.ts` runs **warn** at prebuild. 5 rows / 2 wired / 2 findings. Next wedges: `submit-post` keyboard, `keep-post` curl peer, `revive` golden. Flip `--error` when `readyToPromote()` (≥ 5 rows ∧ ≥ 3 wired).
+**WIP — Tri-Mouth Inventory:** `src/lib/tri-mouth-inventory.ts` = ONE frozen literal (action × pointer / keyboard / curl × producer). `scripts/check-tri-mouth.ts` runs **warn** at prebuild. 5 rows / **3 wired** (v174: `submit-post` keyboard via `src/lib/client/submit-hotkey.ts` — `⌘↩` / `Ctrl+Enter` synthesises click on `#btn-publish`). `readyToPromote()` now `true`; next PR flips `--warn → --error`. Next wedges: `keep-post` curl peer, `stance` keyboard, `revive` golden + `R` keyboard.

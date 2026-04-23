@@ -307,6 +307,58 @@
   flex-wrap: wrap;
 }
 
+/* ── Keyboard chord chip (v174 — submit-post keyboard mouth) ─────
+ *
+ * Sibling of `#btn-publish` inside `.submit-actions`. Reads as
+ * "(Ctrl or ⌘) + Enter to publish". The two modifier <kbd> chips and
+ * the Enter chip are .ds-kbd primitives (token contract, no overrides);
+ * the separators and hint are tokenised text spans only. Matches the
+ * keep-float-legend whisper grammar (`.ds-kbd` + small caps prose).
+ *
+ * Token-compliant: every value resolves to a token in tokens.css.
+ * Credits: Mike napkin v174.1 §6.5 (chip label), Tanya §3.3 (chip-lit
+ * micro-interaction), Sid — no hardcoded colours, no magic numbers. */
+
+.submit-kbd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+  /* margin-left: auto — push to the right edge of the actions row when
+   * the row has free space. On wrap, the chip drops below cleanly. */
+  margin-left: auto;
+}
+
+.submit-kbd-chip-or,
+.submit-kbd-chip-sep {
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+  padding: 0 var(--space-1);
+  /* Glyph balance (Tanya principle #14) — neither separator dominates
+   * its neighbouring chip; both share the chip's text-2xs scale. */
+}
+
+.submit-kbd-chip-hint {
+  margin-left: var(--space-2);
+  color: var(--text-ghost);
+  font-family: var(--font-sans);
+  letter-spacing: var(--tracking-snug);
+}
+
+@media (max-width: 640px) {
+  /* On narrow viewports the actions row stacks; let the chip flow under
+   * the publish button as a quiet whisper rather than fighting for
+   * row-end real estate. */
+  .submit-kbd-chip {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 /* ── Buttons ──────────────────────────────────────────────────── */
 
 .submit-btn {

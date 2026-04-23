@@ -11,79 +11,85 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v173 (2026-04-23) — "Tri-Mouth Inventory" ─────────────────────
-#   The site's killer feature is "one producer, three mouths": a user can
-#   invoke every core action via pointer, keyboard, OR curl and the SAME
-#   `src/lib/*.ts` module computes the payload. Prior sprints pinned this
-#   shape per-feature (v156 citation-golden, v168 journey-witness). v173
-#   lifts the pattern to the repo: ONE frozen literal describing every
-#   user-writable action × its three mouths × its single producer, plus
-#   an ELEVENTH prebuild guard that walks the literal on every image
-#   build and receipts any drift in `deployment.log`.
+# ── Sprint v174 (2026-04-23) — "submit-post keyboard mouth" ──────────────
+#   Builds on v173's Tri-Mouth Inventory (one producer, three mouths:
+#   pointer · keyboard · curl, all routed through ONE `src/lib/*.ts`
+#   module). v174 wires the FIRST owed mouth from that inventory: the
+#   keyboard affordance for `submit-post`. The publish path now answers
+#   `Ctrl+Enter` (Linux/Win) and `⌘↩` (macOS) on step-3 of
+#   `/community/submit`, by synthesising a click on `#btn-publish` —
+#   so the publish flow stays single-source-of-truth (Mike napkin v174.1
+#   §6.1 polymorphism guard). `wiredActions()` grows 2→3, which flips
+#   `readyToPromote()` from `false` to `true` (≥ 5 rows ∧ ≥ 3 wired).
+#   The check-tri-mouth guard stays in WARN one more sprint per Krystle's
+#   bisection cadence; the `--warn → --error` flip is the next PR.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/tri-mouth-inventory.ts (NEW) — the single frozen literal.
-#       `TRI_MOUTH_ACTIONS` names five rows today (cite-cell · submit-
-#       post · keep-post · revive · stance), each a `{ name, mouth,
-#       pointer, keyboard, curl, producer, status, pending? }` record.
-#       Pure exports: `findAction`, `wiredActions`, `pendingActions`,
-#       `parseCurl`, `pendingSummary`, `readyToPromote`. No fs, no DOM,
-#       SSR-safe. The literal is the SAME symbol the guard, the golden
-#       test, and any future UI legend consume — polymorphism-is-a-killer.
-#     • src/lib/tri-mouth-inventory.test.ts (NEW) — golden witnessing
-#       the literal's own health: name uniqueness, closed status
-#       vocabulary, `pending` fields name a truly-null mouth, every
-#       producer resolves on disk, every curl parses clean, parseCurl
-#       strips `?query#frag`, findAction misses return `undefined`
-#       (no throw), readyToPromote reflects the documented thresholds
-#       (≥ 5 rows ∧ ≥ 3 wired). Fires every `test:tri-mouth` run so
-#       an ill-formed row surfaces in seconds.
-#     • scripts/check-tri-mouth.ts (NEW) — the ELEVENTH prebuild guard.
-#       WARN mode (default), --error flips when `readyToPromote()`
-#       holds. Five invariants (Mike napkin §5): §5.1 producer file
-#       exists · §5.2 curl is `VERB /api/...` · §5.3 curl path resolves
-#       to a file under `src/pages/api/` (both `<path>.ts` and
-#       `<path>/index.ts` candidates) · §5.4 every non-wired row
-#       declares its single null mouth via `pending` · §5.5 the route
-#       file mentions the producer's basename (delegate-of-"imports").
-#       Scanners each ≤ 10 LoC, pure, fs predicates injected so the
-#       test sibling drives them with an in-memory fixture map.
-#     • scripts/check-tri-mouth.test.ts (NEW) — synthetic-fixture
-#       witness that the five invariants actually FIRE when the input
-#       is hole-shaped and PASS when it's clean. Mocks `existsFn` /
-#       `readFn` — zero disk I/O. Prevents the guard from rotting into
-#       a vacuous pass.
-#     • package.json (UPDATED) — two new convenience scripts
-#       (`check:tri-mouth`, `test:tri-mouth`) and the prebuild chain
-#       extended in two places: `check-tri-mouth.ts` runs right after
-#       `check-no-raw-now.ts` (guard-to-guard adjacency in the log) and
-#       the two new `--test` runs join the witness suite adjacent to
-#       the sibling `check-citation-delegation.test.ts` +
-#       `check-duration-reasons.test.ts` lines.
-#     • AGENTS.md (UPDATED) — adds a WIP line naming the v173 wedge
-#       ("5 rows / 2 wired / 2 findings"), the next targets (submit-
-#       post keyboard, keep-post curl peer, revive golden), and the
-#       `--error` flip criterion. Clock-migration + Journey Witness
-#       WIP lines untouched; Krystle §receipt-fidelity welcome-map
-#       trim preserved.
+#     • src/lib/client/submit-hotkey.ts (NEW) — pure predicate
+#       `isSubmitKey()` + `bindSubmitHotkey()` binding + DOMContentLoaded
+#       auto-boot. Mirrors keep-hotkey.ts shape (the second
+#       hotkey-on-an-action sibling, pattern earning its keep). No
+#       module-level state; the hotkey synthesises a `click` on
+#       `#btn-publish` so the existing `publish()` handler in
+#       submit.astro flows unchanged into POST /api/submit-post.
+#       Lights the Enter chip via `lightForKey('Enter', 120)` from the
+#       v152 ds-kbd-lit primitive — chip-lit's 4th consumer.
+#     • src/lib/client/submit-hotkey.test.ts (NEW) — pure-function
+#       truth-table over {key} × {modifier combos}. Bare Enter is
+#       NOT a publish (textarea-newline + focus-ring etiquette);
+#       Ctrl+Enter / Meta+Enter ARE; Shift+Enter / Alt+Enter fall
+#       through; non-Enter keys never publish. Disjointness assertion
+#       proves submit-hotkey ↛ keep-hotkey (no key collision in the
+#       same listener stack). Joins prebuild via package.json.
+#     • src/pages/community/submit.astro (UPDATED) — adds
+#       `aria-keyshortcuts="Control+Enter Meta+Enter"` to
+#       `#btn-publish` (canonical AT teach), a `.submit-kbd-chip`
+#       sibling with three .ds-kbd primitives ("Ctrl / ⌘ + Enter to
+#       publish") for sighted teach, and an `import` of
+#       `submit-hotkey.ts` in the page <script> so Astro pulls the
+#       module into the page chunk (auto-boots on DOMContentLoaded).
+#     • src/styles/community-submit.css (UPDATED) — `.submit-kbd-chip`,
+#       `.submit-kbd-chip-or`, `.submit-kbd-chip-sep`,
+#       `.submit-kbd-chip-hint` styles. 100 % token-compliant
+#       (font-mono, text-2xs, text-tertiary/ghost, space-1/2,
+#       tracking-wide/snug); responsive @media stacks the chip below
+#       the publish button on ≤640px. No magic numbers; passes
+#       check-token-compliance --guard at prebuild.
+#     • src/lib/tri-mouth-inventory.ts (UPDATED) — `submit-post` row
+#       promoted: `keyboard: '⌘↩|Ctrl+Enter'`, `status: 'wired'`,
+#       `pending` field dropped. `wiredActions()` returns 3, the
+#       `readyToPromote()` threshold is met.
+#     • scripts/check-tri-mouth.test.ts (UPDATED) — adds the
+#       `WIRED_SUBMIT_POST` fixture so a future regression that drops
+#       the keyboard mouth back to `null` without a `pending` receipt
+#       fails the §5.4 surface-completeness invariant on the fixture,
+#       not in production.
+#     • package.json (UPDATED) — adds `test:submit-hotkey` convenience
+#       script and joins the new test into the `prebuild` chain
+#       adjacent to `test:keep-hotkey` (sibling pattern stays
+#       co-located in the build log).
+#     • AGENTS.md (UPDATED) — Tri-Mouth WIP line tagged v173/v174,
+#       narrates the wedge, names ds-kbd-lit as the chip-lit
+#       primitive's 4th consumer, calls out `readyToPromote() = true`
+#       and the deferred `--warn → --error` flip.
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new RUNTIME env vars. No new ports, services, named volumes,
-#     or docker networks. The inventory is a *description* of reality —
-#     it doesn't define reality — so it adds zero request paths and
-#     zero SSR surfaces. Every new file lives under paths the
-#     Dockerfile already COPY-s wholesale:
-#       `COPY src/ ./src/`       (captures tri-mouth-inventory.ts +
-#                                 its .test.ts sibling)
-#       `COPY scripts/ ./scripts/` (captures check-tri-mouth.ts + its
-#                                 .test.ts sibling)
-#     The new guard + tests run inside `npm run build` via `prebuild`,
-#     so a drift in the tri-mouth inventory fails the image build
-#     BEFORE the container ever starts — this script never gets to
-#     `docker run`. The guard still ships in WARN mode (2 findings:
-#     `keep-post` curl-no-producer-ref + one route lookup drift) —
-#     flip to `--error` comes with the first PR that wires the
-#     `keep-post` curl peer AND grows `wiredActions()` to 3. The v172
+#     or docker networks. No new API routes — the keyboard mouth reuses
+#     the existing `POST /api/submit-post` curl peer (single producer,
+#     three mouths). All new files live under paths the Dockerfile
+#     already COPY-s wholesale:
+#       `COPY src/ ./src/`       (captures submit-hotkey.ts + its
+#                                 .test.ts sibling AND the updated
+#                                 submit.astro / community-submit.css
+#                                 / tri-mouth-inventory.ts files)
+#       `COPY scripts/ ./scripts/` (captures the updated
+#                                 check-tri-mouth.test.ts fixture)
+#     The new test runs inside `npm run build` via `prebuild`, so a
+#     regression in the keyboard predicate fails the image build
+#     BEFORE the container ever starts. The check-tri-mouth guard
+#     stays in WARN this sprint (Krystle bisection cadence; one more
+#     wedge before the `--warn → --error` flip). The v172
 #     clock-migration guard (`check-no-raw-now`) is still WARN at 80
 #     raw callsites; next wedges (presence-hub, live-decay, cell-event-
 #     ledger, cell-heat) remain the trailhead for that flip.
@@ -106,6 +112,11 @@
 #   8d. Warm the v172 collective-memory clock-seam runtime via
 #       /api/ghost-echoes (calls getRevivalTimeline → cutoffMs(now(),…));
 #       proves the middleware pin reaches the heavy DB module in prod.
+#   8e. Warm the v174 submit-post keyboard mouth: SSR-render
+#       /community/submit and grep for the new `.submit-kbd-chip` +
+#       `aria-keyshortcuts` markers; proves the keyboard teach landed
+#       in the SSR HTML AND that the page-chunk import of
+#       `submit-hotkey.ts` did not silently break the page.
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -163,7 +174,13 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-user-journey (v168 EIGHTH guard, expanded v169 — seven-step
 #     submit → read → endanger journey dispatched through the real
 #     APIRoute handlers in-process, hermetic :memory: SQLite)  →
-#   test:keep-hotkey → test:keep-legend → test:chip-lit → test:arrival →
+#   test:keep-hotkey →
+#   test:submit-hotkey (v174 NEW — pure-function truth-table over {key} ×
+#     {modifier combos} for the `Ctrl+Enter` / `⌘↩` publish hotkey on
+#     /community/submit; proves bare Enter is NOT a publish, the two
+#     valid chord forms ARE, and the predicate is disjoint from
+#     keep-hotkey so the two listeners can coexist without racing)  →
+#   test:keep-legend → test:chip-lit → test:arrival →
 #   test:citation-golden → test:journey-golden →
 #   test:api-stamp-golden (v170 — proves jsonStamped's six napkin
 #     acceptance properties: shape, pin identity within scope, nested-
@@ -408,6 +425,39 @@ rm -f "${GHOST_BODY_FILE}"
 echo "==> [deploy] /api/ghost-echoes: HTTP ${GHOST_STATUS} · body=${GHOST_BODY_LEN}B · buckets-hits=${GHOST_HAS_BUCKETS} · preview=\"${GHOST_BODY_PREVIEW}\""
 if [ "${GHOST_STATUS}" != "200" ] || [ "${GHOST_HAS_BUCKETS}" -lt 1 ]; then
   echo "==> [deploy] ⚠ ghost-echoes did not respond 200 with buckets — collectiveMemory seam may not be wired (container still up)." >&2
+fi
+
+# ── 8e. Submit-post keyboard-mouth warm-up (v174) ──────────────────────────
+# v174 wires the keyboard mouth on `submit-post` (Ctrl+Enter / ⌘↩). The
+# prebuild golden (`src/lib/client/submit-hotkey.test.ts`) already proves
+# the predicate is correct over the full {key} × {modifier} truth-table at
+# image-build time. This runtime probe SSR-renders /community/submit and
+# greps for two markers that prove the wedge actually shipped to the
+# wire:
+#   (a) `aria-keyshortcuts="Control+Enter Meta+Enter"` — canonical AT
+#       teach (Mike napkin v174.1 §6.7); presence proves the
+#       submit.astro template change is live.
+#   (b) `submit-kbd-chip` — the sighted teach element; presence proves
+#       the new CSS class is rendered AND that the page-chunk import of
+#       `submit-hotkey.ts` did not silently break the page (a runtime
+#       module-resolution error would 500 the SSR render before HTML
+#       reached the wire).
+# The page is publicly reachable (no auth gate) and SSR-rendered, so a
+# bare GET is enough — no PoW, no session needed.
+echo "==> [deploy] Warming up /community/submit (v174 submit-post keyboard mouth)…"
+SUBMIT_BODY_FILE="$(mktemp)"
+SUBMIT_STATUS=$(curl --silent --show-error --output "${SUBMIT_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/community/submit" \
+  || echo '000')
+SUBMIT_BODY_LEN=$(wc -c < "${SUBMIT_BODY_FILE}" | tr -d ' ')
+SUBMIT_HAS_ARIA=$(grep -c 'aria-keyshortcuts="Control+Enter Meta+Enter"' "${SUBMIT_BODY_FILE}" || true)
+SUBMIT_HAS_CHIP=$(grep -c 'submit-kbd-chip' "${SUBMIT_BODY_FILE}" || true)
+rm -f "${SUBMIT_BODY_FILE}"
+echo "==> [deploy] /community/submit: HTTP ${SUBMIT_STATUS} · body=${SUBMIT_BODY_LEN}B · aria-keyshortcuts-hits=${SUBMIT_HAS_ARIA} · submit-kbd-chip-hits=${SUBMIT_HAS_CHIP}"
+if [ "${SUBMIT_STATUS}" != "200" ] || [ "${SUBMIT_HAS_ARIA}" -lt 1 ] || [ "${SUBMIT_HAS_CHIP}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /community/submit missing v174 keyboard-mouth markers (aria-keyshortcuts and/or submit-kbd-chip) — investigate (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

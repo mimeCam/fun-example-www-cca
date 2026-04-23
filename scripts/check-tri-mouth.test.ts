@@ -59,6 +59,21 @@ const PENDING_OK: TriMouthAction = {
   pending:  'keyboard',
 };
 
+/** v174 — wired-shape echo of the real `submit-post` row (Mike napkin
+ *  v174.1 §4 file-table edit "Fixture row reflects new wired shape").
+ *  Documents the post-promote shape so a future regression that drops
+ *  the `keyboard` mouth back to `null` without a `pending` receipt
+ *  fails on this fixture, not in production. */
+const WIRED_SUBMIT_POST: TriMouthAction = {
+  name:     'wired-submit-post-fixture',
+  mouth:    'submit a community article (fixture)',
+  pointer:  '/community form',
+  keyboard: '⌘↩|Ctrl+Enter',
+  curl:     'POST /api/test-two',
+  producer: 'src/lib/test-producer.ts',
+  status:   'wired',
+};
+
 /** Bogus curl shape (invariant §5.2 should fire). */
 const BAD_CURL: TriMouthAction = {
   ...CLEAN, name: 'bad-curl', curl: 'FETCH the-thing' as any,
@@ -180,6 +195,13 @@ describe('scanAction — folds all five invariants', () => {
   });
   test('pending-keyboard row → zero findings', () => {
     assert.equal(scanAction(PENDING_OK, existsFn, readFn).length, 0);
+  });
+  test('v174 wired-submit-post fixture → zero findings', () => {
+    // Promoted shape: the row owes no debts and carries no `pending`.
+    // Scanner must find zero violations; if a future edit drops the
+    // keyboard mouth back to `null` without a pending receipt, the
+    // §5.4 surface-completeness check fires here.
+    assert.equal(scanAction(WIRED_SUBMIT_POST, existsFn, readFn).length, 0);
   });
   test('incomplete row → exactly one finding (surface-incomplete)', () => {
     const fs = scanAction(INCOMPLETE, existsFn, readFn);

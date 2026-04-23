@@ -83,7 +83,24 @@ import '../../styles/community-submit.css';
 
       <div class="submit-actions">
         <a href="#" id="btn-back" class="submit-btn submit-btn--ghost">← Back</a>
-        <button id="btn-publish" class="submit-btn submit-btn--amber">Publish article</button>
+        <button
+          id="btn-publish"
+          class="submit-btn submit-btn--amber"
+          aria-keyshortcuts="Control+Enter Meta+Enter"
+        >Publish article</button>
+        {/* v174 — keyboard mouth on `submit-post` (Mike napkin v174.1 §6.5,
+            Tanya UX §3.3). One Enter chip (the lit target via ds-kbd-lit
+            when the chord fires); two modifier teach chips read as
+            "(Ctrl or ⌘) + Enter". aria-hidden because aria-keyshortcuts
+            on the button is the canonical teach for AT (Mike §6.7). */}
+        <span class="submit-kbd-chip" aria-hidden="true">
+          <kbd class="ds-kbd">Ctrl</kbd>
+          <span class="submit-kbd-chip-or">/</span>
+          <kbd class="ds-kbd">⌘</kbd>
+          <span class="submit-kbd-chip-sep">+</span>
+          <kbd class="ds-kbd">Enter</kbd>
+          <span class="submit-kbd-chip-hint">to publish</span>
+        </span>
       </div>
     </section>
 
@@ -104,6 +121,14 @@ import '../../styles/community-submit.css';
 </BaseLayout>
 
 <script>
+// v174 — keyboard mouth on `submit-post` (Mike napkin v174.1 §6.11 boot
+// stanza). The submit-hotkey module auto-boots on import via its own
+// top-level `DOMContentLoaded` guard; the import line is the load-bearing
+// edge that pulls the bundle into the page chunk. Mirrors the pattern
+// FloatingKeepButton.astro uses for keep-hotkey.ts.
+import { bindSubmitHotkey } from '../../lib/client/submit-hotkey';
+void bindSubmitHotkey;     // referenced so tree-shaking keeps the module.
+
 // ── State ─��──────────────────────────────��─────────────────────────────────
 
 interface PoWResult { nonce: number; hash: string; }

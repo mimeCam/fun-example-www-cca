@@ -99,11 +99,14 @@ export const TRI_MOUTH_ACTIONS: readonly TriMouthAction[] = [
     name:     'submit-post',
     mouth:    'submit a community article',
     pointer:  '/community form',
-    keyboard: null,                 // TODO: keyboard affordance owed (Enter-to-send after PoW).
+    // v174 wedge — Ctrl+Enter (Linux/Win) and ⌘↩ (macOS) publish from
+    // step-3 of the composer via src/lib/client/submit-hotkey.ts. The
+    // hotkey synthesises a click on `#btn-publish` so the publish path
+    // stays single-source-of-truth (Mike napkin v174.1 §6.1, §7).
+    keyboard: '⌘↩|Ctrl+Enter',
     curl:     'POST /api/submit-post',
     producer: 'src/lib/communityPosts.ts',
-    status:   'pending-keyboard',
-    pending:  'keyboard',
+    status:   'wired',
   },
   {
     name:     'keep-post',
