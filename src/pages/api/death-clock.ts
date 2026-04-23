@@ -14,6 +14,7 @@ import {
   daysUntilEntombment, clockUrgency, deathClockLabel,
   deathClockA11yLabel, CLOCK_MAX_DAYS,
 } from '../../lib/death-clock';
+import { nowDate } from '../../lib/clock';
 
 export const prerender = false;
 
@@ -43,7 +44,9 @@ function buildClockData(
 ): Response {
   const revivalCount   = safeRead(() => getRevivalCount(slug),   0);
   const readingSeconds = safeRead(() => getReadingSeconds(slug), 0);
-  const now = new Date();
+  // SSR-pinned via withClock middleware — `nowDate()` agrees byte-for-byte
+  // across every handler in the same request. No more per-handler drift.
+  const now = nowDate();
   const factor        = decayFactor(pubDateISO, CLOCK_MAX_DAYS, now, revivalCount, readingSeconds, conviction);
   const daysRemaining = daysUntilEntombment(pubDateISO, revivalCount, readingSeconds, CLOCK_MAX_DAYS, now, conviction);
   const urgency       = clockUrgency(daysRemaining);

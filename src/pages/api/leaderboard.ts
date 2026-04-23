@@ -7,6 +7,7 @@
 
 import type { APIRoute } from 'astro';
 import { getLeaderboard, getAuthorStats } from '../../lib/leaderboard';
+import { jsonStamped, nowISO } from '../../lib/clock';
 
 export const prerender = false;
 
@@ -29,5 +30,8 @@ export const GET: APIRoute = ({ url }) => {
   }
 
   const authors = getLeaderboard();
-  return json({ authors, generatedAt: new Date().toISOString() });
+  // `generatedAt` alias retained for one sprint — external RSS/embed consumers
+  // may still read it. Drop after 2026-05 per Mike §PoI-2.
+  // TODO: remove `generatedAt` alias once downstream consumers confirm switch.
+  return json(jsonStamped({ authors, generatedAt: nowISO() }));
 };

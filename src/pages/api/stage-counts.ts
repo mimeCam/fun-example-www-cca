@@ -11,6 +11,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { allPostDisplayData } from '../../lib/postMeta';
 import { getStageCounts } from '../../lib/river-data';
+import { jsonStamped } from '../../lib/clock';
 
 export const prerender = false;
 
@@ -28,7 +29,7 @@ export const GET: APIRoute = async () => {
   try {
     const posts  = await getCollection('blog');
     const counts = getStageCounts(allPostDisplayData(posts));
-    return json({ ...counts, computedAt: new Date().toISOString() });
+    return json(jsonStamped({ ...counts }));
   } catch {
     return json({ error: 'Counts unavailable' }, 503);
   }

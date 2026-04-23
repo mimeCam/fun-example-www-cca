@@ -31,6 +31,7 @@ import {
 import { getDeadlineStatus } from '../lib/deadline-enforcer';
 import { buildDeadlineDisplay } from '../lib/deadline-clock';
 import { HEARTBEAT_FRESH, HEARTBEAT_FADING, HEARTBEAT_CRITICAL } from '../lib/spring-easing';
+import { nowISO } from '../lib/clock';
 
 type DecayVariant = 'ring' | 'bar' | 'banner';
 
@@ -63,7 +64,10 @@ const {
   compact         = false,
   conviction      = null,
   decayFactor,
-  computedAt      = new Date().toISOString(),
+  // SSR-pinned: this default matches nowISO() in every other stamped handler
+  // within the same request. Callers that pass a pre-computed `computedAt`
+  // (e.g. from a deeper SSR helper) still win — prop wins over default.
+  computedAt      = nowISO(),
   verdictModifier = 1.0,
   slug,
   publishDate,

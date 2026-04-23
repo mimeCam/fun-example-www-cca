@@ -11,6 +11,7 @@
 //   · now()       → number  (ms since epoch)
 //   · nowDate()   → Date
 //   · nowISO()    → string  (ISO-8601, UTC)
+//   · jsonStamped(body) → body & { computedAt: string }  (one seam, one field)
 //   · withClock(fixedMs|iso, fn)   scoped override (AsyncLocalStorage)
 //   · freezeClock(iso) / unfreezeClock()  module-level override for sync tests
 //   · _testClock() — build-time sanity check per openloop/inplace-testing-howto.md
@@ -80,6 +81,32 @@ export function nowDate(): Date {
 /** Current time as an ISO-8601 string. */
 export function nowISO(): string {
   return new Date(now()).toISOString();
+}
+
+// ── JSON response stamp — one field, one producer, one clock ──────────────
+
+/**
+ * Stamp a response body with `computedAt: nowISO()`.
+ *
+ * Per Mike's napkin (§Stamped JSON): every read-only API response that exposes
+ * a "when was this computed" field must go through this helper. It routes the
+ * stamp through the SSR-pinned clock so two handlers invoked within the same
+ * middleware request emit byte-identical `computedAt` values — "input parity
+ * by construction" (Paul Kim).
+ *
+ * Shape rule: the stamped field is always named `computedAt` (ISO-8601 UTC).
+ * Older endpoints that shipped `generatedAt` should alias via their own
+ * handler body for one sprint, then drop. Polymorphism is a killer.
+ *
+ *   return json(jsonStamped({ authors }));
+ *   // → { authors, computedAt: "2026-04-23T18:42:07.384Z" }
+ *
+ * The helper is a pure spread — no cloning, no prototype trickery. If the
+ * caller's body already contains `computedAt`, this intentionally overwrites
+ * it (the seam wins, always).
+ */
+export function jsonStamped<T extends object>(body: T): T & { computedAt: string } {
+  return { ...body, computedAt: nowISO() };
 }
 
 // ── Scoped override — the preferred test seam ─────────────────────────────
@@ -168,5 +195,20 @@ export function _testClock(): void {
   try { parseISO('not-a-date'); } catch { threw = true; }
   console.assert(threw, 'parseISO rejects bad input');
 
-  console.log('[clock] OK — now, nowDate, nowISO, withClock, freezeClock verified');
+  // jsonStamped — single producer of `computedAt` across the API surface.
+  withClock('2026-05-01T09:00:00Z', () => {
+    const stamped = jsonStamped({ foo: 1, bar: 'baz' });
+    console.assert(stamped.foo === 1 && stamped.bar === 'baz', 'jsonStamped preserves body');
+    console.assert(stamped.computedAt === '2026-05-01T09:00:00.000Z', 'jsonStamped reads pin');
+    // Two calls inside the same scope produce byte-identical stamps.
+    const a = jsonStamped({}), b = jsonStamped({});
+    console.assert(a.computedAt === b.computedAt, 'jsonStamped agrees with itself in scope');
+  });
+  // Caller-supplied computedAt is overwritten — the seam wins, always.
+  withClock('2026-05-02T09:00:00Z', () => {
+    const stamped = jsonStamped({ computedAt: 'LIE' });
+    console.assert(stamped.computedAt === '2026-05-02T09:00:00.000Z', 'seam overrides caller');
+  });
+
+  console.log('[clock] OK — now, nowDate, nowISO, jsonStamped, withClock, freezeClock verified');
 }

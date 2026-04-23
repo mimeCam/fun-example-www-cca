@@ -19,6 +19,7 @@ import {
 } from '../../lib/batting-average';
 import { canonicalUrl } from '../../config/seo.config';
 import { getCollection } from 'astro:content';
+import { jsonStamped, nowISO } from '../../lib/clock';
 
 export const prerender = false;
 
@@ -81,7 +82,9 @@ function buildJsonPayload(
   authorSlug: string,
   r: ReturnType<typeof getBattingAverageResult>,
 ): Record<string, unknown> {
-  return {
+  // `generatedAt` alias kept one sprint for external embed consumers that
+  // may have pinned the old field name. TODO: drop after 2026-05 per Mike §PoI-2.
+  return jsonStamped({
     author: authorSlug,
     battingAverage: r.battingAverage,
     trophyTier: r.trophyTier,
@@ -93,8 +96,8 @@ function buildJsonPayload(
     ogImageUrl: canonicalUrl(
       `/api/og/batting-average.png?author=${authorSlug}`,
     ),
-    generatedAt: new Date().toISOString(),
-  };
+    generatedAt: nowISO(),
+  });
 }
 
 // ---------------------------------------------------------------------------

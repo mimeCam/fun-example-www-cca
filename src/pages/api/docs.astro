@@ -44,6 +44,7 @@ import {
 } from '../../lib/cell-event-ledger';
 import { heatedGrid, heatSentence } from '../../lib/cell-heat';
 import type { HeatedCell } from '../../lib/cell-heat';
+import { now } from '../../lib/clock';
 
 // NOTE: the clipboard payload is built CLIENT-SIDE from window.location.origin
 // so prerendered HTML never bakes in a build-time host (Paul §non-negotiable —
@@ -78,7 +79,9 @@ const REVIEWED_ON = '2026-04-22';
 // v150d — per-request SSR fetch. heated is the 7×5 grid (never partial);
 // snap.byCell drives the subtitle sentence; dormant suppresses the sentence
 // until the ledger earns the right to speak (Elon's cold-start rule).
-const _heatNow = Date.now();
+// Routed through clock.ts — the matrix shares the SSR-pinned "now" with
+// every other handler in the same request (Mike §Stamped JSON).
+const _heatNow = now();
 const heatedCells: HeatedCell[] = heatedGrid(lifetimeByCell(), ledgerMaturity(_heatNow), _heatNow);
 const heatSnapshot = baseline(ROUND_TRIP_WINDOW_DAYS);
 const heatByKey = indexHeat(heatedCells);

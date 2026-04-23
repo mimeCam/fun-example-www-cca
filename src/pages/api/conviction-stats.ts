@@ -24,6 +24,7 @@ import { getSealEntry }            from '../../lib/conviction-ledger';
 import { getTstForSeal }           from '../../lib/timestamp-store';
 import { getDisputeResolution }    from '../../lib/verdict-dispute';
 import { getCollection }           from 'astro:content';
+import { jsonStamped }             from '../../lib/clock';
 
 export const prerender = false;
 
@@ -40,7 +41,8 @@ function buildAuthorPayload(
   authorSlug: string, totalPublished: number,
 ): Record<string, unknown> {
   const r = getBattingAverageResult(authorSlug, totalPublished);
-  return {
+  // jsonStamped bakes `computedAt: nowISO()` routed through the SSR clock.
+  return jsonStamped({
     author:          authorSlug,
     battingAverage:  r.battingAverage,
     resolvedTotal:   r.resolvedTotal,
@@ -50,8 +52,7 @@ function buildAuthorPayload(
     totalSealed:     r.totalSealed,
     eligible:        r.eligible,
     trophyTier:      r.trophyTier,
-    computedAt:      new Date().toISOString(),
-  };
+  });
 }
 
 function deriveStage(
