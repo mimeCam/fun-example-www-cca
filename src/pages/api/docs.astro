@@ -51,12 +51,14 @@ import type { HeatedCell } from '../../lib/cell-heat';
 // resolved at copy time by cell-cite.ts using the same cellCitationPayload()
 // pure helper — one source of truth, no host drift.
 
-// v146: is the row a real value, or does it alias another profile? Anything
-// that starts with `var(…)` is an alias — the grammar's shape exists but the
-// number is inherited from `--motion-snap-duration`. Only `fresh` is populated.
+// v165: every stage now carries a literal ms value (no more snap aliases).
+// The `var(…)` fallback is retained only as a defensive guard for any
+// future stage that re-aliases — the check-stage-tempo-divergence prebuild
+// guard will flag any such collapse via `duration-alias`, long before it
+// reaches this function.
 function motionValueLabel(stage: DecayStage): string {
   const value = STAGE_TRANSITION_DURATION_MS[stage];
-  return value.startsWith('var(') ? 'aliased to snap (today)' : value;
+  return value.startsWith('var(') ? 'aliased (check tokens)' : value;
 }
 
 // ── Vocabulary copy — kept in this file only, beside the live tuple ─────────
@@ -155,14 +157,13 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
     <section class="api-docs__section" aria-labelledby="motion-heading">
       <h2 id="motion-heading" class="api-docs__h2">How the five stages feel.</h2>
       <p class="api-docs__lede">
-        Each stage has its own interaction timing. The grammar is five rows;
-        today only <code class="api-docs__inline">fresh</code> carries a bespoke
-        value — every other stage aliases to the snap profile so it feels
-        exactly like today. The table shape is public so the ramp can expand
-        from data, not guesswork. The same five words drive every surface the
-        reader touches: typography, border, tempo, selection, drag-highlight,
-        the keyboard focus ring (v148), and — as of v149 — the prose link
-        underline.
+        Each stage has its own interaction timing. The grammar is five rows,
+        each a distinct ms literal — <code class="api-docs__inline">endangered</code>
+        is the shortest on purpose, because it is the one stage where the
+        reader can still act to revive the post. The same five words drive
+        every surface the reader touches: typography, border, tempo,
+        selection, drag-highlight, the keyboard focus ring (v148), and — as
+        of v149 — the prose link underline.
       </p>
 
       <dl class="api-docs__stages api-docs__stages--motion">

@@ -7,8 +7,15 @@
 //   (2) every `--stage-{stage}-duration` literal in tokens.css matches the
 //       duration column of the 5-D oracle in stage-tempo.ts (resolving one
 //       hop of `var()` aliases — e.g. fading → --motion-snap-duration),
-//   (3) no two stages collapse to byte-equal ease OR byte-equal duration
-//       literals (the "1+4 aliases" kill of v162 + the duration variant),
+//   (3a) no two stages collapse to byte-equal ease literals,
+//   (3b) [v165] no two stages collapse to byte-equal RESOLVED duration
+//        literals (`duration-alias`),
+//   (3c) [v165] `endangered` is the unique strict minimum on the duration
+//        axis (`endangered-not-min`) — the one stage where the reader can
+//        still act. Rules (3b) and (3c) are a CONJUNCTION, not
+//        substitution: (3b) alone permits `[280,280,140,540,720]` (Elon
+//        §2.3); (3c) alone permits `[280,280,280,280,140]`; together they
+//        are strictly stronger than either.
 //   (4) every unordered stage pair's 5-D tempo divergence ≥ TEMPO_JND_FLOOR.
 //
 // Renamed + widened from v162's `check-stage-ease-divergence.ts` (Mike
@@ -64,6 +71,7 @@ export type Violation = Readonly<{
   rule:
     | 'ease-missing' | 'ease-parity' | 'ease-alias'
     | 'duration-missing' | 'duration-parity'
+    | 'duration-alias' | 'endangered-not-min'
     | 'tempo-jnd';
   stage?: DecayStage;
   stageB?: DecayStage;
@@ -188,18 +196,24 @@ function expectedFor(axis: Axis, stage: DecayStage): string {
   return `${STAGE_TEMPO_VECTORS[stage][4]}ms`;
 }
 
-// ── Distinctness (ease axis only — durations are intentionally collinear) ─
+// ── Distinctness (both axes — v165 widens duration to parity with ease) ──
 //
-// Mike napkin v163 §"Why not Krystle's symmetric fence": adding a parallel
-// duration-alias check is rejected — the 5-D JND floor is the single metric
-// that subsumes it AND catches diagonals. The CLS-discipline comment at
-// tokens.css:938–943 deliberately keeps four of five durations aliased to
-// --motion-snap-duration. Flagging that as a violation would be policy
-// inversion. If a future stage de-aliases, the 5-D JND catches any
-// perceptually-indistinct pair directly.
+// v163 deliberately skipped a duration-distinctness fence because four of
+// five stages aliased to `--motion-snap-duration` by policy (collinearity
+// was a feature, not a bug). v165 de-aliases all five durations on the
+// Tanya/Mike/Elon plan; distinctness becomes a real invariant and the
+// guard fires on any regression to the aliased shape.
+//
+// Why distinctness AND endangered-is-strict-min (conjunction, Mike §5):
+//   (a) alone catches `[280, 280, 140, 540, 720]` (two stages equal), but
+//       a "unique local minimum" predicate alone PERMITS the same fixture
+//       (Elon §2.3 counterexample — 140 is still the strict min). The
+//       conjunction is strictly stronger than either rule alone AND
+//       strictly stronger than v163's guard (which had neither).
 
-/** Ease-distinctness: no two stages share a resolved CSS string. */
-function checkEaseDistinctness(
+/** Generic byte-equality distinctness on a resolved stage-literal map. */
+function checkAliasDistinctness(
+  rule: Extract<Violation['rule'], 'ease-alias' | 'duration-alias'>,
   map: StageLiteralMap,
   resolve: (n: string) => string | null,
 ): Violation[] {
@@ -207,9 +221,27 @@ function checkEaseDistinctness(
   for (const [a, b] of stagePairs()) {
     const ra = finalResolveValue(map[a] ?? '', resolve);
     const rb = finalResolveValue(map[b] ?? '', resolve);
-    if (ra && rb && ra === rb) out.push({ rule: 'ease-alias', stage: a, stageB: b, expected: ra });
+    if (ra && rb && ra === rb) out.push({ rule, stage: a, stageB: b, expected: ra });
   }
   return out;
+}
+
+/** `endangered` must be strictly shorter than every other stage — the
+ *  one stage where the reader can still act (Tanya §3). Reads directly
+ *  off the oracle: the parity check above ensures CSS already matches. */
+function checkEndangeredStrictMin(): Violation[] {
+  const endangered = STAGE_TEMPO_VECTORS.endangered[4];
+  const loser = (s: DecayStage) =>
+    s !== 'endangered' && endangered >= STAGE_TEMPO_VECTORS[s][4];
+  return DECAY_STAGES.filter(loser).map((s) => strictMinViolation(s, endangered));
+}
+
+function strictMinViolation(s: DecayStage, endangeredMs: number): Violation {
+  const otherMs = STAGE_TEMPO_VECTORS[s][4];
+  return {
+    rule: 'endangered-not-min', stage: s,
+    expected: `${endangeredMs}ms`, actual: `${otherMs}ms`,
+  };
 }
 
 // ── JND floor — 5-D tempo ───────────────────────────────────────────────
@@ -238,7 +270,9 @@ export function compareAgainstOracle(
     out.push(...checkAxisForStage('ease',     stage, easeMap[stage],     resolveEase));
     out.push(...checkAxisForStage('duration', stage, durationMap[stage], resolveDuration));
   }
-  out.push(...checkEaseDistinctness(easeMap, resolveEase));
+  out.push(...checkAliasDistinctness('ease-alias',     easeMap,     resolveEase));
+  out.push(...checkAliasDistinctness('duration-alias', durationMap, resolveDuration));
+  out.push(...checkEndangeredStrictMin());
   out.push(...checkTempoJnd());
   return out;
 }
@@ -248,12 +282,14 @@ export function compareAgainstOracle(
 /** Single-line diagnostic per violation. CI-grep-friendly. */
 export function formatViolation(v: Violation): string {
   switch (v.rule) {
-    case 'ease-missing':     return fmtMissing('ease', v);
-    case 'ease-parity':      return fmtParity('ease', v);
-    case 'ease-alias':       return fmtAlias(v);
-    case 'duration-missing': return fmtMissing('duration', v);
-    case 'duration-parity':  return fmtParity('duration', v);
-    case 'tempo-jnd':        return fmtTempoJnd(v);
+    case 'ease-missing':         return fmtMissing('ease', v);
+    case 'ease-parity':          return fmtParity('ease', v);
+    case 'ease-alias':           return fmtAlias('ease', v);
+    case 'duration-missing':     return fmtMissing('duration', v);
+    case 'duration-parity':      return fmtParity('duration', v);
+    case 'duration-alias':       return fmtAlias('duration', v);
+    case 'endangered-not-min':   return fmtEndangeredNotMin(v);
+    case 'tempo-jnd':            return fmtTempoJnd(v);
   }
 }
 
@@ -265,8 +301,12 @@ function fmtParity(axis: 'ease' | 'duration', v: Violation): string {
   return `  [${axis}-parity] --stage-${v.stage}-${axis} drifted: expected "${v.expected}", got "${v.actual}"`;
 }
 
-function fmtAlias(v: Violation): string {
-  return `  [ease-alias] --stage-${v.stage}-ease and --stage-${v.stageB}-ease collapsed to the same value ("${v.expected}")`;
+function fmtAlias(axis: 'ease' | 'duration', v: Violation): string {
+  return `  [${axis}-alias] --stage-${v.stage}-${axis} and --stage-${v.stageB}-${axis} collapsed to the same value ("${v.expected}")`;
+}
+
+function fmtEndangeredNotMin(v: Violation): string {
+  return `  [endangered-not-min] endangered (${v.expected}) must be strictly shorter than ${v.stage} (${v.actual}) — endangered is the only actionable stage`;
 }
 
 function fmtTempoJnd(v: Violation): string {
@@ -313,7 +353,7 @@ function readIfExists(rel: string): string {
 }
 
 function printClean(): void {
-  console.log(`✅  check-stage-tempo-divergence: 5 stage tempos clean · min pairwise 5-D divergence ≥ ${TEMPO_JND_FLOOR}.`);
+  console.log(`✅  check-stage-tempo-divergence: 5 stage tempos clean · 5 distinct durations · endangered is strict min · min pairwise 5-D divergence ≥ ${TEMPO_JND_FLOOR}.`);
 }
 
 function printFailure(violations: Violation[]): void {

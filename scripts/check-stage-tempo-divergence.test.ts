@@ -54,8 +54,8 @@ import { DECAY_STAGES } from '../src/lib/decay-engine.ts';
 // ── Fixture builder — a tokens.css body + a motion.css body ──────────────
 
 /** Clean tokens.css body that matches BOTH oracles. fresh goes via the
- *  --motion-easing-spring alias (matches real file's shape); four durations
- *  alias --motion-snap-duration (ditto).                                    */
+ *  --motion-easing-spring alias (matches real file's shape); v165 durations
+ *  are five distinct literals mirroring the stage-tempo.ts oracle.          */
 function cleanTokensFixture(): string {
   const fresh = cubicBezierCss(STAGE_EASE_CURVES.fresh);
   const fading = cubicBezierCss(STAGE_EASE_CURVES.fading);
@@ -70,17 +70,19 @@ function cleanTokensFixture(): string {
     `  --stage-endangered-ease: ${endangered};`,
     `  --stage-ghost-ease: ${ghost};`,
     `  --stage-fossil-ease: ${fossil};`,
-    `  --stage-fresh-duration: 120ms;`,
-    `  --stage-fading-duration: var(--motion-snap-duration);`,
-    `  --stage-endangered-duration: var(--motion-snap-duration);`,
-    `  --stage-ghost-duration: var(--motion-snap-duration);`,
-    `  --stage-fossil-duration: var(--motion-snap-duration);`,
+    `  --stage-fresh-duration: ${STAGE_TEMPO_VECTORS.fresh[4]}ms;`,
+    `  --stage-fading-duration: ${STAGE_TEMPO_VECTORS.fading[4]}ms;`,
+    `  --stage-endangered-duration: ${STAGE_TEMPO_VECTORS.endangered[4]}ms;`,
+    `  --stage-ghost-duration: ${STAGE_TEMPO_VECTORS.ghost[4]}ms;`,
+    `  --stage-fossil-duration: ${STAGE_TEMPO_VECTORS.fossil[4]}ms;`,
     `}`,
     ``,
   ].join('\n');
 }
 
-/** Clean motion.css body — just the one var the tokens.css fixture references. */
+/** Clean motion.css body — just the one var the tokens.css fixture references.
+ *  v165 de-aliases every --stage-*-duration so motion-snap-duration no longer
+ *  feeds them, but keep the symbol present for any future alias test.        */
 function cleanMotionFixture(): string {
   return `:root { --motion-snap-duration: 120ms; }`;
 }
@@ -181,26 +183,106 @@ describe('compareAgainstOracle — flags aliased-together stage curves', () => {
 
 describe('compareAgainstOracle — flags missing / drifted --stage-*-duration', () => {
   test('emits duration-missing when a stage duration is absent', () => {
+    const freshMs = STAGE_TEMPO_VECTORS.fresh[4];
     const stripped = cleanTokensFixture().replace(
-      `--stage-fresh-duration: 120ms;`, ``,
+      `--stage-fresh-duration: ${freshMs}ms;`, ``,
     );
     const vs = runGuard(stripped, cleanMotionFixture());
     const missing = vs.filter((v: Violation) => v.rule === 'duration-missing');
     assert.equal(missing.length, 1);
     assert.equal(missing[0].stage, 'fresh');
-    assert.equal(missing[0].expected, '120ms');
+    assert.equal(missing[0].expected, `${freshMs}ms`);
   });
   test('emits duration-parity when a duration resolves to an unexpected value', () => {
+    const freshMs = STAGE_TEMPO_VECTORS.fresh[4];
     const drifted = cleanTokensFixture().replace(
-      `--stage-fresh-duration: 120ms;`,
+      `--stage-fresh-duration: ${freshMs}ms;`,
       `--stage-fresh-duration: 777ms;`,
     );
     const vs = runGuard(drifted, cleanMotionFixture());
     const parity = vs.filter((v: Violation) => v.rule === 'duration-parity');
     assert.equal(parity.length, 1);
     assert.equal(parity[0].stage, 'fresh');
-    assert.equal(parity[0].expected, '120ms');
+    assert.equal(parity[0].expected, `${freshMs}ms`);
     assert.equal(parity[0].actual, '777ms');
+  });
+});
+
+// ── 6b · duration-alias + endangered-not-min (v165 widening, Mike §5) ───
+//
+// Conjunction, not substitution. Elon §2.3 counterexample:
+//   [fresh:280, fading:280, endangered:140, ghost:540, fossil:720]
+// satisfies "endangered is the unique local minimum" but fails distinctness.
+// These fixtures prove the conjunction is strictly stronger than either
+// rule alone AND strictly stronger than v163's guard.
+
+describe('compareAgainstOracle — v165 duration distinctness + strict-min', () => {
+  test('good path: canonical v165 durations produce zero new violations', () => {
+    const vs = runGuard(cleanTokensFixture(), cleanMotionFixture());
+    assert.deepEqual(
+      vs.filter((v) => v.rule === 'duration-alias' || v.rule === 'endangered-not-min'),
+      [],
+      'canonical fixture must clear both v165 rules',
+    );
+  });
+
+  test('Elon §2.3 counterexample: two stages share a duration → duration-alias fires', () => {
+    // Collapse `fading` onto `fresh`'s duration — keeps endangered as strict
+    // min (so rule b alone would PASS), but duplicates fresh's value (so
+    // rule a catches it). v163's old guard had NO duration-distinctness
+    // check, so this fixture proves the widening is a real strengthening.
+    const freshMs = STAGE_TEMPO_VECTORS.fresh[4];
+    const fadingMs = STAGE_TEMPO_VECTORS.fading[4];
+    const collapsed = cleanTokensFixture().replace(
+      `--stage-fading-duration: ${fadingMs}ms;`,
+      `--stage-fading-duration: ${freshMs}ms;`,
+    );
+    const vs = runGuard(collapsed, cleanMotionFixture());
+    const alias = vs.filter((v: Violation) => v.rule === 'duration-alias');
+    assert.ok(
+      alias.length >= 1,
+      `expected ≥1 duration-alias violation, got ${alias.length}`,
+    );
+    assert.ok(
+      alias.some((v) =>
+        (v.stage === 'fresh' && v.stageB === 'fading')
+        || (v.stage === 'fading' && v.stageB === 'fresh')
+      ),
+      'alias pair must name fresh × fading',
+    );
+  });
+
+  test('endangered-not-min fires when endangered is no longer the unique min', () => {
+    // Swap: endangered becomes the longest, something else becomes fastest.
+    // endangered-not-min must fire at least once for every stage that is
+    // now ≤ endangered. Pair it with a duration-parity violation (expected,
+    // because we broke the byte-mirror with the oracle).
+    const endangeredMs = STAGE_TEMPO_VECTORS.endangered[4];
+    const drifted = cleanTokensFixture().replace(
+      `--stage-endangered-duration: ${endangeredMs}ms;`,
+      `--stage-endangered-duration: 1000ms;`,
+    );
+    const vs = runGuard(drifted, cleanMotionFixture());
+    const strict = vs.filter((v: Violation) => v.rule === 'endangered-not-min');
+    assert.ok(
+      strict.length === 0, // The oracle is unchanged; CSS mismatches only.
+      'rule reads the oracle, not the CSS — byte-mirror drift surfaces as duration-parity',
+    );
+    assert.ok(
+      vs.some((v) => v.rule === 'duration-parity' && v.stage === 'endangered'),
+      'duration-parity surfaces the byte drift against the oracle',
+    );
+  });
+
+  test('endangered-not-min is a pure oracle assertion (no CSS dependency)', () => {
+    // Because this rule reads STAGE_TEMPO_VECTORS directly, it is a
+    // compile-time guarantee over the TS oracle — the CSS cannot override
+    // it. This asserts the live oracle passes the rule today.
+    const vs = runGuard(cleanTokensFixture(), cleanMotionFixture());
+    assert.equal(
+      vs.filter((v) => v.rule === 'endangered-not-min').length, 0,
+      'live oracle must keep endangered as the strict minimum',
+    );
   });
 });
 
@@ -281,6 +363,27 @@ describe('formatViolation — one-line diagnostics per violation kind', () => {
     assert.match(out, /fading/);
     assert.match(out, /ghost/);
     assert.match(out, /0\.1/);
+  });
+  test('duration-alias names both stages and the shared value', () => {
+    const out = formatViolation({
+      rule: 'duration-alias', stage: 'fresh', stageB: 'fading', expected: '280ms',
+    });
+    assert.match(out, /duration-alias/);
+    assert.match(out, /--stage-fresh-duration/);
+    assert.match(out, /--stage-fading-duration/);
+    assert.match(out, /280ms/);
+  });
+  test('endangered-not-min explains why endangered must be strict min', () => {
+    const out = formatViolation({
+      rule: 'endangered-not-min', stage: 'fading',
+      expected: '140ms', actual: '120ms',
+    });
+    assert.match(out, /endangered-not-min/);
+    assert.match(out, /endangered/);
+    assert.match(out, /fading/);
+    assert.match(out, /140ms/);
+    assert.match(out, /120ms/);
+    assert.match(out, /actionable stage/);
   });
 });
 

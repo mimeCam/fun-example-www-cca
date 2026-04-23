@@ -95,21 +95,36 @@ describe('stage-tempo — TAU, SNAP_MS, TEMPO_JND_FLOOR constants', () => {
   });
 });
 
-// ── 4 · Day-one invariance: 5-D === 4-D when durations are collinear ────
+// ── 4 · v165 duration shape: five distinct values, endangered strict min ─
 
-describe('stage-tempo — collinear durations reduce 5-D to 4-D (byte-stable)', () => {
-  for (const [a, b] of stagePairs()) {
-    test(`${a} × ${b}: tempoDivergence === bezierDivergence today`, () => {
+describe('stage-tempo — v165 duration shape: five distinct tempos, endangered strict min', () => {
+  test('all five durations are pairwise distinct', () => {
+    const durations = Object.values(STAGE_TEMPO_VECTORS).map((t) => t[4]);
+    assert.equal(new Set(durations).size, 5, `not distinct: ${durations.join(', ')}`);
+  });
+  test('endangered is strictly shorter than every other stage', () => {
+    const endangeredMs = STAGE_TEMPO_VECTORS.endangered[4];
+    for (const s of DECAY_STAGES) {
+      if (s === 'endangered') continue;
+      const otherMs = STAGE_TEMPO_VECTORS[s][4];
+      assert.ok(
+        endangeredMs < otherMs,
+        `endangered ${endangeredMs}ms must be < ${s} ${otherMs}ms`,
+      );
+    }
+  });
+  test('5-D dominates 4-D on every pair (non-negative duration term)', () => {
+    for (const [a, b] of stagePairs()) {
       const t5a = STAGE_TEMPO_VECTORS[a];
       const t5b = STAGE_TEMPO_VECTORS[b];
       const easeD = bezierDivergence(STAGE_EASE_CURVES[a], STAGE_EASE_CURVES[b]);
       const tempoD = tempoDivergence(t5a, t5b);
-      assert.equal(
-        tempoD, easeD,
-        `collinear invariance broke: ease=${easeD} tempo=${tempoD}`,
+      assert.ok(
+        tempoD >= easeD - 1e-9,
+        `${a} × ${b}: 5-D ${tempoD} must ≥ 4-D ${easeD}`,
       );
-    });
-  }
+    }
+  });
 });
 
 // ── 5 · Minimum pair clears the floor ────────────────────────────────────

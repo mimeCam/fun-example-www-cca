@@ -11,66 +11,89 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v163 (2026-04-22) — "Stage Tempo Divergence" (widens v162) ──
-#   v162 guarded the shape half of each stage's felt tempo (a bespoke
-#   cubic-bezier per stage, with a JND floor on every pair). v163
-#   widens that guard to the FULL joint metric — 5-D Euclidean distance
-#   over `(x1, y1, x2, y2, durationMs · τ)` — so diagonal cancellation
-#   (ease drift ⊕ duration drift) is caught in the same test. Atomic
-#   rename: `check-stage-ease-divergence` → `check-stage-tempo-divergence`.
-#   Guard count stays at 7 (Mike napkin v163 §"widen, don't mint").
+# ── Sprint v165 (2026-04-23) — "Urgency Shape" (widens v163) ────────────
+#   v163 guarded a 5-D joint metric over (ease + duration·τ) but — by
+#   explicit policy — left duration-distinctness unchecked, because four
+#   of five stages aliased to `--motion-snap-duration` (120ms). v165
+#   de-aliases every stage: each `--stage-*-duration` now carries its
+#   own literal ms value (280 / 360 / 140 / 540 / 720). The new tempo
+#   shape is intentional — `endangered` (140ms) is the unique strict
+#   minimum because it is the one stage where the reader can still act
+#   to revive the post (Tanya §4.1 / Mike napkin v165). The guard is
+#   widened in place (no rename) with a CONJUNCTION — NOT substitution —
+#   of two new rules: `duration-alias` (byte-distinctness on resolved
+#   ms literals) and `endangered-not-min` (strict-min ordering on the
+#   duration axis of the oracle). Elon §2.3 counterexample —
+#   [280,280,140,540,720] satisfies "unique strict min" on its own yet
+#   fails distinctness — proves the conjunction is strictly stronger
+#   than either rule alone. Guard count stays at 7.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/stage-tempo.ts (NEW) — the 5-D oracle. Exports
-#       `STAGE_TEMPO_VECTORS` (Record<DecayStage, Tempo5>), `TAU`,
-#       `SNAP_MS`, `TEMPO_JND_FLOOR`, `tempoDivergence`, `stagePairs`,
-#       `minTempoDivergence`, `composeTempo`. Pure data + arithmetic.
-#       Imports `STAGE_EASE_CURVES` and `stagePairs` from stage-ease.ts
-#       so the 4-D shape half is single-source (no duplication). Day-one
-#       invariance: with every stage at SNAP_MS=120ms, TAU=1/120 makes
-#       the duration coord collinear → 5-D reduces to 4-D → byte-stable.
-#     • src/lib/stage-tempo.test.ts (NEW) — 41 tests. Collinear-
-#       invariance proof (5-D === 4-D on today's tokens), diagonal-
-#       cancellation fixture (v162's 4-D sees 0, v163's 5-D sees 1.0),
-#       strict-dominance invariant across all pairs, JND floor proof.
-#     • scripts/check-stage-tempo-divergence.ts (RENAMED from
-#       check-stage-ease-divergence.ts, +widened). Scans both
-#       `--stage-*-ease` AND `--stage-*-duration` declarations in
-#       tokens.css; resolves one hop of `var()` aliases via the shared
-#       polymorphic `motionTokenResolver(prefix, …bodies)` helper —
-#       one scanner, two axes (Sid §"polymorphism is a killer").
-#       Emits per-breach diagnostics for ease-missing / ease-parity /
-#       ease-alias / duration-missing / duration-parity / tempo-jnd.
-#       Strips `@media (prefers-reduced-motion: reduce)` blocks before
-#       resolution so the accessibility 0ms override doesn't leak.
-#     • scripts/check-stage-tempo-divergence.test.ts (RENAMED + widened)
-#       — 25 tests including the non-negotiable diagonal-cancellation
-#       fixture (Paul §): pair with identical ease, 120ms-vs-240ms
-#       duration; v162 sees 0, v163 sees 1.0 — strict dominance.
-#     • src/lib/stage-ease.ts (UPDATED — doc-only) — comment now
-#       directs readers to stage-tempo.ts for the joint oracle. The
-#       module itself (the 4-D shape oracle) is UNCHANGED so every
-#       v162 import site compiles byte-for-byte.
-#     • AGENTS.md (UPDATED) — Prebuild-guards line now reads
-#       "… duration-reasons · stage-tempo-divergence" (guard count 7).
-#     • package.json (UPDATED) — `prebuild` chain swaps
-#       `check-stage-ease-divergence.ts` for `check-stage-tempo-
-#       divergence.ts` AND adds `--test src/lib/stage-tempo.test.ts`.
-#       New top-level aliases: `check:stage-tempo-divergence`,
-#       `test:stage-tempo`, `test:stage-tempo-divergence`. The old
-#       `check:stage-ease-divergence` / `test:stage-ease-divergence`
-#       aliases are gone; `test:stage-ease` stays (4-D oracle tests).
+#     • src/lib/stage-tempo.ts (UPDATED) — `STAGE_DURATIONS_MS` now
+#       holds five distinct literals instead of SNAP_MS × 5. The 5-D
+#       JND floor still clears for every unordered pair (proven in
+#       stage-tempo.test.ts §5); duration coords no longer collapse
+#       collinearly, so every pair's distance now picks up a real
+#       ms·τ contribution. Public API unchanged: same exports, same
+#       Tempo5 tuple shape, same `tempoDivergence` / `composeTempo`
+#       / `minTempoDivergence` signatures. Header comment documents
+#       the v165 rationale inline.
+#     • src/lib/stage-tempo.test.ts (UPDATED) — fixtures swapped to
+#       the v165 duration table; the collinear-invariance test now
+#       asserts v165 explicitly breaks collinearity; new §5 asserts
+#       the 5-D JND floor still clears for every pair with the new
+#       literals. `endangered`-is-strict-min proven numerically.
+#     • scripts/check-stage-tempo-divergence.ts (UPDATED — widened in
+#       place, no rename). Two new Violation rules added to the
+#       `Violation.rule` discriminated union: `duration-alias` and
+#       `endangered-not-min`. New helpers: `checkAliasDistinctness`
+#       (polymorphic over ease|duration — reuses the old ease path),
+#       `checkEndangeredStrictMin`, `fmtEndangeredNotMin`, and a
+#       refactored `fmtAlias(axis, v)` that serves both axes. The
+#       reduced-motion stripping (`stripReducedMotion`) still runs
+#       first so the accessibility-0ms block never trips distinctness.
+#     • scripts/check-stage-tempo-divergence.test.ts (UPDATED) — new
+#       §6b suite covers: canonical v165 fixture is clean; Elon §2.3
+#       counterexample fires `duration-alias` (and `endangered-not-min`
+#       does NOT, proving the conjunction matters); [280,280,280,280,140]
+#       fires `endangered-not-min` (and `duration-alias` does); `fossil`
+#       < `endangered` fires `endangered-not-min`. Clean-fixture
+#       builder now draws literals from STAGE_TEMPO_VECTORS so the
+#       oracle remains single-source.
+#     • src/lib/stage-tokens.generated.ts (UPDATED) — codegen output
+#       refreshed: `STAGE_TRANSITION_DURATION_MS` now emits five
+#       distinct ms literals instead of four `var(--motion-snap-
+#       duration)` aliases.
+#     • src/pages/api/docs.astro (UPDATED) — motion section lede
+#       rewritten to explain "endangered is shortest on purpose";
+#       `motionValueLabel` updated — the `var(…)` branch is now a
+#       defensive fallback only (the prebuild guard catches any
+#       regression before this function ever sees an alias).
+#     • src/styles/tokens.css (UPDATED) — five distinct `--stage-*-
+#       duration` literals; comment block refreshed to reference
+#       v165 + Tanya §4.1. Ease axis values unchanged.
+#     • src/styles/motion.css (UPDATED) — the `@media (prefers-
+#       reduced-motion: reduce)` block now sets every single
+#       `--stage-*-duration` to 0ms explicitly (previously only
+#       `fresh` carried an override because the others aliased snap
+#       which was already 0ms in that block). The scanner strips
+#       this block via `stripReducedMotion` before resolution.
+#     • AGENTS.md (UPDATED) — Prebuild-guards line now notes the
+#       v165 conjunction ("+duration-alias +endangered-not-min");
+#       new v165 summary line records the five durations + Tanya
+#       UX citation. Wire contract frozen; `cite.ts` / JSON shape
+#       unchanged.
 #
 #   Infrastructure deltas this sprint: NONE.
 #     No new env vars, ports, services, named volumes, or docker
-#     networks. The new + renamed files (`src/lib/stage-tempo.ts`,
-#     `scripts/check-stage-tempo-divergence.ts`, and their `.test.ts`
-#     siblings) land inside paths the Dockerfile already COPY-s
-#     wholesale (`COPY src/ ./src/` + `COPY scripts/ ./scripts/`),
-#     so no Dockerfile edit is required. The prebuild chain picks up
-#     the renamed guard automatically via `package.json`. Drift fails
-#     the image build, fails this script, and leaves the previous
-#     container already-stopped — operator re-runs after the fix.
+#     networks. Every modified file lives under paths the Dockerfile
+#     already COPY-s wholesale (`COPY src/ ./src/` + `COPY scripts/
+#     ./scripts/`), so no Dockerfile edit is required. The prebuild
+#     chain (`npm run build`) picks up the widened guard automatically
+#     — the `package.json` entry still points at the same script path
+#     (widened, not renamed). Drift fails the image build, fails this
+#     script, and leaves the previous container already-stopped —
+#     operator re-runs after the fix.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -121,21 +144,27 @@ docker volume create "${SQLITE_VOLUME}" || true
 #   check-token-compliance --guard  →  check-motion-sanctuary  →
 #   check-ds-kbd  →  check-no-chip-lit-in-arrival  →
 #   check-citation-delegation  →  check-duration-reasons  →
-#   check-stage-tempo-divergence (v163 WIDENED — asserts byte parity
+#   check-stage-tempo-divergence (v165 WIDENED — asserts byte parity
 #     between STAGE_EASE_CURVES + STAGE_TEMPO_VECTORS in src/lib/ and
 #     the --stage-{stage}-ease + --stage-{stage}-duration literals in
-#     src/styles/tokens.css, plus the 5-D Euclidean JND floor on every
-#     unordered pair; reduces to v162 behaviour on today's collinear
-#     durations)  →
+#     src/styles/tokens.css, the 5-D Euclidean JND floor on every
+#     unordered pair, AND the v165 duration conjunction: five distinct
+#     resolved `--stage-*-duration` literals (`duration-alias`) PLUS
+#     `endangered` as the unique strict minimum on the ms axis
+#     (`endangered-not-min`) — the one stage where the reader can still
+#     act to save the post)  →
 #   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit  →
 #   test:arrival  →  test:citation-golden  →
 #   test:citation-delegation  →  test:duration-reasons  →
 #   test:stage-ease (v162 — 5 curves distinct + 4-D pair divergence ≥
 #     JND floor)  →
-#   test:stage-tempo (v163 — 5-D joint oracle: collinear invariance,
-#     diagonal-cancellation fixture, strict dominance over v162)  →
-#   test:stage-tempo-divergence (v163 — scanner + parity + JND
-#     reporter fixtures for the widened guard)  →
+#   test:stage-tempo (v163+v165 — 5-D joint oracle: v165 breaks the
+#     day-one collinearity, asserts the JND floor still clears for all
+#     10 pairs with the new literals, endangered-is-strict-min proof)  →
+#   test:stage-tempo-divergence (v163+v165 — scanner + parity + JND
+#     reporter fixtures PLUS §6b duration-distinctness / strict-min
+#     conjunction suite: Elon §2.3 counterexample proves the two rules
+#     are independent)  →
 #   astro build.
 # Any guard failure fails the image build, fails this script, and leaves
 # the previous container already stopped — operator re-runs after the fix.
@@ -230,13 +259,16 @@ fi
 #
 #   (a) GET /api/docs — SSR on demand. Hydrates @astrojs/node's route
 #       handler, reads the cell heat map, and tints all 35 grammar-
-#       matrix cells. As of v162 the tempo axis of the 7×5 product is
-#       five distinct cubic-bezier curves (one felt tempo per decay
-#       stage), mirrored byte-for-byte between src/lib/stage-ease.ts
-#       and src/styles/tokens.css — the prebuild guard above asserts
-#       that parity on every Docker build, so warming this route is
-#       ALSO the runtime smoke-test that the cascade resolves the
-#       per-stage ease correctly.
+#       matrix cells. As of v165 the tempo axis of the 7×5 product
+#       carries BOTH five distinct cubic-bezier curves (v162 shape
+#       half, one felt tempo per stage) AND five distinct ms literals
+#       (v165 duration half — 280/360/140/540/720, with endangered the
+#       unique strict minimum). Both halves are mirrored byte-for-byte
+#       between src/lib/stage-{ease,tempo}.ts and src/styles/tokens.css
+#       — the widened prebuild guard above asserts that parity + the
+#       duration conjunction on every Docker build, so warming this
+#       route is ALSO the runtime smoke-test that the cascade resolves
+#       each per-stage ease AND duration correctly.
 #
 #   (b) GET /api/docs/cite — terminal/`curl` mouth. Sends a hand-shaped
 #       (axis, stage) pair and asserts a 200 response with a non-empty
@@ -252,7 +284,7 @@ fi
 #       single producer (`heatedGrid()`) the SSR page uses. Forces
 #       `ensureSchema()` on the ledger module, creating `cell_events`
 #       + indexes on the SQLite volume the very first deploy.
-echo "==> [deploy] Warming up /api/docs SSR (cited-cell heat + v162 tempo axis)…"
+echo "==> [deploy] Warming up /api/docs SSR (cited-cell heat + v165 tempo axis: shape × five distinct durations)…"
 DOCS_STATUS=$(curl --silent --show-error --output /dev/null \
   --write-out '%{http_code}' --max-time 15 \
   --header "Accept: text/html" \

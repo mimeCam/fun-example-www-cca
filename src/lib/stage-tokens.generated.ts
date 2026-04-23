@@ -29,11 +29,11 @@ export const STAGE_TITLE_WEIGHT: Record<StageKey, number> = {
   fossil: 400,
 };
 export const STAGE_TRANSITION_DURATION_MS: Record<StageKey, string> = {
-  fresh: "120ms",
-  fading: "var(--motion-snap-duration)",
-  endangered: "var(--motion-snap-duration)",
-  ghost: "var(--motion-snap-duration)",
-  fossil: "var(--motion-snap-duration)",
+  fresh: "280ms",
+  fading: "360ms",
+  endangered: "140ms",
+  ghost: "540ms",
+  fossil: "720ms",
 };
 export const STAGE_TRANSITION_EASE: Record<StageKey, string> = {
   fresh: "var(--motion-easing-spring)",

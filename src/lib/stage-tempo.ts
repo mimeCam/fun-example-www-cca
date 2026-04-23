@@ -1,5 +1,7 @@
 // src/lib/stage-tempo.ts
 // v163 "Stage Tempo Divergence" — 5-D oracle: bezier + duration per stage.
+// v165 "Urgency Shape" — five distinct durations; endangered is the unique
+//      strict minimum (the one stage where the reader can still act).
 //
 // Why this module exists (Mike napkin v163 §TL;DR):
 //   v162 guarded only the 4-D shape of every stage's cubic-bezier curve.
@@ -10,14 +12,21 @@
 //   divergence over `(x1, y1, x2, y2, dMs·τ)` catches both failure modes
 //   in a single metric — "widen, don't mint" (Mike §6).
 //
-// Day-one invariance (the τ unit reconciler):
-//   Set `TAU = 1 / SNAP_MS`. With four of five durations aliased to
-//   `--motion-snap-duration` (120ms) and `fresh` also at 120ms today,
-//   every duration coord is 1.0 → collinear → the 5-D distance reduces
-//   algebraically to v162's 4-D distance, byte-stable behavior. The guard
-//   behaves identically on day one; the moment someone de-aliases (e.g.
-//   `endangered` → 180ms), the diagonal class becomes catchable in the
-//   SAME metric — no second guard, no new vocabulary (Mike §2).
+// v165 duration delta (Tanya §4.1 / Mike napkin v165 §4):
+//   Each stage now carries its own felt tempo. The five numbers are chosen
+//   so that `endangered` (140 ms) is strictly faster than every other
+//   stage — that is the one and only stage where the reader can still act
+//   to revive the post. The widened guard enforces this ordering as a
+//   machine-readable rule: see `check-stage-tempo-divergence.ts`
+//   (`duration-alias` + `endangered-not-min`).
+//
+// τ unit reconciler:
+//   `TAU = 1 / SNAP_MS`. Duration coords are multiplied by τ inside
+//   `tempoDivergence` so ms and unit-bezier mix on comparable scales. On
+//   day one (v163) durations were collinear and the 5-D distance reduced
+//   to 4-D; v165 breaks that collinearity deliberately — every pair now
+//   contributes a real duration term, and the 5-D JND floor still clears
+//   for every unordered pair (see stage-tempo.test.ts §5).
 //
 // Anti-scope: pure data + arithmetic. No DOM, no FS, no CSS rendering.
 //   Shape helpers for the 4-D half live in stage-ease.ts and are imported
@@ -27,13 +36,15 @@
 // Freeze: STAGE_TEMPO_VECTORS has exactly 5 entries. Adding a 6th is an
 //   AGENTS.md freeze violation — enforced by the Record<DecayStage,…> type.
 //
-// Credits: Mike Koch (napkin v163 TL;DR + §2 τ reconciler + §6 "widen
-//   don't mint"), Elon Musk (§5.2 5-D nomination + closed-form proof that
-//   easeArea collapses endangered & ghost), Paul Kim (§non-negotiable
-//   diagonal-cancellation fixture), Jason Fried (joint-perception
-//   instinct), Krystle-Clear (unguarded-duration spot), Tanya Donska (the
-//   five felt tempos), stage-ease.ts (the 4-D oracle this widens). Sid —
-//   2026-04-22. Motto: "Code maintenance without tests."
+// Credits: Mike Koch (napkin v163 + v165 — τ reconciler, "widen don't
+//   mint", conjunction-not-substitution guard), Tanya Donska (UX spec
+//   2026-04-23 — the five felt durations + "agency, not drama" framing),
+//   Elon Musk (§2.3 counterexample that makes duration-distinctness
+//   strictly stronger than unique-local-min; §5.2 5-D nomination), Paul
+//   Kim (urgency reading of endangered-is-fastest), Jason Fried (climax
+//   instinct, dramaturgical vocabulary shed per Tanya §4.3), Krystle
+//   Clear (five-literal proposal), stage-ease.ts (the 4-D oracle this
+//   widens). Sid — 2026-04-23. Motto: "Code maintenance without tests."
 
 import { DECAY_STAGES } from './decay-engine';
 import type { DecayStage } from './decay-engine';
@@ -85,18 +96,20 @@ export const TEMPO_JND_FLOOR: number = 0.25;
 // bezier coords are imported wholesale so stage-ease.ts remains the single
 // source of truth for the shape half; this module only adds the duration.
 //
-// Today all five durations are 120ms (SNAP_MS) — four of five CSS tokens
-// alias to `--motion-snap-duration`, `fresh` carries the same literal.
-// The moment a stage-specific duration lands in tokens.css, update the
-// number below — the prebuild guard ensures parity.
+// v165 durations (ms): five distinct felt tempos. `endangered` is the
+// unique strict minimum — fastest on purpose, because it is the only
+// stage where the reader can still act to save the post (Tanya §3).
+// The distinctness + strict-min ordering is machine-enforced by
+// `check-stage-tempo-divergence.ts` — changing these numbers without
+// re-running the guard fails the Docker prebuild.
 
-/** Today's stage duration table (ms). Byte-mirror of tokens.css. */
+/** v165 stage duration table (ms). Byte-mirror of tokens.css. */
 const STAGE_DURATIONS_MS: Readonly<Record<DecayStage, number>> = {
-  fresh:      SNAP_MS,
-  fading:     SNAP_MS,
-  endangered: SNAP_MS,
-  ghost:      SNAP_MS,
-  fossil:     SNAP_MS,
+  fresh:      280,  // new posts settle in; slight weight
+  fading:     360,  // interest cools; longer exhale
+  endangered: 140,  // unique strict minimum — the only actionable stage
+  ghost:      540,  // drifting; no hurry
+  fossil:     720,  // sealed; the page's longest beat
 } as const;
 
 /** Compose a Tempo5 tuple for one stage from the ease oracle + duration. */

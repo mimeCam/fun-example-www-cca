@@ -933,23 +933,24 @@
   --radius-alive:  var(--radius-stage-alive);  /* 14px — soft = alive          */
   --radius-fossil: var(--radius-stage-fossil); /*  8px — sharp = calcified     */
 
-  /* ── Stage Motion Tokens — interaction duration+easing, per stage (v146+v162+v163) */
-  /* Mike §napkin (v146, v162, v163), Tanya §5 / §2: the motion axis of the decay.     */
-  /* Durations stay aliased to snap (CLS gate — no geometry change); the four ease     */
-  /* aliases that used to collapse onto --motion-snap-easing now carry bespoke         */
-  /* cubic-bezier literals, one felt tempo per stage. The tuples MUST match            */
-  /* src/lib/stage-ease.ts (4-D shape) AND src/lib/stage-tempo.ts (5-D joint,          */
-  /* shape+duration). The v163 check-stage-tempo-divergence.ts prebuild guard asserts  */
-  /* byte parity on both axes AND a 5-D Euclidean JND floor on every pair, every build.*/
-  --stage-fresh-duration:       120ms;  /* reason: stage-identity */
+  /* ── Stage Motion Tokens — interaction duration+easing, per stage (v146+v162+v163+v165) */
+  /* Mike §napkin (v146, v162, v163, v165), Tanya §4.1 (2026-04-23): the motion axis of    */
+  /* the decay. v165: four ease aliases now carry bespoke cubic-bezier literals; five      */
+  /* durations now carry distinct ms literals — `endangered` is the unique strict minimum  */
+  /* (fastest, because it is the one stage where the reader can still act). The tuples     */
+  /* MUST match src/lib/stage-ease.ts (4-D shape) AND src/lib/stage-tempo.ts (5-D joint,   */
+  /* shape+duration). The check-stage-tempo-divergence.ts prebuild guard asserts byte      */
+  /* parity on both axes, duration-distinctness, endangered-is-strict-min, and a 5-D       */
+  /* Euclidean JND floor on every pair — every build.                                      */
+  --stage-fresh-duration:       280ms;  /* reason: stage-identity */
   --stage-fresh-ease:           var(--motion-easing-spring);             /* (0.34, 1.56, 0.64, 1)   — overshoot: bouncing in      · reason: stage-identity */
-  --stage-fading-duration:      var(--motion-snap-duration);
+  --stage-fading-duration:      360ms;  /* reason: stage-identity */
   --stage-fading-ease:          cubic-bezier(0.25, 0.8, 0.3, 1);         /* soft ease-out: warmth retreats                        · reason: stage-identity */
-  --stage-endangered-duration:  var(--motion-snap-duration);
+  --stage-endangered-duration:  140ms;  /* reason: stage-identity */
   --stage-endangered-ease:      cubic-bezier(0.4, 0, 0.2, 1);            /* crisp attack: urgency is now                          · reason: stage-identity */
-  --stage-ghost-duration:       var(--motion-snap-duration);
+  --stage-ghost-duration:       540ms;  /* reason: stage-identity */
   --stage-ghost-ease:           cubic-bezier(0.5, 0.05, 0.5, 0.95);      /* near-linear drift: hesitant                           · reason: stage-identity */
-  --stage-fossil-duration:      var(--motion-snap-duration);
+  --stage-fossil-duration:      720ms;  /* reason: stage-identity */
   --stage-fossil-ease:          cubic-bezier(1, 0, 1, 0);                /* late clamp: no tempo, no wiggle                       · reason: stage-identity */
 
   /* Resolver aliases consumed by stage-aware components — never branch on the  */
