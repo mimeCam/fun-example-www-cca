@@ -11,6 +11,74 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
+# ── Sprint v177 "Arrival Receipt" (2026-04-23) — copy→arrive→verify ────
+#   v177 completes the citation trilogy's handshake: a copied cite now
+#   earns a visible, named receipt when it arrives at /api/docs?r=<nonce>.
+#   One pure producer (src/lib/arrival-receipt.ts::buildArrivalReceipt),
+#   three mouths — the same shape fans out to SSR HTML, a new curl
+#   endpoint, and the browser DOM.
+#
+#   What shipped in the active git area this cycle (staged/unstaged):
+#     • src/lib/arrival-receipt.ts (NEW) — the single producer. Pure,
+#       stateless, clock-pinned via src/lib/clock.ts. Exports:
+#       `buildArrivalReceipt(inputs)`, `serializeArrivalReceipt(r)`,
+#       `statusForReason(reason)`, `ARRIVAL_REASONS` closed vocabulary.
+#       Shapes: `ArrivalReceiptOk = {ok, cell:{axis,stage,anchor},
+#       label, ref, pinnedAt, parity}`, `ArrivalReceiptFail = {ok:false,
+#       reason:'malformed' | 'unknown-cell'}`. Validation order is
+#       malformed-first then unknown-cell (Mike napkin §5.8).
+#     • src/lib/arrival-receipt.test.ts (NEW) — golden test mirroring
+#       citation-golden + api-stamp-golden. Locks shape, stable key
+#       order, clock pinning, and the closed reason vocabulary. NOT
+#       yet in the prebuild chain (one-line follow-up); run via
+#       `npx tsx --test src/lib/arrival-receipt.test.ts`.
+#     • src/pages/api/docs/arrival.ts (NEW) — third mouth. Thin route
+#       handler: reads axis/stage/r from URL, hands to the producer,
+#       emits `serializeArrivalReceipt()` bytes + `statusForReason()`
+#       HTTP code. `prerender = false` because the body embeds the
+#       per-request pinned clock. Non-GET verbs route through a shared
+#       `rejectNonGet` helper that emits 405 with `Allow: GET`.
+#     • src/components/ArrivalReceipt.astro (NEW) — dockable aside
+#       panel. SSR emits the shell (hidden by default) with the
+#       `data-arrival-panel` DOM handle + three `data-arrival-{cell,
+#       ref,pinned}` slots the client module paints into. Tokens-only
+#       styling, reduced-motion honoured.
+#     • src/lib/client/arrival-acknowledge.ts (NEW) — browser
+#       orchestrator. Reads `?r=<nonce>` + hash-encoded cell, calls
+#       the SAME `buildArrivalReceipt()` helper (one producer!), paints
+#       the panel DOM, emits byte-identical JSON to
+#       `data-receipt-json` (Mike §5.10 falsifiable criterion), pulses
+#       the target cell once via `--motion-cite-ack-*` tokens.
+#     • src/styles/arrival-receipt.css (NEW) — dock panel + one-beat
+#       pulse. Tokens-only; reduced-motion sanctuary at the bottom.
+#     • src/styles/motion.css (UPDATED) — adds the single motion token
+#       pair `--motion-cite-ack-duration` + `--motion-cite-ack-easing`
+#       (semantic alias over flow — 200ms, same tempo as the rest of
+#       the handshake surfaces). Reduced-motion inherits zero.
+#     • src/pages/api/docs.astro (UPDATED) — imports ArrivalReceipt +
+#       arrival-receipt.css, gates the client module import on
+#       `Astro.url.searchParams.has('r')` (zero bytes for non-arrival
+#       visitors, Mike §5.6), renders `<ArrivalReceipt />` inside the
+#       reading column.
+#
+#   Infrastructure deltas this sprint:
+#     · NO new env vars, ports, services, named volumes, or docker
+#       networks. The arrival trilogy is pure-SSR + pure-client; no
+#       DB, no ledger, no rate-limit table.
+#     · NO Dockerfile changes. All new files ship via the existing
+#       `COPY src/` layer.
+#     · NO prebuild chain changes this sprint. (arrival-receipt.test.ts
+#       is local-only; follow-up will add one line to package.json.)
+#     · New wire-level artefacts to warm (new probe 8k, five sub-probes):
+#         · /api/docs panel shell (`data-arrival-panel`) on every SSR.
+#         · /api/docs?r=<uuid> conditional client chunk reference
+#           (`arrival-acknowledge`) proves the import gate latched.
+#         · GET /api/docs/arrival happy path → 200 with {ok:true,
+#           anchor, pinnedAt, parity}.
+#         · GET /api/docs/arrival malformed ref → 400 reason:malformed.
+#         · GET /api/docs/arrival unknown cell → 404 reason:unknown-cell.
+#         · POST /api/docs/arrival → 405 Allow: GET.
+#
 # ── Sprint v176 PR-E "seal wave" (2026-04-23) — ParityPip hoist + flip ──
 #   Pays the last wedge on the Tri-Mouth Inventory and hoists the parity
 #   dot out of inline /api/docs markup into ONE site-wide partial. Three
@@ -320,6 +388,42 @@
 #       probe 8f which now greps for `id="parity"`). One renderer, two
 #       surfaces; this probe covers the site-wide half (every page via
 #       BaseLayout), while 8f covers the /api/docs inline half.
+#   8k. Warm the v177 "Arrival Receipt" third mouth. Five NON-MUTATING
+#       probes cover the copy→arrive→verify handshake end-to-end:
+#         (a) GET /api/docs (no ?r=)            → grep `data-arrival-panel`
+#             in the SSR HTML. The `<ArrivalReceipt />` panel shell is
+#             ALWAYS rendered (hidden until the client module paints it
+#             from the hash), so a non-arrival visitor must still carry
+#             the DOM handle the acknowledge module will hydrate into.
+#         (b) GET /api/docs?r=<uuid>            → grep `arrival-acknowledge`
+#             in the SSR HTML. The client module import is conditional
+#             on `?r=` being present at SSR time (Mike napkin §5.6 —
+#             zero-bytes for non-arrivals); presence proves the gate
+#             latched and the bundler emitted the module chunk.
+#         (c) GET /api/docs/arrival?axis=typography&stage=fresh&r=<uuid>
+#             → HTTP 200 application/json with `"ok":true`, `"cell"`,
+#             `"pinnedAt"`, `"parity"`. Happy path — proves the single
+#             producer `buildArrivalReceipt()` is importable, the
+#             serializer emits stable key order, and the SSR clock pin
+#             reached the handler (the ISO-8601 `pinnedAt` string is
+#             the witness).
+#         (d) GET /api/docs/arrival?axis=typography&stage=fresh&r=bad
+#             → HTTP 400 with `"reason":"malformed"`. The ref `bad`
+#             fails `isValidRef()` (length < 8); proves the closed
+#             reason vocabulary + `statusForReason()` mapping fires.
+#         (e) GET /api/docs/arrival?axis=bogus-axis&stage=fresh&r=<uuid>
+#             → HTTP 404 with `"reason":"unknown-cell"`. Proves the
+#             AXIS_SET / STAGE_SET frozen validation sets reject
+#             off-catalog coordinates AND the malformed→unknown-cell
+#             precedence (bad ref would've won at 400).
+#         (f) POST /api/docs/arrival                → HTTP 405 with
+#             `Allow: GET`. Proves the shared `rejectNonGet` helper is
+#             bound to every non-GET verb (sibling of ./cite.ts).
+#       One producer, three mouths: (a)/(b) = SSR HTML mouth, (c) = curl
+#       mouth, and the client module (bundled in b) is the DOM mouth.
+#       All three derive their receipt from the same `buildArrivalReceipt`
+#       pure function — probe (c) is the byte-identical anchor for the
+#       falsifiable criterion (Mike napkin §5.10).
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -1016,6 +1120,175 @@ if [ "${HOME_HAS_STATE_LIT}" -lt 1 ]; then
 fi
 if [ "${HOME_HAS_PARITY_HREF}" -lt 1 ]; then
   echo "==> [deploy] ⚠ / home ParityPip missing '/api/docs#parity' click target — link target regression (container still up)." >&2
+fi
+
+# ── 8k. v177 "Arrival Receipt" warm-up — third mouth + panel shell ─────────
+# v177 adds the copy→arrive→verify handshake. Three mouths for ONE producer
+# (src/lib/arrival-receipt.ts::buildArrivalReceipt):
+#   · SSR HTML     — <ArrivalReceipt /> panel shell on /api/docs
+#                    (always rendered; hidden until client paints it).
+#   · curl         — GET /api/docs/arrival?axis=…&stage=…&r=<nonce>
+#                    (third mouth — new this sprint, sibling of ./cite.ts).
+#   · DOM          — src/lib/client/arrival-acknowledge.ts
+#                    (conditionally bundled when `?r=` is at SSR time;
+#                    zero bytes for non-arrival visitors).
+#
+# All three probe families below are NON-MUTATING: no DB write, no ledger
+# bump, no rate-limit touch. The curl mouth is explicitly stateless (the
+# module docs call out "No DB import, no ledger write, no rate-limit
+# touch") so running on every redeploy is safe and deterministic.
+#
+# The canonical sample cell — `(axis=typography, stage=fresh)` — is the
+# same pair used by the arrival-receipt golden test (REF below is the
+# same UUID the test pins). Keeping the pair in sync with the golden
+# keeps the "deploy-time wire = build-time test" property Paul §7 wants.
+ARRIVAL_SAMPLE_REF="550e8400-e29b-41d4-a716-446655440000"
+ARRIVAL_SAMPLE_AXIS="typography"
+ARRIVAL_SAMPLE_STAGE="fresh"
+
+# ── 8k.a — /api/docs SSR carries the panel shell (no ?r= needed) ───────────
+# The `<ArrivalReceipt />` partial is always rendered in the SSR HTML
+# (the `hidden` attribute keeps it visually absent). A non-arrival
+# visitor must still see `data-arrival-panel` on the wire because the
+# client acknowledge module queries for that exact attribute when a
+# real arrival lands later. A regression that forgets to mount the
+# component would silently break the handshake on every subsequent
+# `?r=` visit — the warm-up catches it at deploy time.
+echo "==> [deploy] Warming up /api/docs (v177 ArrivalReceipt panel shell, always rendered)…"
+ARRIVAL_PANEL_BODY_FILE="$(mktemp)"
+ARRIVAL_PANEL_STATUS=$(curl --silent --show-error --output "${ARRIVAL_PANEL_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/api/docs" \
+  || echo '000')
+ARRIVAL_PANEL_BODY_LEN=$(wc -c < "${ARRIVAL_PANEL_BODY_FILE}" | tr -d ' ')
+ARRIVAL_PANEL_HAS_HANDLE=$(grep -c 'data-arrival-panel' "${ARRIVAL_PANEL_BODY_FILE}" || true)
+ARRIVAL_PANEL_HAS_REF_ATTR=$(grep -c 'data-arrival-ref' "${ARRIVAL_PANEL_BODY_FILE}" || true)
+ARRIVAL_PANEL_HAS_CELL_ATTR=$(grep -c 'data-arrival-cell' "${ARRIVAL_PANEL_BODY_FILE}" || true)
+rm -f "${ARRIVAL_PANEL_BODY_FILE}"
+echo "==> [deploy] /api/docs: HTTP ${ARRIVAL_PANEL_STATUS} · body=${ARRIVAL_PANEL_BODY_LEN}B · panel=${ARRIVAL_PANEL_HAS_HANDLE} · ref-slot=${ARRIVAL_PANEL_HAS_REF_ATTR} · cell-slot=${ARRIVAL_PANEL_HAS_CELL_ATTR}"
+if [ "${ARRIVAL_PANEL_STATUS}" != "200" ] || [ "${ARRIVAL_PANEL_HAS_HANDLE}" -lt 1 ] \
+   || [ "${ARRIVAL_PANEL_HAS_REF_ATTR}" -lt 1 ] || [ "${ARRIVAL_PANEL_HAS_CELL_ATTR}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing v177 ArrivalReceipt panel markers (data-arrival-panel/ref/cell) — component mount regressed (container still up)." >&2
+fi
+
+# ── 8k.b — /api/docs?r=<nonce> conditionally imports arrival-acknowledge ──
+# The client module is gated by `hasArrivalRef` at SSR time: when `?r=`
+# is present, the Astro page emits an `import '…/arrival-acknowledge'`
+# script, which Vite/Astro compiles to a `<script type="module" src="…">`
+# tag pointing at a bundled chunk whose filename embeds the module's
+# name (`arrival-acknowledge` — the publicId Vite preserves by default).
+# A bare `grep` for the string proves both (i) the conditional branch
+# in docs.astro fired and (ii) the bundler emitted a reachable chunk.
+# When `?r=` is ABSENT (probe 8k.a above) this string MUST be absent —
+# that's the zero-bytes-for-non-arrivals property Mike §5.6 requires.
+echo "==> [deploy] Warming up /api/docs?r=<nonce> (v177 arrival-acknowledge conditional chunk)…"
+ARRIVAL_GATE_BODY_FILE="$(mktemp)"
+ARRIVAL_GATE_STATUS=$(curl --silent --show-error --output "${ARRIVAL_GATE_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/api/docs?r=${ARRIVAL_SAMPLE_REF}" \
+  || echo '000')
+ARRIVAL_GATE_BODY_LEN=$(wc -c < "${ARRIVAL_GATE_BODY_FILE}" | tr -d ' ')
+ARRIVAL_GATE_HAS_MODULE=$(grep -c 'arrival-acknowledge' "${ARRIVAL_GATE_BODY_FILE}" || true)
+ARRIVAL_GATE_HAS_PANEL=$(grep -c 'data-arrival-panel' "${ARRIVAL_GATE_BODY_FILE}" || true)
+rm -f "${ARRIVAL_GATE_BODY_FILE}"
+echo "==> [deploy] /api/docs?r=…: HTTP ${ARRIVAL_GATE_STATUS} · body=${ARRIVAL_GATE_BODY_LEN}B · acknowledge-module=${ARRIVAL_GATE_HAS_MODULE} · panel=${ARRIVAL_GATE_HAS_PANEL}"
+if [ "${ARRIVAL_GATE_STATUS}" != "200" ] || [ "${ARRIVAL_GATE_HAS_PANEL}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs?r=<nonce> did not render the ArrivalReceipt panel — gate regression (container still up)." >&2
+fi
+if [ "${ARRIVAL_GATE_HAS_MODULE}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs?r=<nonce> missing 'arrival-acknowledge' chunk reference — conditional client import did not bundle (container still up)." >&2
+fi
+
+# ── 8k.c — GET /api/docs/arrival happy path (200 application/json) ─────────
+# Valid (axis, stage, ref) returns a receipt: `{ok:true, cell:{axis,stage,
+# anchor}, label, ref, pinnedAt, parity}`. We grep for four bytes:
+#   · `"ok":true`        — the happy-path discriminant.
+#   · `"pinnedAt":"`     — ISO string prefix (clock pin reached the route).
+#   · `"anchor":"axis-typography-stage-fresh"` — cellAnchorId() output for
+#                          the sample pair; proves stage-axes delegation.
+#   · `"parity":`        — the parity witness field (same one cite emits).
+echo "==> [deploy] Warming up GET /api/docs/arrival happy path (v177 third mouth)…"
+ARRIVAL_OK_BODY_FILE="$(mktemp)"
+ARRIVAL_OK_STATUS=$(curl --silent --show-error --output "${ARRIVAL_OK_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/docs/arrival?axis=${ARRIVAL_SAMPLE_AXIS}&stage=${ARRIVAL_SAMPLE_STAGE}&r=${ARRIVAL_SAMPLE_REF}" \
+  || echo '000')
+ARRIVAL_OK_BODY_LEN=$(wc -c < "${ARRIVAL_OK_BODY_FILE}" | tr -d ' ')
+ARRIVAL_OK_BODY_PREVIEW=$(head -c 240 "${ARRIVAL_OK_BODY_FILE}" | tr '\n' ' ')
+ARRIVAL_OK_HAS_OK=$(grep -c '"ok":true' "${ARRIVAL_OK_BODY_FILE}" || true)
+ARRIVAL_OK_HAS_PINNED=$(grep -c '"pinnedAt":"' "${ARRIVAL_OK_BODY_FILE}" || true)
+ARRIVAL_OK_HAS_ANCHOR=$(grep -c '"anchor":"axis-typography-stage-fresh"' "${ARRIVAL_OK_BODY_FILE}" || true)
+ARRIVAL_OK_HAS_PARITY=$(grep -c '"parity":' "${ARRIVAL_OK_BODY_FILE}" || true)
+rm -f "${ARRIVAL_OK_BODY_FILE}"
+echo "==> [deploy] GET /api/docs/arrival (happy): HTTP ${ARRIVAL_OK_STATUS} · body=${ARRIVAL_OK_BODY_LEN}B · ok=${ARRIVAL_OK_HAS_OK} · pinnedAt=${ARRIVAL_OK_HAS_PINNED} · anchor=${ARRIVAL_OK_HAS_ANCHOR} · parity=${ARRIVAL_OK_HAS_PARITY}"
+echo "==> [deploy]     preview=\"${ARRIVAL_OK_BODY_PREVIEW}\""
+if [ "${ARRIVAL_OK_STATUS}" != "200" ] || [ "${ARRIVAL_OK_HAS_OK}" -lt 1 ] \
+   || [ "${ARRIVAL_OK_HAS_PINNED}" -lt 1 ] || [ "${ARRIVAL_OK_HAS_ANCHOR}" -lt 1 ] \
+   || [ "${ARRIVAL_OK_HAS_PARITY}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs/arrival happy path regression — expected 200 with {ok:true, anchor, pinnedAt, parity} (container still up)." >&2
+fi
+
+# ── 8k.d — GET /api/docs/arrival malformed ref → 400 ───────────────────────
+# `bad` fails isValidRef() (length < 8). Closed reason vocabulary means
+# the body is exactly `{"ok":false,"reason":"malformed"}` — two fields,
+# ordered. statusForReason('malformed') === 400.
+echo "==> [deploy] Warming up GET /api/docs/arrival malformed ref (v177 validation → 400)…"
+ARRIVAL_BAD_BODY_FILE="$(mktemp)"
+ARRIVAL_BAD_STATUS=$(curl --silent --show-error --output "${ARRIVAL_BAD_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/docs/arrival?axis=${ARRIVAL_SAMPLE_AXIS}&stage=${ARRIVAL_SAMPLE_STAGE}&r=bad" \
+  || echo '000')
+ARRIVAL_BAD_HAS_REASON=$(grep -c '"reason":"malformed"' "${ARRIVAL_BAD_BODY_FILE}" || true)
+ARRIVAL_BAD_BODY_PREVIEW=$(head -c 120 "${ARRIVAL_BAD_BODY_FILE}" | tr '\n' ' ')
+rm -f "${ARRIVAL_BAD_BODY_FILE}"
+echo "==> [deploy] GET /api/docs/arrival (malformed): HTTP ${ARRIVAL_BAD_STATUS} · reason-malformed=${ARRIVAL_BAD_HAS_REASON} · preview=\"${ARRIVAL_BAD_BODY_PREVIEW}\" (expect 400)"
+if [ "${ARRIVAL_BAD_STATUS}" != "400" ] || [ "${ARRIVAL_BAD_HAS_REASON}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs/arrival malformed ref did not respond 400 with reason:malformed — closed-reason regression (container still up)." >&2
+fi
+
+# ── 8k.e — GET /api/docs/arrival unknown cell → 404 ────────────────────────
+# Off-catalog axis (`bogus-axis` is NOT in STAGE_AXES) with a well-formed
+# ref must fail AT the unknown-cell check, not the malformed check — the
+# validation order in buildArrivalReceipt() is `malformed first, then
+# unknown-cell`. statusForReason('unknown-cell') === 404.
+echo "==> [deploy] Warming up GET /api/docs/arrival unknown cell (v177 validation → 404)…"
+ARRIVAL_UC_BODY_FILE="$(mktemp)"
+ARRIVAL_UC_STATUS=$(curl --silent --show-error --output "${ARRIVAL_UC_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/docs/arrival?axis=bogus-axis&stage=${ARRIVAL_SAMPLE_STAGE}&r=${ARRIVAL_SAMPLE_REF}" \
+  || echo '000')
+ARRIVAL_UC_HAS_REASON=$(grep -c '"reason":"unknown-cell"' "${ARRIVAL_UC_BODY_FILE}" || true)
+ARRIVAL_UC_BODY_PREVIEW=$(head -c 120 "${ARRIVAL_UC_BODY_FILE}" | tr '\n' ' ')
+rm -f "${ARRIVAL_UC_BODY_FILE}"
+echo "==> [deploy] GET /api/docs/arrival (unknown): HTTP ${ARRIVAL_UC_STATUS} · reason-unknown-cell=${ARRIVAL_UC_HAS_REASON} · preview=\"${ARRIVAL_UC_BODY_PREVIEW}\" (expect 404)"
+if [ "${ARRIVAL_UC_STATUS}" != "404" ] || [ "${ARRIVAL_UC_HAS_REASON}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs/arrival unknown cell did not respond 404 with reason:unknown-cell — validation order regression (container still up)." >&2
+fi
+
+# ── 8k.f — POST /api/docs/arrival → 405 (Allow: GET) ───────────────────────
+# The shared `rejectNonGet` helper is bound to POST/PUT/DELETE/PATCH/
+# OPTIONS. A successful 405 here proves the route module loaded (a
+# broken `buildArrivalReceipt` import would 500 every verb, not just
+# GET). The `Allow: GET` header is the contract hook external clients
+# key off of.
+echo "==> [deploy] Warming up POST /api/docs/arrival (v177 rejectNonGet shared helper)…"
+ARRIVAL_POST_HEADERS_FILE="$(mktemp)"
+ARRIVAL_POST_STATUS=$(curl --silent --show-error --output /dev/null \
+  --dump-header "${ARRIVAL_POST_HEADERS_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --request POST \
+  "http://localhost:${HOST_PORT}/api/docs/arrival?axis=${ARRIVAL_SAMPLE_AXIS}&stage=${ARRIVAL_SAMPLE_STAGE}&r=${ARRIVAL_SAMPLE_REF}" \
+  || echo '000')
+ARRIVAL_POST_HAS_ALLOW=$(grep -ci '^Allow: *GET' "${ARRIVAL_POST_HEADERS_FILE}" || true)
+rm -f "${ARRIVAL_POST_HEADERS_FILE}"
+echo "==> [deploy] POST /api/docs/arrival: HTTP ${ARRIVAL_POST_STATUS} · Allow:GET-hits=${ARRIVAL_POST_HAS_ALLOW} (expect 405)"
+if [ "${ARRIVAL_POST_STATUS}" != "405" ] || [ "${ARRIVAL_POST_HAS_ALLOW}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ POST /api/docs/arrival did not respond 405 with 'Allow: GET' — rejectNonGet regression or route unmounted (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

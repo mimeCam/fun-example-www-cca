@@ -1,0 +1,80 @@
+---
+// src/components/ArrivalReceipt.astro
+// v177 "Arrival Receipt" — dockable panel that acknowledges a citation's
+// arrival at /api/docs?r=<nonce>#cell-<axis>-<stage>.
+//
+// One producer, three mouths:
+//   · The panel shell renders whenever `?r=` is present in the URL. The
+//     actual receipt payload is injected client-side from the hash by
+//     src/lib/client/arrival-acknowledge.ts — hash is not sent to the
+//     server, so SSR cannot know the target cell. This is documented
+//     behaviour: the panel is a visible, named affordance the moment
+//     `?r=` appears; the body fills in one render-tick later, zero
+//     layout thrash (same box reserved).
+//   · The panel's `data-arrival-panel` attribute is the single DOM
+//     handle the client module paints into.
+//   · `data-receipt-json` on the panel always matches the bytes the
+//     curl endpoint returns, once the client module fills it in.
+//
+// Styling: tokens-only, no hand-rolled pixels. Reduced-motion honoured
+// via the @media block in src/styles/arrival-receipt.css.
+//
+// Credits: Mike Koch (napkin — dock panel, data-attr contract), Tanya
+//          Donska (UX §4.2 "the receipt is the reward" — quiet, no
+//          shouty toast), Paul Kim (byte-identical data-attr vs curl
+//          body), Elon (§5.7 "one pip, not a dashboard"), AGENTS.md.
+//          Sid — 2026-04-23. Motto: "code maintenance without tests."
+
+export interface Props {
+  /** Slot id the caller may use to anchor aria-labelledby. */
+  readonly id?: string;
+}
+
+const { id = 'arrival-receipt' } = Astro.props;
+---
+
+<aside
+  class="arrival-receipt"
+  id={id}
+  data-arrival-panel
+  data-receipt-json=""
+  aria-live="polite"
+  aria-atomic="true"
+  aria-labelledby={`${id}-title`}
+  hidden
+>
+  <header class="arrival-receipt__head">
+    <span class="arrival-receipt__dot" aria-hidden="true"></span>
+    <h2 id={`${id}-title`} class="arrival-receipt__title">
+      citation arrived
+    </h2>
+    <button
+      type="button"
+      class="arrival-receipt__close"
+      data-arrival-close
+      aria-label="dismiss arrival receipt"
+    >
+      <span aria-hidden="true">×</span>
+    </button>
+  </header>
+
+  <dl class="arrival-receipt__rows">
+    <div class="arrival-receipt__row">
+      <dt class="arrival-receipt__key">cell</dt>
+      <dd class="arrival-receipt__val" data-arrival-cell>—</dd>
+    </div>
+    <div class="arrival-receipt__row">
+      <dt class="arrival-receipt__key">ref</dt>
+      <dd class="arrival-receipt__val arrival-receipt__val--mono" data-arrival-ref>—</dd>
+    </div>
+    <div class="arrival-receipt__row">
+      <dt class="arrival-receipt__key">pinned</dt>
+      <dd class="arrival-receipt__val arrival-receipt__val--mono" data-arrival-pinned>—</dd>
+    </div>
+  </dl>
+
+  <p class="arrival-receipt__footnote">
+    {/* v177 — the footnote is a noun clause, not a CTA. Tanya §4.2. */}
+    one nonce · one cell · one pinned clock
+  </p>
+</aside>

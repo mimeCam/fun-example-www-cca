@@ -59,6 +59,15 @@ import type { ParityBandRow } from '../../lib/parity-seal';
 // v176 PR-E — single oracle for the lit-dot + operator-language sentence.
 // Same partial the BaseLayout footer mounts; one renderer, two surfaces.
 import ParityPip from '../../components/ParityPip.astro';
+// v177 "Arrival Receipt" — dockable panel that acknowledges `?r=<nonce>`.
+// Client module (arrival-acknowledge.ts) fills in the body from hash; the
+// shell always renders so the payload is zero extra requests (Mike §5.6).
+import ArrivalReceipt from '../../components/ArrivalReceipt.astro';
+import '../../styles/arrival-receipt.css';
+
+// v177 — gate client-side payload on `?r=` presence. Non-arrival readers
+// pay zero bytes for the acknowledge flow (Mike napkin §5.6).
+const hasArrivalRef = Astro.url.searchParams.has('r');
 
 // NOTE: the clipboard payload is built CLIENT-SIDE from window.location.origin
 // so prerendered HTML never bakes in a build-time host (Paul §non-negotiable —
@@ -506,6 +515,10 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
       <span>these five words don't change</span>
     </p>
 
+    {/* v177 — the arrival dock. Rendered always; the client module keeps
+       it hidden unless `?r=` is present (zero layout cost at rest). */}
+    <ArrivalReceipt />
+
   </main>
 </BaseLayout>
 
@@ -522,6 +535,15 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
   import '../../lib/client/cell-cite';
   import '../../lib/client/edge-bump';
 </script>
+
+{/* v177 — arrival-acknowledge is conditionally mounted: the import only
+   lands in the bundle when `?r=` was present at SSR time. Non-arrivals
+   get a zero-byte payload for this feature (Mike napkin §5.6). */}
+{hasArrivalRef && (
+  <script>
+    import '../../lib/client/arrival-acknowledge';
+  </script>
+)}
 
 <style>
   /* ── Reading column — same width as the post body ─────────────────────────

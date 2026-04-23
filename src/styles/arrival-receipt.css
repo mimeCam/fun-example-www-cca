@@ -1,0 +1,164 @@
+/* src/styles/arrival-receipt.css
+ * v177 "Arrival Receipt" — panel dock + one-beat cell pulse.
+ *
+ * Rules (Tanya UX spec §7 motion roster, Mike napkin §5):
+ *   · Tokens only. Zero hand-rolled pixels. Zero raw colors.
+ *   · One animation, one duration. `--motion-cite-ack-*` is the seam;
+ *     overriding it here is forbidden (check-motion-sanctuary guard).
+ *   · Reduced-motion sanctuary at the bottom — zero-duration everything
+ *     and drop the pulse keyframe. The receipt still renders (the dock
+ *     is a textual artifact, not a performance).
+ *
+ * Credits: Tanya Donska (UX §3.4 opaque data surface, §7 motion roster,
+ *          §4.2 quiet reward), Mike Koch (napkin §5 no-new-token rule),
+ *          Sid — 2026-04-23. Motto: "code maintenance without tests."
+ */
+
+/* ── Dock panel ─────────────────────────────────────────────────────── */
+
+.arrival-receipt {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-6);
+  z-index: var(--z-drawer);
+  max-width: min(92vw, 28rem);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface-base);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity   var(--motion-cite-ack-duration) var(--motion-cite-ack-easing),
+    transform var(--motion-cite-ack-duration) var(--motion-cite-ack-easing);
+}
+
+.arrival-receipt:not([hidden]) {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.arrival-receipt[hidden] { display: none; }
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.arrival-receipt__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.arrival-receipt__dot {
+  inline-size: 0.5rem;
+  block-size:  0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--gold);
+  box-shadow: var(--shadow-chip);
+}
+
+.arrival-receipt__title {
+  margin: 0;
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-wide);
+}
+
+.arrival-receipt__close {
+  inline-size: 1.75rem;
+  block-size:  1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-chip, 6px);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--motion-cite-ack-duration) var(--motion-cite-ack-easing);
+}
+
+.arrival-receipt__close:hover,
+.arrival-receipt__close:focus-visible {
+  color: var(--text-primary);
+  outline: 2px solid var(--border-focus, var(--border-medium));
+  outline-offset: 2px;
+}
+
+/* ── Rows ───────────────────────────────────────────────────────────── */
+
+.arrival-receipt__rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+}
+
+.arrival-receipt__row {
+  display: contents;
+}
+
+.arrival-receipt__key {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+  text-transform: lowercase;
+}
+
+.arrival-receipt__val {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.arrival-receipt__val--mono {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.arrival-receipt__footnote {
+  margin: 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ── Cell pulse (one beat, one token) ───────────────────────────────── */
+
+@keyframes arrival-receipt-pulse-kf {
+  0%   { box-shadow: 0 0 0 0 var(--cell-arrival-ring, var(--gold-glow)); }
+  40%  { box-shadow: 0 0 0 6px var(--cell-arrival-ring, var(--gold-glow)); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.arrival-receipt-pulse {
+  animation: arrival-receipt-pulse-kf
+    var(--motion-cite-ack-duration) var(--motion-cite-ack-easing) 1;
+}
+
+/* ── Reduced-motion sanctuary (Tanya §8, motion-sanctuary contract) ──── */
+
+@media (prefers-reduced-motion: reduce) {
+  .arrival-receipt {
+    transition: none;
+    transform: none;
+  }
+  .arrival-receipt-pulse {
+    animation: none;
+  }
+}

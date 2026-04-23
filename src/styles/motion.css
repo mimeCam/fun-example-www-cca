@@ -72,6 +72,13 @@
   --motion-ceremony-phase:  var(--motion-ceremony-duration);  /* 600ms — seal/verdict emotional beat */
   --motion-ambient:         var(--motion-drift-duration);     /* 500ms — ghost/fossil/background age */
 
+  /* v177 "Arrival Receipt" — one token for the copy→arrive→verify pulse.
+   * Semantic alias over flow so every handshake acknowledgement reads the
+   * same tempo (Mike napkin §5.5 "one token, one beat"). Reduced-motion
+   * inherits zero via --motion-flow-duration below.                        */
+  --motion-cite-ack-duration: var(--motion-flow-duration);    /* 200ms — receipt slide + cell pulse  */
+  --motion-cite-ack-easing:   var(--motion-flow-easing);
+
   /* ── Cycle Tokens (long ambient animations > 2s) ───────────────────── */
   /* Use calc() multiples of base tokens so ambient tempo scales globally */
   --motion-cycle-short:     calc(var(--motion-ambient) * 4);  /* ~2s    */
