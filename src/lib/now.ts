@@ -10,6 +10,7 @@
 
 import type { SimpleMoodId } from './mood-simple';
 import { daysSince as _daysSince, decay } from './temporal';
+import { nowDate } from './clock';
 
 // Re-export for backward compat — canonical home is temporal.ts
 export const daysSince = _daysSince;
@@ -98,14 +99,14 @@ export function freshnessQuip(level: Freshness): string {
 }
 
 /** One-call convenience: turn an update date into full FreshnessInfo. */
-export function computeFreshness(updated: string, now = new Date()): FreshnessInfo {
+export function computeFreshness(updated: string, now = nowDate()): FreshnessInfo {
   const days  = daysSince(updated, now);
   const level = freshnessLevel(days);
   return { level, days, label: freshnessLabel(level), quip: freshnessQuip(level) };
 }
 
 /** Continuous decay value: 0 = just updated, 1 = fully dormant. */
-export function computeDecay(updated: string, now = new Date()): number {
+export function computeDecay(updated: string, now = nowDate()): number {
   const days = daysSince(updated, now);
   return Math.min(1, days / STALE_MAX);
 }
@@ -130,7 +131,7 @@ export function emptyHeroQuip(): string {
 
 /** Compute a single NowItem into a renderable ComputedNowItem. */
 export function computeNowItem(
-  item: NowItem, tier: NowTier, maxDays: number, now = new Date(),
+  item: NowItem, tier: NowTier, maxDays: number, now = nowDate(),
 ): ComputedNowItem {
   const d = decay(item.updated, maxDays, now);
   const freshness = computeFreshness(item.updated, now);
@@ -142,7 +143,7 @@ export function computeNowItem(
  * Auto-demotes hero if stale. Purges residue older than 180 days.
  * Returns { hero, season, residue } arrays of ComputedNowItem.
  */
-export function partitionNow(data: NowTiered, now = new Date()) {
+export function partitionNow(data: NowTiered, now = nowDate()) {
   const heroDays = daysSince(data.rightNow.updated, now);
   const heroActive = heroDays <= HERO_DEMOTE_DAYS;
 

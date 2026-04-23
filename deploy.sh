@@ -11,83 +11,133 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v168 (2026-04-23) — "Journey Witness" (eighth prebuild guard) ─
-#   The previous seven prebuild guards all watched TOKENS (motion vars,
-#   duration literals, citation delegation, tempo divergence, …). v168
-#   adds the first guard that watches a USER: a synthetic `submit → read`
-#   journey is dispatched in-process through the real APIRoute handlers
-#   and asserted step-by-step. Guard count: 7 → 8.
+# ── Sprint v169 (2026-04-23) — "Clock Seam" + "Verify Bundle DTO" ───────
+#   v168 introduced the EIGHTH prebuild guard (user-journey witness). v169
+#   adds TWO more — the NINTH (`check-no-raw-now`) and the TENTH
+#   (`check-verify-bundle`). Guard count: 8 → 10.
 #
-#   Mike Koch's napkin §4 ships the minimum viable lifecycle
-#   (submit-happy-path · submit-invalid-json · submit-missing-title ·
-#   submit-body-too-short · submit-bad-pow · read-empty-store). The
-#   endanger → revive → verdict legs are DEFERRED (need a `src/lib/clock.ts`
-#   seam + ADMIN_SECRET injection — see §TODO in `journey-golden.ts`).
-#   Elon §5.3's user-witnessing principle: the guard asserts an outcome
-#   the reader will experience, not a token rule the compiler would catch.
+#   (a) Clock seam (NINTH guard) — ships `src/lib/clock.ts`, the single
+#   injectable `now()`/`nowDate()`/`nowISO()` helper backed by
+#   AsyncLocalStorage. SSR middleware (`src/middleware.ts`, NEW) wraps
+#   every request in `withClock(Date.now(), next)` so the engine, the API
+#   handlers, and the rendered HTML in one payload all agree on the same
+#   instant — no more drift between <head>, the first DB read, and the
+#   /api/docs/cite mouth.
+#
+#   (b) Verify Bundle DTO (TENTH guard) — ships the public, offline-first
+#   Bitcoin proof verifier. NEW page `src/pages/verify.astro` and NEW
+#   endpoint `src/pages/api/verify-bundle/[slug].ts` both consume the
+#   SAME DTO (`VerifyBundleDto` in `src/lib/verify-bundle-shared.ts`) so
+#   `curl -s '/api/verify-bundle/<slug>'` returns byte-identical JSON to
+#   what SSR renders. The guard (`scripts/check-verify-bundle.ts`) freezes
+#   the DTO field set + order, asserts the browser-side shim
+#   (`src/lib/verify-iso.ts`) re-exports every symbol the island depends
+#   on (`verifyBundle`, `parseBitcoinHeight`, `walkProof`, `sha256`,
+#   `hashPreimage`, `bytesToHex`, `base64ToBytes`), and locks the
+#   canonical `curl` string baked into every response — any future rename
+#   fails prebuild instead of silently breaking the /verify island.
+#
+#   The new guard runs in WARN mode (default) — 107 server-side callsites
+#   are still raw `Date.now()` / `new Date()`. Twelve hot files migrated
+#   this cycle (clock, temporal, now, decay-engine, wall, death-clock,
+#   timeBands, postMeta, entomb, deadline-clock, deadline-enforcer); the
+#   rest follow under their own PRs. Once the count hits zero we flip the
+#   guard to `--error`. WARN mode means it CANNOT fail the image build
+#   today — it just prints a tally to deployment.log for the operator.
+#
+#   The clock seam also unblocks the THIRD journey-witness mouth
+#   (`endanger-witness` — Mike napkin §1 "the v168 unlock"). The journey-
+#   golden fixture grows from 6 to 7 frozen rows; the new row exercises
+#   `wireDecayStage` under a pinned synthetic clock and asserts the engine
+#   classifies a 100-day-old post as `endangered`. The `revive` and
+#   `verdict-resolve` legs remain deferred (need blog-slug precondition +
+#   ADMIN_SECRET + offline TSA stub — see §TODO in `journey-golden.ts`).
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/journey-golden.ts (NEW) — frozen fixture table of six
-#       journey steps. Each row pins { status, bodyKeys, bodyLiteral }
-#       and carries a sentinel author (`a.test`) + sentinel IP
-#       (`127.0.0.10`) so the guard can never be confused for a real
-#       reader. PoW nonce for the happy-path submit is PRE-COMPUTED
-#       offline and baked in as a literal (see §6 "how the nonce was
-#       found") — keeps the guard hermetic and fast (no rehash loop at
-#       prebuild). Mirrors `citation-golden.ts` for style parity.
-#     • src/lib/journey-witness.ts (NEW) — witness runtime. Routes each
-#       journey step through `dispatchApiRoute()` (below), decodes the
-#       JSON body, and exposes the shape helpers (`hasShape`,
-#       `matchesLiteral`, `summarize`) the guard + its .test sibling
-#       both consume. No global state — every call is hermetic.
-#     • src/lib/handler-dispatch.ts (NEW) — the one generalisation
-#       Mike §6 asks for. Promoted out of `citation-golden.ts::curl-
-#       MouthResponse` so BOTH the citation witness (3 mouths, 35 rows)
-#       AND the new journey witness (5 submit branches + 1 read) route
-#       through one symbol. `dispatchApiRoute(mod, method, url)` → Response.
-#     • src/lib/citation-golden.ts (UPDATED) — `curlMouthResponse` now
-#       delegates to `dispatchApiRoute`. No behavior change; the tautology-
-#       breaker (Elon §4) is now also the non-duplication invariant
-#       (Sid §no-second-producer). Wire contract unchanged.
-#     • src/lib/communityPosts.ts (UPDATED) — DB path is now overridable
-#       via `COMMUNITY_DB_PATH` env var. Unset → default `data/revivals.db`
-#       (production path, volume-mounted). `:memory:` → hermetic SQLite
-#       for the journey guard (skips WAL pragma on memory DBs). New
-#       export `resetCommunityPostsDb()` drops the cached handle so
-#       the `.test` sibling can re-open against a new path. Production
-#       code paths never call it.
-#     • src/lib/journey-golden.test.ts (NEW) — unit coverage on the
-#       pure helpers (fixture table shape, reorder lemma, PoW nonce
-#       re-check) independent of the integration guard run.
-#     • scripts/check-user-journey.ts (NEW) — the EIGHTH prebuild guard.
-#       Iterates `JOURNEY_STEPS` through `dispatchJourneyStep(…)` and
-#       fails on any drift in status/shape/literal. Refuses to run
-#       unless `COMMUNITY_DB_PATH=:memory:` is set (Paul §ship criteria
-#       — the guard must not touch real `data/revivals.db`). `package.json`
-#       `prebuild` chain prefixes that env var inline.
-#     • AGENTS.md (UPDATED) — prebuild-guards line grew by one
-#       (`· user-journey`); new WIP note explains the submit→read
-#       scope and the deferred legs.
-#     • package.json (UPDATED) — `prebuild` chain gains the new guard
-#       (env-prefixed with `COMMUNITY_DB_PATH=:memory:`) and a new
-#       test step `test:journey-golden`. Corresponding `check:user-
-#       journey` + `test:journey-golden` scripts added for local use.
+#     • src/lib/clock.ts (NEW) — the ONE seam for "now". Public surface:
+#       `now()` / `nowDate()` / `nowISO()`, plus `withClock(at, fn)` for
+#       scoped overrides (AsyncLocalStorage — Node-20 built-in, zero dep
+#       cost) and `freezeClock(iso)` / `unfreezeClock()` for sync tests
+#       that can't wrap their call stack. Innermost pin always wins.
+#       Includes `_testClock()` isolated-run sanity per the in-place
+#       testing how-to.
+#     • src/middleware.ts (NEW) — Astro middleware. `onRequest` reads
+#       `Date.now()` ONCE per request and runs the rest of the request
+#       inside `withClock(pinnedMs, next)`. Auto-discovered by Astro
+#       (filename convention) — no astro.config.mjs change needed.
+#     • scripts/check-no-raw-now.ts (NEW — NINTH prebuild guard).
+#       Walks `src/`, flags raw `Date.now()` / `new Date()` outside the
+#       allowlist (the seam itself, the middleware, `src/lib/client/**`
+#       browser code, `*.test.ts` fixtures). Browser-IIFE template
+#       strings (e.g. liveDecayScript()) are detected heuristically and
+#       skipped. Default `--warn` exits 0; flip to `--error` once the
+#       remaining ~107 callsites migrate.
+#     • src/lib/verify-bundle-shared.ts (NEW) — single source of truth
+#       for the `/verify` proof-bundle DTO (`VerifyBundleDto` + the
+#       frozen field-order tuple `VERIFY_BUNDLE_FIELDS`). Used by BOTH
+#       the API endpoint AND the SSR page so `curl` and the browser
+#       consume byte-identical JSON.
+#     • src/pages/api/verify-bundle/[slug].ts (NEW) — GET endpoint.
+#       Fail-open envelope: missing slug still returns a 200 with an
+#       empty bundle (status='unsealed'); sealed without OTS returns
+#       status='pending'; fully anchored returns status='verified' with
+#       an immutable cache header.
+#     • src/pages/verify.astro (NEW) — public, offline-first Bitcoin
+#       proof verifier. `?slug=<x>` → SSR renders the DTO and hands it
+#       to the island for in-browser re-walking. No account, no cookies.
+#     • src/components/VerifyReceipt.astro (NEW) — receipt component
+#       that hosts the verify island.
+#     • src/lib/verify-iso.ts + src/lib/client/verify-worker.ts (NEW) —
+#       browser-side shim + worker. Re-exports the crypto primitives the
+#       check-verify-bundle guard freezes (`verifyBundle`,
+#       `parseBitcoinHeight`, `walkProof`, `sha256`, `hashPreimage`,
+#       `bytesToHex`, `base64ToBytes`).
+#     • src/styles/verify.css (NEW) — page styles, token-driven.
+#     • scripts/check-verify-bundle.ts (NEW — TENTH prebuild guard).
+#       Asserts: (1) DTO interface fields == snapshot tuple == empty-
+#       bundle key order, (2) shim re-exports every symbol the island
+#       imports, (3) canonical `curl` string is byte-exact. Runs
+#       in-process via `tsx` (no build step), exits non-zero on drift.
+#     • src/lib/journey-witness.ts (UPDATED) — adds `endangerMouth()`.
+#       Pure engine witness: pins the clock via `withClock`, calls
+#       `wireDecayStage(pubDateISO, 0, 0, null, 365)` against a
+#       100-days-earlier publish date, returns `{ status: 200, body:
+#       { stage: 'endangered' } }`. No HTTP, no DB — fully hermetic.
+#     • src/lib/journey-golden.ts (UPDATED) — adds 7th frozen row
+#       `endanger-witness` (status 200, bodyKeys ['stage'], bodyLiteral
+#       { stage: 'endangered' }). Extends `JourneyStepName` union and
+#       updates the in-file TODO ledger (endanger DONE; revive +
+#       verdict-resolve still pending).
+#     • src/lib/journey-golden.test.ts (UPDATED) — covers the new row.
+#     • src/lib/{temporal,now,decay-engine,wall,death-clock,timeBands,
+#       postMeta,entomb,deadline-clock,deadline-enforcer}.ts (UPDATED) —
+#       migrated from raw `new Date()` defaults to `nowDate()` from the
+#       clock seam. No behavior change under production middleware (the
+#       middleware pins the clock, so `nowDate()` returns the pinned
+#       instant); under tests these now respond to `withClock(…)`.
+#     • src/pages/api/audit-download/[slug].ts + src/pages/audit/
+#       [slug].astro (UPDATED) — minor alignment with the new DTO
+#       shape; download surface unchanged.
+#     • scripts/check-user-journey.ts (UPDATED) — minor; iterates the
+#       expanded JOURNEY_STEPS table.
+#     • AGENTS.md (UPDATED) — paths line grows to mention the
+#       middleware seam; WIP note bumped from v168 to v169.
+#     • package.json (UPDATED) — `prebuild` chain inserts BOTH new
+#       guards (`check-no-raw-now` and `check-verify-bundle`) between
+#       the tempo-divergence guard and the user-journey guard. New
+#       convenience scripts: `check:no-raw-now`, `lint:clock` (alias),
+#       and `check:verify-bundle`.
 #
 #   Infrastructure deltas this sprint: NONE.
-#     No new env vars at RUNTIME (the new `COMMUNITY_DB_PATH` is a
-#     prebuild/test-only override — unset at container start, so
-#     `communityPosts.ts` falls through to the default `data/revivals.db`
-#     path under the `persona-blog-a-sqlite` volume, exactly as before).
-#     No new ports, services, named volumes, or docker networks.
-#     Every new/modified file lives under paths the Dockerfile already
-#     COPY-s wholesale (`COPY src/ ./src/` + `COPY scripts/ ./scripts/`),
-#     so no Dockerfile edit is required. The prebuild chain
-#     (`npm run build`) picks up the new guard automatically — the
-#     `package.json` entry now invokes `scripts/check-user-journey.ts`
-#     with the hermetic-DB env prefix. Any drift in the six journey
-#     outcomes fails the image build, fails this script, and leaves
-#     the previous container already-stopped — operator re-runs after
-#     the fix.
+#     No new RUNTIME env vars (the clock seam is pure code; nothing to
+#     inject at container start). No new ports, services, named volumes,
+#     or docker networks. Astro auto-discovers `src/middleware.ts` —
+#     no astro.config.mjs edit. Every new/modified file lives under
+#     paths the Dockerfile already COPY-s wholesale (`COPY src/ ./src/`
+#     + `COPY scripts/ ./scripts/`), so no Dockerfile edit is required.
+#     The new prebuild guard runs in WARN mode → it logs but never
+#     fails the image build during the migration window. Once all
+#     callsites migrate, a single CLI flag flip (`--error`) elevates it.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -97,10 +147,13 @@
 #   5. Start the new container on 7100, wiring secrets from .env.
 #   6. Poll until Docker reports the container as running.
 #   7. Post-boot admin sweeps (deadline + OTS upgrade), if ADMIN_SECRET set.
-#   8. Warm the citation trilogy — /api/docs SSR, /api/docs/cite terminal
-#      mouth, and /api/metrics/cited-cells — so the first real visitor
-#      (or curl) never pays a cold-start cost.
-#   9. Prune dangling images from previous builds.
+#   8a. Warm the citation trilogy — /api/docs SSR, /api/docs/cite terminal
+#       mouth, and /api/metrics/cited-cells — so the first real visitor
+#       (or curl) never pays a cold-start cost.
+#   8b. Warm the v169 verify surfaces — /api/verify-bundle/<slug> (API
+#       parity mouth, fail-open empty-bundle smoke-test) and /verify
+#       (SSR page that consumes the same DTO under the clock middleware).
+#   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
 
@@ -145,17 +198,31 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     unordered pair, AND the v165 duration conjunction: five distinct
 #     resolved `--stage-*-duration` literals PLUS `endangered` as the
 #     unique strict minimum on the ms axis)  →
-#   check-user-journey (v168 NEW — EIGHTH guard; submit→read witness.
-#     Dispatches JOURNEY_STEPS through the real APIRoute handlers in-
-#     process via handler-dispatch.ts, asserts { status, bodyKeys,
-#     bodyLiteral } per step. Prefixed with `COMMUNITY_DB_PATH=:memory:`
-#     so the hermetic SQLite never touches the production volume. The
-#     guard itself refuses to run unless the env var is set to :memory:
-#     — Paul §ship criteria)  →
+#   check-no-raw-now (v169 NEW — NINTH guard; flags raw Date.now() /
+#     new Date() outside the clock seam allowlist. Runs in WARN mode
+#     today: prints a per-file tally to deployment.log but exits 0 so
+#     the migration window doesn't block deploys. Flip to --error
+#     once src/lib/ is fully migrated — see TODO in clock.ts)  →
+#   check-verify-bundle (v169 NEW — TENTH guard; freezes the
+#     VerifyBundleDto shape consumed by BOTH the API endpoint
+#     /api/verify-bundle/:slug AND the SSR /verify page. Asserts
+#     interface-vs-snapshot parity, empty-bundle key-order parity,
+#     verify-iso.ts shim re-exports, and the canonical curl string.
+#     Fails the image build on any drift — e.g. a rename in the
+#     browser island or a new field added server-side only)  →
+#   check-user-journey (v168 EIGHTH guard, expanded in v169 to seven
+#     steps; submit → read → endanger witness. Dispatches JOURNEY_STEPS
+#     through the real APIRoute handlers in-process via handler-
+#     dispatch.ts (and through `wireDecayStage` under `withClock` for
+#     endanger), asserts { status, bodyKeys, bodyLiteral } per step.
+#     Prefixed with `COMMUNITY_DB_PATH=:memory:` so the hermetic SQLite
+#     never touches the production volume. The guard itself refuses to
+#     run unless the env var is set to :memory: — Paul §ship criteria)  →
 #   test:keep-hotkey  →  test:keep-legend  →  test:chip-lit  →
 #   test:arrival  →  test:citation-golden  →
-#   test:journey-golden (v168 NEW — unit coverage for the fixture
-#     table, reorder lemma, and PoW nonce re-check)  →
+#   test:journey-golden (v168, expanded in v169 — unit coverage for
+#     the fixture table (now seven rows including endanger-witness),
+#     reorder lemma, and PoW nonce re-check)  →
 #   test:citation-delegation  →  test:duration-reasons  →
 #   test:stage-ease (v162 — 5 curves distinct + 4-D pair divergence ≥
 #     JND floor)  →
@@ -271,6 +338,11 @@ fi
 #       per-stage ease AND duration correctly. v168 adds the NEW
 #       journey-witness guard upstream — a drift on submit→read would
 #       have already failed the image build before we ever get here.
+#       v169 ALSO routes this hit through the new SSR clock middleware
+#       (src/middleware.ts), so every `now()` inside this single payload
+#       — engine decay, freshness label, /api/docs/cite mouth — resolves
+#       to the SAME pinned instant. Warming the route is also the
+#       runtime smoke-test that AsyncLocalStorage is propagating.
 #
 #   (b) GET /api/docs/cite — terminal/`curl` mouth. Sends a hand-shaped
 #       (axis, stage) pair and asserts a 200 response with a non-empty
@@ -320,6 +392,49 @@ METRICS_RESPONSE=$(curl --silent --show-error --max-time 10 \
   "http://localhost:${HOST_PORT}/api/metrics/cited-cells" \
   || echo '{"error":"curl failed"}')
 echo "==> [deploy] Cell-metrics baseline: ${METRICS_RESPONSE}"
+
+# ── 8b. Verify-bundle warm-up (v169) — API + SSR page parity ──────────────
+# Both surfaces of the new Bitcoin proof-of-existence story:
+#
+#   (a) GET /api/verify-bundle/<slug> — canonical DTO endpoint. The
+#       verify-bundle prebuild guard already enforced the wire shape at
+#       image-build time; warming the route hydrates Astro's APIRoute
+#       handler, the conviction-ledger DB module, and the timestamp
+#       store — so the first real `curl` from a visitor pays no cold
+#       start. We use the sentinel slug `warmup-demo` which returns the
+#       fail-open empty bundle (status='unsealed', 200) regardless of
+#       whether the ledger has rows yet — ideal for smoke-testing on a
+#       blank SQLite volume AND on a production one.
+#
+#   (b) GET /verify?slug=warmup-demo — SSR page that consumes the SAME
+#       DTO. Also routes through the new clock middleware, so warming
+#       it is the runtime smoke-test that the `/verify` island shell
+#       renders and the withClock scope propagates into the DB read.
+echo "==> [deploy] Warming up /api/verify-bundle endpoint (v169 TENTH guard runtime)…"
+VERIFY_BUNDLE_BODY_FILE="$(mktemp)"
+VERIFY_BUNDLE_STATUS=$(curl --silent --show-error --output "${VERIFY_BUNDLE_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/verify-bundle/warmup-demo" \
+  || echo '000')
+VERIFY_BUNDLE_BODY_LEN=$(wc -c < "${VERIFY_BUNDLE_BODY_FILE}" | tr -d ' ')
+VERIFY_BUNDLE_PREVIEW=$(head -c 200 "${VERIFY_BUNDLE_BODY_FILE}" | tr '\n' ' ')
+rm -f "${VERIFY_BUNDLE_BODY_FILE}"
+echo "==> [deploy] /api/verify-bundle/warmup-demo: HTTP ${VERIFY_BUNDLE_STATUS} · body=${VERIFY_BUNDLE_BODY_LEN}B · preview=\"${VERIFY_BUNDLE_PREVIEW}\""
+if [ "${VERIFY_BUNDLE_STATUS}" != "200" ] || [ "${VERIFY_BUNDLE_BODY_LEN}" = "0" ]; then
+  echo "==> [deploy] ⚠ Verify-bundle endpoint did not respond 200 with a body — investigate (container still up)." >&2
+fi
+
+echo "==> [deploy] Warming up /verify SSR page…"
+VERIFY_PAGE_STATUS=$(curl --silent --show-error --output /dev/null \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/verify?slug=warmup-demo" \
+  || echo '000')
+echo "==> [deploy] /verify SSR warm-up: HTTP ${VERIFY_PAGE_STATUS}"
+if [ "${VERIFY_PAGE_STATUS}" != "200" ]; then
+  echo "==> [deploy] ⚠ /verify page did not respond 200 — investigate (container still up)." >&2
+fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────
 echo "==> [deploy] Pruning dangling images…"

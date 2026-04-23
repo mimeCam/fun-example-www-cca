@@ -9,6 +9,7 @@
 // Stateless. Testable. No dependencies beyond daysSince().
 
 import { daysSince } from './temporal';
+import { nowDate } from './clock';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -35,7 +36,7 @@ export function isEntombed(
 export function entombmentAge(
   pubDateISO: string,
   maxDays: number,
-  now = new Date(),
+  now: Date = nowDate(),
 ): number {
   const age = daysSince(pubDateISO, now);
   const thresholdDay = Math.ceil(maxDays * ENTOMB_THRESHOLD);
@@ -56,7 +57,7 @@ const RISEN_VISIBLE_DAYS = 7;
 /** True when the risen badge should still be visible. */
 export function isRecentlyRisen(
   risenAt: Date | null,
-  now = new Date(),
+  now: Date = nowDate(),
 ): boolean {
   if (!risenAt) return false;
   const ms = now.getTime() - risenAt.getTime();

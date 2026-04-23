@@ -11,6 +11,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { getTstForSeal }           from '../../../lib/timestamp-store';
 import { getOtsProof }             from '../../../lib/conviction-ledger';
+import { readBundleDirect }        from '../../../lib/verify-bundle-shared';
 
 // ---------------------------------------------------------------------------
 // Handlers — one function per file type, each ≤ 10 lines
@@ -47,13 +48,27 @@ function serveOts(slug: string): Response {
 // Route handler
 // ---------------------------------------------------------------------------
 
+/** ?type=bundle → alias for /api/verify-bundle/:slug so this route stays the one
+ *  canonical download surface. Mike §3 row 8. */
+function serveBundle(slug: string, base: string): Response {
+  const dto = readBundleDirect(slug, base);
+  return new Response(JSON.stringify(dto, null, 2), {
+    headers: {
+      'Content-Type':  'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=60',
+    },
+  });
+}
+
 export const GET: APIRoute = ({ params, request }) => {
   const { slug } = params;
   if (!slug) return new Response('Missing slug.', { status: 400 });
 
-  const type = new URL(request.url).searchParams.get('type');
+  const url = new URL(request.url);
+  const type = url.searchParams.get('type');
   if (type === 'tsr') return serveTsr(slug);
   if (type === 'ots') return serveOts(slug);
+  if (type === 'bundle') return serveBundle(slug, url.origin);
 
-  return new Response('Bad request: ?type=tsr or ?type=ots required.', { status: 400 });
+  return new Response('Bad request: ?type=tsr|ots|bundle required.', { status: 400 });
 };

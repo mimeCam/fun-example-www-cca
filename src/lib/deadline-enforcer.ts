@@ -8,6 +8,7 @@ import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import { mkdirSync } from 'fs';
 import { resolveVerdict, VerdictAlreadySealedError } from './verdict-resolver';
+import { nowDate } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -86,7 +87,7 @@ function classifyByDays(deadline: Date, days: number): DeadlineStatus {
 export function getDeadlineStatus(
   slug: string,
   deadline: Date | undefined,
-  now: Date = new Date(),
+  now: Date = nowDate(),
 ): DeadlineStatus {
   if (!deadline) return { status: 'no-deadline' };
   const row = getVerdictRow(slug);
@@ -99,7 +100,7 @@ export function getDeadlineStatus(
 /** Posts whose deadline has passed and carry no sealed verdict. */
 export function findExpiredUnsealed(
   posts: PostDeadlineRecord[],
-  now: Date = new Date(),
+  now: Date = nowDate(),
 ): PostDeadlineRecord[] {
   return posts.filter(p => {
     const dl = p.data.resolution_deadline;

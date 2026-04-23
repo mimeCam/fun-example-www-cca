@@ -8,6 +8,7 @@
 
 import { decayFactor, ENTOMB_THRESHOLD } from './decay-engine';
 import type { ConvictionVerdict } from './decay-engine';
+import { nowDate } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,7 +33,7 @@ export function daysUntilEntombment(
   revivalCount: number,
   readingSeconds: number,
   maxDays = CLOCK_MAX_DAYS,
-  now = new Date(),
+  now: Date = nowDate(),
   conviction: ConvictionVerdict | null = null,
 ): number {
   const factor = decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds, conviction);

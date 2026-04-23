@@ -124,7 +124,7 @@ async function main(): Promise<void> {
   for (const step of ordered) await witnessStep(step);
 
   if (errors.length) return failWithDiagnostics();
-  console.log(`✅  check-user-journey: ${JOURNEY_STEP_COUNT} step(s) witnessed · 5 submit branches + 1 read-empty.`);
+  console.log(`✅  check-user-journey: ${JOURNEY_STEP_COUNT} step(s) witnessed · 5 submit branches + 1 read-empty + 1 endanger.`);
 }
 
 function failWithDiagnostics(): never {

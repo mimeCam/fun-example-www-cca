@@ -3,14 +3,20 @@
 // Consolidates duplicated threshold logic scattered across wall.ts and now.ts.
 // Provides client-side live-decay recomputation via inline script.
 //
+// Server-side "now" reads from src/lib/clock.ts (the ONE seam). Tests pin the
+// clock with withClock(iso, fn) — never pass `new Date('…')` into daysSince.
+//
 // TODO: wire _testTemporalLib() into a build sanity step
+
+import { nowDate } from './clock';
 
 // ---------------------------------------------------------------------------
 // Core date math
 // ---------------------------------------------------------------------------
 
-/** Number of full days between an ISO date string and a reference date. */
-export function daysSince(isoDate: string, now = new Date()): number {
+/** Number of full days between an ISO date string and a reference date.
+ *  Default `now` reads the injectable clock seam (clock.ts). */
+export function daysSince(isoDate: string, now: Date = nowDate()): number {
   const ms = now.getTime() - new Date(isoDate).getTime();
   return Math.max(0, Math.floor(ms / 86_400_000));
 }
@@ -19,7 +25,7 @@ export function daysSince(isoDate: string, now = new Date()): number {
 export function decay(
   isoDate: string,
   maxDays: number,
-  now = new Date(),
+  now: Date = nowDate(),
 ): number {
   return Math.min(1, daysSince(isoDate, now) / maxDays);
 }
@@ -68,5 +74,7 @@ export function _testTemporalLib(): void {
   const mid = decay('2026-03-20', 30, new Date('2026-04-04'));
   console.assert(mid > 0 && mid < 1, 'mid-range decay failed');
 
+  // Clock seam: default `now` reads the injectable clock.
+  // (Verified from clock.ts that withClock pins daysSince without args.)
   console.log('[temporal] lib OK — daysSince, decay verified');
 }

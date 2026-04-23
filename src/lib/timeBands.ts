@@ -6,6 +6,7 @@
 // Pure functions. Zero dependencies beyond postMeta types.
 
 import type { PostDisplayData } from './postMeta';
+import { now as clockNow } from './clock';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -37,7 +38,7 @@ export interface TimeBands {
 // ---------------------------------------------------------------------------
 
 function ageDays(post: PostDisplayData): number {
-  const ms = Date.now() - new Date(post.pubDateISO).getTime();
+  const ms = clockNow() - new Date(post.pubDateISO).getTime();
   return Math.max(0, Math.floor(ms / 86_400_000));
 }
 

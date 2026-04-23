@@ -3,6 +3,8 @@
 // Input: two Dates and a "now". Output: display primitives only.
 // Credits: Mike (architecture spec §deadline-clock)
 
+import { nowDate } from './clock';
+
 export type UrgencyBand = 'safe' | 'watch' | 'warning' | 'critical' | 'overdue';
 
 export interface DeadlineDisplay {
@@ -52,7 +54,7 @@ function toPercent(publishDate: Date, deadline: Date, now: Date): number {
 export function buildDeadlineDisplay(
   publishDate: Date,
   deadline: Date,
-  now: Date = new Date(),
+  now: Date = nowDate(),
 ): DeadlineDisplay {
   const days = daysDiff(deadline, now);
   return {

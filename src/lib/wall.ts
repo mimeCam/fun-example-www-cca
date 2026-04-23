@@ -9,6 +9,7 @@
 
 import type { SimpleMoodId } from './mood-simple';
 import { daysSince } from './temporal';
+import { nowDate } from './clock';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,7 +53,7 @@ export function wallState(days: number): WallState {
 }
 
 /** Continuous decay: 0 = just posted, 1 = fully fossilised. */
-export function wallDecay(posted: string, now = new Date()): number {
+export function wallDecay(posted: string, now = nowDate()): number {
   return Math.min(1, daysSince(posted, now) / FADE_MAX);
 }
 
@@ -70,7 +71,7 @@ export function wallQuip(state: WallState): string {
 /** One-call: turn a raw WallEntry into a fully computed one. */
 export function computeWallEntry(
   entry: WallEntry,
-  now = new Date(),
+  now = nowDate(),
 ): ComputedWallEntry {
   const days  = daysSince(entry.posted, now);
   const state = wallState(days);
@@ -80,7 +81,7 @@ export function computeWallEntry(
 /** Partition entries into active (glowing/active/fading) vs fossils. */
 export function partitionEntries(
   entries: WallEntry[],
-  now = new Date(),
+  now = nowDate(),
 ): { active: ComputedWallEntry[]; fossils: ComputedWallEntry[] } {
   const computed = entries.map(e => computeWallEntry(e, now));
   const active  = computed.filter(c => c.state !== 'fossil');

@@ -20,6 +20,7 @@ import type { UrgencyLevel } from './endangered';
 import { clockUrgency as computeClockUrgency } from './death-clock';
 import type { ClockUrgency } from './death-clock';
 import { daysSince } from './temporal';
+import { nowDate } from './clock';
 
 export interface PostMeta {
   slug: string;
@@ -118,7 +119,7 @@ function resolveConviction(
 /** Bundles metadata + decay visuals for a single post. */
 export function getPostDisplayData(
   post: CollectionEntry<'blog'>,
-  now = new Date(),
+  now: Date = nowDate(),
   revivals = 0,
   risenAt: Date | null = null,
   readingSeconds = 0,
@@ -174,7 +175,7 @@ function lastRevivalDaysAgo(risenAt: Date | null, now: Date): number {
 /** Display data for all posts, sorted newest-first. Single DB query per table. */
 export function allPostDisplayData(
   posts: CollectionEntry<'blog'>[],
-  now = new Date(),
+  now: Date = nowDate(),
 ): PostDisplayData[] {
   const counts   = safeRevivalCounts();
   const risen    = safeRisenTimestamps();

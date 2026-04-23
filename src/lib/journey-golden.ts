@@ -8,11 +8,12 @@
 // Scope of this sprint (Mike napkin §4 file-by-file, Elon §5.3 "witness
 // a user outcome, not a token rule"):
 //
-//     submit → read
+//     submit → read → endanger
 //
-// The endanger → revive → verdict legs are NOT yet fixtured — see
-// §TODO at the bottom. They require a clock seam (`src/lib/now.ts` does
-// not expose one yet) and ADMIN_SECRET injection for `verdict-resolve`.
+// v169 update: the clock seam at `src/lib/clock.ts` is now landed, so
+// the `endanger` mouth is wired as a pure engine witness (see
+// `endangerMouth` in journey-witness.ts). The `revive` and
+// `verdict-resolve` legs are still deferred — see §TODO at the bottom.
 // The first two mouths are the highest-value user outcome: Elon's §5.3
 // explicitly names "submit → read" as the minimum of the five-step
 // lifecycle the site promises, and Paul's discipline (byte-exact where
@@ -52,7 +53,8 @@ export type JourneyStepName =
   | 'submit-missing-title'
   | 'submit-body-too-short'
   | 'submit-bad-pow'
-  | 'read-empty-store';
+  | 'read-empty-store'
+  | 'endanger-witness';
 
 /** Expected wire-level outcome for a step. Status code is byte-exact;
  *  body is matched by a small shape predicate rather than byte-equality
@@ -177,6 +179,18 @@ export const JOURNEY_STEPS: readonly JourneyStep[] = [
       bodyLiteral: { live: 0 },
     },
   },
+  {
+    // v169 · endanger mouth — unlocked by src/lib/clock.ts (napkin §7).
+    // The engine, pinned at 2026-04-23 via withClock, classifies a 200-day-
+    // old post as 'endangered'. Pure hermetic witness, zero network.
+    step: 'endanger-witness',
+    description: 'under a pinned synthetic clock, decay ramp enters "endangered"',
+    expected: {
+      status: 200,
+      bodyKeys: ['stage'],
+      bodyLiteral: { stage: 'endangered' },
+    },
+  },
 ] as const;
 
 /** Expected row count — a second check on top of the shape assertions.
@@ -214,6 +228,8 @@ export function journeyExpectedFor(step: JourneyStepName): JourneyExpected {
 // and update JOURNEY_STEP_COUNT. The guard will then witness the full
 // five-step lifecycle per Mike napkin §1.
 
-// TODO: journey-witness step 3 — endanger (needs src/lib/clock.ts seam)
+// v169 (2026-04-23): endanger mouth WIRED via src/lib/clock.ts seam
+//                    (see endangerMouth in journey-witness.ts). Pure
+//                    engine witness, no HTTP, hermetic under withClock.
 // TODO: journey-witness step 4 — revive (needs blog-slug or community-post precondition)
 // TODO: journey-witness step 5 — verdict-resolve (needs ADMIN_SECRET + offline TSA stub)

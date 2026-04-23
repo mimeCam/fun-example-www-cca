@@ -137,6 +137,9 @@ const pageDescription = payload.seal
     <p class="audit-api-note">
       Verify programmatically →
       <code class="audit-api-code">GET /api/trust-verify/{slug}</code>
+      <span class="audit-api-sep">·</span>
+      Re-walk the OTS proof yourself →
+      <a class="audit-api-link" href={`/verify?slug=${slug}`}>/verify?slug={slug}</a>
     </p>
 
     <!-- Event timeline — chronological history -->
@@ -243,6 +246,14 @@ const pageDescription = payload.seal
     font-size: inherit;
     color: var(--text-dim);
   }
+  .audit-api-sep { color: var(--text-ghost); margin: 0 0.25rem; }
+  .audit-api-link {
+    font-family: var(--font-mono, monospace);
+    font-size: inherit;
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .audit-api-link:hover { text-decoration: underline; }
 
   @media (max-width: 640px) {
     .audit-page { padding: 2rem 1rem 4rem; }

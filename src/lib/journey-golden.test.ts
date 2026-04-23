@@ -32,10 +32,11 @@ describe('journey-golden — row count', () => {
     assert.equal(JOURNEY_STEPS.length, JOURNEY_STEP_COUNT);
   });
 
-  test('JOURNEY_STEP_COUNT is 6 (5 submit branches + 1 read-empty)', () => {
+  test('JOURNEY_STEP_COUNT is 7 (5 submit branches + 1 read-empty + 1 endanger)', () => {
     // Bumping this requires a commit-body justification (see §TODO in
-    // journey-golden.ts for the deferred endanger/revive/verdict steps).
-    assert.equal(JOURNEY_STEP_COUNT, 6);
+    // journey-golden.ts for the still-deferred revive/verdict steps).
+    // v169 (2026-04-23): clock seam landed → endanger mouth unblocked.
+    assert.equal(JOURNEY_STEP_COUNT, 7);
   });
 });
 

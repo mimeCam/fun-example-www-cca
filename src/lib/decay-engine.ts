@@ -13,6 +13,7 @@
 // Credits: Mike (architecture), Elon (cold-start diagnosis)
 
 import { daysSince } from './temporal';
+import { nowDate } from './clock';
 
 // ---------------------------------------------------------------------------
 // Conviction — author stance modulates physics of decay
@@ -119,7 +120,7 @@ export function readingBonus(readingSeconds: number): number {
 export function decayFactor(
   pubDate: string,
   maxDays = MAX_DAYS_DEFAULT,
-  now = new Date(),
+  now: Date = nowDate(),
   revivalCount = 0,
   readingSeconds = 0,
   conviction: ConvictionVerdict | null = null,
@@ -137,7 +138,7 @@ export function decayFactorWithCount(
   pubDate: string,
   revivalCount: number,
   maxDays = MAX_DAYS_DEFAULT,
-  now = new Date(),
+  now: Date = nowDate(),
   readingSeconds = 0,
 ): number {
   return decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds);
@@ -201,7 +202,7 @@ export function wireDecayStage(
   readingSeconds = 0,
   conviction: ConvictionVerdict | null = null,
   maxDays?: number,
-  now: Date = new Date(),
+  now: Date = nowDate(),
 ): DecayStage {
   const factor = decayFactor(pubDateISO, maxDays, now, revivalCount, readingSeconds, conviction);
   return stageFromFactor(factor);
@@ -357,7 +358,7 @@ export function isEntombed(
 export function entombmentAge(
   pubDateISO: string,
   maxDays: number,
-  now = new Date(),
+  now: Date = nowDate(),
 ): number {
   const age = daysSince(pubDateISO, now);
   const thresholdDay = Math.ceil(maxDays * ENTOMB_THRESHOLD);
@@ -367,7 +368,7 @@ export function entombmentAge(
 /** True when risen badge should still be visible (7 days). */
 export function isRecentlyRisen(
   risenAt: Date | null,
-  now = new Date(),
+  now: Date = nowDate(),
 ): boolean {
   if (!risenAt) return false;
   const ms = now.getTime() - risenAt.getTime();
@@ -387,7 +388,7 @@ export function daysToEntombment(
   revivalCount = 0,
   readingSeconds = 0,
   maxDays = MAX_DAYS_DEFAULT,
-  now = new Date(),
+  now: Date = nowDate(),
   conviction: ConvictionVerdict | null = null,
 ): number {
   const factor = decayFactor(pubDate, maxDays, now, revivalCount, readingSeconds, conviction);

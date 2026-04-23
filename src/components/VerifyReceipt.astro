@@ -1,0 +1,171 @@
+---
+// src/components/VerifyReceipt.astro
+// Public verification receipt — pure SSR shell, hydrated by verify-worker.ts.
+//
+// Shape (Mike napkin §3 row 2):
+//   · status pill (gold = verified, slate = pending/unsealed, red = invalid)
+//   · block height + block time + block hash (only when verified)
+//   · preimage + content hash (always, when sealed)
+//   · `<pre>` curl footer — byte-identical to the API URL the island just hit
+//
+// Composes (Mike §5 — "compose, do not invent"):
+//   · TrustBadge.astro — borrows the conviction-stage chip vocabulary
+//   · AnchorStrip-style `--gold-*` and `--surface-*` tokens
+//
+// A11y:
+//   · `role="status"` on the pill, `aria-live="polite"` so screen readers get
+//     one sentence on each phase change
+//   · Re-verify button is a real <button>, not a div
+//
+// Credits: Mike Koch (napkin §3, §6.9 SSR shell), Tanya (§4 token-only CSS),
+//          Sid (≤-10 LOC).
+//          2026-04-23.
+
+import type { VerifyBundleDto } from '../lib/verify-bundle-shared';
+import { nowISO } from '../lib/clock';
+
+interface Props {
+  dto: VerifyBundleDto;
+}
+
+const { dto } = Astro.props;
+
+const renderedAt = nowISO();
+const statusLabel: Record<string, string> = {
+  verified: 'verified · independent of this server',
+  pending:  'sealed · awaiting Bitcoin confirmation',
+  unsealed: 'no proof yet · post is unsealed',
+};
+const statusIcon: Record<string, string> = {
+  verified: '✓',
+  pending:  '◷',
+  unsealed: '◌',
+};
+
+const sealedDate = dto.sealedAt ? new Date(dto.sealedAt).toISOString() : null;
+const previewHash = (h: string | null) => h ? `${h.slice(0, 12)}…${h.slice(-8)}` : '—';
+---
+
+<section
+  class="verify-receipt"
+  data-verify-root
+  data-slug={dto.slug}
+  data-status={dto.status}
+  aria-live="polite"
+>
+  <header class="vr-head">
+    <span class="vr-pill" data-vr-pill role="status" aria-label={`Status: ${statusLabel[dto.status]}`}>
+      <span class="vr-pill-icon" aria-hidden="true" data-vr-pill-icon>{statusIcon[dto.status]}</span>
+      <span class="vr-pill-text" data-vr-pill-text>{statusLabel[dto.status]}</span>
+    </span>
+    <button type="button" class="vr-rerun" data-verify-rerun aria-label="Re-verify in your browser">
+      ↻ re-verify
+    </button>
+  </header>
+
+  <dl class="vr-grid">
+    <div class="vr-row">
+      <dt>slug</dt>
+      <dd class="vr-mono">{dto.slug}</dd>
+    </div>
+    {dto.preimage && (
+      <div class="vr-row">
+        <dt>preimage</dt>
+        <dd class="vr-mono" data-vr-preimage>{dto.preimage}</dd>
+      </div>
+    )}
+    <div class="vr-row">
+      <dt>content hash</dt>
+      <dd class="vr-mono" data-vr-hash>{previewHash(null)}</dd>
+    </div>
+    <div class="vr-row" data-vr-block-row hidden>
+      <dt>bitcoin block</dt>
+      <dd>
+        <a class="vr-block-link" href="#" target="_blank" rel="noopener noreferrer" data-vr-block-link>
+          #<span data-vr-block-height>—</span>
+        </a>
+        <span class="vr-block-time" data-vr-block-time></span>
+      </dd>
+    </div>
+    {sealedDate && (
+      <div class="vr-row">
+        <dt>sealed at</dt>
+        <dd class="vr-mono">{sealedDate}</dd>
+      </div>
+    )}
+    <div class="vr-row">
+      <dt>rendered</dt>
+      <dd class="vr-mono">{renderedAt}</dd>
+    </div>
+  </dl>
+
+  <footer class="vr-curl">
+    <p class="vr-curl-label">click ≡ paste ≡ curl — same bytes:</p>
+    <pre class="vr-curl-pre"><code>{dto.curl}</code></pre>
+    <p class="vr-curl-hint">
+      The page above and this command return byte-identical JSON.
+      The verification math runs in your browser — the server only serves bytes.
+    </p>
+  </footer>
+</section>
+
+<script>
+  // Inline painter: listens to verify:* CustomEvents from verify-worker.ts and
+  // updates DOM nodes in place. No framework, no virtual DOM. Stays consistent
+  // with cell-cite.ts / verdict-reveal.ts / live-conviction.ts patterns.
+  const root = document.querySelector('[data-verify-root]');
+  if (root) {
+    const setText = (sel, val) => {
+      const el = root.querySelector(sel);
+      if (el) el.textContent = String(val);
+    };
+    const setHidden = (sel, hidden) => {
+      const el = root.querySelector(sel);
+      if (el) el.hidden = hidden;
+    };
+    const STATUS_LABEL = {
+      verified:    'verified · independent of this server',
+      pending:     'sealed · awaiting Bitcoin confirmation',
+      unsealed:    'no proof yet · post is unsealed',
+      unreachable: 'Bitcoin oracle unreachable · retry later',
+      invalid:     'proof did not validate against the chain',
+    };
+    const STATUS_ICON = {
+      verified: '✓', pending: '◷', unsealed: '◌', unreachable: '⚠', invalid: '✗',
+    };
+    root.addEventListener('verify:progress', e => {
+      const detail = (e as CustomEvent).detail;
+      setText('[data-vr-pill-text]', detail.message);
+    });
+    root.addEventListener('verify:done', e => {
+      const detail = (e as CustomEvent).detail;
+      const o = detail.outcome;
+      root.dataset.status = o.status;
+      setText('[data-vr-pill-icon]', STATUS_ICON[o.status] ?? '·');
+      setText('[data-vr-pill-text]', STATUS_LABEL[o.status] ?? o.status);
+      if (o.contentHash) {
+        const hash = o.contentHash;
+        setText('[data-vr-hash]', hash.slice(0, 12) + '…' + hash.slice(-8));
+      }
+      if (o.blockHeight) {
+        setHidden('[data-vr-block-row]', false);
+        setText('[data-vr-block-height]', o.blockHeight.toLocaleString());
+        const link = root.querySelector('[data-vr-block-link]') as HTMLAnchorElement | null;
+        if (link) link.href = 'https://blockstream.info/block-height/' + o.blockHeight;
+      }
+      if (o.blockTime) {
+        setText('[data-vr-block-time]', ' · ' + new Date(o.blockTime * 1000).toISOString());
+      }
+    });
+    root.addEventListener('verify:fail', e => {
+      const detail = (e as CustomEvent).detail;
+      root.dataset.status = 'unreachable';
+      setText('[data-vr-pill-icon]', '⚠');
+      setText('[data-vr-pill-text]', 'verification interrupted: ' + detail.error);
+    });
+  }
+</script>
+
+<script>
+  import '../lib/client/verify-worker';
+</script>

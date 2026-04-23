@@ -1,0 +1,72 @@
+---
+// src/pages/verify.astro
+// Public, offline-first Bitcoin proof verifier.
+//
+// `?slug=<sealed-slug>` → SSR-renders the bundle DTO into the page; the island
+// re-verifies it in the browser against Blockstream within ~5 s. Without
+// `slug`, the page renders a drop zone explaining the curl/byte-identity
+// promise — the page is teaching, even when it has nothing to verify.
+//
+// Killer-feature surface (project AGENTS.md):
+//   · API parity — the SSR shell consumes the *same* JSON `curl` returns.
+//   · No account, no cookies, no JS required to read the receipt.
+//   · The math the green stamp claims is the math the user can run themselves.
+//
+// Credits: Mike Koch (napkin §1 + §3 row 1), Tanya Donska (§7 API parity),
+//          Sid (≤-10 LOC). 2026-04-23.
+
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import VerifyReceipt from '../components/VerifyReceipt.astro';
+import { readBundleDirect } from '../lib/verify-bundle-shared';
+import '../styles/verify.css';
+
+const url = new URL(Astro.request.url);
+const slug = url.searchParams.get('slug')?.trim() || '';
+const base = `${url.protocol}//${url.host}`;
+
+const dto = slug ? readBundleDirect(slug, base) : null;
+const pageTitle = slug
+  ? `Verify "${slug}" — proof of existence`
+  : 'Verify any sealed post — proof of existence';
+const pageDescription = 'Re-walk an OpenTimestamps proof against Bitcoin in your own browser. No account. No trust.';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} ogSlug="verify">
+  <main class="verify-page">
+
+    <p class="verify-eyebrow">Proof of existence</p>
+    <h1 class="verify-title">Verify against Bitcoin</h1>
+    <p class="verify-lede">
+      Paste a slug. Drop a proof bundle. Either way, your browser walks the
+      proof against a real Bitcoin block. The server is not trusted — it only
+      serves bytes.
+    </p>
+
+    {dto && <VerifyReceipt dto={dto} />}
+
+    {!dto && (
+      <div class="verify-dropzone">
+        <p>
+          <strong>No slug yet.</strong> Append <code>?slug=&lt;sealed-slug&gt;</code>
+          to this URL — or <a href="/leaderboard">pick one from the ledger</a>.
+        </p>
+        <p>
+          Programmatic equivalent:
+          <code>curl -s '{base}/api/verify-bundle/&lt;slug&gt;'</code>
+        </p>
+      </div>
+    )}
+
+    <p class="verify-footnote">
+      Verifies via the public Blockstream block-header API (read-only). The
+      RFC 3161 chain is signed server-side at seal time and surfaced via
+      <code>GET /api/trust-verify/{slug || '<slug>'}</code>;
+      the OpenTimestamps proof is re-walked here in your browser.
+      Both bundles are downloadable as raw bytes via
+      <code>GET /api/audit-download/{slug || '<slug>'}?type=ots|tsr|bundle</code>.
+    </p>
+
+  </main>
+</BaseLayout>

@@ -1,0 +1,191 @@
+/* src/styles/verify.css
+ * Layout-only stylesheet for /verify.
+ * Every color / radius / shadow / motion value is a token from tokens.css
+ * or motion.css. No raw hex, rgba, or px durations — Tanya §4 compliance.
+ *
+ * Architecture: Mike Koch (napkin §3 row 6 — layout only),
+ * Visual tokens: Tanya Donska, 2026-04-23.
+ */
+
+.verify-page {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6) var(--space-16);
+}
+
+.verify-eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-spread);
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  margin: 0 0 var(--space-2);
+}
+
+.verify-title {
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3);
+}
+
+.verify-lede {
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-8);
+}
+
+/* ── Receipt card (composes notarize-stamp surface) ───────────────────── */
+.verify-receipt {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  transition: border-color var(--motion-flow-duration) var(--motion-flow-easing);
+}
+.verify-receipt[data-status='verified']    { border-color: var(--gold-border); }
+.verify-receipt[data-status='unreachable'] { border-color: var(--border-medium); }
+
+.vr-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.vr-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+  border: 1px solid var(--border-subtle);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-snug);
+  transition:
+    background   var(--motion-flow-duration) var(--motion-flow-easing),
+    border-color var(--motion-flow-duration) var(--motion-flow-easing),
+    color        var(--motion-flow-duration) var(--motion-flow-easing);
+}
+[data-status='verified'] .vr-pill {
+  background: var(--gold-bg);
+  border-color: var(--gold-border);
+  color: var(--gold);
+}
+.vr-pill-icon { font-size: var(--text-sm); line-height: 1; }
+.vr-pill-text { line-height: 1.2; }
+
+.vr-rerun {
+  margin-left: auto;
+  font: inherit;
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  letter-spacing: var(--tracking-snug);
+  min-height: 32px;
+  transition:
+    color        var(--motion-flow-duration) var(--motion-flow-easing),
+    border-color var(--motion-flow-duration) var(--motion-flow-easing);
+}
+.vr-rerun:hover  { color: var(--text-primary); border-color: var(--border-medium); }
+.vr-rerun:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ── DT/DD grid ──────────────────────────────────────────────────────── */
+.vr-grid { margin: 0; display: grid; gap: var(--space-2); }
+
+.vr-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+.vr-row dt {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-spread);
+  color: var(--text-ghost);
+}
+.vr-row dd {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+.vr-mono { font-family: var(--font-mono); }
+.vr-block-link {
+  color: var(--gold);
+  text-decoration: none;
+  font-family: var(--font-mono);
+}
+.vr-block-link:hover { text-decoration: underline; }
+.vr-block-time { color: var(--text-tertiary); font-size: var(--text-2xs); }
+
+/* ── Curl footer (Mike §6.4 — load-bearing parity) ───────────────────── */
+.vr-curl { margin-top: var(--space-6); }
+.vr-curl-label {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-spread);
+  color: var(--text-ghost);
+  margin: 0 0 var(--space-2);
+}
+.vr-curl-pre {
+  background: var(--surface-inset-deep);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-detail);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  overflow-x: auto;
+  margin: 0 0 var(--space-2);
+}
+.vr-curl-hint {
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  margin: 0;
+  font-style: italic;
+}
+
+/* ── Drop zone (no slug provided) ───────────────────────────────────── */
+.verify-dropzone {
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+.verify-dropzone strong { color: var(--text-secondary); font-weight: var(--weight-semibold); }
+
+/* ── Footer / API note ──────────────────────────────────────────────── */
+.verify-footnote {
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-2xs);
+  color: var(--text-ghost);
+  letter-spacing: var(--tracking-snug);
+  line-height: 1.6;
+}
+.verify-footnote code {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 640px) {
+  .verify-page { padding: var(--space-8) var(--space-4) var(--space-12); }
+  .vr-row { grid-template-columns: 1fr; gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .verify-receipt, .vr-pill, .vr-rerun { transition: none; }
+}

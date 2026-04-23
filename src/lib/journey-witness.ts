@@ -104,6 +104,7 @@ export async function dispatchJourneyStep(
   if (step === 'submit-body-too-short') return submitMouth(shortBody(), 3);
   if (step === 'submit-bad-pow')        return submitMouth(badPowBody(), 4);
   if (step === 'read-empty-store')      return readCommunityLiveMouth();
+  if (step === 'endanger-witness')      return endangerMouth();
   throw new Error(`journey-witness: unknown step "${step}"`);
 }
 
@@ -150,5 +151,35 @@ export function summarize(result: { status: number; body: unknown }): string {
 
 // ── Silence unused-import warnings when this module is imported piecemeal ─
 void dispatchApiRoute; // keep the import reachable for tree-shakers
-// TODO: wire endanger / revive / verdict mouths once clock seam lands
-//       (see journey-golden.ts §TODO block).
+
+// ── Endanger mouth — pure engine witness via the clock seam ───────────────
+//
+// The clock seam (src/lib/clock.ts) finally unblocks the endanger step
+// (Mike napkin §1 "the v168 unlock", Krystle Clear's measurable user
+// outcome). We pick a pubDate that sits 200 days before a FIXED synthetic
+// "now" — at maxDays=365 that yields a decay factor in the [0.50, 0.75)
+// band → 'endangered' per stageFromFactor. Withclock pins the engine's
+// Date() so the assertion never drifts with real wall time.
+//
+// Why no HTTP call: the endangered UI state is driven entirely by
+// `wireDecayStage(pubDateISO, 0, 0, null, undefined, nowDate())` — the
+// handler layer is a thin pass-through. Witnessing the engine is
+// witnessing the user-visible stage. Paul's "byte-exact where possible"
+// discipline carries: the stage literal 'endangered' is public vocab
+// (DECAY_STAGES in decay-engine.ts) and drifts only with a same-PR edit.
+
+/** Endanger witness — returns `{ status: 200, body: { stage } }`.
+ *  The fixture row freezes `stage: 'endangered'` — drift → guard fails.
+ *  100d before pin with LOGARITHMIC_DECAY=true + LOG_K=0.065 yields
+ *  factor≈0.628 → mid-band endangered. Robust to small engine tuning. */
+export async function endangerMouth(): Promise<{ status: number; body: unknown }> {
+  const { withClock } = await import('./clock');
+  const { wireDecayStage } = await import('./decay-engine');
+  const pinnedNowISO = '2026-04-23T00:00:00Z';
+  const pubDateISO   = '2026-01-13T00:00:00Z'; // 100d earlier → endangered
+  const stage = withClock(pinnedNowISO,
+    () => wireDecayStage(pubDateISO, 0, 0, null, 365),
+  );
+  return { status: 200, body: { stage } };
+}
+
