@@ -24,11 +24,15 @@ import {
   checkRouteExists,
   checkSurfaceCompleteness,
   checkRouteImports,
+  checkMonotonicCap,
+  hasProducerImport,
+  readCap,
   scanAction,
   scanInventory,
   routeCandidates,
   formatFinding,
   summaryLine,
+  CAP_LEDGER_PATH,
   type Finding,
 } from './check-tri-mouth.ts';
 
@@ -100,6 +104,13 @@ const ROUTE_NO_IMPORT: TriMouthAction = {
   producer: 'src/lib/important.ts',
 };
 
+/** v175 §5.5 — route file mentions producer ONLY in a comment. The old
+ *  substring scan passed this; the new import-regex must fail it. */
+const ROUTE_COMMENT_ONLY: TriMouthAction = {
+  ...CLEAN, name: 'route-comment-only', curl: 'GET /api/comment-only',
+  producer: 'src/lib/important.ts',
+};
+
 // ── Mock fs  — an in-memory map backs `existsFn` + `readFn` ──────────────
 
 const FS_MAP: Record<string, string> = {
@@ -113,6 +124,15 @@ const FS_MAP: Record<string, string> = {
     `import { x } from '../../lib/test-producer';\nexport const POST = () => null;`,
   'src/pages/api/silent.ts':
     `// no producer reference on purpose\nexport const GET = () => null;`,
+  // v175 §5.5 regex fixture — route file *comments* the producer but
+  // never imports it. Old substring scan passed this vacuously; the new
+  // import-regex must fail it.
+  'src/pages/api/comment-only.ts':
+    `// important is the thing this route would read from, if it did\n`
+    + `export const GET = () => null;`,
+  // v175 §5.6 cap ledger fixtures. Tests mutate a local FS map, not this
+  // file — see the per-test scratch maps below.
+  'data/tri-mouth-pending-cap.json': '{ "cap": 99 }',
 };
 
 const existsFn = (p: string) => Object.prototype.hasOwnProperty.call(FS_MAP, p);
@@ -173,7 +193,7 @@ describe('checkSurfaceCompleteness — §5.4 three mouths OR one pending', () =>
   });
 });
 
-describe('checkRouteImports — §5.5 route mentions producer', () => {
+describe('checkRouteImports — §5.5 route imports producer (v175 teeth)', () => {
   test('clean row passes (route imports producer basename)', () => {
     assert.equal(checkRouteImports(CLEAN, readFn), null);
   });
@@ -184,6 +204,81 @@ describe('checkRouteImports — §5.5 route mentions producer', () => {
   });
   test('ill-formed curl short-circuits', () => {
     assert.equal(checkRouteImports(BAD_CURL, readFn), null);
+  });
+  test('v175: comment-only mention fails (substring escape plugged)', () => {
+    const r = checkRouteImports(ROUTE_COMMENT_ONLY, readFn);
+    assert.ok(r, 'comment-only mention should no longer pass');
+    assert.equal(r!.rule, 'route-no-producer');
+  });
+});
+
+// ── v175 §5.5 — unit coverage for the import-regex helper ────────────────
+
+describe('hasProducerImport — ES import-statement regex (v175 teeth)', () => {
+  test('default import from a relative path matches', () => {
+    assert.equal(hasProducerImport(
+      `import foo from '../../lib/foo';`, 'foo'), true);
+  });
+  test('named import from an absolute-ish path matches', () => {
+    assert.equal(hasProducerImport(
+      `import { bar } from 'src/lib/foo';`, 'foo'), true);
+  });
+  test('from-import with a .ts suffix matches', () => {
+    assert.equal(hasProducerImport(
+      `import { bar } from '../lib/foo.ts';`, 'foo'), true);
+  });
+  test('comment mention alone does NOT match', () => {
+    assert.equal(hasProducerImport(
+      `// the foo module used to live here\n`, 'foo'), false);
+  });
+  test('substring match in another token does NOT match', () => {
+    // "foobar" should not count as importing "foo".
+    assert.equal(hasProducerImport(
+      `import x from '../lib/foobar';`, 'foo'), false);
+  });
+});
+
+// ── v175 §5.6 — monotonic cap invariant ──────────────────────────────────
+
+describe('readCap — data/tri-mouth-pending-cap.json parser', () => {
+  test('returns the integer when well-formed', () => {
+    const scratch = (p: string) => p === CAP_LEDGER_PATH ? '{ "cap": 4 }' : null;
+    assert.equal(readCap(scratch), 4);
+  });
+  test('returns null when the file is missing', () => {
+    const scratch = () => null;
+    assert.equal(readCap(scratch), null);
+  });
+  test('returns null on malformed JSON (no throw)', () => {
+    const scratch = () => '{ cap broken';
+    assert.equal(readCap(scratch), null);
+  });
+  test('returns null on negative cap', () => {
+    const scratch = () => '{ "cap": -1 }';
+    assert.equal(readCap(scratch), null);
+  });
+});
+
+describe('checkMonotonicCap — §5.6 ratchet', () => {
+  const ACTIONS_2_PENDING: TriMouthAction[] = [
+    CLEAN, { ...CLEAN, name: 'a', status: 'pending-keyboard' },
+    { ...CLEAN, name: 'b', status: 'pending-curl' },
+  ];
+  test('no finding when outstanding ≤ cap', () => {
+    const scratch = () => '{ "cap": 2 }';
+    assert.equal(checkMonotonicCap(ACTIONS_2_PENDING, scratch), null);
+  });
+  test('emits cap-exceeded when outstanding > cap', () => {
+    const scratch = () => '{ "cap": 1 }';
+    const r = checkMonotonicCap(ACTIONS_2_PENDING, scratch);
+    assert.ok(r);
+    assert.equal(r!.rule, 'cap-exceeded');
+  });
+  test('emits cap-missing when the ledger is unreadable', () => {
+    const scratch = () => null;
+    const r = checkMonotonicCap(ACTIONS_2_PENDING, scratch);
+    assert.ok(r);
+    assert.equal(r!.rule, 'cap-missing');
   });
 });
 

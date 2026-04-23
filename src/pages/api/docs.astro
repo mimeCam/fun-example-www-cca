@@ -45,6 +45,19 @@ import {
 import { heatedGrid, heatSentence } from '../../lib/cell-heat';
 import type { HeatedCell } from '../../lib/cell-heat';
 import { now } from '../../lib/clock';
+// v175 "Parity Seal" — the quiet band renders reality. Every number, every
+// row, every chip comes from the shared helper. The sentence fails closed
+// (null until the build enforces parity). Tanya §3 places this band below
+// the matrix, above the Tone paragraph; Mike napkin §3.6 names the helper
+// as the ONE new module all three consumers (page, api, CI) import.
+import {
+  parityBandRows,
+  parityCopy,
+  parityReceipt,
+  parityFacts,
+  parityGoldEarned,
+} from '../../lib/parity-seal';
+import type { ParityBandRow } from '../../lib/parity-seal';
 
 // NOTE: the clipboard payload is built CLIENT-SIDE from window.location.origin
 // so prerendered HTML never bakes in a build-time host (Paul §non-negotiable —
@@ -75,6 +88,26 @@ const STAGE_MEANING: Record<DecayStage, string> = {
 
 const PAGE_TITLE = 'API — Octopoid';
 const REVIEWED_ON = '2026-04-22';
+
+// v175 — SSR-derived parity snapshot for the quiet band. Kept at module
+// scope so the template reads it without hidden per-cell invocations.
+// Zero DOM, zero fs, zero clock — pure projection of the frozen literal.
+const parityBand     = parityBandRows();
+const paritySentence = parityCopy();            // null when not enforced.
+const parityLine     = parityReceipt();         // always non-null.
+const parityNumbers  = parityFacts();           // for h2 tooltip + aria.
+const parityGold     = parityGoldEarned();
+
+/** sr-only sentence for pending rows — plain English, one breath. Tanya §7. */
+function parityPendingSrSentence(r: ParityBandRow): string {
+  if (r.pending === null) return `${r.name} has pointer, keyboard, and curl mouths.`;
+  return `${r.name}'s ${r.pending} mouth is owed; pointer and curl are in place.`;
+}
+
+/** Compact kbd chip text — "pending" for null, else the key string verbatim. */
+function parityKeyboardChip(r: ParityBandRow): string {
+  return r.keyboard ?? '—';
+}
 
 // v150d — per-request SSR fetch. heated is the 7×5 grid (never partial);
 // snap.byCell drives the subtitle sentence; dormant suppresses the sentence
@@ -382,6 +415,76 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
           </dd>
         </div>
       </dl>
+    </section>
+
+    {/* v175 "Parity Seal" — Tanya §2.2 seam (between "Three endpoints."
+       and "Tone."). One section, one reading-column strip, one nested
+       grid of action rows. Data-driven: every cell reads from the
+       shared parity-seal helper. Zero new tokens. Fail-closed: the seal
+       sentence renders only when the build enforces parity. The rows
+       themselves always render — honesty over absence (Tanya §4.4).
+
+       Mike napkin §3.6 names parity-seal.ts as the ONE new shared
+       module; every number here derives from it. Mike napkin §3.2 places
+       the sentence above the matrix, but Tanya's UX audit §2.1 (layer
+       collision by exhaustion) overrides: the band lives below. */}
+    <section class="api-docs__section api-docs__parity" aria-labelledby="parity-heading">
+      <h2 id="parity-heading" class="api-docs__h2">
+        {parityGold && <span class="api-docs__parity-pip" aria-hidden="true"></span>}
+        Every verb, three mouths.
+      </h2>
+
+      {paritySentence && (
+        <p class="api-docs__parity-seal" data-parity-seal>
+          {paritySentence}
+        </p>
+      )}
+
+      <div class="api-docs__parity-grid" role="table" aria-describedby="parity-heading">
+        {parityBand.map((r) => (
+          <div class="api-docs__parity-row" role="row" data-pending={r.pending ?? undefined}>
+            <div class="api-docs__parity-name" role="rowheader">{r.name}</div>
+            <div class="api-docs__parity-mouths" role="cell">
+              <span
+                class="api-docs__parity-mouth"
+                data-mouth="pointer"
+                data-pending={r.pointer === null ? 'true' : undefined}
+                title={r.pointer ?? 'pointer pending'}
+              >
+                <span class="api-docs__parity-ico" aria-hidden="true">⌗</span>
+                <span class="api-docs__parity-label">pointer</span>
+              </span>
+              <span
+                class="api-docs__parity-mouth"
+                data-mouth="keyboard"
+                data-pending={r.keyboard === null ? 'true' : undefined}
+              >
+                <span class="api-docs__parity-ico" aria-hidden="true">⌨︎</span>
+                {r.keyboard
+                  ? <kbd class="ds-kbd">{parityKeyboardChip(r)}</kbd>
+                  : <span class="api-docs__parity-pending-dash" aria-hidden="true">—</span>}
+                {r.keyboard === null && (
+                  <span class="api-docs__parity-pending-label">pending</span>
+                )}
+              </span>
+              <span
+                class="api-docs__parity-mouth"
+                data-mouth="curl"
+                data-pending={r.curl === null ? 'true' : undefined}
+              >
+                <code class="api-docs__inline">{r.curl ?? '—'}</code>
+              </span>
+            </div>
+            <span id={`parity-sr-${r.name}`} class="mx-sr-only">
+              {parityPendingSrSentence(r)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <p class="api-docs__parity-receipt" data-parity-receipt>
+        {parityLine}
+      </p>
     </section>
 
     <section class="api-docs__section" aria-labelledby="tone-heading">
@@ -1066,5 +1169,149 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
     .api-docs__matrix-row .api-docs__matrix-cell[data-heat] {
       background-color: transparent;
     }
+  }
+
+  /* ── v175 Parity Band (Tanya §3–§4, zero net-new tokens) ──────────────
+     Lives below the matrix, above Tone. One surface, five rows, three
+     chips each. Every token already in tokens.css; every transition
+     already declared elsewhere (ds-kbd + cell transitions). The band is
+     static at rest — SSR-rendered, no entrance animation, no hover on
+     rows (they are documents, not controls).                            */
+  .api-docs__parity {
+    background: var(--surface-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-5) var(--space-6);
+  }
+
+  /* Heading carries an optional gold pip on its left — only when the
+     accountability rule is met (parityGoldEarned() === true). The pip
+     is a dot, not a badge: 6×6, no shadow, no pulse. Tanya §4.6.       */
+  .api-docs__parity .api-docs__h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+  .api-docs__parity-pip {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex: 0 0 auto;
+  }
+
+  /* Seal sentence (Tanya §4.2). Operator-voice mono, text-sm, secondary
+     ink. Numerals promoted to primary; dividers ghosted. Renders only
+     when parityCopy() returns non-null (Paul MH-2, Mike §2 fail-closed). */
+  .api-docs__parity-seal {
+    margin: 0 0 var(--space-5);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    letter-spacing: var(--tracking-normal);
+  }
+
+  /* Row grid (Tanya §4.3) — first col is the action name in mono, second
+     col is the three mouths flex-row. Baseline-aligned so dashes, chips,
+     and names read on one visual line.                                   */
+  .api-docs__parity-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .api-docs__parity-row {
+    display: grid;
+    grid-template-columns: 14ch 1fr;
+    align-items: baseline;
+    gap: var(--space-3);
+  }
+  .api-docs__parity-name {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    letter-spacing: var(--tracking-normal);
+  }
+
+  /* Three mouths — flex row, compact groups: icon + label/value. No
+     hover state (read-only). No new glyphs — ⌗ and ⌨︎ already live in
+     the matrix legend; the curl mouth has no leading icon (Tanya §4.4). */
+  .api-docs__parity-mouths {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-4);
+    align-items: baseline;
+  }
+  .api-docs__parity-mouth {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-secondary);
+  }
+  .api-docs__parity-ico {
+    color: var(--text-ghost);
+    transform: translateY(var(--legend-baseline-nudge));
+  }
+  .api-docs__parity-label {
+    color: var(--text-tertiary);
+  }
+
+  /* Pending chip — ghost-tint hairline, lowercase "pending" label, one
+     ramp step down. Zero red: pending is a receipt, not an error
+     (Tanya §4.4).                                                       */
+  .api-docs__parity-mouth[data-pending='true'] {
+    color: var(--text-tertiary);
+  }
+  .api-docs__parity-pending-dash {
+    font-family: var(--font-mono);
+    color: var(--text-tertiary);
+  }
+  .api-docs__parity-pending-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-tertiary);
+  }
+
+  /* Footer receipt (Tanya §4.5). Mono, text-2xs, ghost. A hairline break
+     above the line signals "summary of the rows above".                 */
+  .api-docs__parity-receipt {
+    margin: var(--space-4) 0 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-faint, var(--border-subtle));
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--text-tertiary);
+    letter-spacing: var(--tracking-normal);
+  }
+
+  /* Responsive — Tanya §8. ≥640px: two-column (name + mouths). 480–640px
+     and below: single column; mouths wrap onto their own line under name. */
+  @media (max-width: 640px) {
+    .api-docs__parity-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-1);
+    }
+    .api-docs__parity-mouths {
+      gap: var(--space-2) var(--space-3);
+    }
+  }
+  @media (max-width: 480px) {
+    .api-docs__parity {
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-detail);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .api-docs__parity { background: Canvas; border-color: CanvasText; }
+    .api-docs__parity-pip { background: Highlight; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* Nothing to reduce — the band declares zero transitions. */
   }
 </style>

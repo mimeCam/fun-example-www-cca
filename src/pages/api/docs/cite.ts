@@ -58,6 +58,11 @@ import type { Axis } from '../../../lib/stage-axes';
 import { DECAY_STAGES } from '../../../lib/decay-engine';
 import type { DecayStage } from '../../../lib/decay-engine';
 import { isValidRef } from '../../../lib/citation-ref';
+// v175 — add one JSON-branch field that witnesses the tri-mouth parity.
+// text/plain branch untouched (Mike napkin §2 byte-identical guarantee;
+// Paul MH-3 curl-parity preserved). The field reads from the same shared
+// helper the /api/docs page and the prebuild guard consume.
+import { parityJsonField } from '../../../lib/parity-seal';
 
 // SSR — this route must read `url.origin` at request time so a
 // preview deploy and a production deploy both serve honest payloads.
@@ -158,7 +163,10 @@ function jsonResponse(
   });
 }
 
-/** JSON body — every field derives from the oracle helpers. */
+/** JSON body — every field derives from the oracle helpers. v175 adds
+ *  the `parity` witness: curl-parity mouth sees the same `{rows,mouths,
+ *  enforced}` the page renders. Additive-forever; the text/plain body
+ *  is unchanged so `curl -s | wc -c` still matches Buffer.byteLength. */
 function jsonBody(
   axis: Axis, stage: DecayStage,
   origin: string, ref: string | undefined, payload: string,
@@ -172,6 +180,7 @@ function jsonBody(
     ref:    ref ?? null,
     url:    `${origin}/api/docs${query}#${anchor}`,
     payload,
+    parity: parityJsonField(),
   };
 }
 

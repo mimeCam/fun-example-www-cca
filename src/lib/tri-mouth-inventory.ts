@@ -124,7 +124,12 @@ export const TRI_MOUTH_ACTIONS: readonly TriMouthAction[] = [
     keyboard: null,                 // TODO: no published keybinding yet.
     curl:     'POST /api/revive',
     producer: 'src/lib/revival-engine.ts',
-    status:   'wired-no-golden',
+    // v175 PR-A (Mike napkin §3.1, Elon §5.1): honest status. The row
+    // already declares `pending: 'keyboard'`; the status literal now
+    // matches that debt. `wiredActions()` drops from 3 → 2;
+    // `readyToPromote()` returns `false` until the R chord lands.
+    // Better "honest red" than "fake green".
+    status:   'pending-keyboard',
     pending:  'keyboard',
   },
   {

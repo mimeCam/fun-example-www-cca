@@ -11,88 +11,93 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v174 (2026-04-23) — "submit-post keyboard mouth" ──────────────
-#   Builds on v173's Tri-Mouth Inventory (one producer, three mouths:
-#   pointer · keyboard · curl, all routed through ONE `src/lib/*.ts`
-#   module). v174 wires the FIRST owed mouth from that inventory: the
-#   keyboard affordance for `submit-post`. The publish path now answers
-#   `Ctrl+Enter` (Linux/Win) and `⌘↩` (macOS) on step-3 of
-#   `/community/submit`, by synthesising a click on `#btn-publish` —
-#   so the publish flow stays single-source-of-truth (Mike napkin v174.1
-#   §6.1 polymorphism guard). `wiredActions()` grows 2→3, which flips
-#   `readyToPromote()` from `false` to `true` (≥ 5 rows ∧ ≥ 3 wired).
-#   The check-tri-mouth guard stays in WARN one more sprint per Krystle's
-#   bisection cadence; the `--warn → --error` flip is the next PR.
+# ── Sprint v175 (2026-04-23) — "Parity Seal" ────────────────────────────
+#   Builds on v173/v174's Tri-Mouth Inventory (one producer, three
+#   mouths: pointer · keyboard · curl). v175 introduces the ONE shared
+#   abstraction that the page, the cite JSON, AND the prebuild guard all
+#   consume: `src/lib/parity-seal.ts`. Three readers, one producer —
+#   same discipline as tri-mouth-inventory.ts (Mike napkin §3.6).
+#
+#   Honesty over optics: the `revive` row is downgraded from
+#   `wired-no-golden` → `pending-keyboard` (a keyboard chord is owed,
+#   so the status now matches the already-declared `pending: 'keyboard'`
+#   field). `wiredActions()` drops 3 → 2; `readyToPromote()` flips back
+#   to `false` (needs ≥ 5 rows ∧ ≥ 3 wired). The seal sentence on
+#   /api/docs fails closed — `parityCopy()` returns `null`, the page
+#   template guards the render, so no parity claim appears until the
+#   build earns it. The band rows themselves always render (Tanya §4.4
+#   pending-is-honest rule).
+#
+#   v175 also hardens the tri-mouth guard with §5.6 (monotonic cap) and
+#   §5.5 teeth (import-regex replaces substring scan). The cap ledger
+#   `data/tri-mouth-pending-cap.json` (cap=3) is versioned in git and
+#   can only descend — paying a wedge means decrementing by 1 in the
+#   same PR. The guard stays in WARN this sprint; the `--warn → --error`
+#   flip lands after the R chord + 1/2/3 stance wedges.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/client/submit-hotkey.ts (NEW) — pure predicate
-#       `isSubmitKey()` + `bindSubmitHotkey()` binding + DOMContentLoaded
-#       auto-boot. Mirrors keep-hotkey.ts shape (the second
-#       hotkey-on-an-action sibling, pattern earning its keep). No
-#       module-level state; the hotkey synthesises a `click` on
-#       `#btn-publish` so the existing `publish()` handler in
-#       submit.astro flows unchanged into POST /api/submit-post.
-#       Lights the Enter chip via `lightForKey('Enter', 120)` from the
-#       v152 ds-kbd-lit primitive — chip-lit's 4th consumer.
-#     • src/lib/client/submit-hotkey.test.ts (NEW) — pure-function
-#       truth-table over {key} × {modifier combos}. Bare Enter is
-#       NOT a publish (textarea-newline + focus-ring etiquette);
-#       Ctrl+Enter / Meta+Enter ARE; Shift+Enter / Alt+Enter fall
-#       through; non-Enter keys never publish. Disjointness assertion
-#       proves submit-hotkey ↛ keep-hotkey (no key collision in the
-#       same listener stack). Joins prebuild via package.json.
-#     • src/pages/community/submit.astro (UPDATED) — adds
-#       `aria-keyshortcuts="Control+Enter Meta+Enter"` to
-#       `#btn-publish` (canonical AT teach), a `.submit-kbd-chip`
-#       sibling with three .ds-kbd primitives ("Ctrl / ⌘ + Enter to
-#       publish") for sighted teach, and an `import` of
-#       `submit-hotkey.ts` in the page <script> so Astro pulls the
-#       module into the page chunk (auto-boots on DOMContentLoaded).
-#     • src/styles/community-submit.css (UPDATED) — `.submit-kbd-chip`,
-#       `.submit-kbd-chip-or`, `.submit-kbd-chip-sep`,
-#       `.submit-kbd-chip-hint` styles. 100 % token-compliant
-#       (font-mono, text-2xs, text-tertiary/ghost, space-1/2,
-#       tracking-wide/snug); responsive @media stacks the chip below
-#       the publish button on ≤640px. No magic numbers; passes
-#       check-token-compliance --guard at prebuild.
-#     • src/lib/tri-mouth-inventory.ts (UPDATED) — `submit-post` row
-#       promoted: `keyboard: '⌘↩|Ctrl+Enter'`, `status: 'wired'`,
-#       `pending` field dropped. `wiredActions()` returns 3, the
-#       `readyToPromote()` threshold is met.
-#     • scripts/check-tri-mouth.test.ts (UPDATED) — adds the
-#       `WIRED_SUBMIT_POST` fixture so a future regression that drops
-#       the keyboard mouth back to `null` without a `pending` receipt
-#       fails the §5.4 surface-completeness invariant on the fixture,
-#       not in production.
-#     • package.json (UPDATED) — adds `test:submit-hotkey` convenience
-#       script and joins the new test into the `prebuild` chain
-#       adjacent to `test:keep-hotkey` (sibling pattern stays
-#       co-located in the build log).
-#     • AGENTS.md (UPDATED) — Tri-Mouth WIP line tagged v173/v174,
-#       narrates the wedge, names ds-kbd-lit as the chip-lit
-#       primitive's 4th consumer, calls out `readyToPromote() = true`
-#       and the deferred `--warn → --error` flip.
+#     • src/lib/parity-seal.ts (NEW) — single shared helper. Pure (no
+#       fs / DOM / network / clock), SSR-safe, importable from Astro
+#       pages AND the prebuild guard. Exports: parityFacts(),
+#       parityCopy() [fail-closed sentence OR null], parityJsonField(),
+#       parityBandRows(), parityReceipt(), parityGoldEarned(),
+#       PARITY_MOUTH_COUNT. No branching on polymorphism; if a second
+#       sentence ever ships, split it to a new module.
+#     • src/lib/parity-seal.test.ts (NEW) — golden proving the five
+#       helpers stay aligned with TRI_MOUTH_ACTIONS. Joins prebuild via
+#       package.json (`test:parity-seal`).
+#     • src/pages/api/docs.astro (UPDATED) — renders the "Every verb,
+#       three mouths." band below the matrix, above Tone. Five rows ×
+#       three mouths, fail-closed sentence, quiet receipt footer, gold
+#       pip only when parityGoldEarned() (Tanya §4.6). Every number
+#       reads from the shared helper; zero new tokens.
+#     • src/pages/api/docs/cite.ts (UPDATED) — JSON branch adds
+#       `parity: parityJsonField()` witness `{rows, mouths, enforced}`.
+#       Additive-forever; the text/plain branch is byte-identical so
+#       curl-parity (Paul MH-3) still holds — `curl -s | wc -c` matches
+#       Buffer.byteLength.
+#     • src/lib/tri-mouth-inventory.ts (UPDATED) — `revive` row status
+#       flipped `wired-no-golden` → `pending-keyboard`. The `pending:
+#       'keyboard'` field was already declared; the status literal now
+#       matches reality. `wiredActions()` returns 2, `readyToPromote()`
+#       returns false.
+#     • scripts/check-tri-mouth.ts (UPDATED) — §5.5 teeth: substring
+#       scan replaced with an ES import-regex (`hasProducerImport()`).
+#       Comments no longer pass as imports (Elon §5.4). §5.6 NEW:
+#       `checkMonotonicCap()` + `readCap()` — reads
+#       `data/tri-mouth-pending-cap.json`, emits `cap-exceeded` or
+#       `cap-missing` findings. `summaryLine()` now includes `cap=N`.
+#     • scripts/check-tri-mouth.test.ts (UPDATED) — fixtures + tests
+#       for `hasProducerImport()` (5 cases), `readCap()` (4 cases),
+#       `checkMonotonicCap()` (3 cases), plus a comment-only route
+#       fixture proving the substring-escape is plugged.
+#     • data/tri-mouth-pending-cap.json (NEW) — monotonic cap ledger.
+#       `{ "cap": 3 }` this sprint (outstanding = 3: keep-post, revive,
+#       stance). Read at prebuild time by the guard.
+#     • package.json (UPDATED) — adds `test:parity-seal` convenience
+#       script and joins it into the `prebuild` chain adjacent to
+#       `test:tri-mouth` (sibling pattern stays co-located).
+#     • AGENTS.md (UPDATED) — WIP line retitled "Tri-Mouth / Parity Seal
+#       (v175)"; narrates the 2-wired reality, the shared helper, the
+#       cap ledger, the import-regex teeth, and the two pre-existing
+#       route-import drifts surfaced (keep-post, revive).
 #
-#   Infrastructure deltas this sprint: NONE.
-#     No new RUNTIME env vars. No new ports, services, named volumes,
-#     or docker networks. No new API routes — the keyboard mouth reuses
-#     the existing `POST /api/submit-post` curl peer (single producer,
-#     three mouths). All new files live under paths the Dockerfile
-#     already COPY-s wholesale:
-#       `COPY src/ ./src/`       (captures submit-hotkey.ts + its
-#                                 .test.ts sibling AND the updated
-#                                 submit.astro / community-submit.css
-#                                 / tri-mouth-inventory.ts files)
-#       `COPY scripts/ ./scripts/` (captures the updated
-#                                 check-tri-mouth.test.ts fixture)
-#     The new test runs inside `npm run build` via `prebuild`, so a
-#     regression in the keyboard predicate fails the image build
-#     BEFORE the container ever starts. The check-tri-mouth guard
-#     stays in WARN this sprint (Krystle bisection cadence; one more
-#     wedge before the `--warn → --error` flip). The v172
-#     clock-migration guard (`check-no-raw-now`) is still WARN at 80
-#     raw callsites; next wedges (presence-hub, live-decay, cell-event-
-#     ledger, cell-heat) remain the trailhead for that flip.
+#   Infrastructure deltas this sprint:
+#     · NEW BUILD-TIME INPUT — `data/tri-mouth-pending-cap.json`. The
+#       prebuild guard reads it via `process.cwd()`-relative fs; the
+#       Dockerfile now `COPY`s that one file (not the whole `data/`
+#       dir — `revivals.db*` must stay out of the image and come from
+#       the named volume). Without the COPY the guard prints
+#       `cap-missing` (disarmed ratchet) but continues in WARN mode.
+#     · NO new RUNTIME env vars, ports, services, named volumes, or
+#       docker networks.
+#     · NO new API routes — parity reuses `/api/docs` (SSR page) and
+#       `/api/docs/cite` (JSON branch). Text/plain cite branch is
+#       byte-identical to v174.
+#     · The v172 clock-migration guard (`check-no-raw-now`) is still
+#       WARN at 80 raw callsites; next wedges (presence-hub, live-decay,
+#       cell-event-ledger, cell-heat) remain the trailhead for that
+#       flip. Independent of the tri-mouth ratchet.
 #
 # ── Startup sequence ─────────────────────────────────────────────────────
 #   1. Truncate deployment.log and tee all subsequent output into it.
@@ -117,6 +122,12 @@
 #       `aria-keyshortcuts` markers; proves the keyboard teach landed
 #       in the SSR HTML AND that the page-chunk import of
 #       `submit-hotkey.ts` did not silently break the page.
+#   8f. Warm the v175 Parity Seal: SSR-render /api/docs and grep for
+#       the band heading + grid class; call /api/docs/cite with
+#       Accept: application/json and assert the new `"parity":{…}`
+#       witness field is on the wire. Fail-closed sentence is NOT
+#       asserted (parityCopy() returns null this sprint — enforced
+#       only when readyToPromote()).
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -163,12 +174,17 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     cell-event-ledger (3), cell-heat (3))  →
 #   check-tri-mouth (v173 ELEVENTH guard — WARN mode; walks the frozen
 #     `TRI_MOUTH_ACTIONS` literal in src/lib/tri-mouth-inventory.ts and
-#     enforces five invariants: §5.1 producer file exists, §5.2 curl is
+#     enforces six invariants: §5.1 producer file exists, §5.2 curl is
 #     VERB /api/..., §5.3 curl path resolves under src/pages/api/, §5.4
 #     every non-wired row receipts its single null mouth via `pending`,
-#     §5.5 the route file mentions the producer's basename. 5 rows / 2
-#     wired / 2 findings today; flips to --error when readyToPromote()
-#     holds — ≥ 5 rows ∧ ≥ 3 wired)  →
+#     §5.5 the route file *imports* the producer basename (v175 teeth:
+#     import-regex, not substring — comments no longer pass), §5.6 v175
+#     NEW monotonic cap — outstanding (non-wired) row count ≤ cap in
+#     data/tri-mouth-pending-cap.json (cap=3 this sprint). 5 rows / 2
+#     wired today; flips to --error when readyToPromote() holds —
+#     ≥ 5 rows ∧ ≥ 3 wired. v175 surfaces 2 pre-existing route-import
+#     drifts (keep-post, revive) as WARN findings; these are the next
+#     wedges, not deploy blockers)  →
 #   check-verify-bundle (v169 TENTH guard — freezes the VerifyBundleDto
 #     wire shape across the API + SSR page)  →
 #   check-user-journey (v168 EIGHTH guard, expanded v169 — seven-step
@@ -192,10 +208,19 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     own health: name uniqueness, closed status vocabulary, `pending`
 #     field truthfulness, producer-file existence, curl grammar,
 #     parseCurl strips ?query#frag, readyToPromote thresholds)  →
+#   test:parity-seal (v175 NEW — golden for the ONE shared abstraction:
+#     parityFacts/parityCopy/parityJsonField/parityBandRows/parityReceipt
+#     /parityGoldEarned stay aligned with TRI_MOUTH_ACTIONS. Fail-closed
+#     sentence returns null while enforced=false; JSON witness emits
+#     honest counts regardless; gold pip gates on zero-debt+enforced)  →
 #   test:citation-delegation → test:duration-reasons →
-#   test:check-tri-mouth (v173 NEW — synthetic-fixture unit tests for
-#     the ELEVENTH guard's scanners; proves each invariant fires on a
-#     hole-shaped row and passes on a clean one — prevents the guard
+#   test:check-tri-mouth (v173 NEW, v175 expanded — synthetic-fixture
+#     unit tests for the ELEVENTH guard's scanners; proves each invariant
+#     fires on a hole-shaped row and passes on a clean one. v175 adds
+#     `hasProducerImport()` regex tests (comment-only mention fails,
+#     substring-in-another-token fails), `readCap()` tests (missing /
+#     malformed / negative → null), and `checkMonotonicCap()` tests
+#     (under-cap / over-cap / missing-ledger). Prevents the ratchet
 #     from rotting into a vacuous pass)  →
 #   test:stage-ease → test:stage-tempo → test:stage-tempo-divergence  →
 #   astro build.
@@ -458,6 +483,72 @@ rm -f "${SUBMIT_BODY_FILE}"
 echo "==> [deploy] /community/submit: HTTP ${SUBMIT_STATUS} · body=${SUBMIT_BODY_LEN}B · aria-keyshortcuts-hits=${SUBMIT_HAS_ARIA} · submit-kbd-chip-hits=${SUBMIT_HAS_CHIP}"
 if [ "${SUBMIT_STATUS}" != "200" ] || [ "${SUBMIT_HAS_ARIA}" -lt 1 ] || [ "${SUBMIT_HAS_CHIP}" -lt 1 ]; then
   echo "==> [deploy] ⚠ /community/submit missing v174 keyboard-mouth markers (aria-keyshortcuts and/or submit-kbd-chip) — investigate (container still up)." >&2
+fi
+
+# ── 8f. Parity Seal warm-up (v175) — page band + cite JSON witness ─────────
+# v175 introduces `src/lib/parity-seal.ts` — the ONE shared abstraction the
+# /api/docs page, the /api/docs/cite JSON branch, AND the prebuild guard
+# all consume. The prebuild goldens (`parity-seal.test.ts` + the expanded
+# `check-tri-mouth.test.ts`) already prove the helpers and invariants at
+# image-build time. This runtime pair of probes asserts the wedge actually
+# shipped to the wire on both surfaces:
+#
+#   (a) /api/docs SSR — grep the HTML for two markers that prove the
+#       band template + CSS landed and the module graph is healthy:
+#         · `api-docs__parity-grid` (the row-container class) — presence
+#           proves the `parityBandRows()` map-render executed.
+#         · `Every verb, three mouths.` — the h2 copy; presence proves
+#           the section root rendered and the `parity-heading` anchor
+#           is reachable.
+#       The seal sentence (`parityCopy()`) is NOT asserted: it fails
+#       closed this sprint (readyToPromote() === false — 2 wired of the
+#       required 3), so a null return is the correct wire shape. Paul
+#       MH-2 contract.
+#
+#   (b) /api/docs/cite JSON branch — grep the response body for the new
+#       `"parity":{` witness field. Presence proves the curl-parity mouth
+#       sees the same `{rows, mouths, enforced}` snapshot the page
+#       renders. Text/plain branch is deliberately NOT re-probed: 8a
+#       already asserts it 200s with a body, and v175 guarantees byte-
+#       identical output (Mike napkin §2) so the v174 probe is sufficient.
+#
+# Both surfaces are publicly reachable (no auth gate); bare GETs suffice.
+echo "==> [deploy] Warming up /api/docs parity band (v175 Parity Seal SSR)…"
+PARITY_BODY_FILE="$(mktemp)"
+PARITY_STATUS=$(curl --silent --show-error --output "${PARITY_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/api/docs" \
+  || echo '000')
+PARITY_BODY_LEN=$(wc -c < "${PARITY_BODY_FILE}" | tr -d ' ')
+PARITY_HAS_GRID=$(grep -c 'api-docs__parity-grid' "${PARITY_BODY_FILE}" || true)
+PARITY_HAS_HEADING=$(grep -c 'Every verb, three mouths.' "${PARITY_BODY_FILE}" || true)
+PARITY_HAS_ROW=$(grep -c 'api-docs__parity-row' "${PARITY_BODY_FILE}" || true)
+rm -f "${PARITY_BODY_FILE}"
+echo "==> [deploy] /api/docs parity band: HTTP ${PARITY_STATUS} · body=${PARITY_BODY_LEN}B · grid-hits=${PARITY_HAS_GRID} · heading-hits=${PARITY_HAS_HEADING} · row-hits=${PARITY_HAS_ROW}"
+if [ "${PARITY_STATUS}" != "200" ] || [ "${PARITY_HAS_GRID}" -lt 1 ] || [ "${PARITY_HAS_HEADING}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing v175 parity-band markers (api-docs__parity-grid / band heading) — investigate (container still up)." >&2
+fi
+
+echo "==> [deploy] Warming up /api/docs/cite JSON parity witness (v175)…"
+CITE_JSON_BODY_FILE="$(mktemp)"
+CITE_JSON_STATUS=$(curl --silent --show-error --output "${CITE_JSON_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 10 \
+  --header "Accept: application/json" \
+  "http://localhost:${HOST_PORT}/api/docs/cite?axis=typography&stage=fresh" \
+  || echo '000')
+CITE_JSON_BODY_LEN=$(wc -c < "${CITE_JSON_BODY_FILE}" | tr -d ' ')
+CITE_JSON_HAS_PARITY=$(grep -c '"parity"' "${CITE_JSON_BODY_FILE}" || true)
+CITE_JSON_HAS_ROWS=$(grep -c '"rows"' "${CITE_JSON_BODY_FILE}" || true)
+CITE_JSON_HAS_MOUTHS=$(grep -c '"mouths"' "${CITE_JSON_BODY_FILE}" || true)
+CITE_JSON_HAS_ENFORCED=$(grep -c '"enforced"' "${CITE_JSON_BODY_FILE}" || true)
+CITE_JSON_PREVIEW=$(head -c 240 "${CITE_JSON_BODY_FILE}" | tr '\n' ' ')
+rm -f "${CITE_JSON_BODY_FILE}"
+echo "==> [deploy] /api/docs/cite JSON: HTTP ${CITE_JSON_STATUS} · body=${CITE_JSON_BODY_LEN}B · parity-hits=${CITE_JSON_HAS_PARITY} · rows=${CITE_JSON_HAS_ROWS} · mouths=${CITE_JSON_HAS_MOUTHS} · enforced=${CITE_JSON_HAS_ENFORCED} · preview=\"${CITE_JSON_PREVIEW}\""
+if [ "${CITE_JSON_STATUS}" != "200" ] || [ "${CITE_JSON_HAS_PARITY}" -lt 1 ] \
+   || [ "${CITE_JSON_HAS_ROWS}" -lt 1 ] || [ "${CITE_JSON_HAS_MOUTHS}" -lt 1 ] \
+   || [ "${CITE_JSON_HAS_ENFORCED}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs/cite JSON missing v175 parity witness (parity/rows/mouths/enforced) — investigate (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────

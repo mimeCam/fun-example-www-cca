@@ -17,8 +17,10 @@
 //   · §5.3 — the curl path resolves to a file under src/pages/api/.
 //   · §5.4 — every non-readonly row has all three mouths non-null OR
 //            declares a single `pending` field.
-//   · §5.5 — the route file *mentions* the producer (substring match on
-//            the producer's basename — the guard-delegate of "imports").
+//   · §5.5 — the route file *imports* the producer (v175: ES-import regex,
+//            not substring — Elon §5.4 — so comments no longer pass).
+//   · §5.6 — non-wired row count ≤ cap recorded in
+//            data/tri-mouth-pending-cap.json (v175 monotonic ratchet).
 //
 // Non-goals: no AST, no ts-morph, no network, no better-sqlite3. fs +
 // regex only. Every scanner fn is pure and ≤ 10 LoC so the test module
@@ -51,7 +53,9 @@ export type RuleName =
   | 'curl-shape'
   | 'route-missing'
   | 'surface-incomplete'
-  | 'route-no-producer';
+  | 'route-no-producer'
+  | 'cap-exceeded'          // v175 §5.6 — monotonic cap breach.
+  | 'cap-missing';          // v175 §5.6 — cap ledger unreadable.
 
 export interface Finding {
   readonly action: string;
@@ -97,7 +101,10 @@ export function checkSurfaceCompleteness(a: TriMouthAction): Finding | null {
     `mouths null=[${gaps.join(',')}] pending=${a.pending ?? 'none'}`);
 }
 
-/** §5.5 — the route file must mention the producer's basename. */
+/** §5.5 — the route file must *import* the producer's basename. v175 teeth:
+ *  a real import-statement regex replaces the previous substring match, which
+ *  accepted comments (Elon §5.4 — a substring match is not an import proof).
+ *  The regex matches `from '…/<token>'` with an optional `.ts` suffix. */
 export function checkRouteImports(
   a: TriMouthAction,
   readFn: (p: string) => string | null,
@@ -108,8 +115,21 @@ export function checkRouteImports(
   if (!route) return null;                   // §5.3 covers missing route.
   const source = readFn(route) ?? '';
   const token  = path.basename(a.producer, '.ts');
-  if (source.includes(token)) return null;
-  return f(a, 'route-no-producer', `route ${route} does not reference "${token}"`);
+  if (hasProducerImport(source, token)) return null;
+  return f(a, 'route-no-producer', `route ${route} does not import "${token}"`);
+}
+
+/** Real import-statement detector — matches ES module imports only.
+ *  Accepts: `import X from '…/token'`, `import X from '…/token.ts'`,
+ *  `import {X} from '…/token'`, bare `import '…/token'`. Rejects
+ *  substring mentions in comments or doc-lines. */
+export function hasProducerImport(source: string, token: string): boolean {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(
+    `\\bfrom\\s+['"\`][^'"\`]*/${escaped}(?:\\.ts)?['"\`]`,
+    'm',
+  );
+  return re.test(source);
 }
 
 // ── Scanner composition ──────────────────────────────────────────────────
@@ -130,7 +150,8 @@ export function scanAction(
   return out;
 }
 
-/** Fold the whole inventory through `scanAction`. */
+/** Fold the whole inventory through `scanAction` + the inventory-wide
+ *  monotonic-cap invariant. `readFn` is used to load the cap ledger. */
 export function scanInventory(
   actions: readonly TriMouthAction[],
   existsFn: (p: string) => boolean,
@@ -138,7 +159,64 @@ export function scanInventory(
 ): Finding[] {
   const out: Finding[] = [];
   for (const a of actions) out.push(...scanAction(a, existsFn, readFn));
+  push(out, checkMonotonicCap(actions, readFn));
   return out;
+}
+
+// ── §5.6 — monotonic cap invariant (v175 teeth) ──────────────────────────
+//
+// The cap ledger (data/tri-mouth-pending-cap.json) is a one-integer file
+// versioned in git. It forbids *increasing* the count of non-wired rows:
+// PRs that add a debt without paying one down are refused at prebuild.
+// The cap can only descend — paying a wedge means decrementing `cap` by 1
+// in the same PR that wires a mouth (Mike §4 / Elon §5.2).
+
+/** Path of the cap ledger — repo-relative, injectable via the readFn. */
+export const CAP_LEDGER_PATH = 'data/tri-mouth-pending-cap.json';
+
+/** Read `cap` from the ledger JSON, or `null` when the file is absent
+ *  or malformed. Malformed ledger → a cap-missing finding, not a throw. */
+export function readCap(
+  readFn: (p: string) => string | null,
+): number | null {
+  const raw = readFn(CAP_LEDGER_PATH);
+  if (raw === null) return null;
+  try {
+    const parsed = JSON.parse(raw) as { cap?: unknown };
+    if (typeof parsed.cap !== 'number') return null;
+    if (!Number.isInteger(parsed.cap) || parsed.cap < 0) return null;
+    return parsed.cap;
+  } catch {
+    return null;
+  }
+}
+
+/** §5.6 — actions-not-yet-wired must not exceed the cap. When the ledger
+ *  is missing, emit a cap-missing finding so the prebuild log does not
+ *  go silently green. Both branches carry the same `action: '<inventory>'`
+ *  sentinel so diagnostics stay grep-uniform. */
+export function checkMonotonicCap(
+  actions: readonly TriMouthAction[],
+  readFn: (p: string) => string | null,
+): Finding | null {
+  const cap = readCap(readFn);
+  if (cap === null) {
+    return inv('cap-missing', `cannot read ${CAP_LEDGER_PATH} — ratchet disarmed`);
+  }
+  const outstanding = actions.length - actions.filter(isWired).length;
+  if (outstanding <= cap) return null;
+  return inv('cap-exceeded',
+    `${outstanding} non-wired rows exceed cap=${cap} — pay a wedge or raise the cap with review.`);
+}
+
+/** Wired predicate — matches wiredActions() definition in the inventory. */
+function isWired(a: TriMouthAction): boolean {
+  return a.status.startsWith('wired');
+}
+
+/** Inventory-wide finding (no single action owns it). */
+function inv(rule: RuleName, detail: string): Finding {
+  return { action: '<inventory>', rule, detail };
 }
 
 // ── Helpers (each ≤ 10 LoC) ──────────────────────────────────────────────
@@ -190,19 +268,23 @@ export function formatFinding(x: Finding): string {
   return `  tri-mouth:${x.action}: ${x.rule}: ${x.detail}`;
 }
 
-/** Summary line (Mike §9 acceptance 1): `N wired, M pending`. */
+/** Summary line (Mike §9 acceptance 1): `N wired, M pending`. v175 adds
+ *  the cap readout so the ratchet's level shows up in every CI log. */
 export function summaryLine(
   actions: readonly TriMouthAction[],
   findings: readonly Finding[],
   mode: 'warn' | 'error',
+  cap:  number | null = null,
 ): string {
   const wired   = wiredActions().length;
   const pending = pendingSummary();
   const fail    = findings.length;
   const modeTag = mode === 'error' ? '--error' : '--warn; no fail';
+  const capTag  = cap === null ? 'cap=?' : `cap=${cap}`;
   const parts   = [
     `${wired} wired`,
     `${actions.length - wired} pending`,
+    capTag,
     `pending-keyboard=${pending.keyboard}`,
     `pending-curl=${pending.curl}`,
     `findings=${fail}`,
@@ -218,7 +300,7 @@ function printReport(findings: readonly Finding[], mode: 'warn' | 'error'): void
     console.log(`${tag} check-tri-mouth: ${findings.length} violation(s)`);
     for (const x of findings) console.log(formatFinding(x));
   }
-  console.log(summaryLine(TRI_MOUTH_ACTIONS, findings, mode));
+  console.log(summaryLine(TRI_MOUTH_ACTIONS, findings, mode, readCap(readFromDisk)));
   printPromotionHint(mode);
 }
 

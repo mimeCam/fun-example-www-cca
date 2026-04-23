@@ -16,6 +16,12 @@ COPY astro.config.mjs tsconfig.json ./
 COPY scripts/ ./scripts/
 COPY src/ ./src/
 
+# v175 — tri-mouth monotonic cap ledger (read at prebuild by
+# scripts/check-tri-mouth.ts::checkMonotonicCap). The whole `data/` dir
+# is NOT copied on purpose — `data/revivals.db*` is runtime state and
+# belongs to the named volume, not the image.
+COPY data/tri-mouth-pending-cap.json ./data/tri-mouth-pending-cap.json
+
 # Static assets — public/ is copied to dist/client/ by astro build.
 # Cover images (public/images/covers/*.svg) must be present here so the
 # OG split-panel layout and blog hero images are served at runtime.
