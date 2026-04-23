@@ -6,9 +6,14 @@
 // the SAME inputs.
 //
 // Run (with a hermetic community DB so slugExists passes without touching
-// the real revivals.db file):
+// the real revivals.db file). v176 PR-E adds REVIVALS_DB_PATH=:memory: so
+// the route's `incrementRevival` + `canReviveBySession` calls land in a
+// throwaway sqlite that is freshly seeded on every test run — without it
+// the third mouth's first POST inherits prior `kept` state from the dev
+// DB and the byte-for-byte `deepEqual` against the direct call breaks):
 //
-//   COMMUNITY_DB_PATH=:memory: npx tsx --test src/lib/keep-golden.test.ts
+//   COMMUNITY_DB_PATH=:memory: REVIVALS_DB_PATH=:memory: \
+//     npx tsx --test src/lib/keep-golden.test.ts
 //
 // The contract this test freezes (reject PR if any assertion breaks):
 //   · Mouth 1 — direct `keepPact(input, facts, deps)` returns a receipt
@@ -79,6 +84,13 @@ before(() => {
     // Fail fast if the harness forgot the env. Keeps this test from
     // polluting a real data/revivals.db. (Paul Kim's hermetic rule.)
     throw new Error('keep-golden.test: set COMMUNITY_DB_PATH=:memory: to run hermetically.');
+  }
+  if (process.env.REVIVALS_DB_PATH !== ':memory:') {
+    // v176 PR-E §3.6 — without this, the route's `incrementRevival` writes
+    // into the dev's persistent revivals.db; subsequent runs see stale
+    // `kept` state and the byte-for-byte deepEqual against the direct
+    // call breaks. Same hermetic rule, second seam.
+    throw new Error('keep-golden.test: set REVIVALS_DB_PATH=:memory: to run hermetically.');
   }
   insertPost({
     slug: SLUG, title: 'Golden fixture', body: 'a'.repeat(300),

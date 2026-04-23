@@ -113,9 +113,16 @@ export const TRI_MOUTH_ACTIONS: readonly TriMouthAction[] = [
     mouth:    'keep an endangered post (pact)',
     pointer:  'FloatingKeepButton',
     keyboard: 'K',
-    curl:     'POST /api/ingest/cell-event',
+    // v176 PR-E (Mike napkin §3.1, Tanya §3.1, Paul MH-1) — curl mouth
+    // promoted from the event-beacon stand-in to the dedicated ledger-write
+    // peer. `POST /api/keep` routes through the SAME `keepPact()` producer
+    // the pointer + keyboard mouths use; the byte-identical receipt is
+    // proven by src/lib/keep-golden.test.ts. With this row flipped the
+    // inventory carries 5/5 wired and `parityGoldEarned()` flips true
+    // for the first time on `main`.
+    curl:     'POST /api/keep',
     producer: 'src/lib/keep-pact.ts',
-    status:   'pending-curl-peer',  // curl exists but is event-beacon, not a ledger-write peer.
+    status:   'wired',
   },
   {
     name:     'revive',

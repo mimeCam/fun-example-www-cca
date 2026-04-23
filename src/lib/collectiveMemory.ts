@@ -41,7 +41,14 @@ const VELOCITY_RETENTION_DAYS = 90; // covers the 8-week sparkline + buffer
 
 let _db: Database.Database | null = null;
 
+/** Resolve the SQLite path for the revivals DB. Honours `REVIVALS_DB_PATH`
+ *  when set (mirrors `COMMUNITY_DB_PATH` on `communityPosts.ts`) — pass
+ *  `:memory:` for hermetic tests. Default: `data/revivals.db` (production
+ *  + dev). v176 PR-E §3.6 — keep-golden.test.ts wires this seam so its
+ *  three-mouth proof runs against a clean ledger every prebuild. */
 function dbPath(): string {
+  const override = process.env.REVIVALS_DB_PATH;
+  if (override && override.length > 0) return override;
   const dir = resolve(process.cwd(), 'data');
   mkdirSync(dir, { recursive: true });
   return resolve(dir, 'revivals.db');
@@ -49,6 +56,8 @@ function dbPath(): string {
 
 function db(): Database.Database {
   if (_db) return _db;
+  // `:memory:` is a sqlite sentinel; new Database(':memory:') is supported
+  // and journal_mode=WAL is a no-op there. Production path is unchanged.
   _db = new Database(dbPath());
   _db.pragma('journal_mode = WAL');
   initTables(_db);

@@ -305,12 +305,28 @@ function printReport(findings: readonly Finding[], mode: 'warn' | 'error'): void
 }
 
 function printPromotionHint(mode: 'warn' | 'error'): void {
-  if (mode === 'error') return;
+  if (mode === 'error') {
+    printGoldPipBannerIfEarned();
+    return;
+  }
   const ready = readyToPromote();
   const msg = ready
     ? '(inventory meets promotion thresholds — flip to --error in the next PR.)'
     : '(warn mode — see src/lib/tri-mouth-inventory.ts; migrate pending rows and re-run.)';
   console.log(msg);
+}
+
+/** v176 PR-E §3.9 — one celebratory summary line when the inventory
+ *  is fully wired AND the cap ledger has descended to zero. Pure print,
+ *  no new module, no new branch in parity-seal.ts. The banner only
+ *  fires under `--error` mode (i.e. on `main` with the prebuild flip
+ *  landed) — preview branches still see the standard summary. */
+function printGoldPipBannerIfEarned(): void {
+  const wired = wiredActions().length;
+  const total = TRI_MOUTH_ACTIONS.length;
+  const cap   = readCap(readFromDisk);
+  if (wired !== total || cap !== 0) return;
+  console.log(`tri-mouth: ${wired}/${total} wired, cap=0, pip=lit ✓`);
 }
 
 // ── Entrypoint ───────────────────────────────────────────────────────────

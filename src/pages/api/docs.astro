@@ -52,12 +52,13 @@ import { now } from '../../lib/clock';
 // as the ONE new module all three consumers (page, api, CI) import.
 import {
   parityBandRows,
-  parityCopy,
   parityReceipt,
   parityFacts,
-  parityGoldEarned,
 } from '../../lib/parity-seal';
 import type { ParityBandRow } from '../../lib/parity-seal';
+// v176 PR-E — single oracle for the lit-dot + operator-language sentence.
+// Same partial the BaseLayout footer mounts; one renderer, two surfaces.
+import ParityPip from '../../components/ParityPip.astro';
 
 // NOTE: the clipboard payload is built CLIENT-SIDE from window.location.origin
 // so prerendered HTML never bakes in a build-time host (Paul §non-negotiable —
@@ -92,11 +93,13 @@ const REVIEWED_ON = '2026-04-22';
 // v175 — SSR-derived parity snapshot for the quiet band. Kept at module
 // scope so the template reads it without hidden per-cell invocations.
 // Zero DOM, zero fs, zero clock — pure projection of the frozen literal.
+// v176 PR-E — the lit-dot + operator-language sentence are now owned by
+// `<ParityPip variant="inline" />` (one oracle, two surfaces). The page
+// keeps the per-row matrix + the quiet `parityReceipt` summary line; the
+// pip-and-sentence pair is handed off to the partial.
 const parityBand     = parityBandRows();
-const paritySentence = parityCopy();            // null when not enforced.
 const parityLine     = parityReceipt();         // always non-null.
 const parityNumbers  = parityFacts();           // for h2 tooltip + aria.
-const parityGold     = parityGoldEarned();
 
 /** sr-only sentence for pending rows — plain English, one breath. Tanya §7. */
 function parityPendingSrSentence(r: ParityBandRow): string {
@@ -428,17 +431,17 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
        module; every number here derives from it. Mike napkin §3.2 places
        the sentence above the matrix, but Tanya's UX audit §2.1 (layer
        collision by exhaustion) overrides: the band lives below. */}
-    <section class="api-docs__section api-docs__parity" aria-labelledby="parity-heading">
+    <section class="api-docs__section api-docs__parity" id="parity" aria-labelledby="parity-heading">
       <h2 id="parity-heading" class="api-docs__h2">
-        {parityGold && <span class="api-docs__parity-pip" aria-hidden="true"></span>}
-        Every verb, three mouths.
+        Every verb, three channels.
       </h2>
 
-      {paritySentence && (
-        <p class="api-docs__parity-seal" data-parity-seal>
-          {paritySentence}
-        </p>
-      )}
+      {/* v176 PR-E — single oracle: same `<ParityPip />` the site footer
+         mounts. The lit-dot, plain-English label, fact tail, and the
+         fail-closed operator-language sentence ALL come from one place
+         (Mike napkin §3.7). The page keeps the per-row matrix and the
+         quiet receipt below; the pip is hoisted out of inline markup. */}
+      <ParityPip variant="inline" dotId="parity-dot" />
 
       <div class="api-docs__parity-grid" role="table" aria-describedby="parity-heading">
         {parityBand.map((r) => (
@@ -1185,33 +1188,14 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
     padding: var(--space-5) var(--space-6);
   }
 
-  /* Heading carries an optional gold pip on its left — only when the
-     accountability rule is met (parityGoldEarned() === true). The pip
-     is a dot, not a badge: 6×6, no shadow, no pulse. Tanya §4.6.       */
+  /* v176 PR-E — the heading + lit-dot + operator-language sentence are
+     now owned by `<ParityPip variant="inline" />`. The page no longer
+     defines `.api-docs__parity-pip` or `.api-docs__parity-seal`; both
+     classes were retired with the inline markup. The single oracle for
+     the dot lives in src/components/ParityPip.astro. Tanya §6 / Mike
+     napkin §3.7 single-renderer rule. */
   .api-docs__parity .api-docs__h2 {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
     margin-bottom: var(--space-3);
-  }
-  .api-docs__parity-pip {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--gold);
-    flex: 0 0 auto;
-  }
-
-  /* Seal sentence (Tanya §4.2). Operator-voice mono, text-sm, secondary
-     ink. Numerals promoted to primary; dividers ghosted. Renders only
-     when parityCopy() returns non-null (Paul MH-2, Mike §2 fail-closed). */
-  .api-docs__parity-seal {
-    margin: 0 0 var(--space-5);
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    letter-spacing: var(--tracking-normal);
   }
 
   /* Row grid (Tanya §4.3) — first col is the action name in mono, second
@@ -1307,8 +1291,9 @@ const SAMPLE_JSON_LINES: Array<{ text: string; stage?: boolean }> = [
   }
 
   @media (forced-colors: active) {
+    /* v176 PR-E — `.api-docs__parity-pip` was retired; the dot's
+       forced-colors rule lives in src/components/ParityPip.astro. */
     .api-docs__parity { background: Canvas; border-color: CanvasText; }
-    .api-docs__parity-pip { background: Highlight; }
   }
 
   @media (prefers-reduced-motion: reduce) {

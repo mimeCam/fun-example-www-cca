@@ -14,6 +14,10 @@ import SEOMeta from '../components/SEOMeta.astro';
 import { canonicalUrl } from '../config/seo.config';
 import SiteNav from '../components/SiteNav.astro';
 import FrameSchedulerProvider from '../components/FrameSchedulerProvider.astro';
+// v176 PR-E "Parity Pip" — site-wide build-enforced API-parity status.
+// One partial, two surfaces (footer here + /api/docs page); reads only
+// from src/lib/parity-seal.ts. Mike napkin §3.5 hoist; Tanya UX §3.
+import ParityPip from '../components/ParityPip.astro';
 // Design system: tokens → motion → atmosphere → feature CSS layers
 import '../styles/global.css';
 import '../styles/atmosphere.css';
@@ -149,6 +153,11 @@ const pageUrl = canonicalUrl(Astro.url.pathname);
     <SiteNav />
     <slot />
     <footer class="site-footer">
+      {/* v176 PR-E — the parity pip is the louder sibling of the nav links;
+         renders site-wide, calm at rest, lit when build-enforced parity
+         passes. Same component the /api/docs page uses (one oracle, two
+         surfaces — Mike napkin §3.7). */}
+      <ParityPip variant="footer" />
       <nav class="site-footer__links" aria-label="Footer navigation">
         <a href="/submit"      class="site-footer__link">✍ write</a>
         <a href="/now"         class="site-footer__link">now</a>

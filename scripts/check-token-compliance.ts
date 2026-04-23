@@ -148,6 +148,7 @@ const GUARD_FILES = new Set([
   "src/components/OpenLoopCard.astro",
   "src/components/PactPanel.astro",
   "src/components/Pagination.astro",
+  "src/components/ParityPip.astro",
   "src/components/PostBadge.astro",
   "src/components/PostNav.astro",
   "src/components/PredictionCard.astro",

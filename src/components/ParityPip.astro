@@ -1,0 +1,236 @@
+---
+// src/components/ParityPip.astro
+// v176 PR-E "Parity Pip" — site-wide footer partial that renders the
+// build-enforced API-parity status: a tiny lit dot + a single-line
+// receipt when gold is earned; a muted "pending" line otherwise.
+//
+// One renderer for two surfaces (Mike napkin §3.7 polymorphism-is-a-killer):
+//   · `BaseLayout.astro` mounts it inside `.site-footer`, above the nav.
+//   · `src/pages/api/docs.astro` mounts it inside the parity section.
+// Same component, same markup, same class names — there is exactly ONE
+// way the pip can render anywhere on the site.
+//
+// Discipline (Tanya UX §3 / §7 / §11):
+//   · Pure SSR. No DOM, no JS hydration, no client islands.
+//   · Reads only from `src/lib/parity-seal.ts` — every number, every
+//     sentence is derived from the frozen Tri-Mouth Inventory literal.
+//   · Fail-closed copy: when `parityCopy()` is null the operator-language
+//     sentence is dropped silently. Plain English label still renders.
+//   · Zero new tokens, zero new animations, zero new copy vocabulary.
+//     Reuses --gold / --gold-dim / --text-* / --shadow-conviction-strip /
+//     --motion-duration-base / --tracking-wide.
+//
+// Anti-scope (Tanya §11): no new component family, no celebration
+// animation, no client interactivity. The pip is a status light, not
+// a button. Click affordance to /api/docs is the only interaction.
+//
+// Credits: Mike Koch (napkin §3.4–§3.7 — the partial, the hoist, the
+//          single-oracle rule), Tanya Donska (UX §3 anatomy, §6 rename
+//          table — "API parity: passing" not "gold pip", §7 design-system
+//          discipline, §9 state matrix), Paul Kim (MH-1 pip-ignition
+//          moment), Elon (§4.1 plain English), prior-sprint authors of
+//          parity-seal.ts (the helper this partial consumes), Sid —
+//          2026-04-23. Motto: "code maintenance without tests."
+
+import {
+  parityFacts,
+  parityGoldEarned,
+  parityCopy,
+  PARITY_MOUTH_COUNT,
+} from '../lib/parity-seal';
+
+interface Props {
+  /** Visual variant. `footer` is the site-wide band (default).
+   *  `inline` drops the surrounding `<aside>` for embedding inside an
+   *  existing section (e.g. /api/docs's parity heading). Both share the
+   *  same class names so CSS is single-source. */
+  variant?: 'footer' | 'inline';
+  /** Optional `id` on the lit dot — used by /api/docs to re-anchor the
+   *  page hash `#parity` if the heading is replaced. Optional; omit on
+   *  the footer mount so the id is unique on every page. */
+  dotId?: string;
+}
+
+const { variant = 'footer', dotId } = Astro.props;
+
+// Pure SSR derivations — every value comes from the frozen literal.
+// Three booleans drive every visual decision below; no branch lives
+// outside this file (Mike §3.4 "guard with `{copy && (...)}`").
+const facts = parityFacts();
+const gold  = parityGoldEarned();
+const copy  = parityCopy();   // null until enforced (Paul MH-2 fail-closed).
+
+// Plain-English label per Tanya §6 rename: "mouth"/"pip" do NOT appear
+// in user-visible copy. Three states map to three labels; the dim state
+// names the count of pending channels honestly.
+function labelFor(): string {
+  if (gold) return 'API parity: passing';
+  if (!facts.enforced) return 'API parity: dark';
+  return facts.pending === 1
+    ? 'API parity: 1 channel pending'
+    : `API parity: ${facts.pending} channels pending`;
+}
+
+// Three nouns and a number (Elon §5.5). Same shape regardless of state;
+// only the trailing tag changes (build-enforced / pending / not enforced).
+function factTail(): string {
+  const tag = gold ? 'build-enforced' : facts.enforced ? 'pending' : 'not enforced';
+  const ch  = `${PARITY_MOUTH_COUNT} channels`;
+  return `${facts.rows} rows · ${ch} · ${tag}`;
+}
+
+// State token painted on the root for CSS to branch on. Three states only;
+// `drift` (red) is preview/staging-only and lives outside this partial.
+const state = gold ? 'lit' : facts.enforced ? 'pending' : 'dark';
+
+// Tooltip per Tanya §3.3 — same vocabulary the label uses, slightly longer.
+function tooltipFor(): string {
+  if (gold)           return 'Click, key, curl produce the same payload. Verified in CI.';
+  if (facts.enforced) return `${facts.pending} action(s) still owe a channel. Build blocks when fixed.`;
+  return 'Parity guard is in warn mode. Build will not fail on drift yet.';
+}
+
+const label   = labelFor();
+const tail    = factTail();
+const tooltip = tooltipFor();
+
+const Tag = variant === 'footer' ? 'aside' : 'div';
+---
+
+<Tag
+  class:list={['parity-pip', `parity-pip--${variant}`]}
+  data-parity-state={state}
+  aria-label={`${label}. ${tail}.`}
+>
+  <a
+    class="parity-pip__chip"
+    href="/api/docs#parity"
+    title={tooltip}
+    aria-describedby={copy ? 'parity-pip-copy' : undefined}
+  >
+    <span class="parity-pip__dot" id={dotId} aria-hidden="true"></span>
+    <span class="parity-pip__label">{label}</span>
+    <span class="parity-pip__tail">{tail}</span>
+  </a>
+  {copy && (
+    <p class="parity-pip__copy" id="parity-pip-copy">{copy}</p>
+  )}
+</Tag>
+
+<style>
+  /* ── Root — one band per surface, edge-pinned on the footer ──────────── */
+  .parity-pip {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--surface-footer);
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-wide);
+  }
+  .parity-pip--footer {
+    padding: var(--space-2) var(--gutter);
+  }
+  .parity-pip--inline {
+    padding: 0;
+    background: transparent;
+    border-top: 0;
+  }
+
+  /* Lit state — hairline gold above + soft lift. Shadow token already
+     exists in tokens.css for exactly this surface (Tanya §3.2). */
+  .parity-pip--footer[data-parity-state='lit'] {
+    box-shadow: var(--shadow-conviction-strip);
+  }
+
+  /* ── Chip — dot · label · tail, baseline-aligned, single tab stop ────── */
+  .parity-pip__chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    color: inherit;
+    text-decoration: none;
+    line-height: var(--leading-snug);
+    padding: var(--space-1) 0;
+  }
+  .parity-pip__chip:hover .parity-pip__label,
+  .parity-pip__chip:focus-visible .parity-pip__label {
+    color: var(--text-primary);
+  }
+  .parity-pip__chip:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-detail);
+  }
+
+  /* Dot — 8px round, color set per state. No idle pulse (Tanya §3.4 —
+     "calm, earned, final"). The lit→glow transition reuses the
+     --motion-duration-base + --motion-easing-spring pair already in
+     tokens.css; no new keyframes, no new tokens. */
+  .parity-pip__dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    border-radius: var(--radius-full);
+    background: var(--text-tertiary);
+    transform: translateY(var(--legend-baseline-nudge));
+    transition:
+      background var(--motion-duration-base) var(--motion-easing-spring),
+      box-shadow var(--motion-duration-base) var(--motion-easing-spring);
+  }
+  [data-parity-state='pending'] .parity-pip__dot {
+    background: var(--gold-dim);
+  }
+  [data-parity-state='lit'] .parity-pip__dot {
+    background: var(--gold);
+    box-shadow: var(--shadow-chip);
+  }
+
+  /* Label — plain English, secondary ink, never shouted. */
+  .parity-pip__label {
+    color: var(--text-secondary);
+    transition: color var(--motion-duration-base) ease;
+  }
+
+  /* Fact tail — three nouns + a number, ghost ramp, mono. */
+  .parity-pip__tail {
+    color: var(--text-tertiary);
+    font-size: var(--text-2xs);
+  }
+
+  /* Operator-language sentence (Elon §5.5). Renders only when copy is
+     non-null (Paul MH-2 fail-closed); Tanya §3 wants this beneath the
+     chip on the footer surface, so margin-top a small step. */
+  .parity-pip__copy {
+    margin: var(--space-1) 0 0;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-normal);
+  }
+
+  /* Mobile — drop the tail when the row would wrap, keep the dot + label
+     visible (Tanya §3.3 truncation rule). The tail re-appears on focus
+     via the chip's title tooltip on touch. */
+  @media (max-width: 480px) {
+    .parity-pip--footer { padding: var(--space-1) var(--gutter); }
+    .parity-pip__tail { display: none; }
+  }
+
+  /* Reduced motion — drop the dot transition; the state is still
+     correct, just snaps into place. */
+  @media (prefers-reduced-motion: reduce) {
+    .parity-pip__dot,
+    .parity-pip__label { transition: none; }
+  }
+
+  /* Forced colors — keep the dot visible without depending on token
+     compositing. ButtonText on Canvas is the high-contrast pair. */
+  @media (forced-colors: active) {
+    .parity-pip { background: Canvas; border-top-color: CanvasText; }
+    .parity-pip__dot { background: ButtonText; box-shadow: none; }
+    [data-parity-state='lit'] .parity-pip__dot { background: Highlight; }
+  }
+</style>

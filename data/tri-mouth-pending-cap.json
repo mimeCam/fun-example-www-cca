@@ -1,4 +1,4 @@
 {
-  "_comment": "v176 PR-D monotonic cap ledger. cap ≥ (TRI_MOUTH_ACTIONS.length - wiredActions().length). Each PR that wires a mouth MUST lower `cap` by 1. cap may only descend. See scripts/check-tri-mouth.ts::checkMonotonicCap. Mike napkin §3.7 / Elon §5.2. 1/2/3-stance PR paid one wedge (1 row pending after: keep-post curl-peer).",
-  "cap": 1
+  "_comment": "v176 PR-E monotonic cap ledger. cap ≥ (TRI_MOUTH_ACTIONS.length - wiredActions().length). Each PR that wires a mouth MUST lower `cap` by 1. cap may only descend. See scripts/check-tri-mouth.ts::checkMonotonicCap. Mike napkin §3.7 / Elon §5.2. PR-E paid the keep-post curl-peer wedge: 0 rows pending, 5/5 wired, parityGoldEarned() === true.",
+  "cap": 0
 }

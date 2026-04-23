@@ -11,80 +11,139 @@
 # captured into deployment.log (truncated on each run) so any failure —
 # Docker, prebuild guard, SSR warm-up — can be investigated post-mortem.
 #
-# ── Sprint v176 PR-E (2026-04-23) — "keep-post curl-peer wedge" ──────────
-#   Pays the LAST outstanding wedge on the Tri-Mouth Inventory. Lands a
-#   real byte-producing curl peer on the `keep-post` row — the new
-#   `POST /api/keep` route — so the existing pointer (FloatingKeepButton)
-#   + keyboard (`K`) mouths now share a single oracle instead of the row
-#   carrying a `pending-curl-peer` debt receipt. Mike napkin v176 PR-E
-#   §3 ("single oracle"), §5 ("guard re-spec for the keep-post row"),
-#   §6 ("polymorphism is a killer — keep deps injectable, no DI tree"),
-#   Krystle Clear ("cap 1→0 ratchet, --warn→--error in the same PR"),
-#   Tanya Donska (§3 band switches to the gold receipt — "all mouths
-#   wired"), Sid — every helper ≤ 10 lines, zero module-level state.
+# ── Sprint v176 PR-E "seal wave" (2026-04-23) — ParityPip hoist + flip ──
+#   Pays the last wedge on the Tri-Mouth Inventory and hoists the parity
+#   dot out of inline /api/docs markup into ONE site-wide partial. Three
+#   things flip on `main` this cycle:
+#     1. `keep-post` row status `pending-curl-peer` → `wired`; its curl
+#        field moves from the event-beacon stand-in (`POST /api/ingest/
+#        cell-event`) to the dedicated ledger-write peer (`POST /api/keep`,
+#        already mounted in PR-E wave 1). Inventory now reads 5/5 wired.
+#     2. Cap ledger (`data/tri-mouth-pending-cap.json`) descends 1 → 0;
+#        `check-tri-mouth` prebuild flips `--warn` → `--error`. Fail-closed
+#        on any future drift (Paul MH-2 / Krystle ratchet).
+#     3. `parityGoldEarned()` returns true for the first time; the new
+#        `<ParityPip />` partial lights its dot and the operator-language
+#        sentence is emitted on two surfaces: site footer (every page via
+#        BaseLayout) AND the /api/docs parity section.
+#   Mike napkin PR-E §3.4 (partial), §3.5 (hoist), §3.7 (single oracle),
+#   Tanya UX §3 (anatomy), §6 (rename — "API parity: passing", not "gold
+#   pip"), §9 (state matrix), Elon §5.5 (three nouns + a number), Paul
+#   MH-1 (pip-ignition moment), Sid — every helper ≤ 10 lines, zero
+#   module-level state, zero new tokens, zero new animations.
 #
 #   What shipped in the active git area this cycle (staged/unstaged):
-#     • src/lib/keep-pact.ts (UPDATED) — appends the §SSR-SAFE PRODUCER
-#       block: `KeepReceipt` type literal (frozen wire shape: slug,
-#       nonce, ts, kept, count, why?), `KeepPactInput` / `KeepLedgerFacts`
-#       / `KeepPactDeps` interfaces, `DEFAULT_KEEP_DEPS` (clock+nonce
-#       seams via clock.ts and Web-Crypto randomUUID with a fallback),
-#       `buildKeepReceipt()` pure assembler, `keepPact()` the producer
-#       (pure: caller hands in pre-resolved ledger facts so this module
-#       stays free of DB imports — Vite-safe on the client bundle that
-#       PactPanel.astro pulls), `KeepPactLedger` interface,
-#       `makeMemoryLedger()` for tests, `keepWithLedger()` route-replay
-#       composer, `_testKeepPact()` isolated-run sanity. The DOM-only
-#       prelude (initKeepPact / PactPanel listeners) is UNTOUCHED — the
-#       producer is purely additive (new export surface, no rename).
-#     • src/lib/keep-golden.test.ts (NEW, untracked) — three-mouth
-#       byte-identical golden. Mouth 1: direct `keepPact(input, facts,
-#       deps)` under pinned clock + fixed nonce. Mouth 2: `keepWithLedger`
-#       against an in-memory ledger (same receipt). Mouth 3: `POST
-#       /api/keep` dispatched in-process via `dispatchJson()` with
-#       `withClock(PINNED_TS, …)` + a temp `globalThis.crypto.randomUUID`
-#       stub; `deepEqual` against the literal. Also asserts: bare GET
-#       returns 405 (Allow: POST), missing `x-session-id` is 400,
-#       malformed JSON is 400, unknown slug is 400, second POST with
-#       same {sessionId, slug} returns `kept:false` (idempotent). Run
-#       hermetically: `COMMUNITY_DB_PATH=:memory: npx tsx --test
-#       src/lib/keep-golden.test.ts`. NOT joined to the prebuild chain
-#       this PR (a follow-up once handler-dispatch in :memory: stops
-#       requiring the env-var dance — Mike napkin §8 sequencing).
-#     • src/pages/api/keep.ts (NEW, untracked) — the curl mouth.
-#       `POST /api/keep` body `{ slug, why? }`, header `x-session-id`,
-#       returns the KeepReceipt JSON. Imports `keepPact` from
-#       `../../lib/keep-pact` so the v175 §5.5 import-regex scanner in
-#       `check-tri-mouth.ts` resolves the producer. Reuses the existing
-#       collectiveMemory.ts session-rate-limit + revival-count writers
-#       (no new DB table). Non-POST verbs share one `rejectNonPost`
-#       handler that emits `Allow: POST`. Each helper ≤ 10 LoC (Sid).
+#     • src/components/ParityPip.astro (NEW, untracked) — one renderer,
+#       two surfaces. Pure SSR (no DOM, no JS hydration, no client
+#       islands). Reads only from `src/lib/parity-seal.ts` (parityFacts /
+#       parityGoldEarned / parityCopy / PARITY_MOUTH_COUNT). Renders:
+#       a <span class="parity-pip__dot"> (8px, --gold/--gold-dim/
+#       --text-tertiary depending on state), a plain-English label
+#       ("API parity: passing" when gold; "API parity: N channel(s)
+#       pending" when enforced but debt remains; "API parity: dark"
+#       when not enforced), a fact tail ("5 rows · 3 channels ·
+#       build-enforced"), and a fail-closed operator-language copy
+#       paragraph (parityCopy() → null drops the <p> silently). Two
+#       variants: `footer` (wraps in <aside>, full-width band; default)
+#       and `inline` (drops the aside for embedding; what /api/docs
+#       uses). Click target is an <a href="/api/docs#parity">.
+#     • src/layouts/BaseLayout.astro (UPDATED) — imports ParityPip and
+#       mounts `<ParityPip variant="footer" />` at the top of the
+#       <footer class="site-footer">. Every page that uses BaseLayout
+#       now carries the pip — the louder sibling of the footer nav
+#       links. No new CSS here; the component is self-styling.
+#     • src/pages/api/docs.astro (UPDATED) — the inline parity-pip +
+#       seal-sentence markup is REPLACED by `<ParityPip variant="inline"
+#       dotId="parity-dot" />`. The page retains the per-row matrix
+#       (parityBandRows()) + the quiet `parityReceipt()` summary line.
+#       Two cosmetic deltas on the wire:
+#         · h2 copy changes `Every verb, three mouths.` → `Every verb,
+#           three channels.` (Tanya §6 rename — "mouth"/"pip" are
+#           retired from user-visible copy; "channel" is the plain
+#           word for pointer/keyboard/curl).
+#         · The <section> gains `id="parity"` so the partial's
+#           `<a href="/api/docs#parity">` resolves to a real anchor.
+#       CSS classes `.api-docs__parity-pip` and `.api-docs__parity-seal`
+#       are RETIRED (the CSS is owned by `.parity-pip__*` now).
+#     • src/lib/tri-mouth-inventory.ts (UPDATED) — `keep-post` row
+#       flipped: status `pending-curl-peer` → `wired`; curl field
+#       `POST /api/ingest/cell-event` → `POST /api/keep` (the ledger-
+#       write peer PR-E wave 1 mounted). wiredActions() climbs 4 → 5;
+#       pendingSummary() reports zero on every kind; parityGoldEarned()
+#       flips true. The file's producer reference is unchanged
+#       (src/lib/keep-pact.ts — `/api/keep.ts` already imports
+#       `keepPact` from it, satisfying §5.5 import-regex).
+#     • data/tri-mouth-pending-cap.json (UPDATED) — cap 1 → 0. Monotonic
+#       descent; `checkMonotonicCap` now requires ≤ 0 outstanding rows
+#       (i.e. none). Comment bumped PR-D → PR-E; phrased "0 rows
+#       pending, 5/5 wired, parityGoldEarned() === true".
+#     • package.json (UPDATED) — two edits to `prebuild`:
+#         · `check-tri-mouth.ts` → `check-tri-mouth.ts --error`
+#           (fail-closed on any inventory drift from now on).
+#         · NEW test line inserted into the chain:
+#           `COMMUNITY_DB_PATH=:memory: REVIVALS_DB_PATH=:memory: npx
+#           tsx --test src/lib/keep-golden.test.ts` — the three-mouth
+#           byte-identical golden from PR-E wave 1, now part of the
+#           prebuild wall (no longer local-only).
+#     • src/lib/collectiveMemory.ts (UPDATED) — `dbPath()` now honours
+#       `REVIVALS_DB_PATH` when set (mirrors `COMMUNITY_DB_PATH` on
+#       communityPosts.ts); pass `:memory:` for hermetic tests. Default
+#       `data/revivals.db` is unchanged — production path is 1:1 the
+#       same, so the named SQLite volume (`persona-blog-a-sqlite`
+#       mounted at /app/data) still persists revivals across deploys.
+#     • src/lib/keep-golden.test.ts (UPDATED) — header comments + a
+#       new `before()` guard now ALSO require `REVIVALS_DB_PATH=:memory:`
+#       alongside the existing `COMMUNITY_DB_PATH=:memory:`. Without it
+#       the three-mouth deepEqual breaks on re-runs (the route's
+#       `incrementRevival` would inherit stale `kept` state from a
+#       persistent dev revivals.db). Paul Kim hermetic rule §2.
+#     • scripts/check-tri-mouth.ts (UPDATED) — adds
+#       `printGoldPipBannerIfEarned()` (≤ 10 LoC, Sid): under `--error`
+#       mode, when 5/5 wired AND cap=0, prints ONE celebratory summary
+#       line (`tri-mouth: 5/5 wired, cap=0, pip=lit ✓`). Pure print,
+#       no new module, no new branch in parity-seal.ts. Surfaces in
+#       the Docker build log → deployment.log on every redeploy.
+#     • scripts/check-tri-mouth.test.ts (UPDATED) — describe block
+#       collapsed "v176 1/2/3-stance" → "v176 PR-E keep-post". New
+#       assertions: keep-post row is `wired` with curl `POST /api/keep`;
+#       wiredActions().length === 5; pendingSummary() all zero;
+#       readyToPromote() still true. Revive + stance rows asserted
+#       un-regressed. Fails loud on any future demotion.
+#     • scripts/check-token-compliance.ts (UPDATED) — adds
+#       `src/components/ParityPip.astro` to `GUARD_FILES`. The new
+#       partial is token-only (no hard-coded hex, no raw px / ms);
+#       guarded from day one so future edits cannot introduce drift.
 #
 #   Infrastructure deltas this sprint:
-#     · NO new env vars, ports, services, named volumes, or networks.
-#       The route is a pure-Node Astro endpoint — ships through the
-#       same `COPY src/` already in the Dockerfile builder stage.
-#     · NO new npm deps. Web Crypto's `crypto.randomUUID` is built-in
-#       on Node 20 (the Dockerfile base). The fallback UUID stub
-#       (Math.random) is dead code on production but keeps the test
-#       surface portable.
-#     · NO new SSE channel — `keep:confirmed` is deferred (keep-pact's
-#       pointer mouth already broadcasts via `/api/revive` and firing
-#       a second event for one logical keep would double-light the
-#       UI; see TODO at the bottom of src/pages/api/keep.ts). Tanya §6.
-#     · The Tri-Mouth cap ledger (`data/tri-mouth-pending-cap.json`)
-#       descends 1 → 0 as part of this PR. The COPY line in the
-#       Dockerfile is unchanged (the ratchet is a value, not a path).
-#     · `check-tri-mouth` flips `--warn` → `--error` once the inventory
-#       row's status moves to `wired` and `keep-post` imports
-#       `keep-pact` directly (the new route satisfies §5.5). Both
-#       happen in this PR; the build will fail-closed on any future
-#       drift instead of warning. Paul Kim MH-2 invariant preserved.
-#     · The Parity Seal flips to GOLD: `parityGoldEarned()` returns
-#       true once all 5 rows are wired AND the guard is in --error
-#       mode. Tanya §3 band footer drops the "1 mouth pending" receipt
-#       and surfaces the gold pip. The cite-JSON `parity.enforced`
-#       stays `true`; new field `parity.gold` becomes `true` (additive).
+#     · NO new env vars in production. `REVIVALS_DB_PATH` is a TEST-
+#       time seam only (required to be `:memory:` for keep-golden);
+#       when unset (runtime / deploy), the default `data/revivals.db`
+#       inside the `persona-blog-a-sqlite` volume is used — identical
+#       to every prior sprint. The env var is NOT forwarded in the
+#       `docker run` block; forwarding `:memory:` into production
+#       would LOSE REVIVAL STATE ON RESTART (critical regression).
+#     · NO new ports, services, networks, or named volumes. ParityPip
+#       is a pure-SSR Astro partial; it ships via the same `COPY src/`
+#       the Dockerfile already does.
+#     · NO new API routes. /api/keep was mounted in PR-E wave 1 and is
+#       already warmed by probe 8i; this PR only flips the INVENTORY
+#       row from `pending-curl-peer` → `wired` (a value, not a path).
+#     · NO Dockerfile changes. The cap-ledger COPY line still reads
+#       the same file; only the JSON value descended 1 → 0.
+#     · Prebuild chain: `check-tri-mouth` flips from WARN to ERROR.
+#       Any future drift (a row demotion, cap monotonicity violation,
+#       missing producer import) now FAILS the image build — the
+#       container-rerun safety net in this script means the previous
+#       container is already stopped, so the operator must redeploy
+#       after the fix. This is by design (Paul MH-2 / Mike §8).
+#     · New wire-level artefacts to warm:
+#         · Every page's footer now carries `.parity-pip` + `.parity-
+#           pip__dot` + `data-parity-state="lit"` (site-wide; one new
+#           probe 8j below on `/`).
+#         · /api/docs h2 copy changed (mouths → channels); probe 8f
+#           grep strings updated accordingly.
+#         · /api/docs parity anchor `id="parity"` must resolve — the
+#           pip's href (`/api/docs#parity`) is the only click path.
 #
 # ── Sprint v176 PR-D (2026-04-23) — "1/2/3-stance wedge" ────────────────
 #   Builds on v175 PR-C's R-chord wedge (which crossed the
@@ -246,7 +305,21 @@
 #       ("Unknown slug"). Path (c) also exercises the slug-resolution
 #       helper, which dynamically imports `astro:content` — a cold
 #       failure there would 500 every real keep, so we want it to
-#       surface at deploy-time, not on the first reader's chord.
+#       surface at deploy-time, not on the first reader's chord. With
+#       the PR-E flip, the `keep-post` row is now `wired` — a pass
+#       here is a CI-backed promise, not a stand-in.
+#   8j. Warm the v176 PR-E site-wide ParityPip footer partial by fetching
+#       the home page `/` and grepping for the three markers that prove
+#       the new `<ParityPip variant="footer" />` mount in BaseLayout
+#       reached the wire: (a) the `.parity-pip` band class (component
+#       rendered), (b) the `.parity-pip__dot` span (the lit dot exists),
+#       and (c) the lit state attribute `data-parity-state="lit"` (gold
+#       is EARNED — parityGoldEarned() returned true in SSR, not the
+#       pending/dark fallback). The click target `href="/api/docs#parity"`
+#       is also asserted — that anchor must resolve on /api/docs (see
+#       probe 8f which now greps for `id="parity"`). One renderer, two
+#       surfaces; this probe covers the site-wide half (every page via
+#       BaseLayout), while 8f covers the /api/docs inline half.
 #   9.  Prune dangling images from previous builds.
 
 set -euo pipefail
@@ -291,23 +364,21 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     after the v172 collectiveMemory.ts wedge; flip to --error once
 #     2–3 more small wedges land: presence-hub (6), live-decay (5),
 #     cell-event-ledger (3), cell-heat (3))  →
-#   check-tri-mouth (v173 ELEVENTH guard — WARN mode; walks the frozen
-#     `TRI_MOUTH_ACTIONS` literal in src/lib/tri-mouth-inventory.ts and
-#     enforces six invariants: §5.1 producer file exists, §5.2 curl is
-#     VERB /api/..., §5.3 curl path resolves under src/pages/api/, §5.4
-#     every non-wired row receipts its single null mouth via `pending`,
-#     §5.5 the route file *imports* the producer basename (v175 teeth:
-#     import-regex, not substring — comments no longer pass), §5.6 v175
-#     monotonic cap — outstanding (non-wired) row count ≤ cap in
-#     data/tri-mouth-pending-cap.json (cap descended 2 → 1 this PR).
-#     5 rows / 4 wired today after the v176 1/2/3-stance wedge;
-#     readyToPromote() stays true (it crossed threshold last sprint).
-#     The --error flip stays deferred — the last outstanding row is
-#     `keep-post`'s curl-peer wedge, and Mike §8 / Paul MH-2 is
-#     explicit: never flip into --error with live debt. That wedge is
-#     the sole remaining candidate (v175 PR-A first surfaced the
-#     route-import drift; keep-pact.ts is still imported only
-#     transitively).  →
+#   check-tri-mouth --error (v173 ELEVENTH guard — v176 PR-E flipped from
+#     WARN → ERROR this sprint. Walks the frozen `TRI_MOUTH_ACTIONS`
+#     literal in src/lib/tri-mouth-inventory.ts and enforces six
+#     invariants: §5.1 producer file exists, §5.2 curl is VERB /api/...,
+#     §5.3 curl path resolves under src/pages/api/, §5.4 every non-wired
+#     row receipts its single null mouth via `pending`, §5.5 the route
+#     file *imports* the producer basename (v175 teeth: import-regex,
+#     not substring — comments no longer pass), §5.6 v175 monotonic
+#     cap — outstanding (non-wired) row count ≤ cap in data/tri-mouth-
+#     pending-cap.json (cap descended 1 → 0 this PR). 5 rows / 5 wired
+#     today — FULL BOARD. Any drift that demotes a row OR violates the
+#     cap monotonicity now FAILS the image build (Paul MH-2 /
+#     Mike §8). When the guard passes with the board full, it prints
+#     ONE celebratory summary line (`tri-mouth: 5/5 wired, cap=0,
+#     pip=lit ✓`) — pure print, no new module, surfaces in this log)  →
 #   check-verify-bundle (v169 TENTH guard — freezes the VerifyBundleDto
 #     wire shape across the API + SSR page)  →
 #   check-user-journey (v168 EIGHTH guard, expanded v169 — seven-step
@@ -333,6 +404,18 @@ docker volume create "${SQLITE_VOLUME}" || true
 #     acceptance properties: shape, pin identity within scope, nested-
 #     scope isolation, body preservation, seam-overrides-caller, cross-
 #     handler parity)  →
+#   test:keep-golden (v176 PR-E NEW — joined to the prebuild chain this
+#     sprint. Three-mouth byte-identical golden proving (1) direct
+#     `keepPact(input, facts, deps)`, (2) `keepWithLedger()` with an
+#     in-memory ledger, and (3) `POST /api/keep` dispatched in-process
+#     all produce the SAME receipt under a pinned clock + fixed nonce.
+#     Also asserts: bare GET → 405 (Allow: POST), missing x-session-id
+#     → 400, malformed JSON → 400, unknown slug → 400, and idempotency
+#     (second POST with same {sessionId, slug} returns `kept:false`).
+#     Requires BOTH `COMMUNITY_DB_PATH=:memory:` AND `REVIVALS_DB_PATH=
+#     :memory:` (hermetic — without the second, the route's
+#     `incrementRevival` inherits stale `kept` state from a persistent
+#     dev DB and the deepEqual against the direct call breaks))  →
 #   test:collective-memory-clock (v172 — nine-section golden locking the
 #     collectiveMemory.ts wedge against a :memory: DB; hermetic)  →
 #   test:tri-mouth-inventory (v173 NEW — golden witnessing the literal's
@@ -616,39 +699,55 @@ if [ "${SUBMIT_STATUS}" != "200" ] || [ "${SUBMIT_HAS_ARIA}" -lt 1 ] || [ "${SUB
   echo "==> [deploy] ⚠ /community/submit missing v174 keyboard-mouth markers (aria-keyshortcuts and/or submit-kbd-chip) — investigate (container still up)." >&2
 fi
 
-# ── 8f. Parity Seal warm-up (v175, post-PR-C) — page band + cite JSON ──────
+# ── 8f. Parity Seal warm-up (v175 → v176 PR-E) — page band + cite JSON ────
 # v175 PR-A/B introduced `src/lib/parity-seal.ts` — the ONE shared
 # abstraction the /api/docs page, the /api/docs/cite JSON branch, AND
-# the prebuild guard all consume. v175 PR-C wires the `revive` R chord,
-# crossing the `readyToPromote()` threshold. Two wire-level consequences
-# this probe locks:
+# the prebuild guard all consume. v175 PR-C wired the R chord (crossed
+# the readyToPromote threshold). v176 PR-D wired the 1/2/3 chord. This
+# sprint (v176 PR-E) flips the last row AND hoists the inline pip +
+# sentence into a site-wide `<ParityPip />` partial. Five wire-level
+# consequences this probe now locks:
 #
-#   (a) /api/docs SSR — four markers this PR:
+#   (a) /api/docs SSR — six markers this sprint:
 #         · `api-docs__parity-grid` (row-container class) — proves the
 #           `parityBandRows()` map-render executed.
-#         · `Every verb, three mouths.` — h2 copy; proves the section
-#           root rendered and the `parity-heading` anchor is reachable.
-#         · `build-enforced parity.` — the seal sentence suffix. Was
-#           `null` through PR-A/B (fail-closed), now emits non-null
-#           because readyToPromote() == true (3 wired of the required 3).
-#           Presence here proves PR-C actually raised the wired count in
-#           production, not just in the prebuild golden (Paul MH-2
-#           "fails closed, not open" inverted — now "opens on merit").
+#         · `Every verb, three channels.` — h2 copy. v176 PR-E rename
+#           ("mouth"/"pip" retired from user-visible strings; "channel"
+#           is the plain word for pointer/keyboard/curl). Presence
+#           proves the new copy shipped — the OLD "three mouths" string
+#           is NOT on the wire any more.
+#         · `id="parity"` — the section anchor. The new ParityPip
+#           partial links to `/api/docs#parity`; without this id the
+#           site-wide footer pip's click target dead-ends at the page
+#           top instead of scrolling to the band.
+#         · `build-enforced parity.` — operator-language sentence suffix.
+#           Was `null` through PR-A/B (fail-closed), non-null since
+#           PR-C (readyToPromote() == true). Now emitted by
+#           `.parity-pip__copy` inside the inline partial (was the
+#           retired `.api-docs__parity-seal` before PR-E).
 #         · `api-docs__parity-row` — proves at least one row mapped
 #           through `toRow()` onto the wire.
+#         · `parity-pip__dot` + `data-parity-state="lit"` — the inline
+#           `<ParityPip variant="inline" />` rendered AND parity-gold
+#           is earned (state="lit", not "pending"/"dark"). Together
+#           they prove both halves of the PR-E hoist landed.
 #
 #   (b) /api/docs/cite JSON branch — four fields this PR:
 #         · `"parity"`    — witness object present (curl-parity mouth).
 #         · `"rows"`      — count included.
-#         · `"mouths"`    — count included (always 3).
+#         · `"mouths"`    — count included (always 3). Note: the JSON
+#           shape still uses `mouths` as the field NAME (frozen wire
+#           shape; Mike napkin §2 byte-identical). Only the UI copy
+#           renamed channels — the external consumer contract is
+#           stable.
 #         · `"enforced"`  — the truth bit. Must be literally
-#           `"enforced":true` this sprint (was `false` pre-PR-C).
+#           `"enforced":true` (readyToPromote() true since PR-C).
 #       Text/plain branch is deliberately NOT re-probed — 8a already
 #       asserts 200+body and v175 guarantees byte-identical output
 #       (Mike napkin §2) so the v174 probe is sufficient.
 #
 # Both surfaces are publicly reachable (no auth gate); bare GETs suffice.
-echo "==> [deploy] Warming up /api/docs parity band (v175 PR-C Parity Seal SSR)…"
+echo "==> [deploy] Warming up /api/docs parity band (v176 PR-E — inline ParityPip + channels rename)…"
 PARITY_BODY_FILE="$(mktemp)"
 PARITY_STATUS=$(curl --silent --show-error --output "${PARITY_BODY_FILE}" \
   --write-out '%{http_code}' --max-time 15 \
@@ -657,16 +756,27 @@ PARITY_STATUS=$(curl --silent --show-error --output "${PARITY_BODY_FILE}" \
   || echo '000')
 PARITY_BODY_LEN=$(wc -c < "${PARITY_BODY_FILE}" | tr -d ' ')
 PARITY_HAS_GRID=$(grep -c 'api-docs__parity-grid' "${PARITY_BODY_FILE}" || true)
-PARITY_HAS_HEADING=$(grep -c 'Every verb, three mouths.' "${PARITY_BODY_FILE}" || true)
+PARITY_HAS_HEADING=$(grep -c 'Every verb, three channels\.' "${PARITY_BODY_FILE}" || true)
+PARITY_HAS_ANCHOR=$(grep -c 'id="parity"' "${PARITY_BODY_FILE}" || true)
 PARITY_HAS_ROW=$(grep -c 'api-docs__parity-row' "${PARITY_BODY_FILE}" || true)
 PARITY_HAS_SEAL=$(grep -c 'build-enforced parity\.' "${PARITY_BODY_FILE}" || true)
+PARITY_HAS_PIP_DOT=$(grep -c 'parity-pip__dot' "${PARITY_BODY_FILE}" || true)
+PARITY_HAS_STATE_LIT=$(grep -c 'data-parity-state="lit"' "${PARITY_BODY_FILE}" || true)
+# Guard against regressions: make sure the OLD h2 copy isn't still on the wire.
+PARITY_HAS_OLD_HEADING=$(grep -c 'Every verb, three mouths\.' "${PARITY_BODY_FILE}" || true)
 rm -f "${PARITY_BODY_FILE}"
-echo "==> [deploy] /api/docs parity band: HTTP ${PARITY_STATUS} · body=${PARITY_BODY_LEN}B · grid-hits=${PARITY_HAS_GRID} · heading-hits=${PARITY_HAS_HEADING} · row-hits=${PARITY_HAS_ROW} · seal-hits=${PARITY_HAS_SEAL}"
-if [ "${PARITY_STATUS}" != "200" ] || [ "${PARITY_HAS_GRID}" -lt 1 ] || [ "${PARITY_HAS_HEADING}" -lt 1 ]; then
-  echo "==> [deploy] ⚠ /api/docs missing v175 parity-band markers (api-docs__parity-grid / band heading) — investigate (container still up)." >&2
+echo "==> [deploy] /api/docs parity band: HTTP ${PARITY_STATUS} · body=${PARITY_BODY_LEN}B · grid=${PARITY_HAS_GRID} · heading=${PARITY_HAS_HEADING} · anchor=${PARITY_HAS_ANCHOR} · row=${PARITY_HAS_ROW} · seal=${PARITY_HAS_SEAL} · pip-dot=${PARITY_HAS_PIP_DOT} · state-lit=${PARITY_HAS_STATE_LIT} · old-heading=${PARITY_HAS_OLD_HEADING}"
+if [ "${PARITY_STATUS}" != "200" ] || [ "${PARITY_HAS_GRID}" -lt 1 ] || [ "${PARITY_HAS_HEADING}" -lt 1 ] || [ "${PARITY_HAS_ANCHOR}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing v176 PR-E parity-band markers (grid / new 'three channels' heading / id=\"parity\" anchor) — investigate (container still up)." >&2
 fi
 if [ "${PARITY_HAS_SEAL}" -lt 1 ]; then
-  echo "==> [deploy] ⚠ /api/docs missing v175 PR-C seal sentence ('build-enforced parity.') — readyToPromote() may have regressed to false; investigate." >&2
+  echo "==> [deploy] ⚠ /api/docs missing seal sentence ('build-enforced parity.') — parityCopy() returned null; readyToPromote() may have regressed; investigate." >&2
+fi
+if [ "${PARITY_HAS_PIP_DOT}" -lt 1 ] || [ "${PARITY_HAS_STATE_LIT}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ /api/docs missing v176 PR-E ParityPip markers (parity-pip__dot and/or data-parity-state=\"lit\") — partial didn't render OR parityGoldEarned() is false; investigate." >&2
+fi
+if [ "${PARITY_HAS_OLD_HEADING}" -gt 0 ]; then
+  echo "==> [deploy] ⚠ /api/docs still carries old 'Every verb, three mouths.' heading — PR-E rename didn't ship; investigate." >&2
 fi
 
 echo "==> [deploy] Warming up /api/docs/cite JSON parity witness (v175 PR-C)…"
@@ -781,14 +891,17 @@ if [ "${STANCE_STATUS}" != "200" ] \
 fi
 
 # ── 8i. v176 PR-E keep-post curl-peer warm-up (POST /api/keep) ─────────────
-# v176 PR-E lands the third mouth of the `keep-post` row: the new
-# `POST /api/keep` route that imports `keepPact` from
-# `../../lib/keep-pact`. Three NON-MUTATING probes — none of them
+# With PR-E flipped, the `keep-post` row is now `wired` and its curl
+# field is `POST /api/keep` (the route imports `keepPact` from
+# `../../lib/keep-pact`). Three NON-MUTATING probes — none of them
 # bumps the revival count — so the warm-up is safe to run on every
 # redeploy. Together they prove the route is mounted, the module-scope
-# import of the producer resolved, the JSON guards fire, and the
-# slug-resolution helper (dynamic `astro:content` import) loads
-# without throwing.
+# import of the producer resolved (a broken import would 500 GET too),
+# the JSON guards fire, and the slug-resolution helper (dynamic
+# `astro:content` import) loads without throwing. Any of these
+# regressing would ALSO fail the prebuild check-tri-mouth --error
+# guard at image-build time, but we re-assert on the live container
+# so Caddy never proxies a cold-broken surface to a real visitor.
 #
 #   (a) GET /api/keep        → expect 405 with `Allow: POST`. Proves
 #                              the module loaded (a broken import
@@ -851,6 +964,58 @@ rm -f "${KEEP_UNKNOWN_BODY_FILE}"
 echo "==> [deploy] POST /api/keep (unknown slug): HTTP ${KEEP_UNKNOWN_STATUS} · preview=\"${KEEP_UNKNOWN_BODY_PREVIEW}\" (expect 400 'Unknown slug')"
 if [ "${KEEP_UNKNOWN_STATUS}" != "400" ]; then
   echo "==> [deploy] ⚠ POST /api/keep with unknown slug did not respond 400 — slug-resolver or astro:content loader regression (container still up)." >&2
+fi
+
+# ── 8j. v176 PR-E site-wide ParityPip footer warm-up ──────────────────────
+# PR-E's "seal wave" hoists the parity status OUT of /api/docs-only
+# markup and into a site-wide partial (`src/components/ParityPip.astro`)
+# mounted via `BaseLayout.astro`'s <footer>. Every page now carries the
+# pip — the louder sibling of the footer nav links. Probe 8f covers the
+# INLINE variant on /api/docs; this probe covers the FOOTER variant on
+# a non-docs page (the home `/`, which uses BaseLayout like every
+# public page).
+#
+# Four wire-level markers here:
+#   (a) `parity-pip--footer` — the aside variant class. Presence proves
+#       `<ParityPip variant="footer" />` executed (default variant).
+#   (b) `parity-pip__dot`    — the 8px lit-dot span. Presence proves
+#       (i) the component rendered fully (a render throw would 500 the
+#       page), and (ii) the CSS surface is on the wire so the site-wide
+#       band is actually visible to readers.
+#   (c) `data-parity-state="lit"` — the truth bit. parityGoldEarned()
+#       must be TRUE in SSR for the state token to read `lit`; a debt
+#       row would render `pending` and a not-enforced board would
+#       render `dark`. Presence proves the 5/5-wired + cap=0 +
+#       --error-mode trifecta actually reached the inventory at
+#       runtime, not just at image-build time.
+#   (d) `href="/api/docs#parity"` — the click target. Its landing
+#       anchor (`id="parity"`) is already asserted in probe 8f; this
+#       side of the link asserts the origin.
+#
+# Home `/` is chosen because it is the most-hit entry surface and has
+# ZERO page-specific logic that could mask a BaseLayout regression.
+echo "==> [deploy] Warming up / home page (v176 PR-E site-wide ParityPip footer band)…"
+HOME_BODY_FILE="$(mktemp)"
+HOME_STATUS=$(curl --silent --show-error --output "${HOME_BODY_FILE}" \
+  --write-out '%{http_code}' --max-time 15 \
+  --header "Accept: text/html" \
+  "http://localhost:${HOST_PORT}/" \
+  || echo '000')
+HOME_BODY_LEN=$(wc -c < "${HOME_BODY_FILE}" | tr -d ' ')
+HOME_HAS_PIP_FOOTER=$(grep -c 'parity-pip--footer' "${HOME_BODY_FILE}" || true)
+HOME_HAS_PIP_DOT=$(grep -c 'parity-pip__dot' "${HOME_BODY_FILE}" || true)
+HOME_HAS_STATE_LIT=$(grep -c 'data-parity-state="lit"' "${HOME_BODY_FILE}" || true)
+HOME_HAS_PARITY_HREF=$(grep -c 'href="/api/docs#parity"' "${HOME_BODY_FILE}" || true)
+rm -f "${HOME_BODY_FILE}"
+echo "==> [deploy] / home: HTTP ${HOME_STATUS} · body=${HOME_BODY_LEN}B · pip-footer=${HOME_HAS_PIP_FOOTER} · pip-dot=${HOME_HAS_PIP_DOT} · state-lit=${HOME_HAS_STATE_LIT} · parity-href=${HOME_HAS_PARITY_HREF}"
+if [ "${HOME_STATUS}" != "200" ] || [ "${HOME_HAS_PIP_FOOTER}" -lt 1 ] || [ "${HOME_HAS_PIP_DOT}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ / home missing v176 PR-E site-wide ParityPip markers (parity-pip--footer / parity-pip__dot) — BaseLayout mount may have regressed (container still up)." >&2
+fi
+if [ "${HOME_HAS_STATE_LIT}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ / home ParityPip is NOT in 'lit' state — parityGoldEarned() returned false in SSR; inventory or cap ledger may have regressed (container still up)." >&2
+fi
+if [ "${HOME_HAS_PARITY_HREF}" -lt 1 ]; then
+  echo "==> [deploy] ⚠ / home ParityPip missing '/api/docs#parity' click target — link target regression (container still up)." >&2
 fi
 
 # ── 9. Prune dangling images from previous builds ──────────────────────────
